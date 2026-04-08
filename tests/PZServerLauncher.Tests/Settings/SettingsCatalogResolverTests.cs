@@ -1,5 +1,6 @@
 using PZServerLauncher.Core.Planning;
 using PZServerLauncher.Core.Profiles;
+using PZServerLauncher.Core.Runtime;
 using PZServerLauncher.Core.Settings;
 using PZServerLauncher.Infrastructure.Settings;
 
@@ -21,10 +22,17 @@ public sealed class SettingsCatalogResolverTests
         Assert.Equal(ProjectZomboidBranch.Unstable42, unstable.Branch);
         Assert.Contains(stable.Pages, page => page.PageId == "b41.general");
         Assert.Contains(stable.Pages, page => page.PageId == "b41.sandbox");
+        Assert.Contains(stable.Pages, page => page.PageId == "b41.mods-and-maps");
         Assert.Contains(stable.Pages, page => page.PageId == "b41.network-and-admin");
         Assert.Contains(unstable.Pages, page => page.PageId == "b42.general");
         Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.runtime.memory");
         Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.zombies");
+        Assert.All(
+            stable.Pages.Single(page => page.PageId == "b41.mods-and-maps").Sections.SelectMany(section => section.Fields),
+            field => Assert.Equal(ConfigFileKind.Ini, field.Target.FileKind));
+        Assert.Contains(
+            stable.Pages.Single(page => page.PageId == "b41.mods-and-maps").Sections.SelectMany(section => section.Fields),
+            field => field.FieldId == "b41.mods.map-folders" && field.Target.KeyPath == "Map");
         Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.network.bind-ip");
     }
 }

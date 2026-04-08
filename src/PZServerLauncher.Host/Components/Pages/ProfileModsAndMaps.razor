@@ -1,6 +1,7 @@
 @page "/profiles/{ProfileId}/mods-maps"
 @attribute [Authorize(Roles="Owner,Admin")]
 @inject ProfileStore ProfileStore
+@inject StructuredSettingsService StructuredSettingsService
 @inject WorkshopPresetScannerService WorkshopPresetScannerService
 @inject RuntimeStateStore RuntimeStateStore
 
@@ -29,8 +30,8 @@ else
             <a class="nav-button secondary-button" href="@SandboxHref">Sandbox</a>
             <a class="nav-button secondary-button" href="@AdvancedFilesHref">Advanced Files</a>
             <button class="nav-button" @onclick="ScanAsync" disabled="@_busy">Scan Workshop</button>
-            <button class="nav-button secondary-button" @onclick="SaveAsync" disabled="@_busy">Save Preset</button>
-            <button class="nav-button secondary-button" @onclick="ApplyScanResultAsync" disabled="@(_busy || _scanResult is null)">Apply Scan Result</button>
+            <button class="nav-button secondary-button" @onclick="SaveAsync" disabled="@(_busy || _requiresAdvancedFilesFallback)">Save Preset</button>
+            <button class="nav-button secondary-button" @onclick="ApplyScanResultAsync" disabled="@(_busy || _scanResult is null || _requiresAdvancedFilesFallback)">Apply Scan Result</button>
         </Actions>
         <ChildContent>
             <section class="workspace-panel hero-panel">
@@ -81,7 +82,16 @@ else
                         <span class="pill">@(_scanResult is null ? "No scan result" : "Scan ready")</span>
                     </div>
 
-                    <p class="muted-text">Edit the ordered workshop item IDs, enabled mod IDs, and map folders directly. Use Scan Workshop to normalize the lists against the local install cache.</p>
+                    <p class="muted-text">Edit the ordered workshop item IDs, enabled mod IDs, and map folders directly. This page now keeps the real Project Zomboid <code>WorkshopItems</code>, <code>Mods</code>, and <code>Map</code> INI keys in sync with the launcher preset.</p>
+
+                    @if (_requiresAdvancedFilesFallback)
+                    {
+                        <div class="settings-banner settings-banner--warning">
+                            <strong>Structured Mods &amp; Maps editing is unavailable for this file.</strong>
+                            <p>@(_fallbackReason ?? "Use Advanced Files for the raw Project Zomboid INI.")</p>
+                            <a class="nav-button secondary-button" href="@AdvancedFilesHref">Open Advanced Files</a>
+                        </div>
+                    }
 
                     <div class="status-banner">
                         <strong>Current preset</strong>
@@ -211,6 +221,8 @@ else
     private IReadOnlyList<string> _scanDiagnostics = [];
     private bool _hasChanges;
     private bool _suppressChangeTracking;
+    private bool _requiresAdvancedFilesFallback;
+    private string? _fallbackReason;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -228,16 +240,30 @@ else
         _runtimeStatus = RuntimeStateStore.GetOrDefault(ProfileId);
         _installDetected = Directory.Exists(_profile.InstallDirectory);
         _cacheDetected = Directory.Exists(_profile.CacheDirectory);
-        LoadPreset(_profile.WorkshopPreset);
+        var valueSet = StructuredSettingsService.GetPage(_profile, ProfileWorkspacePageIds.ModsAndMaps);
+        _requiresAdvancedFilesFallback = valueSet.RequiresAdvancedFilesFallback;
+        _fallbackReason = valueSet.FallbackReason;
+
+        var preset = StructuredSettingsService.GetWorkshopPreset(_profile);
+        _profile = _profile with { WorkshopPreset = preset };
+        LoadPreset(preset);
         _scanResult = null;
         _scanDiagnostics = [];
-        _statusMessage = "Workshop preset loaded.";
+        _statusMessage = _requiresAdvancedFilesFallback
+            ? _fallbackReason ?? "Structured Mods & Maps editing is unavailable. Use Advanced Files."
+            : "Workshop preset loaded.";
     }
 
     private async Task ScanAsync()
     {
         if (_profile is null)
         {
+            return;
+        }
+
+        if (_requiresAdvancedFilesFallback)
+        {
+            _statusMessage = _fallbackReason ?? "Structured Mods & Maps editing is unavailable. Use Advanced Files.";
             return;
         }
 
@@ -264,21 +290,26 @@ else
             return;
         }
 
+        if (_requiresAdvancedFilesFallback)
+        {
+            _statusMessage = _fallbackReason ?? "Structured Mods & Maps editing is unavailable. Use Advanced Files.";
+            return;
+        }
+
         _busy = true;
         try
         {
-            var preset = WorkshopPresetScannerService.Scan(_profile.InstallDirectory, BuildPresetFromEditor());
-            _scanResult = preset;
-            _scanDiagnostics = preset.Diagnostics;
+            var normalizedPreset = await StructuredSettingsService.SaveWorkshopPresetAsync(_profile, BuildPresetFromEditor());
+            _scanResult = WorkshopPresetScannerService.Scan(_profile.InstallDirectory, normalizedPreset);
+            _scanDiagnostics = _scanResult.Diagnostics;
 
-            var updated = await ProfileStore.UpsertAsync(_profile with
+            _profile = await ProfileStore.GetAsync(ProfileId);
+            if (_profile is not null)
             {
-                WorkshopPreset = preset.Preset,
-                UpdatedAtUtc = DateTimeOffset.UtcNow,
-            });
+                _profile = _profile with { WorkshopPreset = normalizedPreset };
+            }
 
-            _profile = updated;
-            LoadPreset(updated.WorkshopPreset);
+            LoadPreset(normalizedPreset);
             _statusMessage = _scanDiagnostics.Count == 0
                 ? "Workshop preset saved."
                 : "Workshop preset saved with diagnostics.";
@@ -300,17 +331,23 @@ else
             return;
         }
 
+        if (_requiresAdvancedFilesFallback)
+        {
+            _statusMessage = _fallbackReason ?? "Structured Mods & Maps editing is unavailable. Use Advanced Files.";
+            return;
+        }
+
         _busy = true;
         try
         {
-            var updated = await ProfileStore.UpsertAsync(_profile with
+            var normalizedPreset = await StructuredSettingsService.SaveWorkshopPresetAsync(_profile, _scanResult.Preset);
+            _profile = await ProfileStore.GetAsync(ProfileId);
+            if (_profile is not null)
             {
-                WorkshopPreset = _scanResult.Preset,
-                UpdatedAtUtc = DateTimeOffset.UtcNow,
-            });
+                _profile = _profile with { WorkshopPreset = normalizedPreset };
+            }
 
-            _profile = updated;
-            LoadPreset(updated.WorkshopPreset);
+            LoadPreset(normalizedPreset);
             _statusMessage = _scanDiagnostics.Count == 0
                 ? "Scanned workshop preset applied."
                 : "Scanned workshop preset applied with diagnostics.";
@@ -361,7 +398,7 @@ else
         return text
             .ReplaceLineEndings("\n")
             .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .SelectMany(line => line.Split(new[] { ',', ';' }, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
+            .SelectMany(line => line.Split(';', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
             .Select(value => value.Trim())
             .Where(value => !string.IsNullOrWhiteSpace(value))
             .Distinct(StringComparer.OrdinalIgnoreCase)

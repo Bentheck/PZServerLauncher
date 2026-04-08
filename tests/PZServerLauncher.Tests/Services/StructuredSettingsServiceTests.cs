@@ -225,13 +225,75 @@ public sealed class StructuredSettingsServiceTests : IDisposable
         Assert.Equal("updated-secret", updatedProfile.AdminPassword);
     }
 
+    [Fact]
+    public async Task ModsAndMaps_PageReadsAndWritesIniBackedPresetValues()
+    {
+        Directory.CreateDirectory(_tempRoot);
+        var profile = ServerProfileFactory.CreateStarterProfile() with
+        {
+            ProfileId = "profile-c",
+            DisplayName = "Profile C",
+            ServerName = "profile-server",
+            InstallDirectory = Path.Combine(_tempRoot, "install"),
+            CacheDirectory = Path.Combine(_tempRoot, "cache"),
+            WorkshopPreset = new WorkshopPreset
+            {
+                WorkshopItemIds = ["legacy-item"],
+                EnabledModIds = ["legacy-mod"],
+                MapFolders = ["legacy-map"],
+            },
+        };
+
+        var planner = new ProjectZomboidServerPlanner();
+        var paths = planner.ResolvePaths(profile);
+        Directory.CreateDirectory(Path.GetDirectoryName(paths.IniFilePath)!);
+        File.WriteAllText(paths.IniFilePath, """
+            WorkshopItems=1111111111;2222222222
+            Mods=ExampleMod;AnotherMod
+            Map=Muldraugh, KY;RavenCreek
+            """);
+
+        await using var dbContext = TestDatabaseFactory.Create(Path.Combine(_tempRoot, "mods.db"));
+        var profileStore = new ProfileStore(dbContext);
+        await profileStore.UpsertAsync(profile);
+
+        var service = CreateService(profileStore, planner);
+
+        var valueSet = service.GetPage(profile, ProfileWorkspacePageIds.ModsAndMaps);
+
+        Assert.False(valueSet.RequiresAdvancedFilesFallback);
+        Assert.Equal("1111111111" + Environment.NewLine + "2222222222", valueSet.Values["b42.mods.workshop-items"]);
+        Assert.Equal("ExampleMod" + Environment.NewLine + "AnotherMod", valueSet.Values["b42.mods.enabled-mods"]);
+        Assert.Equal("Muldraugh, KY" + Environment.NewLine + "RavenCreek", valueSet.Values["b42.mods.map-folders"]);
+
+        var saveResult = await service.SaveAsync(profile, ProfileWorkspacePageIds.ModsAndMaps, new Dictionary<string, string?>
+        {
+            ["b42.mods.workshop-items"] = "https://steamcommunity.com/sharedfiles/filedetails/?id=1234567890\n2345678901",
+            ["b42.mods.enabled-mods"] = "ExampleMod\nAnotherMod",
+            ["b42.mods.map-folders"] = "Muldraugh, KY\nRavenCreek",
+        });
+
+        var updatedProfile = await profileStore.GetAsync(profile.ProfileId);
+        var iniText = File.ReadAllText(paths.IniFilePath);
+
+        Assert.True(saveResult.Validation.IsValid);
+        Assert.NotNull(updatedProfile);
+        Assert.Contains("WorkshopItems=1234567890;2345678901", iniText);
+        Assert.Contains("Mods=ExampleMod;AnotherMod", iniText);
+        Assert.Contains("Map=Muldraugh, KY;RavenCreek", iniText);
+        Assert.Equal(["1234567890", "2345678901"], updatedProfile!.WorkshopPreset.WorkshopItemIds);
+        Assert.Equal(["ExampleMod", "AnotherMod"], updatedProfile.WorkshopPreset.EnabledModIds);
+        Assert.Equal(["Muldraugh, KY", "RavenCreek"], updatedProfile.WorkshopPreset.MapFolders);
+    }
+
     private static StructuredSettingsService CreateService(ProfileStore profileStore, ProjectZomboidServerPlanner planner) =>
         new(
             profileStore,
             new ConfigFileService(planner),
             new ProjectZomboidSettingsCatalogResolver(),
             new IniDocumentService(),
-            new SandboxVarsDocumentService());
+            new SandboxVarsDocumentService(),
+            new WorkshopPresetScannerService());
 
     public void Dispose()
     {

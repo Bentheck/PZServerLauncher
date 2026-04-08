@@ -39,9 +39,9 @@ public sealed partial class LocalServerImportService(
             var settings = ParseIni(iniPath);
             var preset = new WorkshopPreset
             {
-                WorkshopItemIds = GetCsvValue(settings, "WorkshopItems"),
-                EnabledModIds = GetCsvValue(settings, "Mods"),
-                MapFolders = GetCsvValue(settings, "Map"),
+                WorkshopItemIds = GetListValue(settings, "WorkshopItems", allowCommaFallback: true),
+                EnabledModIds = GetListValue(settings, "Mods", allowCommaFallback: true),
+                MapFolders = GetListValue(settings, "Map", allowCommaFallback: false),
             };
 
             var scanResult = workshopScannerService.Scan(installProbe.InstallDirectory, preset);
@@ -145,14 +145,26 @@ public sealed partial class LocalServerImportService(
         return values;
     }
 
-    private static IReadOnlyList<string> GetCsvValue(IReadOnlyDictionary<string, string> values, string key)
+    private static IReadOnlyList<string> GetListValue(IReadOnlyDictionary<string, string> values, string key, bool allowCommaFallback)
     {
         if (!values.TryGetValue(key, out var rawValue))
         {
             return [];
         }
 
-        return rawValue.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        if (rawValue.Contains(';'))
+        {
+            return rawValue.Split(';', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        }
+
+        if (allowCommaFallback)
+        {
+            return rawValue.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        }
+
+        return string.IsNullOrWhiteSpace(rawValue)
+            ? []
+            : [rawValue.Trim()];
     }
 
     private static string? GetValue(IReadOnlyDictionary<string, string> values, string key) =>

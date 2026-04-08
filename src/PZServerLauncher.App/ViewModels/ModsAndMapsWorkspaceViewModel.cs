@@ -18,7 +18,7 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
         : base(
             ProfileWorkspacePageIds.ModsAndMaps,
             "Mods & Maps",
-            "Workshop items, mod IDs, and map folders for the selected profile.",
+            "Workshop items, mod IDs, and map folders from the real Project Zomboid server INI.",
             "Mods & Maps settings are in sync.",
             legacy,
             ["Workshop IDs or URLs", "Enabled mod IDs", "Map folders", "Scan diagnostics"])
@@ -39,7 +39,7 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
 
     public string WorkspaceSummary => SelectedProfile is null
         ? "Choose a profile to unlock workshop and map management."
-        : $"{SelectedProfile.DisplayName} is ready for ordered workshop, mod, and map preset control.";
+        : $"{SelectedProfile.DisplayName} is ready for ordered workshop, mod, and map control backed by the server INI.";
 
     public string ActionSummary => HasUnsavedChanges
         ? "Save or discard changes before scanning so diagnostics match the active preset."
@@ -203,7 +203,7 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
             Diagnostics.Clear();
             OnPropertyChanged(nameof(HasDiagnostics));
             OnPropertyChanged(nameof(HasNoDiagnostics));
-            LoadStatus = "Loaded the saved workshop preset from the local host. Run a scan after applying changes to validate local workshop content.";
+            LoadStatus = "Loaded WorkshopItems, Mods, and Map from the local host. Run a scan after applying changes to validate local workshop content.";
             NotifyComputedState();
 
             if (draft is not null && draft.Values.Count > 0)

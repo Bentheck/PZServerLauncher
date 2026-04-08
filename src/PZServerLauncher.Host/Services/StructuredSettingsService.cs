@@ -15,7 +15,8 @@ public sealed class StructuredSettingsService(
     ConfigFileService configFileService,
     ISettingsCatalogResolver catalogResolver,
     IIniDocumentService iniDocumentService,
-    ISandboxVarsDocumentService sandboxVarsDocumentService)
+    ISandboxVarsDocumentService sandboxVarsDocumentService,
+    WorkshopPresetScannerService workshopPresetScannerService)
 {
     private const string SettingsUnavailableMessage = "Structured editing for this page has not been implemented yet. Use Advanced Files for the raw editor.";
 
@@ -42,6 +43,7 @@ public sealed class StructuredSettingsService(
         {
             ProfileWorkspacePageIds.General => BuildGeneralValueSet(profile, catalog, definition, pageId),
             ProfileWorkspacePageIds.Sandbox => BuildSandboxValueSet(profile, catalog, definition, pageId),
+            ProfileWorkspacePageIds.ModsAndMaps => BuildModsAndMapsValueSet(profile, catalog, definition, pageId),
             ProfileWorkspacePageIds.NetworkAndAdmin => BuildNetworkValueSet(profile, catalog, definition, pageId),
             _ => BuildFallbackValueSet(catalog, pageId, SettingsUnavailableMessage),
         };
@@ -53,9 +55,61 @@ public sealed class StructuredSettingsService(
         {
             ProfileWorkspacePageIds.General => ValidateGeneral(profile, pageId, values),
             ProfileWorkspacePageIds.Sandbox => ValidateSandbox(profile, pageId, values),
+            ProfileWorkspacePageIds.ModsAndMaps => ValidateModsAndMaps(profile, pageId, values),
             ProfileWorkspacePageIds.NetworkAndAdmin => ValidateNetwork(profile, pageId, values),
             _ => BuildFallbackValidation(pageId, SettingsUnavailableMessage),
         };
+    }
+
+    public WorkshopPreset GetWorkshopPreset(ServerProfile profile)
+    {
+        var raw = configFileService.ReadRawFile(profile, ConfigFileKind.Ini);
+        if (!string.IsNullOrWhiteSpace(raw.Content))
+        {
+            var parsed = iniDocumentService.Parse(raw.Content);
+            if (parsed.IsSupported)
+            {
+                var sourceValues = iniDocumentService.ReadValues(raw.Content, ["WorkshopItems", "Mods", "Map"]);
+                return ReadWorkshopPreset(sourceValues, profile.WorkshopPreset);
+            }
+        }
+
+        return profile.WorkshopPreset;
+    }
+
+    public async Task<WorkshopPreset> SaveWorkshopPresetAsync(
+        ServerProfile profile,
+        WorkshopPreset preset,
+        CancellationToken cancellationToken = default)
+    {
+        var raw = configFileService.ReadRawFile(profile, ConfigFileKind.Ini);
+        if (!string.IsNullOrWhiteSpace(raw.Content))
+        {
+            var parsed = iniDocumentService.Parse(raw.Content);
+            if (!parsed.IsSupported)
+            {
+                throw new InvalidOperationException(BuildIniFallbackReason(parsed));
+            }
+        }
+
+        var normalizedPreset = workshopPresetScannerService.Scan(profile.InstallDirectory, preset).Preset;
+        var iniValues = new Dictionary<string, string?>(StringComparer.Ordinal)
+        {
+            ["WorkshopItems"] = JoinIniList(normalizedPreset.WorkshopItemIds),
+            ["Mods"] = JoinIniList(normalizedPreset.EnabledModIds),
+            ["Map"] = JoinIniList(normalizedPreset.MapFolders),
+        };
+
+        var updatedContent = iniDocumentService.ApplyValues(raw.Content, iniValues);
+        configFileService.WriteRawFile(profile, ConfigFileKind.Ini, raw.Sha256, updatedContent);
+
+        var updated = await profileStore.UpsertAsync(profile with
+        {
+            WorkshopPreset = normalizedPreset,
+            UpdatedAtUtc = DateTimeOffset.UtcNow,
+        }, cancellationToken);
+
+        return updated.WorkshopPreset;
     }
 
     public async Task<SettingsSaveResultDto> SaveAsync(
@@ -166,6 +220,22 @@ public sealed class StructuredSettingsService(
                     var updatedContent = sandboxVarsDocumentService.ApplyValues(raw.Content, sandboxValues);
                     configFileService.WriteRawFile(profile, ConfigFileKind.SandboxVars, raw.Sha256, updatedContent);
                     return new SettingsSaveResultDto(GetPage(profile, pageId), validation, true);
+                }
+            case ProfileWorkspacePageIds.ModsAndMaps:
+                {
+                    var branchPrefix = GetBranchPrefix(profile.Branch);
+                    var normalizedPreset = await SaveWorkshopPresetAsync(
+                        profile,
+                        new WorkshopPreset
+                        {
+                            WorkshopItemIds = ParseEditorList(values, $"{branchPrefix}.mods.workshop-items"),
+                            EnabledModIds = ParseEditorList(values, $"{branchPrefix}.mods.enabled-mods"),
+                            MapFolders = ParseEditorList(values, $"{branchPrefix}.mods.map-folders"),
+                        },
+                        cancellationToken);
+
+                    var updated = await profileStore.GetAsync(profile.ProfileId, cancellationToken) ?? profile with { WorkshopPreset = normalizedPreset };
+                    return new SettingsSaveResultDto(GetPage(updated, pageId), validation, true);
                 }
             case ProfileWorkspacePageIds.NetworkAndAdmin:
                 {
@@ -313,6 +383,52 @@ public sealed class StructuredSettingsService(
             pageId,
             values,
             raw.Sha256,
+            false,
+            null);
+    }
+
+    private SettingsValueSetDto BuildModsAndMapsValueSet(
+        ServerProfile profile,
+        StructuredSettingsCatalog catalog,
+        StructuredPageDefinition definition,
+        string pageId)
+    {
+        var raw = configFileService.ReadRawFile(profile, ConfigFileKind.Ini);
+        if (!string.IsNullOrWhiteSpace(raw.Content))
+        {
+            var parsed = iniDocumentService.Parse(raw.Content);
+            if (!parsed.IsSupported)
+            {
+                var fallbackReason = BuildIniFallbackReason(parsed);
+                return BuildFallbackValueSet(catalog, pageId, fallbackReason);
+            }
+        }
+
+        var sourceValues = iniDocumentService.ReadValues(
+            raw.Content,
+            definition.Sections
+                .SelectMany(section => section.Fields)
+                .Select(field => field.Target.KeyPath));
+        var preset = ReadWorkshopPreset(sourceValues, profile.WorkshopPreset);
+
+        var values = new Dictionary<string, string?>(StringComparer.Ordinal);
+        foreach (var field in definition.Sections.SelectMany(section => section.Fields))
+        {
+            values[field.FieldId] = field.FieldId switch
+            {
+                var id when id.EndsWith(".mods.workshop-items", StringComparison.Ordinal) => JoinEditorList(preset.WorkshopItemIds),
+                var id when id.EndsWith(".mods.enabled-mods", StringComparison.Ordinal) => JoinEditorList(preset.EnabledModIds),
+                var id when id.EndsWith(".mods.map-folders", StringComparison.Ordinal) => JoinEditorList(preset.MapFolders),
+                _ => field.DefaultValue,
+            };
+        }
+
+        return new SettingsValueSetDto(
+            catalog.CatalogId,
+            catalog.CatalogVersion,
+            pageId,
+            values,
+            ComputeSourceHash(values),
             false,
             null);
     }
@@ -468,11 +584,32 @@ public sealed class StructuredSettingsService(
             null);
     }
 
+    private static SettingsValidationResultDto ValidateModsAndMaps(
+        ServerProfile profile,
+        string pageId,
+        IReadOnlyDictionary<string, string?> values)
+    {
+        var branchPrefix = GetBranchPrefix(profile.Branch);
+        var fieldErrors = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
+
+        ValidateNoDuplicateListEntries(values, $"{branchPrefix}.mods.workshop-items", "Workshop item IDs", fieldErrors);
+        ValidateNoDuplicateListEntries(values, $"{branchPrefix}.mods.enabled-mods", "Enabled mod IDs", fieldErrors);
+        ValidateNoDuplicateListEntries(values, $"{branchPrefix}.mods.map-folders", "Map folders", fieldErrors);
+
+        return new SettingsValidationResultDto(
+            pageId,
+            fieldErrors.Count == 0,
+            fieldErrors,
+            [],
+            false,
+            null);
+    }
+
     private static SettingsPageDto MapPage(StructuredPageDefinition definition)
     {
         var pageId = MapPageId(definition.PageId);
-        var supportsStructuredEditing = pageId is ProfileWorkspacePageIds.General or ProfileWorkspacePageIds.Sandbox or ProfileWorkspacePageIds.NetworkAndAdmin;
-        var supportsDrafts = pageId is ProfileWorkspacePageIds.General or ProfileWorkspacePageIds.Sandbox;
+        var supportsStructuredEditing = pageId is ProfileWorkspacePageIds.General or ProfileWorkspacePageIds.Sandbox or ProfileWorkspacePageIds.ModsAndMaps or ProfileWorkspacePageIds.NetworkAndAdmin;
+        var supportsDrafts = pageId is ProfileWorkspacePageIds.General or ProfileWorkspacePageIds.Sandbox or ProfileWorkspacePageIds.ModsAndMaps;
 
         return new SettingsPageDto(
             pageId,
@@ -696,6 +833,29 @@ public sealed class StructuredSettingsService(
         }
     }
 
+    private static void ValidateNoDuplicateListEntries(
+        IReadOnlyDictionary<string, string?> values,
+        string fieldId,
+        string label,
+        IDictionary<string, IReadOnlyList<string>> fieldErrors)
+    {
+        if (!values.TryGetValue(fieldId, out var rawValue) || string.IsNullOrWhiteSpace(rawValue))
+        {
+            return;
+        }
+
+        var duplicates = ParseEditorList(rawValue)
+            .GroupBy(value => value, StringComparer.OrdinalIgnoreCase)
+            .Where(group => group.Count() > 1)
+            .Select(group => group.Key)
+            .ToArray();
+
+        if (duplicates.Length > 0)
+        {
+            fieldErrors[fieldId] = [$"{label} contains duplicate entries: {string.Join(", ", duplicates)}."];
+        }
+    }
+
     private static string GetRequiredString(IReadOnlyDictionary<string, string?> values, string key) =>
         values.TryGetValue(key, out var value) && !string.IsNullOrWhiteSpace(value)
             ? value
@@ -739,6 +899,33 @@ public sealed class StructuredSettingsService(
             ? value.Trim()
             : existingValue;
 
+    private static string JoinEditorList(IReadOnlyList<string> values) =>
+        string.Join(Environment.NewLine, values);
+
+    private static string JoinIniList(IReadOnlyList<string> values) =>
+        string.Join(';', values);
+
+    private static IReadOnlyList<string> ParseEditorList(IReadOnlyDictionary<string, string?> values, string key) =>
+        values.TryGetValue(key, out var value)
+            ? ParseEditorList(value)
+            : [];
+
+    private static IReadOnlyList<string> ParseEditorList(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return [];
+        }
+
+        return value
+            .ReplaceLineEndings("\n")
+            .Split('\n', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+            .SelectMany(line => line.Split(';', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
+            .Select(item => item.Trim())
+            .Where(item => !string.IsNullOrWhiteSpace(item))
+            .ToArray();
+    }
+
     private static string ExpandWelcomeMessage(string? value) =>
         string.IsNullOrWhiteSpace(value)
             ? string.Empty
@@ -751,6 +938,50 @@ public sealed class StructuredSettingsService(
         values.TryGetValue(keyPath, out var value) && !string.IsNullOrWhiteSpace(value)
             ? value
             : defaultValue;
+
+    private static WorkshopPreset ReadWorkshopPreset(
+        IReadOnlyDictionary<string, string?> values,
+        WorkshopPreset fallback) =>
+        new()
+        {
+            WorkshopItemIds = ReadIniListOrDefault(values, "WorkshopItems", fallback.WorkshopItemIds, allowCommaFallback: true),
+            EnabledModIds = ReadIniListOrDefault(values, "Mods", fallback.EnabledModIds, allowCommaFallback: true),
+            MapFolders = ReadIniListOrDefault(values, "Map", fallback.MapFolders, allowCommaFallback: false),
+        };
+
+    private static IReadOnlyList<string> ReadIniListOrDefault(
+        IReadOnlyDictionary<string, string?> values,
+        string keyPath,
+        IReadOnlyList<string> fallback,
+        bool allowCommaFallback)
+    {
+        if (!values.TryGetValue(keyPath, out var rawValue) || string.IsNullOrWhiteSpace(rawValue))
+        {
+            return fallback;
+        }
+
+        return SplitIniList(rawValue, allowCommaFallback);
+    }
+
+    private static IReadOnlyList<string> SplitIniList(string rawValue, bool allowCommaFallback)
+    {
+        if (string.IsNullOrWhiteSpace(rawValue))
+        {
+            return [];
+        }
+
+        if (rawValue.Contains(';'))
+        {
+            return rawValue.Split(';', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        }
+
+        if (allowCommaFallback)
+        {
+            return rawValue.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+        }
+
+        return [rawValue.Trim()];
+    }
 
     private static bool IsGeneralProfileBackedField(string fieldId) =>
         fieldId.EndsWith(".server.udp-port", StringComparison.Ordinal) ||

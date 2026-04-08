@@ -60,6 +60,67 @@ public sealed class LocalServerImportServiceTests : IDisposable
         Assert.Equal("127.0.0.1", imported.BindIp);
         Assert.Equal(["1234567890"], imported.WorkshopPreset.WorkshopItemIds);
         Assert.Equal(["ExampleMod"], imported.WorkshopPreset.EnabledModIds);
+        Assert.Equal(["RavenCreek"], imported.WorkshopPreset.MapFolders);
+    }
+
+    [Fact]
+    public async Task DiscoverAsync_ParsesSemicolonDelimitedWorkshopPresetValuesFromIni()
+    {
+        var cacheRoot = Path.Combine(_tempRoot, "Zomboid");
+        var serverDirectory = Path.Combine(cacheRoot, "Server");
+        Directory.CreateDirectory(serverDirectory);
+        File.WriteAllText(
+            Path.Combine(serverDirectory, "servertest.ini"),
+            """
+            WorkshopItems= 1234567890 ; 2345678901
+            Mods= ExampleMod ; AnotherMod
+            Map= RavenCreek ; Louisville
+            """);
+
+        var databasePath = Path.Combine(_tempRoot, "import-trim-tests.db");
+        await using var dbContext = TestDatabaseFactory.Create(databasePath);
+        var profileStore = new ProfileStore(dbContext);
+        var service = new LocalServerImportService(
+            profileStore,
+            new WorkshopPresetScannerService(),
+            cacheRoot,
+            null,
+            ProjectZomboidBranch.Unstable42);
+
+        var candidates = await service.DiscoverAsync();
+        var candidate = Assert.Single(candidates);
+
+        Assert.Equal(["1234567890", "2345678901"], candidate.WorkshopPreset.WorkshopItemIds);
+        Assert.Equal(["ExampleMod", "AnotherMod"], candidate.WorkshopPreset.EnabledModIds);
+        Assert.Equal(["RavenCreek", "Louisville"], candidate.WorkshopPreset.MapFolders);
+    }
+
+    [Fact]
+    public async Task DiscoverAsync_PreservesStockMapNameContainingComma()
+    {
+        var cacheRoot = Path.Combine(_tempRoot, "Zomboid");
+        var serverDirectory = Path.Combine(cacheRoot, "Server");
+        Directory.CreateDirectory(serverDirectory);
+        File.WriteAllText(
+            Path.Combine(serverDirectory, "servertest.ini"),
+            """
+            Map=Muldraugh, KY
+            """);
+
+        var databasePath = Path.Combine(_tempRoot, "import-default-map-tests.db");
+        await using var dbContext = TestDatabaseFactory.Create(databasePath);
+        var profileStore = new ProfileStore(dbContext);
+        var service = new LocalServerImportService(
+            profileStore,
+            new WorkshopPresetScannerService(),
+            cacheRoot,
+            null,
+            ProjectZomboidBranch.Stable41);
+
+        var candidates = await service.DiscoverAsync();
+        var candidate = Assert.Single(candidates);
+
+        Assert.Equal(["Muldraugh, KY"], candidate.WorkshopPreset.MapFolders);
     }
 
     public void Dispose()

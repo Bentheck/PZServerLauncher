@@ -514,30 +514,33 @@ public class Program
         api.MapPost("/profiles/{profileId}/workshop/scan", async (
             string profileId,
             ProfileStore store,
+            StructuredSettingsService structuredSettingsService,
             WorkshopPresetScannerService workshopScannerService,
             CancellationToken cancellationToken) =>
         {
             var profile = await store.GetAsync(profileId, cancellationToken);
             return profile is null
                 ? Results.NotFound()
-                : Results.Ok(workshopScannerService.Scan(profile.InstallDirectory, profile.WorkshopPreset));
+                : Results.Ok(workshopScannerService.Scan(profile.InstallDirectory, structuredSettingsService.GetWorkshopPreset(profile)));
         }).RequireAuthorization("DesktopOrAdmin");
 
         api.MapGet("/profiles/{profileId}/workshop-preset", async (
             string profileId,
             ProfileStore store,
+            StructuredSettingsService structuredSettingsService,
             CancellationToken cancellationToken) =>
         {
             var profile = await store.GetAsync(profileId, cancellationToken);
             return profile is null
                 ? Results.NotFound()
-                : Results.Ok(profile.WorkshopPreset);
+                : Results.Ok(structuredSettingsService.GetWorkshopPreset(profile));
         }).RequireAuthorization("DesktopOrViewer");
 
         api.MapPut("/profiles/{profileId}/workshop-preset", async (
             string profileId,
             PZServerLauncher.Core.Profiles.WorkshopPreset preset,
             ProfileStore store,
+            StructuredSettingsService structuredSettingsService,
             AuditStore auditStore,
             CancellationToken cancellationToken) =>
         {
@@ -547,21 +550,15 @@ public class Program
                 return Results.NotFound();
             }
 
-            var normalizedPreset = new PZServerLauncher.Core.Profiles.WorkshopPreset
-            {
-                WorkshopItemIds = preset.WorkshopItemIds.Select(value => value.Trim()).Where(value => !string.IsNullOrWhiteSpace(value)).ToArray(),
-                EnabledModIds = preset.EnabledModIds.Select(value => value.Trim()).Where(value => !string.IsNullOrWhiteSpace(value)).ToArray(),
-                MapFolders = preset.MapFolders.Select(value => value.Trim()).Where(value => !string.IsNullOrWhiteSpace(value)).ToArray(),
-            };
-
-            var updated = await store.UpsertAsync(profile with { WorkshopPreset = normalizedPreset }, cancellationToken);
+            var normalizedPreset = await structuredSettingsService.SaveWorkshopPresetAsync(profile, preset, cancellationToken);
+            var updated = await store.GetAsync(profileId, cancellationToken) ?? profile with { WorkshopPreset = normalizedPreset };
             await auditStore.WriteAsync(
                 "profile.workshop-preset.updated",
                 profileId,
                 "local",
                 $"Updated workshop preset for {updated.DisplayName}.",
                 cancellationToken: cancellationToken);
-            return Results.Ok(updated.WorkshopPreset);
+            return Results.Ok(normalizedPreset);
         }).RequireAuthorization("DesktopOrAdmin");
 
         api.MapGet("/profiles/{profileId}/config/files/{kind}", async (
