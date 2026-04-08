@@ -96,7 +96,7 @@
                     <Border Background="#F1E6D7" CornerRadius="14" Padding="14">
                         <StackPanel Spacing="6">
                             <TextBlock Classes="kicker" Text="Migration Note" />
-                            <TextBlock Classes="body" Text="Overview, Install &amp; Update, and General are now real workspace pages. Classic remains available for the remaining areas while the rest of the migration lands." TextWrapping="Wrap" />
+                            <TextBlock Classes="body" Text="All per-profile workspace pages are now live. Classic remains only for the remaining global host-level surfaces while the final shell cutover lands." TextWrapping="Wrap" />
                         </StackPanel>
                     </Border>
                 </StackPanel>

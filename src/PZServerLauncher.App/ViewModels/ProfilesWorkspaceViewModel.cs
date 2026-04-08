@@ -22,11 +22,7 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
         NetworkAndAdmin = new NetworkAndAdminWorkspaceViewModel(legacy, hostApiClient);
         Backups = new BackupsWorkspaceViewModel(legacy, hostApiClient);
         Logs = new LogsWorkspaceViewModel(legacy, hostApiClient, runtimeEventStream);
-        AdvancedFiles = new WorkspaceSectionViewModel(
-            "Advanced Files",
-            "Raw ini, SandboxVars, spawnregions, and spawnpoints editing for unsupported or advanced cases.",
-            "Advanced Files draft cleared.",
-            ["Raw ini", "SandboxVars.lua", "SpawnRegions.lua", "SpawnPoints.lua"]);
+        AdvancedFiles = new AdvancedFilesWorkspaceViewModel(legacy, hostApiClient);
 
         _sections = new Dictionary<string, ViewModelBase>(StringComparer.Ordinal)
         {
@@ -70,7 +66,7 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
 
     public string PageTitle => "Profiles";
 
-    public string PageSummary => "Choose a profile, then move through the real per-profile workspace. Classic remains available while we cut over the old surface.";
+    public string PageSummary => "Choose a profile, then move through the full per-profile workspace. Classic now remains only as a temporary bridge for the leftover global host surfaces.";
 
     public IReadOnlyList<WorkspaceNavigationItemViewModel> SectionItems { get; }
 
@@ -92,7 +88,7 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
 
     public LogsWorkspaceViewModel Logs { get; }
 
-    public WorkspaceSectionViewModel AdvancedFiles { get; }
+    public AdvancedFilesWorkspaceViewModel AdvancedFiles { get; }
 
     public string SelectedProfileSummary => SelectedProfile is null
         ? "No profile selected yet."

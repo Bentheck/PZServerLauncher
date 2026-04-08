@@ -1,0 +1,114 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:PZServerLauncher.App.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignWidth="1180"
+             d:DesignHeight="940"
+             x:Class="PZServerLauncher.App.Views.AdvancedFilesWorkspaceView"
+             x:DataType="vm:AdvancedFilesWorkspaceViewModel">
+    <Border Classes="card" Padding="24">
+        <Grid RowDefinitions="Auto,Auto,Auto,*" RowSpacing="18">
+            <StackPanel Spacing="4">
+                <TextBlock Classes="panel-title" FontSize="24" Text="{Binding PageTitle}" />
+                <TextBlock Classes="body" Text="{Binding PageSummary}" TextWrapping="Wrap" />
+            </StackPanel>
+
+            <Border Grid.Row="1" Background="#FFF8F1" CornerRadius="14" Padding="16">
+                <StackPanel Spacing="6">
+                    <TextBlock Classes="kicker" Text="Structured Editor Fallback" />
+                    <TextBlock Classes="body" Text="Use this page when a structured editor cannot safely own a file or when you intentionally want the raw Project Zomboid source files." TextWrapping="Wrap" />
+                    <TextBlock Classes="body" Text="{Binding LoadStatus}" TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+
+            <Grid Grid.Row="2" ColumnDefinitions="280,Auto,Auto,*" ColumnSpacing="12">
+                <StackPanel Spacing="4">
+                    <TextBlock Classes="kicker" Text="File Kind" />
+                    <ComboBox ItemsSource="{Binding FileKinds}"
+                              SelectedItem="{Binding SelectedKind}">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate x:DataType="vm:ConfigFileOptionViewModel">
+                                <TextBlock Text="{Binding Label}" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                </StackPanel>
+
+                <Button Grid.Column="1"
+                        VerticalAlignment="Bottom"
+                        Command="{Binding LoadCommand}"
+                        Content="Load File"
+                        IsEnabled="{Binding CanLoad}" />
+
+                <Button Grid.Column="2"
+                        VerticalAlignment="Bottom"
+                        Command="{Binding SaveCommand}"
+                        Content="Save File"
+                        IsEnabled="{Binding CanSave}" />
+
+                <StackPanel Grid.Column="3" Spacing="4">
+                    <TextBlock Classes="kicker" Text="Current Path" />
+                    <TextBlock Classes="body"
+                               FontFamily="Cascadia Code,Consolas,monospace"
+                               Text="{Binding CurrentPath}"
+                               TextWrapping="Wrap" />
+                </StackPanel>
+            </Grid>
+
+            <Grid Grid.Row="3" ColumnDefinitions="*,320" ColumnSpacing="18">
+                <StackPanel Spacing="10">
+                    <Border Background="#F6EFE6"
+                            CornerRadius="14"
+                            Padding="12"
+                            IsVisible="{Binding ShowKindMismatchWarning}">
+                        <TextBlock Classes="body"
+                                   Text="The selected file kind does not match the currently loaded buffer. Load the selected file before saving."
+                                   TextWrapping="Wrap" />
+                    </Border>
+
+                    <TextBox MinHeight="380"
+                             AcceptsReturn="True"
+                             AcceptsTab="True"
+                             FontFamily="Cascadia Code,Consolas,monospace"
+                             HorizontalAlignment="Stretch"
+                             IsEnabled="{Binding IsEditorEnabled}"
+                             Text="{Binding EditorContent}"
+                             TextWrapping="NoWrap"
+                             VerticalContentAlignment="Top" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Spacing="12">
+                    <Border Classes="card" Padding="16">
+                        <StackPanel Spacing="6">
+                            <TextBlock Classes="kicker" Text="File Status" />
+                            <TextBlock Classes="body" Text="{Binding DirtyStateMessage}" TextWrapping="Wrap" />
+                            <TextBlock Classes="body"
+                                       FontFamily="Cascadia Code,Consolas,monospace"
+                                       Text="{Binding CurrentSha256}"
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Classes="card" Padding="16">
+                        <StackPanel Spacing="8">
+                            <TextBlock Classes="kicker" Text="Diagnostics" />
+                            <ItemsControl ItemsSource="{Binding Diagnostics}" IsVisible="{Binding HasDiagnostics}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Classes="body" Text="{Binding .}" TextWrapping="Wrap" Margin="0,0,0,6" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <TextBlock Classes="body"
+                                       IsVisible="{Binding HasNoDiagnostics}"
+                                       Text="No validation diagnostics were reported for the loaded file."
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Grid>
+        </Grid>
+    </Border>
+</UserControl>

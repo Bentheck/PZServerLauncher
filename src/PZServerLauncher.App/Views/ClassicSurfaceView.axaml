@@ -101,7 +101,7 @@
             </Border>
 
             <Border Grid.Row="3" Classes="card">
-                <TextBlock Classes="body" Text="The classic experience remains functional while the new workspace shell is introduced around it. Use the workspace navigation to move into the new structure, or stay here for the full legacy flow." TextWrapping="Wrap" />
+                <TextBlock Classes="body" Text="Classic still hosts the legacy global controls while the workspace shell finishes taking over. Use the workspace navigation for per-profile tasks and keep Classic only for the remaining host-level surfaces." TextWrapping="Wrap" />
             </Border>
 
             <Border Grid.Row="4" Classes="card" IsVisible="{Binding OwnerBootstrapRequired}">
@@ -180,7 +180,7 @@
                 <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:ProfileCardViewModel">
                         <Border Classes="card" Margin="0,0,0,16">
-                            <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="14">
+                            <Grid RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="14">
                                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                                     <StackPanel Spacing="4">
                                         <TextBlock Classes="panel-title" FontSize="22" Text="{Binding DisplayName}" />
@@ -210,8 +210,8 @@
                                         <TextBlock Classes="kicker" Text="Workspace Pages Live" />
                                         <Border Background="#F1E6D7" CornerRadius="14" Padding="16">
                                             <StackPanel Spacing="8">
-                                                <TextBlock Classes="body" Text="Structured General, Sandbox, Mods &amp; Maps, Network &amp; Admin, Backups, and Logs are now live in the workspace pages." TextWrapping="Wrap" />
-                                                <TextBlock Classes="body" Text="Use the new workspace for server identity, primary ports, memory, startup behavior, first-pass sandbox gameplay/world settings, workshop/mod/map management, bind/admin settings, backup/restore workflows, and recent runtime logs. Classic remains focused on raw files and the still-migrating areas." TextWrapping="Wrap" />
+                                                <TextBlock Classes="body" Text="General, Sandbox, Mods &amp; Maps, Network &amp; Admin, Backups, Logs, and Advanced Files are now live in the workspace pages." TextWrapping="Wrap" />
+                                                <TextBlock Classes="body" Text="Use the workspace for structured settings, backup/restore, recent runtime logs, and raw ini/Lua editing. Classic now remains only as the legacy shell while the final global pages are filled in." TextWrapping="Wrap" />
                                             </StackPanel>
                                         </Border>
                                     </StackPanel>
@@ -222,57 +222,7 @@
                                     </StackPanel>
                                 </Grid>
 
-                                <Grid Grid.Row="3" ColumnDefinitions="*,320" ColumnSpacing="18">
-                                    <StackPanel Spacing="8">
-                                        <Grid ColumnDefinitions="240,Auto,Auto,*" ColumnSpacing="10">
-                                            <StackPanel Spacing="4">
-                                                <TextBlock Classes="kicker" Text="Raw Config Editor" />
-                                                <ComboBox ItemsSource="{Binding RawConfigKinds}"
-                                                          SelectedItem="{Binding SelectedRawConfigKind}">
-                                                    <ComboBox.ItemTemplate>
-                                                        <DataTemplate x:DataType="vm:ConfigFileOptionViewModel">
-                                                            <TextBlock Text="{Binding Label}" />
-                                                        </DataTemplate>
-                                                    </ComboBox.ItemTemplate>
-                                                </ComboBox>
-                                            </StackPanel>
-                                            <Button Grid.Column="1"
-                                                    VerticalAlignment="Bottom"
-                                                    Command="{Binding #ClassicRoot.DataContext.LoadRawConfigCommand}"
-                                                    CommandParameter="{Binding .}"
-                                                    Content="Load File" />
-                                            <Button Grid.Column="2"
-                                                    VerticalAlignment="Bottom"
-                                                    Command="{Binding #ClassicRoot.DataContext.SaveRawConfigCommand}"
-                                                    CommandParameter="{Binding .}"
-                                                    Content="Save File"
-                                                    IsEnabled="{Binding IsRawConfigLoaded}" />
-                                            <TextBlock Grid.Column="3"
-                                                       VerticalAlignment="Bottom"
-                                                       Classes="body"
-                                                       Text="{Binding RawConfigStatus}"
-                                                       TextWrapping="Wrap" />
-                                        </Grid>
-
-                                        <TextBox MinHeight="240"
-                                                 AcceptsReturn="True"
-                                                 AcceptsTab="True"
-                                                 FontFamily="Cascadia Code,Consolas,monospace"
-                                                 HorizontalAlignment="Stretch"
-                                                 Text="{Binding RawConfigContent}"
-                                                 TextWrapping="NoWrap"
-                                                 VerticalContentAlignment="Top" />
-                                    </StackPanel>
-
-                                    <StackPanel Grid.Column="1" Spacing="8">
-                                        <TextBlock Classes="kicker" Text="Raw Diagnostics" />
-                                        <TextBlock Classes="body"
-                                                   Text="{Binding RawConfigDiagnostics}"
-                                                   TextWrapping="Wrap" />
-                                    </StackPanel>
-                                </Grid>
-
-                                <WrapPanel Grid.Row="4" ItemHeight="36" ItemWidth="132" Orientation="Horizontal">
+                                <WrapPanel Grid.Row="3" ItemHeight="36" ItemWidth="132" Orientation="Horizontal">
                                     <Button Command="{Binding #ClassicRoot.DataContext.InstallCommand}" CommandParameter="{Binding .}" Content="Install" />
                                     <Button Command="{Binding #ClassicRoot.DataContext.UpdateCommand}" CommandParameter="{Binding .}" Content="Update" />
                                     <Button Command="{Binding #ClassicRoot.DataContext.StartCommand}" CommandParameter="{Binding .}" Content="Start" />
