@@ -143,6 +143,35 @@ public sealed class LocalHostApiClient
             new BootstrapOwnerRequestDto(userName, email, password),
             cancellationToken);
 
+    public Task<HostSettings?> GetHostSettingsAsync(CancellationToken cancellationToken = default) =>
+        GetAsync<HostSettings>("/api/settings/host", cancellationToken);
+
+    public Task<HostSettings?> UpdateHostSettingsAsync(HostSettings settings, CancellationToken cancellationToken = default) =>
+        PutAsync<HostSettings>("/api/settings/host", settings, cancellationToken);
+
+    public Task<RemoteAccessSettingsDto?> GetRemoteAccessSettingsAsync(CancellationToken cancellationToken = default) =>
+        GetAsync<RemoteAccessSettingsDto>("/api/settings/remote-access", cancellationToken);
+
+    public Task<RemoteAccessSettingsDto?> UpdateRemoteAccessSettingsAsync(
+        RemoteAccessSettingsDto settings,
+        CancellationToken cancellationToken = default) =>
+        PutAsync<RemoteAccessSettingsDto>("/api/settings/remote-access", settings, cancellationToken);
+
+    public Task<RemoteAccessSelfTestResultDto?> RunRemoteAccessSelfTestAsync(
+        RemoteAccessSettingsDto settings,
+        CancellationToken cancellationToken = default) =>
+        PostAsync<RemoteAccessSelfTestResultDto>("/api/settings/remote-access/self-test", settings, cancellationToken);
+
+    public Task<OperationResultDto?> ApplyRemoteFirewallRuleAsync(
+        RemoteAccessSettingsDto settings,
+        CancellationToken cancellationToken = default) =>
+        PostAsync<OperationResultDto>("/api/settings/remote-access/firewall", settings, cancellationToken);
+
+    public Task<OperationResultDto?> StopHostAsync(
+        bool stopRunningServers,
+        CancellationToken cancellationToken = default) =>
+        PostAsync<OperationResultDto>("/api/host/stop", new HostShutdownRequestDto(stopRunningServers), cancellationToken);
+
     public async Task EnsureHostRunningAsync(CancellationToken cancellationToken = default)
     {
         if (await TryPingAsync(cancellationToken))

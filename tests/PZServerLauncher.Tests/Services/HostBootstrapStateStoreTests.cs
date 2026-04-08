@@ -38,6 +38,28 @@ public sealed class HostBootstrapStateStoreTests : IDisposable
         Assert.Equal("top-secret", store.GetCertificatePassword(updated));
     }
 
+    [Fact]
+    public async Task ResolveCertificatePasswordAsync_ReusesStoredPasswordForSameCertificatePath()
+    {
+        var appPaths = new AppPaths(_tempRoot);
+        var store = new HostBootstrapStateStore(appPaths);
+
+        await store.LoadAsync();
+        await store.UpdateRemoteAccessAsync(
+            new RemoteAccessSettings
+            {
+                IsEnabled = true,
+                BindAddress = "0.0.0.0",
+                HttpsPort = 8443,
+                CertificatePath = @"C:\certs\pzserver.pfx",
+            },
+            "stored-secret");
+
+        var resolved = await store.ResolveCertificatePasswordAsync(@"C:\certs\pzserver.pfx", null);
+
+        Assert.Equal("stored-secret", resolved);
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_tempRoot))

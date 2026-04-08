@@ -21,7 +21,7 @@
     </Design.DataContext>
 
     <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,*" Margin="28" RowSpacing="20">
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,*" Margin="28" RowSpacing="20">
             <Border Classes="card" Padding="28">
                 <Grid ColumnDefinitions="*,360" ColumnSpacing="20">
                     <StackPanel Spacing="10">
@@ -50,10 +50,71 @@
             </Border>
 
             <Border Grid.Row="2" Classes="card">
+                <Grid ColumnDefinitions="340,*" ColumnSpacing="20">
+                    <StackPanel Spacing="12">
+                        <StackPanel Spacing="4">
+                            <TextBlock Classes="panel-title" FontSize="22" Text="Host Settings" />
+                            <TextBlock Classes="body" Text="Closing this window minimizes to tray. Use Exit Desktop when you want to close the UI but leave the local host running." TextWrapping="Wrap" />
+                        </StackPanel>
+
+                        <CheckBox Content="Start Host With Windows" IsChecked="{Binding HostStartWithWindows}" />
+
+                        <WrapPanel Orientation="Horizontal" ItemHeight="36" ItemWidth="148">
+                            <Button Command="{Binding SaveHostSettingsCommand}" Content="Save Host Settings" />
+                            <Button Command="{Binding StopHostCommand}" Content="Stop Host" />
+                            <Button Command="{Binding StopAllAndHostCommand}" Content="Stop All + Host" />
+                            <Button Command="{Binding ExitDesktopCommand}" Content="Exit Desktop" />
+                        </WrapPanel>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1" Spacing="12">
+                        <StackPanel Spacing="4">
+                            <TextBlock Classes="panel-title" FontSize="22" Text="Remote Access Setup" />
+                            <TextBlock Classes="body" Text="Desktop-driven HTTPS setup for the optional web admin. Router forwarding is still manual in v1, but you can save, self-test, and apply a Windows Firewall rule from here." TextWrapping="Wrap" />
+                        </StackPanel>
+
+                        <Grid ColumnDefinitions="Auto,*,Auto,*" ColumnSpacing="10" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="10">
+                            <CheckBox Grid.ColumnSpan="4"
+                                      Content="Enable Remote Access"
+                                      IsChecked="{Binding RemoteAccessEnabled}" />
+
+                            <TextBlock Grid.Row="1" Classes="body" Text="Bind Address" VerticalAlignment="Center" />
+                            <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding RemoteBindAddress}" />
+                            <TextBlock Grid.Row="1" Grid.Column="2" Classes="body" Text="HTTPS Port" VerticalAlignment="Center" />
+                            <TextBox Grid.Row="1" Grid.Column="3" Text="{Binding RemoteHttpsPort}" />
+
+                            <TextBlock Grid.Row="2" Classes="body" Text="Public Hostname" VerticalAlignment="Center" />
+                            <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding RemotePublicHostname}" />
+                            <TextBlock Grid.Row="2" Grid.Column="2" Classes="body" Text="PFX Password" VerticalAlignment="Center" />
+                            <TextBox Grid.Row="2" Grid.Column="3" PasswordChar="*" Text="{Binding RemoteCertificatePassword}" />
+
+                            <TextBlock Grid.Row="3" Classes="body" Text="PFX Certificate Path" VerticalAlignment="Center" />
+                            <TextBox Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="3" Text="{Binding RemoteCertificatePath}" />
+                        </Grid>
+
+                        <CheckBox Content="Create Or Update The Windows Firewall Rule"
+                                  IsChecked="{Binding RemoteCreateFirewallRule}" />
+
+                        <WrapPanel Orientation="Horizontal" ItemHeight="36" ItemWidth="162">
+                            <Button Command="{Binding SaveRemoteAccessCommand}" Content="Save Remote Settings" />
+                            <Button Command="{Binding RemoteSelfTestCommand}" Content="Run Local Self-Test" />
+                            <Button Command="{Binding ApplyFirewallRuleCommand}" Content="Apply Firewall Rule" />
+                        </WrapPanel>
+
+                        <TextBlock Classes="body" Text="{Binding RemoteWizardStatus}" TextWrapping="Wrap" />
+                        <TextBlock Classes="body"
+                                   FontFamily="Cascadia Code,Consolas,monospace"
+                                   Text="{Binding RemoteSelfTestChecks}"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <Border Grid.Row="3" Classes="card">
                 <TextBlock Classes="body" Text="The desktop app starts or connects to the local host automatically, then drives the same loopback API used by the optional web companion. Phase 2 adds import discovery, editable common settings, and workshop validation from the same host API." TextWrapping="Wrap" />
             </Border>
 
-            <Border Grid.Row="3" Classes="card" IsVisible="{Binding OwnerBootstrapRequired}">
+            <Border Grid.Row="4" Classes="card" IsVisible="{Binding OwnerBootstrapRequired}">
                 <StackPanel Spacing="14">
                     <StackPanel Spacing="4">
                         <TextBlock Classes="panel-title" FontSize="24" Text="Owner Bootstrap" />
@@ -79,7 +140,7 @@
                 </StackPanel>
             </Border>
 
-            <Border Grid.Row="4" Classes="card">
+            <Border Grid.Row="5" Classes="card">
                 <StackPanel Spacing="10">
                     <TextBlock Classes="panel-title" FontSize="22" Text="Import Candidates" />
                     <ItemsControl ItemsSource="{Binding ImportCandidates}">
@@ -107,7 +168,7 @@
                 </StackPanel>
             </Border>
 
-            <Border Grid.Row="5" Classes="card">
+            <Border Grid.Row="6" Classes="card">
                 <StackPanel Spacing="10">
                     <TextBlock Classes="panel-title" FontSize="22" Text="Recent Jobs" />
                     <ItemsControl ItemsSource="{Binding RecentJobs}">
@@ -125,7 +186,7 @@
                 </StackPanel>
             </Border>
 
-            <ItemsControl Grid.Row="6" ItemsSource="{Binding Profiles}">
+            <ItemsControl Grid.Row="7" ItemsSource="{Binding Profiles}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:ProfileCardViewModel">
                         <Border Classes="card" Margin="0,0,0,16">

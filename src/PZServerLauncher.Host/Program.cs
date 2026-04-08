@@ -66,6 +66,8 @@ public class Program
         builder.Services.AddScoped<ServerBackupService>();
         builder.Services.AddScoped<LocalServerImportService>();
         builder.Services.AddScoped<UserManagementService>();
+        builder.Services.AddScoped<RemoteAccessDiagnosticsService>();
+        builder.Services.AddScoped<WindowsFirewallRuleService>();
 
         builder.Services.AddRazorComponents()
             .AddInteractiveServerComponents();
@@ -199,6 +201,57 @@ public class Program
 
             return Results.Ok(new HostInfoDto(health, settings));
         }).RequireAuthorization("DesktopOrViewer");
+
+        api.MapPost("/host/stop", async (
+            HostShutdownRequestDto request,
+            RuntimeStateStore runtimeStateStore,
+            ServerProcessSupervisor supervisor,
+            AuditStore auditStore,
+            IHostApplicationLifetime lifetime,
+            CancellationToken cancellationToken) =>
+        {
+            var runningProfiles = runtimeStateStore.ListStatuses()
+                .Where(status => status.State is ServerRuntimeState.Starting or ServerRuntimeState.Running or ServerRuntimeState.Stopping)
+                .Select(status => status.ProfileId)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (runningProfiles.Count > 0 && !request.StopRunningServers)
+            {
+                return Results.Conflict(new OperationResultDto(
+                    false,
+                    $"{runningProfiles.Count} managed server(s) are still active. Use the 'Stop All + Host' action to stop them before shutting down the host."));
+            }
+
+            if (request.StopRunningServers)
+            {
+                foreach (var profileId in runningProfiles)
+                {
+                    await supervisor.StopAsync(profileId, cancellationToken);
+                }
+            }
+
+            await auditStore.WriteAsync(
+                "host.stopped",
+                "host",
+                "local",
+                request.StopRunningServers && runningProfiles.Count > 0
+                    ? $"Stopped {runningProfiles.Count} server(s) and shut down the local host."
+                    : "Shut down the local host.",
+                cancellationToken: cancellationToken);
+
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(250);
+                lifetime.StopApplication();
+            }, CancellationToken.None);
+
+            return Results.Ok(new OperationResultDto(
+                true,
+                request.StopRunningServers && runningProfiles.Count > 0
+                    ? $"Stopping {runningProfiles.Count} server(s) and shutting down the local host."
+                    : "Shutting down the local host."));
+        }).RequireAuthorization("DesktopOnly");
 
         api.MapGet("/profiles", async (ProfileStore store, CancellationToken cancellationToken) =>
         {
@@ -386,11 +439,20 @@ public class Program
         api.MapPut("/settings/remote-access", async (
             RemoteAccessSettingsDto dto,
             HostSettingsStore store,
+            HostBootstrapStateStore bootstrapStateStore,
             UserManagementService userManagementService,
             CancellationToken cancellationToken) =>
         {
-            RemoteAccessSettingsValidator.Validate(dto);
-            if (dto.IsEnabled)
+            var effectivePassword = await bootstrapStateStore.ResolveCertificatePasswordAsync(
+                dto.CertificatePath,
+                dto.CertificatePassword,
+                cancellationToken);
+            var validatedDto = dto with
+            {
+                CertificatePassword = effectivePassword,
+            };
+            RemoteAccessSettingsValidator.Validate(validatedDto);
+            if (validatedDto.IsEnabled)
             {
                 await userManagementService.EnsureRemoteAccessReadyAsync(cancellationToken);
             }
@@ -398,12 +460,26 @@ public class Program
             var current = await store.GetAsync(cancellationToken);
             var updated = current with
             {
-                RemoteAccess = dto.ToModel(),
+                RemoteAccess = validatedDto.ToModel(),
             };
 
-            var saved = await store.UpdateAsync(updated, dto.CertificatePassword, cancellationToken);
+            var saved = await store.UpdateAsync(updated, effectivePassword, cancellationToken);
             return Results.Ok(saved.RemoteAccess.ToDto());
         }).RequireAuthorization("DesktopOrAdmin");
+
+        api.MapPost("/settings/remote-access/self-test", async (
+            RemoteAccessSettingsDto dto,
+            RemoteAccessDiagnosticsService diagnosticsService,
+            CancellationToken cancellationToken) =>
+            Results.Ok(await diagnosticsService.RunSelfTestAsync(dto, cancellationToken)))
+            .RequireAuthorization("DesktopOrAdmin");
+
+        api.MapPost("/settings/remote-access/firewall", async (
+            RemoteAccessSettingsDto dto,
+            WindowsFirewallRuleService firewallRuleService,
+            CancellationToken cancellationToken) =>
+            Results.Ok(await firewallRuleService.EnsureRemoteAccessRuleAsync(dto, cancellationToken)))
+            .RequireAuthorization("DesktopOrAdmin");
 
         api.MapGet("/jobs/{jobId:guid}", async (Guid jobId, JobStore store, CancellationToken cancellationToken) =>
         {

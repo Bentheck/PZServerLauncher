@@ -56,13 +56,28 @@ public sealed class RuntimeEventStream : IAsyncDisposable
         }
     }
 
+    public async Task DisconnectAsync(CancellationToken cancellationToken = default)
+    {
+        await _gate.WaitAsync(cancellationToken);
+        try
+        {
+            if (_connection is null)
+            {
+                return;
+            }
+
+            await _connection.DisposeAsync();
+            _connection = null;
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
     public async ValueTask DisposeAsync()
     {
-        if (_connection is not null)
-        {
-            await _connection.DisposeAsync();
-        }
-
+        await DisconnectAsync();
         _gate.Dispose();
     }
 

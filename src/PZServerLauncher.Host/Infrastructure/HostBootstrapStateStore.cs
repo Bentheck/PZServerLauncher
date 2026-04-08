@@ -95,6 +95,23 @@ public sealed class HostBootstrapStateStore
             ? null
             : Unprotect(state.ProtectedCertificatePassword);
 
+    public async Task<string?> ResolveCertificatePasswordAsync(
+        string? certificatePath,
+        string? requestedPassword,
+        CancellationToken cancellationToken = default)
+    {
+        if (!string.IsNullOrWhiteSpace(requestedPassword))
+        {
+            return requestedPassword;
+        }
+
+        var state = await LoadAsync(cancellationToken);
+        return !string.IsNullOrWhiteSpace(certificatePath) &&
+               string.Equals(certificatePath, state.CertificatePath, StringComparison.OrdinalIgnoreCase)
+            ? GetCertificatePassword(state)
+            : null;
+    }
+
     public static bool IsLoopback(IPAddress? address) =>
         address is not null && IPAddress.IsLoopback(address);
 
