@@ -1,0 +1,197 @@
+@page "/profiles/{ProfileId}/advanced-files"
+@attribute [Authorize(Roles="Owner,Admin")]
+@inject ProfileStore ProfileStore
+@inject ConfigFileService ConfigFileService
+@inject RuntimeStateStore RuntimeStateStore
+
+<PageTitle>Advanced Files</PageTitle>
+
+@if (_profile is null)
+{
+    <div class="home-shell">
+        <div class="card">
+            <p class="eyebrow">Profile Workspace</p>
+            <h1>Profile not found</h1>
+            <p class="muted-text">The selected profile could not be loaded.</p>
+            <a class="nav-button" href="/profiles">Back to profiles</a>
+        </div>
+    </div>
+}
+else
+{
+    <ProfileWorkspaceShell Profile="@_profile"
+                           ActivePage="advanced-files"
+                           RuntimeStatus="@_runtimeStatus"
+                           InstallDetected="@_installDetected"
+                           CacheDetected="@_cacheDetected">
+        <Actions>
+            <a class="nav-button secondary-button" href="@SandboxHref">Sandbox</a>
+            <a class="nav-button secondary-button" href="@GeneralHref">General</a>
+            <button class="nav-button" @onclick="LoadAsync" disabled="@_busy">Reload</button>
+            <button class="nav-button secondary-button" @onclick="SaveAsync" disabled="@_busy">Save Raw File</button>
+        </Actions>
+        <ChildContent>
+            <div class="cards">
+                <section class="card">
+                    <h2>Raw Files</h2>
+                    <p class="muted-text">When a structured editor is unavailable, this page exposes the raw Project Zomboid files so nothing is blocked.</p>
+
+                    <div class="admin-grid">
+                        <label>
+                            <span>File</span>
+                            <select @bind="_selectedKind" @bind:after="LoadAsync" disabled="@_busy">
+                                @foreach (var kind in Enum.GetValues<ConfigFileKind>())
+                                {
+                                    <option value="@kind">@kind</option>
+                                }
+                            </select>
+                        </label>
+                        <label>
+                            <span>Profile</span>
+                            <input value="@_profile.DisplayName" disabled />
+                        </label>
+                    </div>
+
+                    <div class="settings-banner settings-banner--warning">
+                        <strong>Structured sandbox editing is unavailable.</strong>
+                        <p>This is the escape hatch for advanced or unsupported file edits. Sandbox, spawn regions, and spawn points all live here when the structured editor is not ready.</p>
+                    </div>
+
+                    <textarea class="raw-editor" rows="20" @bind="_content" @bind:event="oninput" disabled="@_busy"></textarea>
+
+                    <div class="file-toolbar">
+                        <span class="muted-text">SHA: @_sha256</span>
+                        <span class="muted-text">Diagnostics: @_diagnostics.Count</span>
+                    </div>
+
+                    @if (_diagnostics.Count > 0)
+                    {
+                        <div class="inner-card card">
+                            <h3>Diagnostics</h3>
+                            <ul class="stack-list">
+                                @foreach (var diagnostic in _diagnostics)
+                                {
+                                    <li>@diagnostic</li>
+                                }
+                            </ul>
+                        </div>
+                    }
+                </section>
+
+                <section class="card">
+                    <h2>Status</h2>
+                    <p>File kind: @_selectedKind</p>
+                    <p>Runtime: @(_runtimeStatus?.State.ToString() ?? "Unknown")</p>
+                    <p>Install: @(_installDetected ? "Detected" : "Missing")</p>
+                    <p>Cache: @(_cacheDetected ? "Detected" : "Missing")</p>
+                    <p>Current path: @(_currentPath ?? "Loading...")</p>
+                </section>
+            </div>
+
+            <p class="muted-text">@_statusMessage</p>
+        </ChildContent>
+    </ProfileWorkspaceShell>
+}
+
+@code {
+    [Parameter]
+    public string ProfileId { get; set; } = string.Empty;
+
+    private PZServerLauncher.Core.Profiles.ServerProfile? _profile;
+    private ServerRuntimeStatus? _runtimeStatus;
+    private bool _busy;
+    private string? _statusMessage;
+    private bool _installDetected;
+    private bool _cacheDetected;
+    private ConfigFileKind _selectedKind = ConfigFileKind.SandboxVars;
+    private string _content = string.Empty;
+    private string _sha256 = string.Empty;
+    private IReadOnlyList<string> _diagnostics = [];
+    private string? _currentPath;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _profile = await ProfileStore.GetAsync(ProfileId);
+        if (_profile is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            _runtimeStatus = RuntimeStateStore.GetOrDefault(ProfileId);
+            _installDetected = Directory.Exists(_profile.InstallDirectory);
+            _cacheDetected = Directory.Exists(_profile.CacheDirectory);
+
+            var file = ConfigFileService.ReadRawFile(_profile, _selectedKind);
+            _content = file.Content;
+            _sha256 = file.Sha256;
+            _diagnostics = file.Diagnostics;
+            _currentPath = ResolveCurrentPath(_selectedKind);
+            _statusMessage = $"Loaded {_selectedKind} for {_profile.DisplayName}.";
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        if (_profile is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var file = ConfigFileService.WriteRawFile(_profile, _selectedKind, _sha256, _content);
+            _content = file.Content;
+            _sha256 = file.Sha256;
+            _diagnostics = file.Diagnostics;
+            _statusMessage = $"{_selectedKind} saved.";
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private string SandboxHref => $"/profiles/{Uri.EscapeDataString(ProfileId)}/sandbox";
+
+    private string GeneralHref => $"/profiles/{Uri.EscapeDataString(ProfileId)}/general";
+
+    private string ResolveCurrentPath(ConfigFileKind kind)
+    {
+        if (_profile is null)
+        {
+            return string.Empty;
+        }
+
+        var serverName = _profile.ServerName;
+        var serverDirectory = Path.Combine(_profile.CacheDirectory, "Server");
+        return kind switch
+        {
+            ConfigFileKind.Ini => Path.Combine(serverDirectory, $"{serverName}.ini"),
+            ConfigFileKind.SandboxVars => Path.Combine(serverDirectory, $"{serverName}_SandboxVars.lua"),
+            ConfigFileKind.SpawnRegions => Path.Combine(serverDirectory, $"{serverName}_spawnregions.lua"),
+            ConfigFileKind.SpawnPoints => Path.Combine(serverDirectory, $"{serverName}_spawnpoints.lua"),
+            _ => string.Empty,
+        };
+    }
+}

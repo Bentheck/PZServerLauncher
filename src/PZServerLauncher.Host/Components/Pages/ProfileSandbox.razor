@@ -1,0 +1,397 @@
+@page "/profiles/{ProfileId}/sandbox"
+@attribute [Authorize(Roles="Owner,Admin")]
+@inject ProfileStore ProfileStore
+@inject StructuredSettingsService StructuredSettingsService
+@inject RuntimeStateStore RuntimeStateStore
+
+<PageTitle>Sandbox</PageTitle>
+
+@if (_profile is null)
+{
+    <div class="home-shell">
+        <div class="card">
+            <p class="eyebrow">Profile Workspace</p>
+            <h1>Profile not found</h1>
+            <p class="muted-text">The selected profile could not be loaded.</p>
+            <a class="nav-button" href="/profiles">Back to profiles</a>
+        </div>
+    </div>
+}
+else
+{
+    <ProfileWorkspaceShell Profile="@_profile"
+                           ActivePage="sandbox"
+                           RuntimeStatus="@_runtimeStatus"
+                           InstallDetected="@_installDetected"
+                           CacheDetected="@_cacheDetected">
+        <Actions>
+            <a class="nav-button secondary-button" href="@OverviewHref">Overview</a>
+            <a class="nav-button secondary-button" href="@GeneralHref">General</a>
+            <a class="nav-button secondary-button" href="@AdvancedFilesHref">Advanced Files</a>
+            <button class="nav-button" @onclick="ValidateAsync" disabled="@(!_canEdit || _busy)">Validate</button>
+            <button class="nav-button secondary-button" @onclick="SaveDraftAsync" disabled="@(!_canEdit || _busy || !_pageSupportsDrafts)">Save Draft</button>
+            <button class="nav-button secondary-button" @onclick="ApplyAsync" disabled="@(!_canEdit || _busy)">Apply Changes</button>
+        </Actions>
+        <ChildContent>
+            <div class="cards">
+                <section class="card">
+                    <h2>Sandbox</h2>
+                    <p class="muted-text">Branch-aware structured sandbox settings are ready for the fields this host can safely round-trip. When the host marks the page as unsupported, use Advanced Files for the raw editor.</p>
+
+                    @if (_catalog is null || _page is null || _valueSet is null)
+                    {
+                        <p>Loading sandbox editor...</p>
+                    }
+                    else
+                    {
+                        if (_valueSet.RequiresAdvancedFilesFallback)
+                        {
+                            <div class="settings-banner settings-banner--warning">
+                                <strong>Structured editing is unavailable for this page.</strong>
+                                <p>@(_valueSet.FallbackReason ?? "Use Advanced Files for the raw sandbox file.")</p>
+                                <a class="nav-button secondary-button" href="@AdvancedFilesHref">Open Advanced Files</a>
+                            </div>
+                        }
+
+                        @foreach (var sectionDef in _page.Sections)
+                        {
+                            <div class="profile-section">
+                                <div class="profile-section__header">
+                                    <h3>@sectionDef.Title</h3>
+                                    @if (!string.IsNullOrWhiteSpace(sectionDef.Description))
+                                    {
+                                        <p class="muted-text">@sectionDef.Description</p>
+                                    }
+                                </div>
+
+                                <div class="field-grid">
+                                    @foreach (var field in sectionDef.Fields)
+                                    {
+                                        <label class="field-card">
+                                            <span class="field-label">@field.Label</span>
+                                            @if (_canEdit && !field.IsReadOnly)
+                                            {
+                                                @RenderField(field)
+                                            }
+                                            else
+                                            {
+                                                <div class="field-value field-value--readonly">
+                                                    @FormatReadOnlyValue(field)
+                                                </div>
+                                            }
+
+                                            <div class="field-meta">
+                                                @if (field.RequiresRestart)
+                                                {
+                                                    <span class="field-pill">Restart required</span>
+                                                }
+                                                @if (field.IsReadOnly)
+                                                {
+                                                    <span class="field-pill field-pill--readonly">Read only</span>
+                                                }
+                                            </div>
+
+                                            @if (!string.IsNullOrWhiteSpace(field.HelpText))
+                                            {
+                                                <small class="muted-text">@field.HelpText</small>
+                                            }
+
+                                            @if (_fieldErrors.TryGetValue(field.FieldId, out var errors))
+                                            {
+                                                @foreach (var error in errors)
+                                                {
+                                                    <span class="validation-message">@error</span>
+                                                }
+                                            }
+                                        </label>
+                                    }
+                                </div>
+                            </div>
+                        }
+
+                        if (_pageValidation is not null)
+                        {
+                            <div class="card inner-card">
+                                <h3>Validation</h3>
+                                @if (_pageValidation.PageErrors.Count == 0 && _pageValidation.FieldErrors.Count == 0)
+                                {
+                                    <p class="muted-text">No validation errors.</p>
+                                }
+                                else
+                                {
+                                    @if (_pageValidation.PageErrors.Count > 0)
+                                    {
+                                        <ul class="stack-list">
+                                            @foreach (var error in _pageValidation.PageErrors)
+                                            {
+                                                <li>@error</li>
+                                            }
+                                        </ul>
+                                    }
+
+                                    @if (_pageValidation.FieldErrors.Count > 0)
+                                    {
+                                        <ul class="stack-list">
+                                            @foreach (var entry in _pageValidation.FieldErrors)
+                                            {
+                                                @foreach (var error in entry.Value)
+                                                {
+                                                    <li><strong>@entry.Key</strong> - @error</li>
+                                                }
+                                            }
+                                        </ul>
+                                    }
+                                }
+                            </div>
+                        }
+                    }
+                </section>
+
+                <section class="card">
+                    <h2>Sandbox Status</h2>
+                    <p>Catalog: @(_catalogSummary ?? "Loading...")</p>
+                    <p>Branch: @_profile.Branch</p>
+                    <p>Structured editing: @(_canEdit ? "Enabled" : "Unavailable")</p>
+                    <p>Drafts: @(_pageSupportsDrafts ? "Available" : "Unavailable")</p>
+                    <p>Fallback: @(_valueSet?.RequiresAdvancedFilesFallback == true ? "Yes" : "No")</p>
+                    <p>Runtime: @(_runtimeStatus?.State.ToString() ?? "Unknown")</p>
+                    <p>Install: @(_installDetected ? "Detected" : "Missing")</p>
+                </section>
+            </div>
+
+            <p class="muted-text">@_statusMessage</p>
+        </ChildContent>
+    </ProfileWorkspaceShell>
+}
+
+@code {
+    [Parameter]
+    public string ProfileId { get; set; } = string.Empty;
+
+    private PZServerLauncher.Core.Profiles.ServerProfile? _profile;
+    private ServerRuntimeStatus? _runtimeStatus;
+    private SettingsCatalogDto? _catalog;
+    private SettingsPageDto? _page;
+    private SettingsValueSetDto? _valueSet;
+    private SettingsValidationResultDto? _pageValidation;
+    private Dictionary<string, string?> _values = new(StringComparer.Ordinal);
+    private Dictionary<string, IReadOnlyList<string>> _fieldErrors = new(StringComparer.Ordinal);
+    private bool _busy;
+    private string? _statusMessage;
+    private bool _installDetected;
+    private bool _cacheDetected;
+    private bool _canEdit;
+    private bool _pageSupportsDrafts;
+    private string? _catalogSummary;
+    private string? _sourceSha256;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        _profile = await ProfileStore.GetAsync(ProfileId);
+        if (_profile is null)
+        {
+            return;
+        }
+
+        _runtimeStatus = RuntimeStateStore.GetOrDefault(ProfileId);
+        _catalog = StructuredSettingsService.GetCatalog(_profile);
+        _page = _catalog.Pages.FirstOrDefault(page => string.Equals(page.PageId, "sandbox", StringComparison.OrdinalIgnoreCase));
+        _valueSet = StructuredSettingsService.GetPage(_profile, "sandbox");
+        _pageValidation = null;
+        _fieldErrors = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
+        _installDetected = Directory.Exists(_profile.InstallDirectory);
+        _cacheDetected = Directory.Exists(_profile.CacheDirectory);
+
+        _catalogSummary = _catalog is null ? null : $"{_catalog.CatalogId} v{_catalog.CatalogVersion} | {_catalog.Branch}";
+        _pageSupportsDrafts = _page?.SupportsDrafts == true;
+        _canEdit = _page?.SupportsStructuredEditing == true && _valueSet is not null && !_valueSet.RequiresAdvancedFilesFallback;
+
+        if (_valueSet is null)
+        {
+            _statusMessage = "Sandbox settings could not be loaded.";
+            _values = new Dictionary<string, string?>(StringComparer.Ordinal);
+            return;
+        }
+
+        _sourceSha256 = _valueSet.SourceSha256;
+        _values = new Dictionary<string, string?>(_valueSet.Values, StringComparer.Ordinal);
+
+        _statusMessage = _valueSet.RequiresAdvancedFilesFallback
+            ? _valueSet.FallbackReason ?? "Structured sandbox editing is not available yet."
+            : "Sandbox settings loaded.";
+    }
+
+    private async Task ValidateAsync()
+    {
+        if (_profile is null || _page is null || !_canEdit)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            _pageValidation = StructuredSettingsService.Validate(_profile, "sandbox", _values);
+            _fieldErrors = new Dictionary<string, IReadOnlyList<string>>(_pageValidation.FieldErrors, StringComparer.Ordinal);
+            _statusMessage = _pageValidation.IsValid
+                ? "Sandbox validation completed successfully."
+                : _pageValidation.FallbackReason ?? "Sandbox validation reported issues.";
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task SaveDraftAsync()
+    {
+        if (_profile is null || _page is null || !_canEdit || !_pageSupportsDrafts)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            _pageValidation = StructuredSettingsService.Validate(_profile, "sandbox", _values);
+            _fieldErrors = new Dictionary<string, IReadOnlyList<string>>(_pageValidation.FieldErrors, StringComparer.Ordinal);
+            _statusMessage = _pageValidation.IsValid
+                ? "Sandbox draft saved locally."
+                : _pageValidation.FallbackReason ?? "Sandbox draft could not be saved.";
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task ApplyAsync()
+    {
+        if (_profile is null || _page is null || !_canEdit)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var result = await StructuredSettingsService.SaveAsync(_profile, "sandbox", _values);
+            _pageValidation = result.Validation;
+            _fieldErrors = new Dictionary<string, IReadOnlyList<string>>(result.Validation.FieldErrors, StringComparer.Ordinal);
+            _statusMessage = result.Validation.IsValid && !result.Validation.RequiresAdvancedFilesFallback
+                ? "Sandbox settings saved."
+                : result.Validation.FallbackReason ?? "Sandbox settings require Advanced Files.";
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private RenderFragment RenderField(SettingsFieldDto field) => builder =>
+    {
+        var seq = 0;
+        var value = GetFieldValue(field.FieldId);
+
+        switch (field.Control)
+        {
+            case SettingsFieldControlKind.Checkbox:
+                builder.OpenElement(seq++, "input");
+                builder.AddAttribute(seq++, "type", "checkbox");
+                builder.AddAttribute(seq++, "checked", bool.TryParse(value, out var parsed) && parsed);
+                builder.AddAttribute(seq++, "disabled", !_canEdit || field.IsReadOnly);
+                builder.AddAttribute(seq++, "onchange", EventCallback.Factory.Create<ChangeEventArgs>(this, args => SetValue(field.FieldId, args.Value?.ToString())));
+                builder.CloseElement();
+                break;
+            case SettingsFieldControlKind.Numeric:
+                builder.OpenElement(seq++, "input");
+                builder.AddAttribute(seq++, "type", "number");
+                builder.AddAttribute(seq++, "value", value);
+                builder.AddAttribute(seq++, "disabled", !_canEdit || field.IsReadOnly);
+                builder.AddAttribute(seq++, "oninput", EventCallback.Factory.Create<ChangeEventArgs>(this, args => SetValue(field.FieldId, args.Value?.ToString())));
+                builder.CloseElement();
+                break;
+            case SettingsFieldControlKind.Password:
+                builder.OpenElement(seq++, "input");
+                builder.AddAttribute(seq++, "type", "password");
+                builder.AddAttribute(seq++, "value", value);
+                builder.AddAttribute(seq++, "disabled", !_canEdit || field.IsReadOnly);
+                builder.AddAttribute(seq++, "oninput", EventCallback.Factory.Create<ChangeEventArgs>(this, args => SetValue(field.FieldId, args.Value?.ToString())));
+                builder.CloseElement();
+                break;
+            case SettingsFieldControlKind.Select:
+                builder.OpenElement(seq++, "select");
+                builder.AddAttribute(seq++, "value", value);
+                builder.AddAttribute(seq++, "disabled", !_canEdit || field.IsReadOnly);
+                builder.AddAttribute(seq++, "onchange", EventCallback.Factory.Create<ChangeEventArgs>(this, args => SetValue(field.FieldId, args.Value?.ToString())));
+                foreach (var option in field.Options)
+                {
+                    builder.OpenElement(seq++, "option");
+                    builder.AddAttribute(seq++, "value", option.Value);
+                    if (string.Equals(option.Value, value, StringComparison.Ordinal))
+                    {
+                        builder.AddAttribute(seq++, "selected", true);
+                    }
+
+                    builder.AddContent(seq++, option.Label);
+                    builder.CloseElement();
+                }
+
+                builder.CloseElement();
+                break;
+            case SettingsFieldControlKind.MultiLineText:
+                builder.OpenElement(seq++, "textarea");
+                builder.AddAttribute(seq++, "rows", "5");
+                builder.AddAttribute(seq++, "value", value);
+                builder.AddAttribute(seq++, "disabled", !_canEdit || field.IsReadOnly);
+                builder.AddAttribute(seq++, "oninput", EventCallback.Factory.Create<ChangeEventArgs>(this, args => SetValue(field.FieldId, args.Value?.ToString())));
+                builder.AddContent(seq++, value);
+                builder.CloseElement();
+                break;
+            default:
+                builder.OpenElement(seq++, "input");
+                builder.AddAttribute(seq++, "type", "text");
+                builder.AddAttribute(seq++, "value", value);
+                builder.AddAttribute(seq++, "disabled", !_canEdit || field.IsReadOnly);
+                builder.AddAttribute(seq++, "oninput", EventCallback.Factory.Create<ChangeEventArgs>(this, args => SetValue(field.FieldId, args.Value?.ToString())));
+                builder.CloseElement();
+                break;
+        }
+    };
+
+    private string FormatReadOnlyValue(SettingsFieldDto field)
+    {
+        var value = GetFieldValue(field.FieldId);
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return field.DefaultValue ?? "Not set";
+        }
+
+        if (field.Control == SettingsFieldControlKind.Checkbox && bool.TryParse(value, out var parsed))
+        {
+            return parsed ? "On" : "Off";
+        }
+
+        return value;
+    }
+
+    private void SetValue(string fieldId, string? value)
+    {
+        _values[fieldId] = value;
+        _statusMessage = null;
+    }
+
+    private string GetFieldValue(string fieldId) =>
+        _values.TryGetValue(fieldId, out var currentValue) ? currentValue ?? string.Empty : string.Empty;
+
+    private string OverviewHref => $"/profiles/{Uri.EscapeDataString(ProfileId)}/overview";
+
+    private string GeneralHref => $"/profiles/{Uri.EscapeDataString(ProfileId)}/general";
+
+    private string AdvancedFilesHref => $"/profiles/{Uri.EscapeDataString(ProfileId)}/advanced-files";
+}

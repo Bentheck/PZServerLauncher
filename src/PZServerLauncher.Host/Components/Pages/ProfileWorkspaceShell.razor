@@ -34,6 +34,8 @@
             <NavLink class="profile-nav__link" href="@OverviewHref" Match="NavLinkMatch.All">Overview</NavLink>
             <NavLink class="profile-nav__link" href="@InstallHref">Install &amp; Update</NavLink>
             <NavLink class="profile-nav__link" href="@GeneralHref">General</NavLink>
+            <NavLink class="profile-nav__link" href="@SandboxHref">Sandbox</NavLink>
+            <NavLink class="profile-nav__link" href="@AdvancedFilesHref">Advanced Files</NavLink>
 
             <div class="profile-nav__coming-soon">Backups and Logs will return in the next milestone.</div>
 
@@ -88,6 +90,10 @@
     private string InstallHref => BuildHref("install-update");
 
     private string GeneralHref => BuildHref("general");
+
+    private string SandboxHref => BuildHref("sandbox");
+
+    private string AdvancedFilesHref => BuildHref("advanced-files");
 
     private string BuildHref(string page) =>
         Profile is null ? "#" : $"/profiles/{Uri.EscapeDataString(Profile.ProfileId)}/{page}";
