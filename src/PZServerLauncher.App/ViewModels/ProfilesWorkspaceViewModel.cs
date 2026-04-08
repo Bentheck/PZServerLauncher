@@ -128,15 +128,23 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
 
     public string SelectedWorldSummary => SelectedProfile?.WorldSummary ?? "Select a profile to see its sandbox snapshot.";
 
+    public string SelectedDeploymentSummary => SelectedProfile?.InstallPreflightSummary ?? "Select a profile to see its deployment preflight.";
+
+    public string SelectedLaunchSummary => SelectedProfile?.LaunchReadinessSummary ?? "Select a profile to see its launch readiness.";
+
+    public string SelectedRecoverySummary => SelectedProfile?.BackupSafetySummary ?? "Select a profile to see its recovery posture.";
+
     public string SelectedWelcomeSummary => SelectedProfile?.WelcomeSummary ?? "No welcome message summary available.";
 
     public int InstalledProfileCount => Legacy.Profiles.Count(profile => profile.IsInstallDetected);
 
-    public int PublicProfileCount => Legacy.Profiles.Count(profile => profile.IsPubliclyListed);
+    public int RecoveryReadyProfileCount => Legacy.Profiles.Count(profile => profile.HasBackup);
 
-    public int VoiceEnabledProfileCount => Legacy.Profiles.Count(profile => profile.IsVoiceEnabled);
+    public int DirectJavaReadyProfileCount => Legacy.Profiles.Count(profile => profile.UsesDirectJavaTemplate);
 
     public int RunningProfileCount => Legacy.Profiles.Count(profile => string.Equals(profile.RuntimeState, "Running", StringComparison.OrdinalIgnoreCase));
+
+    public int FallbackLaunchProfileCount => Legacy.Profiles.Count(profile => profile.LauncherDetected && !profile.UsesDirectJavaTemplate);
 
     public string SelectedWorkspaceSummary => SelectedProfile is null
         ? "Select a profile to unlock the workspace rail."
@@ -325,6 +333,9 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
         OnPropertyChanged(nameof(SelectedCommunitySummary));
         OnPropertyChanged(nameof(SelectedNetworkSummary));
         OnPropertyChanged(nameof(SelectedWorldSummary));
+        OnPropertyChanged(nameof(SelectedDeploymentSummary));
+        OnPropertyChanged(nameof(SelectedLaunchSummary));
+        OnPropertyChanged(nameof(SelectedRecoverySummary));
         OnPropertyChanged(nameof(SelectedWelcomeSummary));
         OnPropertyChanged(nameof(SelectedWorkspaceSummary));
         OnPropertyChanged(nameof(SelectedWorkspaceAction));
@@ -341,9 +352,10 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
     {
         OnPropertyChanged(nameof(ProfileCountSummary));
         OnPropertyChanged(nameof(InstalledProfileCount));
-        OnPropertyChanged(nameof(PublicProfileCount));
-        OnPropertyChanged(nameof(VoiceEnabledProfileCount));
+        OnPropertyChanged(nameof(RecoveryReadyProfileCount));
+        OnPropertyChanged(nameof(DirectJavaReadyProfileCount));
         OnPropertyChanged(nameof(RunningProfileCount));
+        OnPropertyChanged(nameof(FallbackLaunchProfileCount));
         OnPropertyChanged(nameof(WorkspaceHeadline));
         OnPropertyChanged(nameof(WorkspaceGuidance));
     }

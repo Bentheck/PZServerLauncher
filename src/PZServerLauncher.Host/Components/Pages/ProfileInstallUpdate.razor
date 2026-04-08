@@ -33,8 +33,10 @@ else
                            CacheDetected="@_cacheDetected">
         <Actions>
             <a class="nav-button secondary-button" href="@OverviewHref">Overview</a>
+            <a class="nav-button secondary-button" href="@BackupsHref">Backups</a>
             <button class="nav-button" @onclick="InstallAsync" disabled="@_busy">Install</button>
             <button class="nav-button secondary-button" @onclick="UpdateAsync" disabled="@_busy">Update</button>
+            <button class="nav-button secondary-button" @onclick="CreateBackupAsync" disabled="@_busy">Manual Backup</button>
             <button class="nav-button secondary-button" @onclick="StartAsync" disabled="@(!_canStart || _busy)">Start</button>
             <button class="nav-button secondary-button" @onclick="StopAsync" disabled="@(!_canStop || _busy)">Stop</button>
             <button class="nav-button secondary-button" @onclick="RestartAsync" disabled="@(!_canRestart || _busy)">Restart</button>
@@ -79,6 +81,39 @@ else
                     <span class="metric-label">Maintenance Window</span>
                     <strong class="metric-value">@(_installPosture?.UsesDirectJavaTemplate == true ? "Ready" : "Needs attention")</strong>
                     <span class="metric-note">@(_installPosture?.MaintenanceWindowSummary ?? "No maintenance window summary.")</span>
+                </article>
+            </section>
+
+            <section class="metric-grid">
+                <article class="metric-card">
+                    <span class="metric-label">Install Root</span>
+                    <strong class="metric-value">@InstallSignalLabel</strong>
+                    <span class="metric-note">@(_installPosture?.InstallFootprintSummary ?? "Install footprint summary unavailable.")</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Cache Layer</span>
+                    <strong class="metric-value">@CacheSignalLabel</strong>
+                    <span class="metric-note">@(_installPosture?.CacheFootprintSummary ?? "Cache footprint summary unavailable.")</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Config Layer</span>
+                    <strong class="metric-value">@ConfigSignalLabel</strong>
+                    <span class="metric-note">@ConfigFootprintSummary</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Backup Posture</span>
+                    <strong class="metric-value">@BackupSignalLabel</strong>
+                    <span class="metric-note">@(_installPosture?.BackupSafetySummary ?? "Backup safety summary unavailable.")</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Launch Mode</span>
+                    <strong class="metric-value">@LaunchModeLabel</strong>
+                    <span class="metric-note">@(_installPosture?.LaunchReadinessSummary ?? "Launch readiness summary unavailable.")</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Maintenance Window</span>
+                    <strong class="metric-value">@MaintenanceSignalLabel</strong>
+                    <span class="metric-note">@(_installPosture?.MaintenanceWindowSummary ?? "Maintenance window summary unavailable.")</span>
                 </article>
             </section>
 
@@ -266,6 +301,25 @@ else
                 <section class="card">
                     <div class="card-heading">
                         <div>
+                            <p class="eyebrow">Safeguards</p>
+                            <h2>Backup Posture</h2>
+                        </div>
+                        <span class="pill">@BackupSignalLabel</span>
+                    </div>
+
+                    <p class="muted-text">@LatestBackupLabel</p>
+                    <p class="muted-text">@(_installPosture?.BackupSafetySummary ?? "Backup safety summary unavailable.")</p>
+                    <p class="muted-text">Use a manual backup when you want a clearly named recovery point before install, update, or config cleanup work.</p>
+
+                    <div class="workspace-actions">
+                        <button class="nav-button" @onclick="CreateBackupAsync" disabled="@_busy">Manual Backup</button>
+                        <a class="nav-button secondary-button" href="@BackupsHref">Open Backups</a>
+                    </div>
+                </section>
+
+                <section class="card">
+                    <div class="card-heading">
+                        <div>
                             <p class="eyebrow">Operator Flow</p>
                             <h2>Actions</h2>
                         </div>
@@ -309,6 +363,7 @@ else
     private ServerProfile? _profile;
     private ServerRuntimeStatus? _runtimeStatus;
     private IReadOnlyList<OperationJob> _jobs = [];
+    private IReadOnlyList<string> _backups = [];
     private ProjectZomboidInstallPostureSummary? _installPosture;
     private bool _busy;
     private string? _statusMessage;
@@ -331,6 +386,54 @@ else
             _ => "Install the branch first, then use Start once the runtime footprint is ready.",
         };
 
+    private string InstallSignalLabel => _profile is null
+        ? "No profile"
+        : _installDetected
+            ? "Ready"
+            : "Missing";
+
+    private string CacheSignalLabel => _profile is null
+        ? "No profile"
+        : _cacheDetected
+            ? "Ready"
+            : "Missing";
+
+    private string ConfigSignalLabel => _profile is null
+        ? "No profile"
+        : _installPosture?.ConfigDirectoryDetected != true
+            ? "Missing"
+            : _installPosture.IniDetected && _installPosture.SandboxDetected
+                ? "Ready"
+                : "Partial";
+
+    private string BackupSignalLabel => _profile is null
+        ? "No profile"
+        : _backups.Count > 0
+            ? "Protected"
+            : "Needs snapshot";
+
+    private string LaunchModeLabel => _profile is null
+        ? "No profile"
+        : _installPosture?.LauncherDetected != true
+            ? "Blocked"
+            : _installPosture.UsesDirectJavaTemplate
+                ? "Direct Java"
+                : "Batch fallback";
+
+    private string MaintenanceSignalLabel => _profile is null
+        ? "No profile"
+        : !_installDetected
+            ? "Install first"
+            : _runtimeStatus?.State is ServerRuntimeState.Running
+                ? "Live window"
+                : "Idle window";
+
+    private string LatestBackupLabel => _backups.FirstOrDefault() ?? "No backup archive yet.";
+
+    private string ConfigFootprintSummary => _profile is null
+        ? "No config footprint available."
+        : $"{(_installPosture?.ConfigDirectoryDetected == true ? "Config root detected" : "Config root missing")} | {(_installPosture?.IniDetected == true ? "INI present" : "INI missing")} | {(_installPosture?.SandboxDetected == true ? "Sandbox present" : "Sandbox missing")} | {(_installPosture?.WorldDetected == true ? "World save detected" : "World save not created yet")}";
+
     private bool IsRunningOrStarting() => _runtimeStatus?.State is ServerRuntimeState.Running or ServerRuntimeState.Starting;
 
     private bool IsStopAllowed() => _runtimeStatus?.State is ServerRuntimeState.Running or ServerRuntimeState.Starting or ServerRuntimeState.Crashed;
@@ -350,12 +453,12 @@ else
 
         _runtimeStatus = RuntimeStateStore.GetOrDefault(ProfileId);
         _jobs = (await JobStore.ListRecentAsync(20)).Where(job => string.Equals(job.ProfileId, ProfileId, StringComparison.OrdinalIgnoreCase) && (job.Kind is Core.Runtime.OperationJobKind.Install or Core.Runtime.OperationJobKind.Update)).ToList();
-        var backups = BackupService.ListBackups(ProfileId);
+        _backups = BackupService.ListBackups(ProfileId);
         _installPosture = ProjectZomboidInstallPostureSummaryBuilder.Build(
             _profile,
             _runtimeStatus?.State.ToString() ?? "Unknown",
-            backups.Count > 0,
-            backups.FirstOrDefault() ?? "No backups");
+            _backups.Count > 0,
+            _backups.FirstOrDefault() ?? "No backups");
         _installDetected = _installPosture.InstallDetected;
         _cacheDetected = _installPosture.CacheDetected;
     }
@@ -509,5 +612,31 @@ else
         }
     }
 
+    private async Task CreateBackupAsync()
+    {
+        if (_profile is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var zipPath = await BackupService.CreateBackupAsync(_profile.ProfileId, BackupTrigger.Manual, CancellationToken.None);
+            _statusMessage = $"Manual backup created: {Path.GetFileName(zipPath)}.";
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
     private string OverviewHref => $"/profiles/{Uri.EscapeDataString(ProfileId)}/overview";
+
+    private string BackupsHref => $"/profiles/{Uri.EscapeDataString(ProfileId)}/backups";
 }

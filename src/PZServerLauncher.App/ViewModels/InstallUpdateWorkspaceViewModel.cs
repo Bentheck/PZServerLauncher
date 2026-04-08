@@ -82,18 +82,6 @@ public sealed class InstallUpdateWorkspaceViewModel : ProfileWorkspacePageViewMo
             ? $"Install detected for {SelectedProfile.Branch}."
             : $"No install detected yet for {SelectedProfile.Branch}.";
 
-    public string InstallSignal => SelectedProfile is null
-        ? "No install root selected."
-        : SelectedProfile.IsInstallDetected
-            ? "Install root detected."
-            : "Install root missing.";
-
-    public string CacheSignal => SelectedProfile is null
-        ? "No cache root selected."
-        : SelectedProfile.CacheDetected
-            ? "Cache root ready."
-            : "Cache root missing.";
-
     public string LaunchModeLabel => SelectedProfile is null
         ? "Unknown"
         : SelectedProfile.UsesDirectJavaTemplate

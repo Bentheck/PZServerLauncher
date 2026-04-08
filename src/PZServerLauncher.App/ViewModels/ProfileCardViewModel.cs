@@ -143,6 +143,16 @@ public partial class ProfileCardViewModel : ViewModelBase
 
     public bool UsesDirectJavaTemplate => InstallPosture.UsesDirectJavaTemplate;
 
+    public string InstallSignal => IsInstallDetected ? "Install detected" : "Install missing";
+
+    public string LaunchModeLabel => UsesDirectJavaTemplate
+        ? "Direct Java"
+        : LauncherDetected
+            ? "Batch fallback"
+            : "Launcher missing";
+
+    public string RecoveryStateHeadline => HasBackup ? "Recovery ready" : "No backup";
+
     public IReadOnlyList<ConfigFileOptionViewModel> RawConfigKinds { get; } = ConfigFileOptionViewModel.All;
 
     [ObservableProperty]
