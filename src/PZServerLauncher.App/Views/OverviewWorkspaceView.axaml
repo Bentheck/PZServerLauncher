@@ -21,6 +21,7 @@
                         <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Profile Overview" />
                         <TextBlock FontSize="28" FontWeight="SemiBold" Foreground="#F7F0E7" Text="{Binding ProfileDisplayName}" />
                         <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding OperatorGuidance}" TextWrapping="Wrap" />
+                        <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding InstallPostureSummary}" TextWrapping="Wrap" />
                     </StackPanel>
                     <Border Grid.Column="1" Background="#2A2927" CornerRadius="999" Padding="14,8" VerticalAlignment="Top">
                         <TextBlock Foreground="#F7F0E7" FontWeight="SemiBold" Text="{Binding Branch}" />
@@ -46,12 +47,14 @@
                     <StackPanel Spacing="6">
                         <TextBlock Classes="kicker" Text="Backup Posture" />
                         <TextBlock Classes="body" Text="{Binding BackupHealth}" TextWrapping="Wrap" />
+                        <TextBlock Classes="body" Text="{Binding NamedPresetSummary}" TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
                 <Border Grid.Column="3" Background="#F6EFE6" CornerRadius="14" Padding="16">
                     <StackPanel Spacing="6">
                         <TextBlock Classes="kicker" Text="Community Snapshot" />
                         <TextBlock Classes="body" Text="{Binding CommunitySummary}" TextWrapping="Wrap" />
+                        <TextBlock Classes="body" Text="{Binding WelcomeMessageSummary}" TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
             </Grid>
@@ -73,7 +76,8 @@
                 </Border>
                 <Border Grid.Column="2" Background="#FFF8F1" CornerRadius="14" Padding="16">
                     <StackPanel Spacing="8">
-                        <TextBlock Classes="kicker" Text="World Snapshot" />
+                        <TextBlock Classes="kicker" Text="Sandbox Tuning" />
+                        <TextBlock Classes="body" Text="{Binding SandboxTuningSummary}" TextWrapping="Wrap" />
                         <TextBlock Classes="body" Text="{Binding WorldSnapshotSummary}" TextWrapping="Wrap" />
                         <TextBlock Classes="body" Text="{Binding WorkshopSummary}" TextWrapping="Wrap" />
                         <TextBlock Classes="body" Text="{Binding MemorySummary}" TextWrapping="Wrap" />

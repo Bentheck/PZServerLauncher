@@ -1,12 +1,14 @@
 @page "/profiles/{ProfileId}/overview"
 @attribute [Authorize]
 @using PZServerLauncher.Core.Settings
+@using PZServerLauncher.Host.Services
 @inject ProfileStore ProfileStore
 @inject RuntimeStateStore RuntimeStateStore
 @inject ServerProcessSupervisor ProcessSupervisor
 @inject ServerBackupService BackupService
 @inject BackgroundJobDispatcher JobDispatcher
 @inject JobStore JobStore
+@inject NamedWorkshopPresetStore NamedWorkshopPresetStore
 @inject StructuredSettingsService StructuredSettingsService
 
 <PageTitle>Profile Overview</PageTitle>
@@ -48,6 +50,8 @@ else
                 <div class="workspace-actions">
                     <span class="pill">@_profile.Branch</span>
                     <span class="pill">@_profile.DefaultPort / @_profile.UdpPort / @_profile.RconPort</span>
+                    <span class="pill">@InstallPostureSummary</span>
+                    <span class="pill">@NamedPresetSummary</span>
                     <span class="pill">@(_backups.Count == 0 ? "No backups yet" : $"{_backups.Count} backups")</span>
                     <span class="pill">@(_recentJobs.Count == 0 ? "No recent jobs" : $"{_recentJobs.Count} recent jobs")</span>
                 </div>
@@ -96,6 +100,29 @@ else
                     <span class="metric-label">World Snapshot</span>
                     <strong class="metric-value">Sandbox</strong>
                     <span class="metric-note">@_sandboxSummary</span>
+                </article>
+            </section>
+
+            <section class="metric-grid">
+                <article class="metric-card">
+                    <span class="metric-label">Install Posture</span>
+                    <strong class="metric-value">Launcher</strong>
+                    <span class="metric-note">@InstallPostureSummary</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Sandbox Tuning</span>
+                    <strong class="metric-value">Zombie Lore</strong>
+                    <span class="metric-note">@_sandboxTuningSummary</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Named Presets</span>
+                    <strong class="metric-value">@(_namedPresetCount == 0 ? "None" : _namedPresetCount.ToString())</strong>
+                    <span class="metric-note">@NamedPresetSummary</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Recovery</span>
+                    <strong class="metric-value">Backups</strong>
+                    <span class="metric-note">@BackupHealth</span>
                 </article>
             </section>
 
@@ -263,7 +290,9 @@ else
     private string _serverRulesSummary = "Server rules summary is not available yet.";
     private string _networkSummary = "Network posture summary is not available yet.";
     private string _sandboxSummary = "Sandbox summary is not available yet.";
+    private string _sandboxTuningSummary = "Sandbox tuning summary is not available yet.";
     private string _welcomeSummary = "No welcome message configured yet.";
+    private int _namedPresetCount;
     private ProfileLiveOperationsSnapshot? _liveOperations;
 
     protected override async Task OnParametersSetAsync()
@@ -284,6 +313,7 @@ else
         _backups = BackupService.ListBackups(ProfileId);
         _latestBackup = _backups.FirstOrDefault();
         _recentJobs = (await JobStore.ListRecentAsync(20)).Where(job => string.Equals(job.ProfileId, ProfileId, StringComparison.OrdinalIgnoreCase)).ToList();
+        _namedPresetCount = (await NamedWorkshopPresetStore.ListAsync(ProfileId)).Count;
 
         var installRoot = Path.Combine(_profile.InstallDirectory, "server");
         _installDetected = Directory.Exists(_profile.InstallDirectory) || Directory.Exists(installRoot);
@@ -298,8 +328,17 @@ else
         _serverRulesSummary = posture.ServerRulesSummary;
         _networkSummary = posture.NetworkSummary;
         _sandboxSummary = posture.WorldSummary;
+        _sandboxTuningSummary = posture.SandboxTuningSummary;
         _welcomeSummary = posture.WelcomeSummary;
     }
+
+    private string InstallPostureSummary => _profile is null
+        ? "No install posture available."
+        : $"{_profile.BranchChannelSummary} | {_profile.InstallPreflightSummary} | {_profile.LaunchReadinessSummary}";
+
+    private string NamedPresetSummary => _namedPresetCount == 0
+        ? "No named workshop presets saved yet."
+        : $"{_namedPresetCount} named workshop preset(s) saved for this profile.";
 
     private string PlayerSummary => _liveOperations is null
         ? "No live roster is available yet."
@@ -324,6 +363,10 @@ else
         : _liveOperations.ConnectedPlayers.Count == 0
             ? "No player names are currently inferred online."
             : string.Join(", ", _liveOperations.ConnectedPlayers.Select(player => player.UserName));
+
+    private string BackupHealth => _backups.Count == 0
+        ? "No backup archive has been captured yet."
+        : $"Latest backup is {_latestBackup}.";
 
     private async Task StartAsync()
     {

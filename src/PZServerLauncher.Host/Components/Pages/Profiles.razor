@@ -4,6 +4,7 @@
 @using PZServerLauncher.Host.Services
 @inject ProfileStore ProfileStore
 @inject RuntimeStateStore RuntimeStateStore
+@inject NamedWorkshopPresetStore NamedWorkshopPresetStore
 @inject StructuredSettingsService StructuredSettingsService
 
 <PageTitle>Profiles</PageTitle>
@@ -41,9 +42,9 @@
             <span class="metric-note">Active server processes</span>
         </article>
         <article class="metric-card">
-            <span class="metric-label">Public / Voice</span>
-            <strong class="metric-value">@(_rows.Count(row => row.Posture.IsPubliclyListed)) / @(_rows.Count(row => row.Posture.IsVoiceEnabled))</strong>
-            <span class="metric-note">Publicly listed and voice-enabled profiles</span>
+            <span class="metric-label">Public / Voice / Presets</span>
+            <strong class="metric-value">@(_rows.Count(row => row.Posture.IsPubliclyListed)) / @(_rows.Count(row => row.Posture.IsVoiceEnabled)) / @(_rows.Count(row => row.NamedPresetCount > 0))</strong>
+            <span class="metric-note">Publicly listed, voice-enabled, and named-preset-backed profiles</span>
         </article>
     </section>
 
@@ -72,6 +73,7 @@
                         <th>Ports</th>
                         <th>Runtime</th>
                         <th>Posture</th>
+                        <th>Named Presets</th>
                         <th>Workspace</th>
                     </tr>
                 </thead>
@@ -90,8 +92,10 @@
                                     <div>@row.Posture.CommunitySummary</div>
                                     <div>@row.Posture.NetworkSummary</div>
                                     <div>@row.Posture.WorldSummary</div>
+                                    <div>@row.Posture.SandboxTuningSummary</div>
                                 </div>
                             </td>
+                            <td>@(row.NamedPresetCount == 0 ? "None" : $"{row.NamedPresetCount} preset(s)")</td>
                             <td>
                                 <div class="actions-cell">
                                     <a class="nav-button secondary-button" href="@BuildProfileHref(profile.ProfileId, "overview")">Overview</a>
@@ -129,20 +133,22 @@
     protected override async Task OnInitializedAsync()
     {
         var profiles = await ProfileStore.ListAsync();
-        _rows = profiles
-            .Select(profile =>
-            {
-                var generalValues = StructuredSettingsService.GetPage(profile, "general").Values;
-                var networkValues = StructuredSettingsService.GetPage(profile, "network-admin").Values;
-                var sandboxValues = StructuredSettingsService.GetPage(profile, "sandbox").Values;
+        var rowTasks = profiles.Select(async profile =>
+        {
+            var generalValues = StructuredSettingsService.GetPage(profile, "general").Values;
+            var networkValues = StructuredSettingsService.GetPage(profile, "network-admin").Values;
+            var sandboxValues = StructuredSettingsService.GetPage(profile, "sandbox").Values;
+            var namedPresetCount = (await NamedWorkshopPresetStore.ListAsync(profile.ProfileId)).Count;
 
-                return new ProfileIndexRow(
-                    profile,
-                    RuntimeStateStore.GetOrDefault(profile.ProfileId),
-                    ProjectZomboidProfilePostureSummaryBuilder.Build(profile.DisplayName, generalValues, networkValues, sandboxValues),
-                    Directory.Exists(profile.InstallDirectory) || Directory.Exists(Path.Combine(profile.InstallDirectory, "server")));
-            })
-            .ToList();
+            return new ProfileIndexRow(
+                profile,
+                RuntimeStateStore.GetOrDefault(profile.ProfileId),
+                ProjectZomboidProfilePostureSummaryBuilder.Build(profile.DisplayName, generalValues, networkValues, sandboxValues),
+                Directory.Exists(profile.InstallDirectory) || Directory.Exists(Path.Combine(profile.InstallDirectory, "server")),
+                namedPresetCount);
+        });
+
+        _rows = await Task.WhenAll(rowTasks);
     }
 
     private static string BuildProfileHref(string profileId, string page) =>
@@ -152,5 +158,6 @@
         PZServerLauncher.Core.Profiles.ServerProfile Profile,
         PZServerLauncher.Core.Runtime.ServerRuntimeStatus Runtime,
         ProjectZomboidProfilePostureSummary Posture,
-        bool InstallDetected);
+        bool InstallDetected,
+        int NamedPresetCount);
 }

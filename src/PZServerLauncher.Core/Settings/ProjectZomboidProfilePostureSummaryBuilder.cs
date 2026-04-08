@@ -5,6 +5,7 @@ public sealed record ProjectZomboidProfilePostureSummary(
     string ServerRulesSummary,
     string NetworkSummary,
     string WorldSummary,
+    string SandboxTuningSummary,
     string WelcomeSummary,
     bool IsPubliclyListed,
     bool IsOpenAccess,
@@ -55,6 +56,17 @@ public static class ProjectZomboidProfilePostureSummaryBuilder
         var dayLength = GetValue(sandboxValues, ".sandbox.day-length", "3");
         var helicopter = GetValue(sandboxValues, ".sandbox.helicopter", "2");
         var lootRespawn = GetValue(sandboxValues, ".sandbox.loot-respawn", "2");
+        var zombieLoreSpeed = GetValue(sandboxValues, ".sandbox.zombie-lore-speed", "2");
+        var zombieLoreStrength = GetValue(sandboxValues, ".sandbox.zombie-lore-strength", "2");
+        var zombieLoreTransmission = GetValue(sandboxValues, ".sandbox.zombie-lore-transmission", "2");
+        var zombieLoreMortality = GetValue(sandboxValues, ".sandbox.zombie-lore-mortality", "5");
+        var zombieLoreReanimate = GetValue(sandboxValues, ".sandbox.zombie-lore-reanimate", "3");
+        var zombieLoreCognition = GetValue(sandboxValues, ".sandbox.zombie-lore-cognition", "2");
+        var zombieLoreMemory = GetValue(sandboxValues, ".sandbox.zombie-lore-memory", "2");
+        var zombieLoreSight = GetValue(sandboxValues, ".sandbox.zombie-lore-sight", "2");
+        var zombieLoreHearing = GetValue(sandboxValues, ".sandbox.zombie-lore-hearing", "2");
+        var zombieLoreTriggerHouseAlarm = ParseBool(sandboxValues, ".sandbox.zombie-lore-trigger-house-alarm");
+        var zombieLoreThumpNoChasing = ParseBool(sandboxValues, ".sandbox.zombie-lore-thump-no-chasing");
         var vehiclesEnabled = ParseBool(sandboxValues, ".sandbox.enable-vehicles", true);
         var fireSpread = ParseBool(sandboxValues, ".sandbox.fire-spread", true);
         var corpseCleanupHours = GetValue(sandboxValues, ".sandbox.hours-for-corpse-removal", "216");
@@ -62,6 +74,7 @@ public static class ProjectZomboidProfilePostureSummaryBuilder
         var starterKit = ParseBool(sandboxValues, ".sandbox.starter-kit");
         var nutrition = ParseBool(sandboxValues, ".sandbox.nutrition");
         var worldSummary = $"Zombies {zombies} | day length {dayLength} | helicopter {helicopter} | loot respawn {lootRespawn} | vehicles {(vehiclesEnabled ? "on" : "off")} | fire spread {(fireSpread ? "on" : "off")} | corpse cleanup {corpseCleanupHours}h | multi-hit {(multiHit ? "on" : "off")} | starter kit {(starterKit ? "on" : "off")} | nutrition {(nutrition ? "on" : "off")}.";
+        var sandboxTuningSummary = $"Zombie lore speed {zombieLoreSpeed} | strength {zombieLoreStrength} | transmission {zombieLoreTransmission} | mortality {zombieLoreMortality} | reanimate {zombieLoreReanimate} | cognition {zombieLoreCognition} | memory {zombieLoreMemory} | sight {zombieLoreSight} | hearing {zombieLoreHearing} | alarm {(zombieLoreTriggerHouseAlarm ? "on" : "off")} | thump {(zombieLoreThumpNoChasing ? "on" : "off")}.";
 
         var welcomeMessage = GetValue(generalValues, ".server.welcome-message");
         var welcomeSummary = string.IsNullOrWhiteSpace(welcomeMessage)
@@ -73,6 +86,7 @@ public static class ProjectZomboidProfilePostureSummaryBuilder
             serverRulesSummary,
             networkSummary,
             worldSummary,
+            sandboxTuningSummary,
             welcomeSummary,
             isPublic,
             isOpen,
@@ -87,6 +101,7 @@ public static class ProjectZomboidProfilePostureSummaryBuilder
             "Server rules summary is temporarily unavailable.",
             "Network posture summary is temporarily unavailable.",
             "World snapshot is temporarily unavailable.",
+            "Sandbox tuning summary is temporarily unavailable.",
             "Welcome message summary is temporarily unavailable.",
             false,
             false,

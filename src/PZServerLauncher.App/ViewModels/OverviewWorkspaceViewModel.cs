@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.Input;
 using PZServerLauncher.App.Services;
+using PZServerLauncher.Contracts.Profiles;
 using PZServerLauncher.Contracts.Runtime;
 using PZServerLauncher.Core.Runtime;
 using PZServerLauncher.Core.Settings;
@@ -15,7 +16,9 @@ public sealed class OverviewWorkspaceViewModel : ProfileWorkspacePageViewModelBa
     private string _serverRulesSummary = "No server rules loaded.";
     private string _networkPostureSummary = "No network posture loaded.";
     private string _worldSnapshotSummary = "No world snapshot loaded.";
+    private string _sandboxTuningSummary = "No sandbox tuning loaded.";
     private string _welcomeMessageSummary = "No welcome message configured yet.";
+    private int _namedPresetCount;
     private ProfileLiveOperationsSnapshot? _liveOperations;
 
     public OverviewWorkspaceViewModel(MainWindowViewModel legacy, LocalHostApiClient hostApiClient, RuntimeEventStream runtimeEventStream)
@@ -131,7 +134,19 @@ public sealed class OverviewWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
     public string WorldSnapshotSummary => _worldSnapshotSummary;
 
+    public string SandboxTuningSummary => _sandboxTuningSummary;
+
     public string WelcomeMessageSummary => _welcomeMessageSummary;
+
+    public string InstallPostureSummary => SelectedProfile is null
+        ? "No install posture loaded."
+        : $"{SelectedProfile.BranchChannelSummary} | {SelectedProfile.InstallPreflightSummary} | {SelectedProfile.LaunchReadinessSummary}";
+
+    public string NamedPresetSummary => SelectedProfile is null
+        ? "No named preset library loaded."
+        : _namedPresetCount == 0
+            ? "No named workshop presets saved yet for this profile."
+            : $"{_namedPresetCount} named workshop preset(s) saved for this profile.";
 
     public string OperatorGuidance => SelectedProfile is null
         ? "Pick or import a profile to start managing a server."
@@ -170,6 +185,7 @@ public sealed class OverviewWorkspaceViewModel : ProfileWorkspacePageViewModelBa
                 "No server rules loaded.",
                 "No network posture loaded.",
                 "No world snapshot loaded.",
+                "No sandbox tuning loaded.",
                 "No welcome message configured yet.");
             return;
         }
@@ -179,6 +195,7 @@ public sealed class OverviewWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             "Loading server rules...",
             "Loading network posture...",
             "Loading world snapshot...",
+            "Loading sandbox tuning...",
             "Loading welcome message...");
         _liveOperations = new ProfileLiveOperationsSnapshot(profile.ProfileId, [], [], [], true, null);
 
@@ -187,8 +204,9 @@ public sealed class OverviewWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             var generalTask = _hostApiClient.GetSettingsPageAsync(profile.ProfileId, ProfileWorkspacePageIds.General);
             var networkTask = _hostApiClient.GetSettingsPageAsync(profile.ProfileId, ProfileWorkspacePageIds.NetworkAndAdmin);
             var sandboxTask = _hostApiClient.GetSettingsPageAsync(profile.ProfileId, ProfileWorkspacePageIds.Sandbox);
+            var namedPresetsTask = _hostApiClient.GetNamedWorkshopPresetsAsync(profile.ProfileId);
             var liveOperationsTask = _hostApiClient.GetLiveOperationsAsync(profile.ProfileId);
-            await Task.WhenAll(generalTask, networkTask, sandboxTask, liveOperationsTask);
+            await Task.WhenAll(generalTask, networkTask, sandboxTask, namedPresetsTask, liveOperationsTask);
 
             if (loadVersion != _loadVersion || SelectedProfile?.ProfileId != profile.ProfileId)
             {
@@ -198,6 +216,7 @@ public sealed class OverviewWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             var generalValues = generalTask.Result?.Values ?? new Dictionary<string, string?>(StringComparer.Ordinal);
             var networkValues = networkTask.Result?.Values ?? new Dictionary<string, string?>(StringComparer.Ordinal);
             var sandboxValues = sandboxTask.Result?.Values ?? new Dictionary<string, string?>(StringComparer.Ordinal);
+            _namedPresetCount = namedPresetsTask.Result?.Count ?? 0;
             _liveOperations = liveOperationsTask.Result ?? _liveOperations;
 
             var posture = ProjectZomboidProfilePostureSummaryBuilder.Build(
@@ -211,11 +230,14 @@ public sealed class OverviewWorkspaceViewModel : ProfileWorkspacePageViewModelBa
                 posture.ServerRulesSummary,
                 posture.NetworkSummary,
                 posture.WorldSummary,
+                posture.SandboxTuningSummary,
                 posture.WelcomeSummary);
             OnPropertyChanged(nameof(LivePlayerSummary));
             OnPropertyChanged(nameof(LivePlayerRosterSummary));
             OnPropertyChanged(nameof(PlayerActivitySummary));
             OnPropertyChanged(nameof(OperatorActionSummary));
+            OnPropertyChanged(nameof(InstallPostureSummary));
+            OnPropertyChanged(nameof(NamedPresetSummary));
         }
         catch
         {
@@ -224,11 +246,13 @@ public sealed class OverviewWorkspaceViewModel : ProfileWorkspacePageViewModelBa
                 return;
             }
 
+            _namedPresetCount = 0;
             SetStructuredSummaries(
                 "Structured community posture could not be loaded yet.",
                 "Server rules summary is temporarily unavailable.",
                 "Network posture summary is temporarily unavailable.",
                 "World snapshot is temporarily unavailable.",
+                "Sandbox tuning summary is temporarily unavailable.",
                 "Welcome message summary is temporarily unavailable.");
         }
     }
@@ -253,17 +277,20 @@ public sealed class OverviewWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         string serverRulesSummary,
         string networkPostureSummary,
         string worldSnapshotSummary,
+        string sandboxTuningSummary,
         string welcomeMessageSummary)
     {
         _communitySummary = communitySummary;
         _serverRulesSummary = serverRulesSummary;
         _networkPostureSummary = networkPostureSummary;
         _worldSnapshotSummary = worldSnapshotSummary;
+        _sandboxTuningSummary = sandboxTuningSummary;
         _welcomeMessageSummary = welcomeMessageSummary;
         OnPropertyChanged(nameof(CommunitySummary));
         OnPropertyChanged(nameof(ServerRulesSummary));
         OnPropertyChanged(nameof(NetworkPostureSummary));
         OnPropertyChanged(nameof(WorldSnapshotSummary));
+        OnPropertyChanged(nameof(SandboxTuningSummary));
         OnPropertyChanged(nameof(WelcomeMessageSummary));
     }
 
@@ -292,7 +319,10 @@ public sealed class OverviewWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         OnPropertyChanged(nameof(ServerRulesSummary));
         OnPropertyChanged(nameof(NetworkPostureSummary));
         OnPropertyChanged(nameof(WorldSnapshotSummary));
+        OnPropertyChanged(nameof(SandboxTuningSummary));
         OnPropertyChanged(nameof(WelcomeMessageSummary));
+        OnPropertyChanged(nameof(InstallPostureSummary));
+        OnPropertyChanged(nameof(NamedPresetSummary));
         OnPropertyChanged(nameof(OperatorGuidance));
     }
 }

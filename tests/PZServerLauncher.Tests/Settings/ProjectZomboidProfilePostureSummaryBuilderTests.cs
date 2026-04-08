@@ -101,6 +101,33 @@ public sealed class ProjectZomboidProfilePostureSummaryBuilderTests
     }
 
     [Fact]
+    public void Build_SummarizesSandboxTuning()
+    {
+        var sandboxValues = new Dictionary<string, string?>(StringComparer.Ordinal)
+        {
+            ["b42.sandbox.zombie-lore-speed"] = "1",
+            ["b42.sandbox.zombie-lore-strength"] = "4",
+            ["b42.sandbox.zombie-lore-transmission"] = "3",
+            ["b42.sandbox.zombie-lore-mortality"] = "6",
+            ["b42.sandbox.zombie-lore-reanimate"] = "2",
+            ["b42.sandbox.zombie-lore-cognition"] = "5",
+            ["b42.sandbox.zombie-lore-memory"] = "1",
+            ["b42.sandbox.zombie-lore-sight"] = "4",
+            ["b42.sandbox.zombie-lore-hearing"] = "2",
+            ["b42.sandbox.zombie-lore-trigger-house-alarm"] = "true",
+            ["b42.sandbox.zombie-lore-thump-no-chasing"] = "false",
+        };
+
+        var summary = ProjectZomboidProfilePostureSummaryBuilder.Build(
+            "Nightingale",
+            new Dictionary<string, string?>(StringComparer.Ordinal),
+            new Dictionary<string, string?>(StringComparer.Ordinal),
+            sandboxValues);
+
+        Assert.Equal("Zombie lore speed 1 | strength 4 | transmission 3 | mortality 6 | reanimate 2 | cognition 5 | memory 1 | sight 4 | hearing 2 | alarm on | thump off.", summary.SandboxTuningSummary);
+    }
+
+    [Fact]
     public void Build_FlattensWelcomeMessage()
     {
         var generalValues = new Dictionary<string, string?>(StringComparer.Ordinal)

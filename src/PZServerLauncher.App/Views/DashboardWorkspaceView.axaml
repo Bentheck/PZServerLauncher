@@ -132,10 +132,12 @@
                                                 <TextBlock Foreground="#F7F0E7" FontSize="11" Text="{Binding RuntimeState}" />
                                             </Border>
                                         </Grid>
-                                        <TextBlock Classes="body" Text="{Binding CommunitySummary}" TextWrapping="Wrap" />
-                                        <TextBlock Classes="body" Text="{Binding NetworkSummary}" TextWrapping="Wrap" />
-                                        <TextBlock Classes="body" Text="{Binding WorldSummary}" TextWrapping="Wrap" />
-                                        <TextBlock Classes="body" Text="{Binding InstallPreflightSummary}" TextWrapping="Wrap" />
+                                       <TextBlock Classes="body" Text="{Binding CommunitySummary}" TextWrapping="Wrap" />
+                                       <TextBlock Classes="body" Text="{Binding NetworkSummary}" TextWrapping="Wrap" />
+                                       <TextBlock Classes="body" Text="{Binding WorldSummary}" TextWrapping="Wrap" />
+                                       <TextBlock Classes="body" Text="{Binding InstallPreflightSummary}" TextWrapping="Wrap" />
+                                        <TextBlock Classes="body" Text="{Binding LaunchReadinessSummary}" TextWrapping="Wrap" />
+                                        <TextBlock Classes="body" Text="{Binding BackupSafetySummary}" TextWrapping="Wrap" />
                                     </StackPanel>
                                     <StackPanel Grid.Column="1" Spacing="6" VerticalAlignment="Top">
                                         <Border Background="#FFF8F1" CornerRadius="999" Padding="10,4">
