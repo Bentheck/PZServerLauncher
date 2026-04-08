@@ -79,16 +79,6 @@ public sealed class ProjectZomboidSettingsCatalogResolver : ISettingsCatalogReso
                         Field($"{branchPrefix}.server.construction-prevents-loot-respawn", "Construction Blocks Loot Respawn", StructuredValueKind.Boolean, ConfigFileKind.Ini, "ConstructionPreventsLootRespawn", defaultValue: "true", helpText: "Prevent loot respawn in containers near player construction."),
                     }),
                 new StructuredSectionDefinition(
-                    $"{branchPrefix}.general.loot-respawn",
-                    "Spawn & Loot Lifecycle",
-                    new[]
-                    {
-                        Field($"{branchPrefix}.server.spawn-items", "Spawn Items", StructuredValueKind.MultiLineText, ConfigFileKind.Ini, "SpawnItems", helpText: "One item per line. The launcher writes them back as a comma-separated SpawnItems list."),
-                        Field($"{branchPrefix}.server.loot-respawn-hours", "Loot Respawn Hours", StructuredValueKind.Integer, ConfigFileKind.Ini, "HoursForLootRespawn", defaultValue: "0", helpText: "In-game hours that must pass before cleared containers can respawn loot. Use 0 to disable loot respawn."),
-                        Field($"{branchPrefix}.server.loot-respawn-max-items", "Loot Respawn Max Items", StructuredValueKind.Integer, ConfigFileKind.Ini, "MaxItemsForLootRespawn", defaultValue: "4", helpText: "Containers only respawn loot when they have this many items or fewer."),
-                        Field($"{branchPrefix}.server.construction-prevents-loot-respawn", "Construction Blocks Loot Respawn", StructuredValueKind.Boolean, ConfigFileKind.Ini, "ConstructionPreventsLootRespawn", defaultValue: "true", helpText: "Prevent loot respawn near player-built structures."),
-                    }),
-                new StructuredSectionDefinition(
                     $"{branchPrefix}.general.survival-rules",
                     "Survival Rules",
                     new[]
@@ -191,10 +181,15 @@ public sealed class ProjectZomboidSettingsCatalogResolver : ISettingsCatalogReso
                         Field($"{branchPrefix}.sandbox.zombie-lore-reanimate", "Reanimate Delay", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "ZombieLore.Reanimate", defaultValue: "2", helpText: "How quickly dead survivors reanimate."),
                         Field($"{branchPrefix}.sandbox.zombie-lore-cognition", "Zombie Cognition", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "ZombieLore.Cognition", defaultValue: "3", helpText: "How well zombies interact with doors and obstacles."),
                         Field($"{branchPrefix}.sandbox.zombie-lore-memory", "Zombie Memory", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "ZombieLore.Memory", defaultValue: "2", helpText: "How long zombies remember their target."),
+                        Field($"{branchPrefix}.sandbox.zombie-lore-decomp", "Zombie Decomp", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "ZombieLore.Decomp", defaultValue: "1", helpText: "How much decomposition slows and weakens zombies over time."),
                         Field($"{branchPrefix}.sandbox.zombie-lore-sight", "Zombie Sight", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "ZombieLore.Sight", defaultValue: "2", helpText: "How quickly zombies spot survivors visually."),
                         Field($"{branchPrefix}.sandbox.zombie-lore-hearing", "Zombie Hearing", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "ZombieLore.Hearing", defaultValue: "2", helpText: "How sensitive zombies are to sound cues."),
+                        Field($"{branchPrefix}.sandbox.zombie-lore-smell", "Zombie Smell", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "ZombieLore.Smell", defaultValue: "2", helpText: "How effectively zombies track survivors by scent."),
                         Field($"{branchPrefix}.sandbox.zombie-lore-trigger-house-alarm", "Trigger House Alarm", StructuredValueKind.Boolean, ConfigFileKind.SandboxVars, "ZombieLore.TriggerHouseAlarm", defaultValue: "false", helpText: "Allow zombies to trigger house alarms while moving through homes."),
                         Field($"{branchPrefix}.sandbox.zombie-lore-thump-no-chasing", "Thump Without Chasing", StructuredValueKind.Boolean, ConfigFileKind.SandboxVars, "ZombieLore.ThumpNoChasing", defaultValue: "false", helpText: "Allow zombies to thump doors and windows even when they are not actively chasing players."),
+                        Field($"{branchPrefix}.sandbox.zombie-lore-thump-on-construction", "Thump On Construction", StructuredValueKind.Boolean, ConfigFileKind.SandboxVars, "ZombieLore.ThumpOnConstruction", defaultValue: "true", helpText: "Allow zombies to attack player-built constructions."),
+                        Field($"{branchPrefix}.sandbox.zombie-lore-drag-down", "Drag Down", StructuredValueKind.Boolean, ConfigFileKind.SandboxVars, "ZombieLore.ZombiesDragDown", defaultValue: "true", helpText: "Allow groups of zombies to drag survivors to the ground."),
+                        Field($"{branchPrefix}.sandbox.zombie-lore-fence-lunge", "Fence Lunge", StructuredValueKind.Boolean, ConfigFileKind.SandboxVars, "ZombieLore.ZombiesFenceLunge", defaultValue: "true", helpText: "Allow zombies to lunge at survivors when climbing fences."),
                     }),
                 new StructuredSectionDefinition(
                     $"{branchPrefix}.sandbox.utilities",

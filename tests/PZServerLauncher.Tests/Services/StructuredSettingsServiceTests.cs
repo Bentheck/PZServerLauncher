@@ -747,8 +747,13 @@ public sealed class StructuredSettingsServiceTests : IDisposable
                 Zombies = 4,
                 ZombieLore = {
                     Speed = 3,
+                    Decomp = 1,
+                    Smell = 2,
                     TriggerHouseAlarm = false,
                     ThumpNoChasing = false,
+                    ThumpOnConstruction = true,
+                    ZombiesDragDown = true,
+                    ZombiesFenceLunge = true,
                 }
             }
             """);
@@ -764,8 +769,13 @@ public sealed class StructuredSettingsServiceTests : IDisposable
         Assert.Equal("3", valueSet.Values["b42.sandbox.zombie-lore-speed"]);
         Assert.Equal("2", valueSet.Values["b42.sandbox.zombie-lore-strength"]);
         Assert.Equal("3", valueSet.Values["b42.sandbox.zombie-lore-cognition"]);
+        Assert.Equal("1", valueSet.Values["b42.sandbox.zombie-lore-decomp"]);
+        Assert.Equal("2", valueSet.Values["b42.sandbox.zombie-lore-smell"]);
         Assert.Equal("false", valueSet.Values["b42.sandbox.zombie-lore-trigger-house-alarm"]);
         Assert.Equal("false", valueSet.Values["b42.sandbox.zombie-lore-thump-no-chasing"]);
+        Assert.Equal("true", valueSet.Values["b42.sandbox.zombie-lore-thump-on-construction"]);
+        Assert.Equal("true", valueSet.Values["b42.sandbox.zombie-lore-drag-down"]);
+        Assert.Equal("true", valueSet.Values["b42.sandbox.zombie-lore-fence-lunge"]);
 
         var saveResult = await service.SaveAsync(profile, ProfileWorkspacePageIds.Sandbox, new Dictionary<string, string?>(valueSet.Values, StringComparer.Ordinal)
         {
@@ -777,10 +787,15 @@ public sealed class StructuredSettingsServiceTests : IDisposable
             ["b42.sandbox.zombie-lore-reanimate"] = "1",
             ["b42.sandbox.zombie-lore-cognition"] = "2",
             ["b42.sandbox.zombie-lore-memory"] = "3",
+            ["b42.sandbox.zombie-lore-decomp"] = "4",
             ["b42.sandbox.zombie-lore-sight"] = "4",
             ["b42.sandbox.zombie-lore-hearing"] = "2",
+            ["b42.sandbox.zombie-lore-smell"] = "3",
             ["b42.sandbox.zombie-lore-trigger-house-alarm"] = "true",
             ["b42.sandbox.zombie-lore-thump-no-chasing"] = "true",
+            ["b42.sandbox.zombie-lore-thump-on-construction"] = "false",
+            ["b42.sandbox.zombie-lore-drag-down"] = "false",
+            ["b42.sandbox.zombie-lore-fence-lunge"] = "false",
         });
 
         var sandboxText = File.ReadAllText(paths.SandboxVarsFilePath);
@@ -795,10 +810,15 @@ public sealed class StructuredSettingsServiceTests : IDisposable
         Assert.Contains("Reanimate = 1", sandboxText);
         Assert.Contains("Cognition = 2", sandboxText);
         Assert.Contains("Memory = 3", sandboxText);
+        Assert.Contains("Decomp = 4", sandboxText);
         Assert.Contains("Sight = 4", sandboxText);
         Assert.Contains("Hearing = 2", sandboxText);
+        Assert.Contains("Smell = 3", sandboxText);
         Assert.Contains("TriggerHouseAlarm = true", sandboxText);
         Assert.Contains("ThumpNoChasing = true", sandboxText);
+        Assert.Contains("ThumpOnConstruction = false", sandboxText);
+        Assert.Contains("ZombiesDragDown = false", sandboxText);
+        Assert.Contains("ZombiesFenceLunge = false", sandboxText);
     }
 
     [Fact]

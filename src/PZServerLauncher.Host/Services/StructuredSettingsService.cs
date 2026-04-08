@@ -632,10 +632,15 @@ public sealed class StructuredSettingsService(
         ValidateRangedInteger(values, $"{branchPrefix}.sandbox.zombie-lore-reanimate", 1, 5, "Reanimate time must be between 1 and 5.", fieldErrors);
         ValidateRangedInteger(values, $"{branchPrefix}.sandbox.zombie-lore-cognition", 1, 4, "Cognition must be between 1 and 4.", fieldErrors);
         ValidateRangedInteger(values, $"{branchPrefix}.sandbox.zombie-lore-memory", 1, 4, "Memory must be between 1 and 4.", fieldErrors);
+        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.zombie-lore-decomp", 1, 4, "Decomp must be between 1 and 4.", fieldErrors);
         ValidateRangedInteger(values, $"{branchPrefix}.sandbox.zombie-lore-sight", 1, 4, "Sight must be between 1 and 4.", fieldErrors);
         ValidateRangedInteger(values, $"{branchPrefix}.sandbox.zombie-lore-hearing", 1, 4, "Hearing must be between 1 and 4.", fieldErrors);
+        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.zombie-lore-smell", 1, 3, "Smell must be between 1 and 3.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.sandbox.zombie-lore-trigger-house-alarm", "Trigger house alarm must be true or false.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.sandbox.zombie-lore-thump-no-chasing", "Thump without chasing must be true or false.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.sandbox.zombie-lore-thump-on-construction", "Thump on construction must be true or false.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.sandbox.zombie-lore-drag-down", "Drag down must be true or false.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.sandbox.zombie-lore-fence-lunge", "Fence lunge must be true or false.", fieldErrors);
         ValidateRangedInteger(values, $"{branchPrefix}.sandbox.character-free-points", -100, 100, "Character free points must stay between -100 and 100.", fieldErrors);
         ValidateMinimumInteger(values, $"{branchPrefix}.sandbox.construction-bonus-points", 0, "Construction bonus points must be zero or greater.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.sandbox.multi-hit", "Multi-hit must be true or false.", fieldErrors);

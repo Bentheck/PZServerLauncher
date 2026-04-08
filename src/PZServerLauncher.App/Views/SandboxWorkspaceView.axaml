@@ -104,7 +104,7 @@
                     <Border Grid.Column="1" Classes="card" Padding="18">
                         <StackPanel Spacing="12">
                             <TextBlock Classes="kicker" Text="Zombie Lore" />
-                            <Grid ColumnDefinitions="*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="10">
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="10">
                                 <StackPanel Spacing="4">
                                     <TextBlock Classes="body" Text="Zombie Speed" />
                                     <TextBox Text="{Binding ZombieLoreSpeed}" />
@@ -138,20 +138,38 @@
                                     <TextBox Text="{Binding ZombieLoreMemory}" />
                                 </StackPanel>
                                 <StackPanel Grid.Row="4" Spacing="4">
+                                    <TextBlock Classes="body" Text="Decomp" />
+                                    <TextBox Text="{Binding ZombieLoreDecomp}" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="4" Grid.Column="1" Spacing="4">
                                     <TextBlock Classes="body" Text="Sight" />
                                     <TextBox Text="{Binding ZombieLoreSight}" />
                                 </StackPanel>
-                                <StackPanel Grid.Row="4" Grid.Column="1" Spacing="4">
+                                <StackPanel Grid.Row="5" Spacing="4">
                                     <TextBlock Classes="body" Text="Hearing" />
                                     <TextBox Text="{Binding ZombieLoreHearing}" />
                                 </StackPanel>
-                                <CheckBox Grid.Row="5"
+                                <StackPanel Grid.Row="5" Grid.Column="1" Spacing="4">
+                                    <TextBlock Classes="body" Text="Smell" />
+                                    <TextBox Text="{Binding ZombieLoreSmell}" />
+                                </StackPanel>
+                                <CheckBox Grid.Row="6"
                                           Content="Trigger House Alarm"
                                           IsChecked="{Binding ZombieLoreTriggerHouseAlarm}" />
-                                <CheckBox Grid.Row="5"
+                                <CheckBox Grid.Row="6"
                                           Grid.Column="1"
                                           Content="Thump Without Chasing"
                                           IsChecked="{Binding ZombieLoreThumpNoChasing}" />
+                                <CheckBox Grid.Row="7"
+                                          Content="Thump On Construction"
+                                          IsChecked="{Binding ZombieLoreThumpOnConstruction}" />
+                                <CheckBox Grid.Row="7"
+                                          Grid.Column="1"
+                                          Content="Fence Lunge"
+                                          IsChecked="{Binding ZombieLoreFenceLunge}" />
+                                <CheckBox Grid.Row="8"
+                                          Content="Drag Down"
+                                          IsChecked="{Binding ZombieLoreDragDown}" />
                             </Grid>
                         </StackPanel>
                     </Border>

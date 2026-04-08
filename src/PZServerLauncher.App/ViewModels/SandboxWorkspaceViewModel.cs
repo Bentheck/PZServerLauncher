@@ -159,16 +159,31 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
     private string zombieLoreMemory = string.Empty;
 
     [ObservableProperty]
+    private string zombieLoreDecomp = string.Empty;
+
+    [ObservableProperty]
     private string zombieLoreSight = string.Empty;
 
     [ObservableProperty]
     private string zombieLoreHearing = string.Empty;
 
     [ObservableProperty]
+    private string zombieLoreSmell = string.Empty;
+
+    [ObservableProperty]
     private bool zombieLoreTriggerHouseAlarm;
 
     [ObservableProperty]
     private bool zombieLoreThumpNoChasing;
+
+    [ObservableProperty]
+    private bool zombieLoreThumpOnConstruction;
+
+    [ObservableProperty]
+    private bool zombieLoreDragDown;
+
+    [ObservableProperty]
+    private bool zombieLoreFenceLunge;
 
     [ObservableProperty]
     private string waterShutModifier = string.Empty;
@@ -480,10 +495,15 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             ZombieLoreReanimate = GetValue(values, ".sandbox.zombie-lore-reanimate");
             ZombieLoreCognition = GetValue(values, ".sandbox.zombie-lore-cognition");
             ZombieLoreMemory = GetValue(values, ".sandbox.zombie-lore-memory");
+            ZombieLoreDecomp = GetValue(values, ".sandbox.zombie-lore-decomp");
             ZombieLoreSight = GetValue(values, ".sandbox.zombie-lore-sight");
             ZombieLoreHearing = GetValue(values, ".sandbox.zombie-lore-hearing");
+            ZombieLoreSmell = GetValue(values, ".sandbox.zombie-lore-smell");
             ZombieLoreTriggerHouseAlarm = bool.TryParse(GetValue(values, ".sandbox.zombie-lore-trigger-house-alarm"), out var zombieLoreTriggerHouseAlarm) && zombieLoreTriggerHouseAlarm;
             ZombieLoreThumpNoChasing = bool.TryParse(GetValue(values, ".sandbox.zombie-lore-thump-no-chasing"), out var zombieLoreThumpNoChasing) && zombieLoreThumpNoChasing;
+            ZombieLoreThumpOnConstruction = bool.TryParse(GetValue(values, ".sandbox.zombie-lore-thump-on-construction"), out var zombieLoreThumpOnConstruction) && zombieLoreThumpOnConstruction;
+            ZombieLoreDragDown = bool.TryParse(GetValue(values, ".sandbox.zombie-lore-drag-down"), out var zombieLoreDragDown) && zombieLoreDragDown;
+            ZombieLoreFenceLunge = bool.TryParse(GetValue(values, ".sandbox.zombie-lore-fence-lunge"), out var zombieLoreFenceLunge) && zombieLoreFenceLunge;
             WaterShutModifier = GetValue(values, ".sandbox.water-shut-modifier");
             ElectricityShutModifier = GetValue(values, ".sandbox.electricity-shut-modifier");
             ErosionSpeed = GetValue(values, ".sandbox.erosion-speed");
@@ -560,10 +580,15 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             [$"{prefix}.sandbox.zombie-lore-reanimate"] = ZombieLoreReanimate,
             [$"{prefix}.sandbox.zombie-lore-cognition"] = ZombieLoreCognition,
             [$"{prefix}.sandbox.zombie-lore-memory"] = ZombieLoreMemory,
+            [$"{prefix}.sandbox.zombie-lore-decomp"] = ZombieLoreDecomp,
             [$"{prefix}.sandbox.zombie-lore-sight"] = ZombieLoreSight,
             [$"{prefix}.sandbox.zombie-lore-hearing"] = ZombieLoreHearing,
+            [$"{prefix}.sandbox.zombie-lore-smell"] = ZombieLoreSmell,
             [$"{prefix}.sandbox.zombie-lore-trigger-house-alarm"] = ZombieLoreTriggerHouseAlarm.ToString(),
             [$"{prefix}.sandbox.zombie-lore-thump-no-chasing"] = ZombieLoreThumpNoChasing.ToString(),
+            [$"{prefix}.sandbox.zombie-lore-thump-on-construction"] = ZombieLoreThumpOnConstruction.ToString(),
+            [$"{prefix}.sandbox.zombie-lore-drag-down"] = ZombieLoreDragDown.ToString(),
+            [$"{prefix}.sandbox.zombie-lore-fence-lunge"] = ZombieLoreFenceLunge.ToString(),
             [$"{prefix}.sandbox.water-shut-modifier"] = WaterShutModifier,
             [$"{prefix}.sandbox.electricity-shut-modifier"] = ElectricityShutModifier,
             [$"{prefix}.sandbox.erosion-speed"] = ErosionSpeed,
@@ -670,10 +695,15 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             ZombieLoreReanimate = string.Empty;
             ZombieLoreCognition = string.Empty;
             ZombieLoreMemory = string.Empty;
+            ZombieLoreDecomp = string.Empty;
             ZombieLoreSight = string.Empty;
             ZombieLoreHearing = string.Empty;
+            ZombieLoreSmell = string.Empty;
             ZombieLoreTriggerHouseAlarm = false;
             ZombieLoreThumpNoChasing = false;
+            ZombieLoreThumpOnConstruction = false;
+            ZombieLoreDragDown = false;
+            ZombieLoreFenceLunge = false;
             WaterShutModifier = string.Empty;
             ElectricityShutModifier = string.Empty;
             ErosionSpeed = string.Empty;
@@ -748,10 +778,15 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
     partial void OnZombieLoreReanimateChanged(string value) => NotifyFieldEdited();
     partial void OnZombieLoreCognitionChanged(string value) => NotifyFieldEdited();
     partial void OnZombieLoreMemoryChanged(string value) => NotifyFieldEdited();
+    partial void OnZombieLoreDecompChanged(string value) => NotifyFieldEdited();
     partial void OnZombieLoreSightChanged(string value) => NotifyFieldEdited();
     partial void OnZombieLoreHearingChanged(string value) => NotifyFieldEdited();
+    partial void OnZombieLoreSmellChanged(string value) => NotifyFieldEdited();
     partial void OnZombieLoreTriggerHouseAlarmChanged(bool value) => NotifyFieldEdited();
     partial void OnZombieLoreThumpNoChasingChanged(bool value) => NotifyFieldEdited();
+    partial void OnZombieLoreThumpOnConstructionChanged(bool value) => NotifyFieldEdited();
+    partial void OnZombieLoreDragDownChanged(bool value) => NotifyFieldEdited();
+    partial void OnZombieLoreFenceLungeChanged(bool value) => NotifyFieldEdited();
     partial void OnWaterShutModifierChanged(string value) => NotifyFieldEdited();
     partial void OnElectricityShutModifierChanged(string value) => NotifyFieldEdited();
     partial void OnErosionSpeedChanged(string value) => NotifyFieldEdited();
