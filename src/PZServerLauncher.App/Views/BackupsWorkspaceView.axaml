@@ -15,21 +15,41 @@
                 <TextBlock Classes="body" Text="{Binding PageSummary}" TextWrapping="Wrap" />
             </StackPanel>
 
-            <Border Background="#F6EFE6" CornerRadius="14" Padding="16">
-                <TextBlock Classes="body" Text="{Binding LoadStatus}" TextWrapping="Wrap" />
+            <Border Background="#1F1D1B" CornerRadius="16" Padding="18">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Recovery Center" />
+                        <TextBlock FontSize="28" FontWeight="SemiBold" Foreground="#F7F0E7" Text="{Binding ProfileDisplayName}" />
+                        <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding RecoveryGuidance}" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <Border Grid.Column="1" Background="#2A2927" CornerRadius="999" Padding="14,8" VerticalAlignment="Top">
+                        <TextBlock Foreground="#F7F0E7" FontWeight="SemiBold" Text="{Binding Branch}" />
+                    </Border>
+                </Grid>
             </Border>
 
-            <WrapPanel Orientation="Horizontal" ItemWidth="168" ItemHeight="36">
-                <Button Command="{Binding CreateBackupCommand}" Content="Create Backup" IsEnabled="{Binding CanCreateBackup}" />
-                <Button Command="{Binding RestoreSelectedCommand}" Content="Restore Selected" IsEnabled="{Binding CanRestore}" />
-                <Button Command="{Binding ReloadCommand}" Content="Reload" />
-            </WrapPanel>
+            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="14">
+                <Border Background="#F6EFE6" CornerRadius="14" Padding="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Backup Posture" />
+                        <TextBlock Classes="body" Text="{Binding BackupPosture}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="1" Background="#F6EFE6" CornerRadius="14" Padding="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Selected Recovery Point" />
+                        <TextBlock Classes="body" Text="{Binding LatestBackupSummary}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="2" Background="#F6EFE6" CornerRadius="14" Padding="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Host Status" />
+                        <TextBlock Classes="body" Text="{Binding LoadStatus}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+            </Grid>
 
-            <CheckBox Content="Restart server after restore"
-                      IsChecked="{Binding RestartAfterRestore}"
-                      IsEnabled="{Binding CanRestore}" />
-
-            <Grid ColumnDefinitions="320,*" ColumnSpacing="16">
+            <Grid ColumnDefinitions="340,*" ColumnSpacing="16">
                 <Border Classes="card" Padding="16">
                     <StackPanel Spacing="10">
                         <TextBlock Classes="kicker" Text="Available Backups" />
@@ -49,14 +69,31 @@
                     </StackPanel>
                 </Border>
 
-                <Border Grid.Column="1" Classes="card" Padding="16">
-                    <StackPanel Spacing="10">
-                        <TextBlock Classes="kicker" Text="Selected Backup" />
-                        <TextBlock Classes="body" Text="{Binding SelectedBackup}" TextWrapping="Wrap" />
-                        <TextBlock Classes="body" Text="Backups are ZIP archives produced by the host service. Restore will stop the server, unpack the selected archive, and optionally restart it afterward." TextWrapping="Wrap" />
-                        <TextBlock Classes="body" Text="Use this page for normal restore workflows. Advanced file-level recovery still belongs in the raw file and filesystem tooling." TextWrapping="Wrap" />
+                <StackPanel Grid.Column="1" Spacing="14">
+                    <Border Classes="card" Padding="16">
+                        <StackPanel Spacing="10">
+                            <TextBlock Classes="kicker" Text="Selected Backup" />
+                            <TextBlock Classes="body" Text="{Binding SelectedBackup}" TextWrapping="Wrap" />
+                            <TextBlock Classes="body" Text="Backups are ZIP archives produced by the host service. Restore stops the server, unpacks the selected archive, and optionally requests a restart afterward." TextWrapping="Wrap" />
+                            <TextBlock Classes="body" Text="Use this page for standard recovery workflows. Advanced file-level recovery still belongs in filesystem tooling and Advanced Files." TextWrapping="Wrap" />
+                        </StackPanel>
                     </StackPanel>
-                </Border>
+
+                    <Border Background="#FFF8F1" CornerRadius="14" Padding="16">
+                        <StackPanel Spacing="10">
+                            <TextBlock Classes="kicker" Text="Operator Actions" />
+                            <WrapPanel Orientation="Horizontal" ItemWidth="168" ItemHeight="36">
+                                <Button Command="{Binding CreateBackupCommand}" Content="Create Backup" IsEnabled="{Binding CanCreateBackup}" />
+                                <Button Command="{Binding RestoreSelectedCommand}" Content="Restore Selected" IsEnabled="{Binding CanRestore}" />
+                                <Button Command="{Binding ReloadCommand}" Content="Reload" />
+                            </WrapPanel>
+
+                            <CheckBox Content="Restart server after restore"
+                                      IsChecked="{Binding RestartAfterRestore}"
+                                      IsEnabled="{Binding CanRestore}" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
             </Grid>
         </StackPanel>
     </Border>

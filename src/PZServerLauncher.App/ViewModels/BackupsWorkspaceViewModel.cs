@@ -27,7 +27,11 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
     public override string PageSummary => SelectedProfile is null
         ? "Select a profile to view backup history and restore options."
-        : $"Backup history and restore actions for {SelectedProfile.DisplayName}.";
+        : $"Backup history, recovery posture, and restore actions for {SelectedProfile.DisplayName}.";
+
+    public string ProfileDisplayName => SelectedProfile?.DisplayName ?? "No profile selected";
+
+    public string Branch => SelectedProfile?.Branch ?? "Unknown";
 
     public ObservableCollection<string> Backups { get; } = [];
 
@@ -38,6 +42,22 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
     public bool CanRestore => SelectedProfile is not null && !string.IsNullOrWhiteSpace(SelectedBackup) && !IsBusy;
 
     public bool CanCreateBackup => SelectedProfile is not null && !IsBusy;
+
+    public string BackupPosture => SelectedProfile is null
+        ? "Pick a profile to inspect backup posture."
+        : Backups.Count == 0
+            ? "No archive has been captured yet. Create a manual backup before major config or update work."
+            : $"{Backups.Count} archive(s) are currently available for recovery.";
+
+    public string RecoveryGuidance => SelectedProfile is null
+        ? "Choose a profile to review restore guidance."
+        : RestartAfterRestore
+            ? "Restore will stop the server, unpack the selected archive, then request a restart after recovery."
+            : "Restore will stop the server and unpack the selected archive without bringing it back up automatically.";
+
+    public string LatestBackupSummary => Backups.Count == 0
+        ? "No backup selected."
+        : $"Selected recovery point: {SelectedBackup}";
 
     public IAsyncRelayCommand CreateBackupCommand { get; }
 
@@ -59,6 +79,7 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
     protected override void OnSelectedProfileChangedCore(ProfileCardViewModel? profile)
     {
+        NotifyComputedState();
         _ = LoadAsync(profile);
     }
 
@@ -79,6 +100,7 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             LoadStatus = result?.Message ?? "Manual backup requested.";
             await LoadAsync(SelectedProfile);
             await Legacy.RefreshCommand.ExecuteAsync(null);
+            NotifyComputedState();
         }, $"Creating a backup for {SelectedProfile.DisplayName}...");
     }
 
@@ -95,6 +117,7 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             LoadStatus = result?.Message ?? $"Restore requested for {SelectedBackup}.";
             await LoadAsync(SelectedProfile);
             await Legacy.RefreshCommand.ExecuteAsync(null);
+            NotifyComputedState();
         }, $"Restoring {SelectedBackup} for {SelectedProfile.DisplayName}...");
     }
 
@@ -125,9 +148,7 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             LoadStatus = backups.Count == 0
                 ? "No backups exist yet. Create the first manual archive from this page."
                 : $"Loaded {backups.Count} backup archive(s) for {profile.DisplayName}.";
-            OnPropertyChanged(nameof(HasBackups));
-            OnPropertyChanged(nameof(HasNoBackups));
-            OnPropertyChanged(nameof(CanRestore));
+            NotifyComputedState();
         }, $"Loading backups for {profile.DisplayName}...");
     }
 
@@ -137,10 +158,7 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         SelectedBackup = null;
         RestartAfterRestore = true;
         LoadStatus = "Select a profile to load backups.";
-        OnPropertyChanged(nameof(HasBackups));
-        OnPropertyChanged(nameof(HasNoBackups));
-        OnPropertyChanged(nameof(CanRestore));
-        OnPropertyChanged(nameof(CanCreateBackup));
+        NotifyComputedState();
     }
 
     private async Task RunBusyAsync(Func<Task> work, string busyMessage)
@@ -163,13 +181,31 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         finally
         {
             IsBusy = false;
-            OnPropertyChanged(nameof(CanRestore));
-            OnPropertyChanged(nameof(CanCreateBackup));
+            NotifyComputedState();
         }
     }
 
     partial void OnSelectedBackupChanged(string? value)
     {
+        NotifyComputedState();
+    }
+
+    partial void OnRestartAfterRestoreChanged(bool value)
+    {
+        OnPropertyChanged(nameof(RecoveryGuidance));
+    }
+
+    private void NotifyComputedState()
+    {
+        OnPropertyChanged(nameof(PageSummary));
+        OnPropertyChanged(nameof(ProfileDisplayName));
+        OnPropertyChanged(nameof(Branch));
+        OnPropertyChanged(nameof(HasBackups));
+        OnPropertyChanged(nameof(HasNoBackups));
         OnPropertyChanged(nameof(CanRestore));
+        OnPropertyChanged(nameof(CanCreateBackup));
+        OnPropertyChanged(nameof(BackupPosture));
+        OnPropertyChanged(nameof(RecoveryGuidance));
+        OnPropertyChanged(nameof(LatestBackupSummary));
     }
 }

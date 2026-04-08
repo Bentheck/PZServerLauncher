@@ -33,13 +33,29 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
 
     public override string PageSummary => SelectedProfile is null
         ? "Select a profile to view runtime output."
-        : $"Recent runtime output for {SelectedProfile.DisplayName}.";
+        : $"Recent runtime output, live status, and operator guidance for {SelectedProfile.DisplayName}.";
+
+    public string ProfileDisplayName => SelectedProfile?.DisplayName ?? "No profile selected";
+
+    public string Branch => SelectedProfile?.Branch ?? "Unknown";
 
     public ObservableCollection<string> LogLines { get; } = [];
 
     public bool HasLogs => LogLines.Count > 0;
 
     public bool HasNoLogs => LogLines.Count == 0;
+
+    public string LogStreamSummary => SelectedProfile is null
+        ? "Choose a profile to inspect server output."
+        : LogLines.Count == 0
+            ? "No buffered output is available yet. Start the server or wait for the next runtime event."
+            : $"Showing {LogLines.Count} buffered line(s) for the selected profile.";
+
+    public string RuntimeGuidance => SelectedProfile is null
+        ? "No runtime guidance available."
+        : string.Equals(LatestRuntimeState, nameof(ServerProcessState.Running), StringComparison.OrdinalIgnoreCase)
+            ? "The server is live. Keep this page open during testing, config reloads, and mod validation to watch the latest output."
+            : "The server is not currently running. Use Overview or Install & Update to start it, then return here for live output.";
 
     public IAsyncRelayCommand ReloadCommand { get; }
 
@@ -51,6 +67,7 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
 
     protected override void OnSelectedProfileChangedCore(ProfileCardViewModel? profile)
     {
+        NotifyComputedState();
         _ = LoadAsync(profile);
     }
 
@@ -81,11 +98,10 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
             LogLines.Add(line);
         }
 
-        OnPropertyChanged(nameof(HasLogs));
-        OnPropertyChanged(nameof(HasNoLogs));
         LoadStatus = lines.Count == 0
             ? "No recent log lines are buffered yet. Start the server or wait for new runtime output."
             : $"Loaded {lines.Count} recent log line(s) for {profile.DisplayName}.";
+        NotifyComputedState();
     }
 
     private Task OnLogLineReceivedAsync(string profileId, string line)
@@ -101,9 +117,8 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
             LogLines.RemoveAt(0);
         }
 
-        OnPropertyChanged(nameof(HasLogs));
-        OnPropertyChanged(nameof(HasNoLogs));
         LoadStatus = $"Live log update received for {SelectedProfile.DisplayName}.";
+        NotifyComputedState();
         return Task.CompletedTask;
     }
 
@@ -115,6 +130,7 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
         }
 
         LatestRuntimeState = status.State.ToString();
+        NotifyComputedState();
         return Task.CompletedTask;
     }
 
@@ -123,7 +139,17 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
         LogLines.Clear();
         LatestRuntimeState = "Unknown";
         LoadStatus = "Select a profile to load recent logs.";
+        NotifyComputedState();
+    }
+
+    private void NotifyComputedState()
+    {
+        OnPropertyChanged(nameof(PageSummary));
+        OnPropertyChanged(nameof(ProfileDisplayName));
+        OnPropertyChanged(nameof(Branch));
         OnPropertyChanged(nameof(HasLogs));
         OnPropertyChanged(nameof(HasNoLogs));
+        OnPropertyChanged(nameof(LogStreamSummary));
+        OnPropertyChanged(nameof(RuntimeGuidance));
     }
 }
