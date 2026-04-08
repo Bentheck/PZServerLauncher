@@ -46,6 +46,22 @@ public sealed class StructuredSettingsServiceTests : IDisposable
             PauseEmpty=true
             GlobalChat=true
             ServerWelcomeMessage=Welcome survivor! <LINE> Stay alive.
+            SleepAllowed=true
+            SleepNeeded=false
+            NoFire=true
+            AnnounceDeath=false
+            PlayerSafehouse=true
+            AdminSafehouse=false
+            SafehouseAllowTrepass=true
+            SafehouseAllowFire=false
+            SafehouseAllowLoot=false
+            SafehouseAllowRespawn=true
+            SafehouseDaySurvivedToClaim=14
+            SafeHouseRemovalTime=240
+            Faction=true
+            FactionDaySurvivedToCreate=3
+            FactionPlayersRequiredForTag=4
+            AllowTradeUI=false
             DefaultPort=16270
             RCONPort=27025
             BindIP=10.0.0.10
@@ -83,6 +99,22 @@ public sealed class StructuredSettingsServiceTests : IDisposable
         Assert.Equal("true", generalValues.Values[$"{branchPrefix}.server.pause-empty"]);
         Assert.Equal("true", generalValues.Values[$"{branchPrefix}.server.global-chat"]);
         Assert.Contains(Environment.NewLine, generalValues.Values[$"{branchPrefix}.server.welcome-message"]);
+        Assert.Equal("true", generalValues.Values[$"{branchPrefix}.server.sleep-allowed"]);
+        Assert.Equal("false", generalValues.Values[$"{branchPrefix}.server.sleep-needed"]);
+        Assert.Equal("true", generalValues.Values[$"{branchPrefix}.server.no-fire"]);
+        Assert.Equal("false", generalValues.Values[$"{branchPrefix}.server.announce-death"]);
+        Assert.Equal("true", generalValues.Values[$"{branchPrefix}.server.player-safehouse"]);
+        Assert.Equal("false", generalValues.Values[$"{branchPrefix}.server.admin-safehouse"]);
+        Assert.Equal("true", generalValues.Values[$"{branchPrefix}.server.safehouse-allow-trespass"]);
+        Assert.Equal("false", generalValues.Values[$"{branchPrefix}.server.safehouse-allow-fire"]);
+        Assert.Equal("false", generalValues.Values[$"{branchPrefix}.server.safehouse-allow-loot"]);
+        Assert.Equal("true", generalValues.Values[$"{branchPrefix}.server.safehouse-allow-respawn"]);
+        Assert.Equal("14", generalValues.Values[$"{branchPrefix}.server.safehouse-days-to-claim"]);
+        Assert.Equal("240", generalValues.Values[$"{branchPrefix}.server.safehouse-removal-hours"]);
+        Assert.Equal("true", generalValues.Values[$"{branchPrefix}.server.faction-enabled"]);
+        Assert.Equal("3", generalValues.Values[$"{branchPrefix}.server.faction-days-to-create"]);
+        Assert.Equal("4", generalValues.Values[$"{branchPrefix}.server.faction-players-for-tag"]);
+        Assert.Equal("false", generalValues.Values[$"{branchPrefix}.server.allow-trade-ui"]);
         Assert.Equal("16270", generalValues.Values[$"{branchPrefix}.server.port"]);
         Assert.Equal(profile.UdpPort.ToString(), generalValues.Values[$"{branchPrefix}.server.udp-port"]);
         Assert.Equal("27025", generalValues.Values[$"{branchPrefix}.server.rcon-port"]);
@@ -136,6 +168,22 @@ public sealed class StructuredSettingsServiceTests : IDisposable
             PauseEmpty=false
             GlobalChat=true
             ServerWelcomeMessage=Old welcome
+            SleepAllowed=false
+            SleepNeeded=false
+            NoFire=false
+            AnnounceDeath=true
+            PlayerSafehouse=true
+            AdminSafehouse=false
+            SafehouseAllowTrepass=true
+            SafehouseAllowFire=true
+            SafehouseAllowLoot=true
+            SafehouseAllowRespawn=false
+            SafehouseDaySurvivedToClaim=0
+            SafeHouseRemovalTime=144
+            Faction=true
+            FactionDaySurvivedToCreate=0
+            FactionPlayersRequiredForTag=1
+            AllowTradeUI=true
             DefaultPort=16261
             RCONPort=27015
             BindIP=192.168.1.50
@@ -164,6 +212,22 @@ public sealed class StructuredSettingsServiceTests : IDisposable
             ["b42.server.pause-empty"] = "true",
             ["b42.server.global-chat"] = "false",
             ["b42.server.welcome-message"] = "Welcome survivor!\nBring a can opener.",
+            ["b42.server.sleep-allowed"] = "true",
+            ["b42.server.sleep-needed"] = "true",
+            ["b42.server.no-fire"] = "true",
+            ["b42.server.announce-death"] = "false",
+            ["b42.server.player-safehouse"] = "true",
+            ["b42.server.admin-safehouse"] = "true",
+            ["b42.server.safehouse-allow-trespass"] = "false",
+            ["b42.server.safehouse-allow-fire"] = "false",
+            ["b42.server.safehouse-allow-loot"] = "false",
+            ["b42.server.safehouse-allow-respawn"] = "true",
+            ["b42.server.safehouse-days-to-claim"] = "10",
+            ["b42.server.safehouse-removal-hours"] = "96",
+            ["b42.server.faction-enabled"] = "false",
+            ["b42.server.faction-days-to-create"] = "5",
+            ["b42.server.faction-players-for-tag"] = "3",
+            ["b42.server.allow-trade-ui"] = "false",
             ["b42.server.port"] = "16270",
             ["b42.server.udp-port"] = "16273",
             ["b42.server.rcon-port"] = "27025",
@@ -204,6 +268,22 @@ public sealed class StructuredSettingsServiceTests : IDisposable
         Assert.Contains("PauseEmpty=true", iniText);
         Assert.Contains("GlobalChat=false", iniText);
         Assert.Contains("ServerWelcomeMessage=Welcome survivor! <LINE> Bring a can opener.", iniText);
+        Assert.Contains("SleepAllowed=true", iniText);
+        Assert.Contains("SleepNeeded=true", iniText);
+        Assert.Contains("NoFire=true", iniText);
+        Assert.Contains("AnnounceDeath=false", iniText);
+        Assert.Contains("PlayerSafehouse=true", iniText);
+        Assert.Contains("AdminSafehouse=true", iniText);
+        Assert.Contains("SafehouseAllowTrepass=false", iniText);
+        Assert.Contains("SafehouseAllowFire=false", iniText);
+        Assert.Contains("SafehouseAllowLoot=false", iniText);
+        Assert.Contains("SafehouseAllowRespawn=true", iniText);
+        Assert.Contains("SafehouseDaySurvivedToClaim=10", iniText);
+        Assert.Contains("SafeHouseRemovalTime=96", iniText);
+        Assert.Contains("Faction=false", iniText);
+        Assert.Contains("FactionDaySurvivedToCreate=5", iniText);
+        Assert.Contains("FactionPlayersRequiredForTag=3", iniText);
+        Assert.Contains("AllowTradeUI=false", iniText);
         Assert.Contains("DefaultPort=16270", iniText);
         Assert.Contains("RCONPort=27025", iniText);
         Assert.Contains("BindIP=10.0.0.25", iniText);

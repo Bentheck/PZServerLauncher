@@ -34,7 +34,7 @@ else
                 <div class="workspace-panel__copy">
                     <p class="eyebrow">General</p>
                     <h1>@_profile.DisplayName</h1>
-                    <p class="muted-text">This page now owns the Project Zomboid server browser identity, public listing behavior, player access rules, and the launcher runtime knobs that still belong to the host profile.</p>
+                    <p class="muted-text">This page now owns the Project Zomboid server browser identity, public listing behavior, player access rules, sleep and fire rules, safehouses, factions, trading, and the launcher runtime knobs that still belong to the host profile.</p>
                 </div>
 
                 <div class="workspace-actions">
@@ -164,7 +164,7 @@ else
 
                     <div class="status-banner status-banner--warm">
                         <strong>What this page owns</strong>
-                        <p>Public name and description, server browser visibility, account openness, PvP/chat behavior, welcome message, and the primary gameplay-facing ports.</p>
+                        <p>Public identity, account openness, PvP/chat behavior, sleep and fire rules, safehouses, factions, trading, welcome message, and the primary gameplay-facing ports.</p>
                     </div>
 
                     @if (_pageValidation is not null)
@@ -359,6 +359,12 @@ else
             ? "Visible name, description, and browser-facing access rules."
             : sectionId.EndsWith(".world-access", StringComparison.Ordinal)
                 ? "Core server-side behavior that shapes how the world feels when players connect."
+                : sectionId.EndsWith(".survival-rules", StringComparison.Ordinal)
+                    ? "Sleep, fire, and death-announcement rules that shape multiplayer pacing."
+                    : sectionId.EndsWith(".safehouses", StringComparison.Ordinal)
+                        ? "Claiming, trespass, looting, and cleanup rules for player safehouses."
+                        : sectionId.EndsWith(".factions-and-trade", StringComparison.Ordinal)
+                            ? "Faction creation and direct player trading systems."
                 : sectionId.EndsWith(".ports", StringComparison.Ordinal)
                     ? "Gameplay-facing ports plus launcher-managed runtime options."
                     : "Structured Project Zomboid general settings.";

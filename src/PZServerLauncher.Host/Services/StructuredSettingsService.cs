@@ -165,6 +165,22 @@ public sealed class StructuredSettingsService(
                         ["PauseEmpty"] = ParseBool(values, $"{branchPrefix}.server.pause-empty").ToString().ToLowerInvariant(),
                         ["GlobalChat"] = ParseBool(values, $"{branchPrefix}.server.global-chat").ToString().ToLowerInvariant(),
                         ["ServerWelcomeMessage"] = NormalizeWelcomeMessage(values, $"{branchPrefix}.server.welcome-message"),
+                        ["SleepAllowed"] = ParseBool(values, $"{branchPrefix}.server.sleep-allowed").ToString().ToLowerInvariant(),
+                        ["SleepNeeded"] = ParseBool(values, $"{branchPrefix}.server.sleep-needed").ToString().ToLowerInvariant(),
+                        ["NoFire"] = ParseBool(values, $"{branchPrefix}.server.no-fire").ToString().ToLowerInvariant(),
+                        ["AnnounceDeath"] = ParseBool(values, $"{branchPrefix}.server.announce-death").ToString().ToLowerInvariant(),
+                        ["PlayerSafehouse"] = ParseBool(values, $"{branchPrefix}.server.player-safehouse").ToString().ToLowerInvariant(),
+                        ["AdminSafehouse"] = ParseBool(values, $"{branchPrefix}.server.admin-safehouse").ToString().ToLowerInvariant(),
+                        ["SafehouseAllowTrepass"] = ParseBool(values, $"{branchPrefix}.server.safehouse-allow-trespass").ToString().ToLowerInvariant(),
+                        ["SafehouseAllowFire"] = ParseBool(values, $"{branchPrefix}.server.safehouse-allow-fire").ToString().ToLowerInvariant(),
+                        ["SafehouseAllowLoot"] = ParseBool(values, $"{branchPrefix}.server.safehouse-allow-loot").ToString().ToLowerInvariant(),
+                        ["SafehouseAllowRespawn"] = ParseBool(values, $"{branchPrefix}.server.safehouse-allow-respawn").ToString().ToLowerInvariant(),
+                        ["SafehouseDaySurvivedToClaim"] = ParseInt(values, $"{branchPrefix}.server.safehouse-days-to-claim").ToString(),
+                        ["SafeHouseRemovalTime"] = ParseInt(values, $"{branchPrefix}.server.safehouse-removal-hours").ToString(),
+                        ["Faction"] = ParseBool(values, $"{branchPrefix}.server.faction-enabled").ToString().ToLowerInvariant(),
+                        ["FactionDaySurvivedToCreate"] = ParseInt(values, $"{branchPrefix}.server.faction-days-to-create").ToString(),
+                        ["FactionPlayersRequiredForTag"] = ParseInt(values, $"{branchPrefix}.server.faction-players-for-tag").ToString(),
+                        ["AllowTradeUI"] = ParseBool(values, $"{branchPrefix}.server.allow-trade-ui").ToString().ToLowerInvariant(),
                         ["DefaultPort"] = ParseInt(values, $"{branchPrefix}.server.port").ToString(),
                         ["RCONPort"] = ParseInt(values, $"{branchPrefix}.server.rcon-port").ToString(),
                     };
@@ -499,6 +515,22 @@ public sealed class StructuredSettingsService(
         ValidateBoolean(values, $"{branchPrefix}.server.pvp", "PvP must be true or false.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.server.pause-empty", "Pause when empty must be true or false.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.server.global-chat", "Global chat must be true or false.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.server.sleep-allowed", "Sleep allowed must be true or false.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.server.sleep-needed", "Sleep needed must be true or false.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.server.no-fire", "Disable fire must be true or false.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.server.announce-death", "Announce death must be true or false.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.server.player-safehouse", "Player safehouses must be true or false.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.server.admin-safehouse", "Admin safehouses must be true or false.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.server.safehouse-allow-trespass", "Allow trespass must be true or false.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.server.safehouse-allow-fire", "Allow fire damage must be true or false.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.server.safehouse-allow-loot", "Allow looting must be true or false.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.server.safehouse-allow-respawn", "Allow respawn must be true or false.", fieldErrors);
+        ValidateMinimumInteger(values, $"{branchPrefix}.server.safehouse-days-to-claim", 0, "Days to claim a safehouse must be zero or greater.", fieldErrors);
+        ValidateMinimumInteger(values, $"{branchPrefix}.server.safehouse-removal-hours", 0, "Safehouse removal time must be zero or greater.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.server.faction-enabled", "Factions enabled must be true or false.", fieldErrors);
+        ValidateMinimumInteger(values, $"{branchPrefix}.server.faction-days-to-create", 0, "Days to create a faction must be zero or greater.", fieldErrors);
+        ValidateMinimumInteger(values, $"{branchPrefix}.server.faction-players-for-tag", 1, "Players required for a faction tag must be at least one.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.server.allow-trade-ui", "Allow trade UI must be true or false.", fieldErrors);
         ValidatePositiveInteger(values, $"{branchPrefix}.runtime.memory", "Memory must be a whole number greater than zero.", fieldErrors);
         ValidateMaximumLength(values, $"{branchPrefix}.server.public-description", 256, "Public description should stay under 256 characters for the server browser.", fieldErrors);
 

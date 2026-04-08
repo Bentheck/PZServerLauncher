@@ -116,9 +116,61 @@
                                 </StackPanel>
                             </StackPanel>
                         </Border>
+
+                        <Border Classes="card" Padding="18">
+                            <StackPanel Spacing="12">
+                                <TextBlock Classes="kicker" Text="Survival Rules" />
+                                <Grid ColumnDefinitions="*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto" RowSpacing="10">
+                                    <CheckBox Content="Sleep Allowed" IsChecked="{Binding SleepAllowed}" />
+                                    <CheckBox Grid.Column="1" Content="Sleep Needed" IsChecked="{Binding SleepNeeded}" />
+                                    <CheckBox Grid.Row="1" Content="Disable Fire" IsChecked="{Binding NoFire}" />
+                                    <CheckBox Grid.Row="1" Grid.Column="1" Content="Announce Death" IsChecked="{Binding AnnounceDeath}" />
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Classes="card" Padding="18">
+                            <StackPanel Spacing="12">
+                                <TextBlock Classes="kicker" Text="Safehouses" />
+                                <Grid ColumnDefinitions="*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="10">
+                                    <CheckBox Content="Player Safehouses" IsChecked="{Binding PlayerSafehouse}" />
+                                    <CheckBox Grid.Column="1" Content="Admin Safehouses" IsChecked="{Binding AdminSafehouse}" />
+                                    <CheckBox Grid.Row="1" Content="Allow Trespass" IsChecked="{Binding SafehouseAllowTrespass}" />
+                                    <CheckBox Grid.Row="1" Grid.Column="1" Content="Allow Fire Damage" IsChecked="{Binding SafehouseAllowFire}" />
+                                    <CheckBox Grid.Row="2" Content="Allow Looting" IsChecked="{Binding SafehouseAllowLoot}" />
+                                    <CheckBox Grid.Row="2" Grid.Column="1" Content="Allow Respawn" IsChecked="{Binding SafehouseAllowRespawn}" />
+                                    <StackPanel Grid.Row="3" Spacing="4">
+                                        <TextBlock Classes="body" Text="Days To Claim" />
+                                        <TextBox Text="{Binding SafehouseDaysToClaim}" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Row="3" Grid.Column="1" Spacing="4">
+                                        <TextBlock Classes="body" Text="Removal Time (Hours)" />
+                                        <TextBox Text="{Binding SafehouseRemovalHours}" />
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
 
                     <StackPanel Grid.Column="1" Spacing="16">
+                        <Border Classes="card" Padding="18">
+                            <StackPanel Spacing="12">
+                                <TextBlock Classes="kicker" Text="Factions &amp; Trade" />
+                                <Grid ColumnDefinitions="*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto,Auto" RowSpacing="10">
+                                    <CheckBox Content="Factions Enabled" IsChecked="{Binding FactionEnabled}" />
+                                    <CheckBox Grid.Column="1" Content="Allow Trade UI" IsChecked="{Binding AllowTradeUi}" />
+                                    <StackPanel Grid.Row="1" Spacing="4">
+                                        <TextBlock Classes="body" Text="Days To Create Faction" />
+                                        <TextBox Text="{Binding FactionDaysToCreate}" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Row="1" Grid.Column="1" Spacing="4">
+                                        <TextBlock Classes="body" Text="Players Required For Tag" />
+                                        <TextBox Text="{Binding FactionPlayersForTag}" />
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
                         <Border Classes="card" Padding="18">
                             <StackPanel Spacing="12">
                                 <TextBlock Classes="kicker" Text="Ports" />

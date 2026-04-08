@@ -21,7 +21,7 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             "Public listing, core world access, server browser identity, and launcher runtime controls.",
             "General settings are in sync.",
             legacy,
-            ["Public identity", "Player access", "Ports", "Runtime controls"])
+            ["Public identity", "World access", "Survival rules", "Safehouses", "Factions and trade", "Ports", "Runtime controls"])
     {
         _hostApiClient = hostApiClient;
         SaveSettingsCommand = new AsyncRelayCommand(SaveSettingsAsync);
@@ -40,7 +40,7 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
     public string WorkspaceSummary => SelectedProfile is null
         ? "Choose a profile to unlock server browser, ports, and world access controls."
-        : $"{SelectedProfile.DisplayName} now edits actual Project Zomboid .ini values for public listing, access, and core ports.";
+        : $"{SelectedProfile.DisplayName} now edits actual Project Zomboid .ini values for public listing, world rules, safehouses, factions, and core ports.";
 
     public string ActionSummary => RequiresAdvancedFilesFallback
         ? "Structured editing is temporarily unavailable for this file. Use Advanced Files for raw recovery."
@@ -87,6 +87,54 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
     [ObservableProperty]
     private string welcomeMessage = string.Empty;
+
+    [ObservableProperty]
+    private bool sleepAllowed;
+
+    [ObservableProperty]
+    private bool sleepNeeded;
+
+    [ObservableProperty]
+    private bool noFire;
+
+    [ObservableProperty]
+    private bool announceDeath;
+
+    [ObservableProperty]
+    private bool playerSafehouse;
+
+    [ObservableProperty]
+    private bool adminSafehouse;
+
+    [ObservableProperty]
+    private bool safehouseAllowTrespass;
+
+    [ObservableProperty]
+    private bool safehouseAllowFire;
+
+    [ObservableProperty]
+    private bool safehouseAllowLoot;
+
+    [ObservableProperty]
+    private bool safehouseAllowRespawn;
+
+    [ObservableProperty]
+    private string safehouseDaysToClaim = string.Empty;
+
+    [ObservableProperty]
+    private string safehouseRemovalHours = string.Empty;
+
+    [ObservableProperty]
+    private bool factionEnabled;
+
+    [ObservableProperty]
+    private string factionDaysToCreate = string.Empty;
+
+    [ObservableProperty]
+    private string factionPlayersForTag = string.Empty;
+
+    [ObservableProperty]
+    private bool allowTradeUi;
 
     [ObservableProperty]
     private string defaultPort = string.Empty;
@@ -304,6 +352,22 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             PauseWhenEmpty = bool.TryParse(GetValue(values, ".server.pause-empty"), out var pause) && pause;
             GlobalChatEnabled = bool.TryParse(GetValue(values, ".server.global-chat"), out var globalChat) && globalChat;
             WelcomeMessage = GetValue(values, ".server.welcome-message");
+            SleepAllowed = bool.TryParse(GetValue(values, ".server.sleep-allowed"), out var sleepAllowed) && sleepAllowed;
+            SleepNeeded = bool.TryParse(GetValue(values, ".server.sleep-needed"), out var sleepNeeded) && sleepNeeded;
+            NoFire = bool.TryParse(GetValue(values, ".server.no-fire"), out var noFire) && noFire;
+            AnnounceDeath = bool.TryParse(GetValue(values, ".server.announce-death"), out var announceDeath) && announceDeath;
+            PlayerSafehouse = bool.TryParse(GetValue(values, ".server.player-safehouse"), out var playerSafehouse) && playerSafehouse;
+            AdminSafehouse = bool.TryParse(GetValue(values, ".server.admin-safehouse"), out var adminSafehouse) && adminSafehouse;
+            SafehouseAllowTrespass = bool.TryParse(GetValue(values, ".server.safehouse-allow-trespass"), out var safehouseAllowTrespass) && safehouseAllowTrespass;
+            SafehouseAllowFire = bool.TryParse(GetValue(values, ".server.safehouse-allow-fire"), out var safehouseAllowFire) && safehouseAllowFire;
+            SafehouseAllowLoot = bool.TryParse(GetValue(values, ".server.safehouse-allow-loot"), out var safehouseAllowLoot) && safehouseAllowLoot;
+            SafehouseAllowRespawn = bool.TryParse(GetValue(values, ".server.safehouse-allow-respawn"), out var safehouseAllowRespawn) && safehouseAllowRespawn;
+            SafehouseDaysToClaim = GetValue(values, ".server.safehouse-days-to-claim");
+            SafehouseRemovalHours = GetValue(values, ".server.safehouse-removal-hours");
+            FactionEnabled = bool.TryParse(GetValue(values, ".server.faction-enabled"), out var factionEnabled) && factionEnabled;
+            FactionDaysToCreate = GetValue(values, ".server.faction-days-to-create");
+            FactionPlayersForTag = GetValue(values, ".server.faction-players-for-tag");
+            AllowTradeUi = bool.TryParse(GetValue(values, ".server.allow-trade-ui"), out var allowTradeUi) && allowTradeUi;
             DefaultPort = GetValue(values, ".server.port");
             UdpPort = GetValue(values, ".server.udp-port");
             RconPort = GetValue(values, ".server.rcon-port");
@@ -331,6 +395,22 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             [$"{prefix}.server.pause-empty"] = PauseWhenEmpty.ToString(),
             [$"{prefix}.server.global-chat"] = GlobalChatEnabled.ToString(),
             [$"{prefix}.server.welcome-message"] = WelcomeMessage,
+            [$"{prefix}.server.sleep-allowed"] = SleepAllowed.ToString(),
+            [$"{prefix}.server.sleep-needed"] = SleepNeeded.ToString(),
+            [$"{prefix}.server.no-fire"] = NoFire.ToString(),
+            [$"{prefix}.server.announce-death"] = AnnounceDeath.ToString(),
+            [$"{prefix}.server.player-safehouse"] = PlayerSafehouse.ToString(),
+            [$"{prefix}.server.admin-safehouse"] = AdminSafehouse.ToString(),
+            [$"{prefix}.server.safehouse-allow-trespass"] = SafehouseAllowTrespass.ToString(),
+            [$"{prefix}.server.safehouse-allow-fire"] = SafehouseAllowFire.ToString(),
+            [$"{prefix}.server.safehouse-allow-loot"] = SafehouseAllowLoot.ToString(),
+            [$"{prefix}.server.safehouse-allow-respawn"] = SafehouseAllowRespawn.ToString(),
+            [$"{prefix}.server.safehouse-days-to-claim"] = SafehouseDaysToClaim,
+            [$"{prefix}.server.safehouse-removal-hours"] = SafehouseRemovalHours,
+            [$"{prefix}.server.faction-enabled"] = FactionEnabled.ToString(),
+            [$"{prefix}.server.faction-days-to-create"] = FactionDaysToCreate,
+            [$"{prefix}.server.faction-players-for-tag"] = FactionPlayersForTag,
+            [$"{prefix}.server.allow-trade-ui"] = AllowTradeUi.ToString(),
             [$"{prefix}.server.port"] = DefaultPort,
             [$"{prefix}.server.udp-port"] = UdpPort,
             [$"{prefix}.server.rcon-port"] = RconPort,
@@ -387,6 +467,22 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             PauseWhenEmpty = false;
             GlobalChatEnabled = false;
             WelcomeMessage = string.Empty;
+            SleepAllowed = false;
+            SleepNeeded = false;
+            NoFire = false;
+            AnnounceDeath = false;
+            PlayerSafehouse = false;
+            AdminSafehouse = false;
+            SafehouseAllowTrespass = false;
+            SafehouseAllowFire = false;
+            SafehouseAllowLoot = false;
+            SafehouseAllowRespawn = false;
+            SafehouseDaysToClaim = string.Empty;
+            SafehouseRemovalHours = string.Empty;
+            FactionEnabled = false;
+            FactionDaysToCreate = string.Empty;
+            FactionPlayersForTag = string.Empty;
+            AllowTradeUi = false;
             DefaultPort = string.Empty;
             UdpPort = string.Empty;
             RconPort = string.Empty;
@@ -412,6 +508,22 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
     partial void OnPauseWhenEmptyChanged(bool value) => NotifyFieldEdited();
     partial void OnGlobalChatEnabledChanged(bool value) => NotifyFieldEdited();
     partial void OnWelcomeMessageChanged(string value) => NotifyFieldEdited();
+    partial void OnSleepAllowedChanged(bool value) => NotifyFieldEdited();
+    partial void OnSleepNeededChanged(bool value) => NotifyFieldEdited();
+    partial void OnNoFireChanged(bool value) => NotifyFieldEdited();
+    partial void OnAnnounceDeathChanged(bool value) => NotifyFieldEdited();
+    partial void OnPlayerSafehouseChanged(bool value) => NotifyFieldEdited();
+    partial void OnAdminSafehouseChanged(bool value) => NotifyFieldEdited();
+    partial void OnSafehouseAllowTrespassChanged(bool value) => NotifyFieldEdited();
+    partial void OnSafehouseAllowFireChanged(bool value) => NotifyFieldEdited();
+    partial void OnSafehouseAllowLootChanged(bool value) => NotifyFieldEdited();
+    partial void OnSafehouseAllowRespawnChanged(bool value) => NotifyFieldEdited();
+    partial void OnSafehouseDaysToClaimChanged(string value) => NotifyFieldEdited();
+    partial void OnSafehouseRemovalHoursChanged(string value) => NotifyFieldEdited();
+    partial void OnFactionEnabledChanged(bool value) => NotifyFieldEdited();
+    partial void OnFactionDaysToCreateChanged(string value) => NotifyFieldEdited();
+    partial void OnFactionPlayersForTagChanged(string value) => NotifyFieldEdited();
+    partial void OnAllowTradeUiChanged(bool value) => NotifyFieldEdited();
     partial void OnDefaultPortChanged(string value) => NotifyFieldEdited();
     partial void OnUdpPortChanged(string value) => NotifyFieldEdited();
     partial void OnRconPortChanged(string value) => NotifyFieldEdited();

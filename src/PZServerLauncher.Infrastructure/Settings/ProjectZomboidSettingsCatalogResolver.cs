@@ -69,6 +69,40 @@ public sealed class ProjectZomboidSettingsCatalogResolver : ISettingsCatalogReso
                         Field($"{branchPrefix}.server.welcome-message", "Welcome Message", StructuredValueKind.MultiLineText, ConfigFileKind.Ini, "ServerWelcomeMessage", helpText: "Use line breaks here; they will be written back as <LINE> markers for Project Zomboid."),
                     }),
                 new StructuredSectionDefinition(
+                    $"{branchPrefix}.general.survival-rules",
+                    "Survival Rules",
+                    new[]
+                    {
+                        Field($"{branchPrefix}.server.sleep-allowed", "Sleep Allowed", StructuredValueKind.Boolean, ConfigFileKind.Ini, "SleepAllowed", defaultValue: "false", helpText: "Allow sleeping on the server."),
+                        Field($"{branchPrefix}.server.sleep-needed", "Sleep Needed", StructuredValueKind.Boolean, ConfigFileKind.Ini, "SleepNeeded", defaultValue: "false", helpText: "Require survivors to sleep when exhausted."),
+                        Field($"{branchPrefix}.server.no-fire", "Disable Fire", StructuredValueKind.Boolean, ConfigFileKind.Ini, "NoFire", defaultValue: "false", helpText: "Disable most fire spread and fire damage on the server."),
+                        Field($"{branchPrefix}.server.announce-death", "Announce Death", StructuredValueKind.Boolean, ConfigFileKind.Ini, "AnnounceDeath", defaultValue: "true", helpText: "Broadcast character deaths to the whole server."),
+                    }),
+                new StructuredSectionDefinition(
+                    $"{branchPrefix}.general.safehouses",
+                    "Safehouses",
+                    new[]
+                    {
+                        Field($"{branchPrefix}.server.player-safehouse", "Player Safehouses", StructuredValueKind.Boolean, ConfigFileKind.Ini, "PlayerSafehouse", defaultValue: "true", helpText: "Allow players to claim and use safehouses."),
+                        Field($"{branchPrefix}.server.admin-safehouse", "Admin Safehouses", StructuredValueKind.Boolean, ConfigFileKind.Ini, "AdminSafehouse", defaultValue: "false", helpText: "Allow admins to claim safehouses."),
+                        Field($"{branchPrefix}.server.safehouse-allow-trespass", "Allow Trespass", StructuredValueKind.Boolean, ConfigFileKind.Ini, "SafehouseAllowTrepass", defaultValue: "true", helpText: "Allow non-members to enter safehouses."),
+                        Field($"{branchPrefix}.server.safehouse-allow-fire", "Allow Fire Damage", StructuredValueKind.Boolean, ConfigFileKind.Ini, "SafehouseAllowFire", defaultValue: "true", helpText: "Allow fire to damage safehouses."),
+                        Field($"{branchPrefix}.server.safehouse-allow-loot", "Allow Looting", StructuredValueKind.Boolean, ConfigFileKind.Ini, "SafehouseAllowLoot", defaultValue: "true", helpText: "Allow non-members to loot safehouses."),
+                        Field($"{branchPrefix}.server.safehouse-allow-respawn", "Allow Respawn", StructuredValueKind.Boolean, ConfigFileKind.Ini, "SafehouseAllowRespawn", defaultValue: "false", helpText: "Allow members to respawn in safehouses."),
+                        Field($"{branchPrefix}.server.safehouse-days-to-claim", "Days To Claim", StructuredValueKind.Integer, ConfigFileKind.Ini, "SafehouseDaySurvivedToClaim", defaultValue: "0", helpText: "Days a player must survive before claiming a safehouse."),
+                        Field($"{branchPrefix}.server.safehouse-removal-hours", "Removal Time (Hours)", StructuredValueKind.Integer, ConfigFileKind.Ini, "SafeHouseRemovalTime", defaultValue: "144", helpText: "Hours before inactive members are removed from a safehouse."),
+                    }),
+                new StructuredSectionDefinition(
+                    $"{branchPrefix}.general.factions-and-trade",
+                    "Factions & Trade",
+                    new[]
+                    {
+                        Field($"{branchPrefix}.server.faction-enabled", "Factions Enabled", StructuredValueKind.Boolean, ConfigFileKind.Ini, "Faction", defaultValue: "true", helpText: "Allow players to create and join factions."),
+                        Field($"{branchPrefix}.server.faction-days-to-create", "Days To Create Faction", StructuredValueKind.Integer, ConfigFileKind.Ini, "FactionDaySurvivedToCreate", defaultValue: "0", helpText: "Days a player must survive before creating a faction."),
+                        Field($"{branchPrefix}.server.faction-players-for-tag", "Players Required For Tag", StructuredValueKind.Integer, ConfigFileKind.Ini, "FactionPlayersRequiredForTag", defaultValue: "1", helpText: "Members needed before a faction gets its tag."),
+                        Field($"{branchPrefix}.server.allow-trade-ui", "Allow Trade UI", StructuredValueKind.Boolean, ConfigFileKind.Ini, "AllowTradeUI", defaultValue: "true", helpText: "Allow players to use the direct trade UI."),
+                    }),
+                new StructuredSectionDefinition(
                     $"{branchPrefix}.general.ports",
                     "Ports & Runtime",
                     new[]
