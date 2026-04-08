@@ -108,12 +108,24 @@ else
 
                 <section class="card">
                     <h2>Inferred Live Roster</h2>
+                    <p class="muted-text">@BuildModerationSummary()</p>
                     @if (_liveOperations?.ConnectedPlayers.Count > 0)
                     {
                         <ul class="stack-list">
                             @foreach (var player in _liveOperations.ConnectedPlayers)
                             {
-                                <li>@player.UserName | joined @player.JoinedAtUtc.ToString("HH:mm:ss 'UTC'")</li>
+                                <li>
+                                    <div>@player.UserName | joined @player.JoinedAtUtc.ToString("HH:mm:ss 'UTC'") | last seen @player.LastSeenAtUtc.ToString("HH:mm:ss 'UTC'")</div>
+                                    <AuthorizeView Roles="Owner,Admin,Operator">
+                                        <Authorized>
+                                            <div class="button-row">
+                                                <button class="nav-button secondary-button" @onclick='() => SendQuickCommandAsync(BuildTargetedCommand("kickuser", player.UserName), $"Queued kick command for {player.UserName}.")' disabled="@_busy">Kick</button>
+                                                <button class="nav-button secondary-button" @onclick='() => SendQuickCommandAsync(BuildTargetedCommand("banuser", player.UserName), $"Queued ban command for {player.UserName}.")' disabled="@_busy">Ban</button>
+                                                <button class="nav-button secondary-button" @onclick='() => SendQuickCommandAsync(BuildTargetedCommand("addusertowhitelist", player.UserName), $"Queued whitelist command for {player.UserName}.")' disabled="@_busy">Whitelist</button>
+                                            </div>
+                                        </Authorized>
+                                    </AuthorizeView>
+                                </li>
                             }
                         </ul>
                     }
@@ -256,6 +268,10 @@ else
             ? "No launcher-driven broadcast or raw command has been recorded yet."
             : _liveOperations.RecentOperatorActions[0].Summary;
 
+    private string BuildModerationSummary() => _runtimeStatus?.State == ServerRuntimeState.Running
+        ? "Kick, ban, or whitelist directly from the inferred roster while the runtime is live."
+        : "Targeted moderation actions unlock once the runtime is live.";
+
     private async Task SendBroadcastAsync()
     {
         if (string.IsNullOrWhiteSpace(_broadcastMessage))
@@ -331,6 +347,12 @@ else
             _busy = false;
         }
     }
+
+    private static string BuildTargetedCommand(string commandName, string userName) =>
+        $"{commandName} {QuoteConsoleArgument(userName)}";
+
+    private static string QuoteConsoleArgument(string value) =>
+        $"\"{value.Replace("\"", "'", StringComparison.Ordinal).Trim()}\"";
 
     private string OverviewHref => $"/profiles/{Uri.EscapeDataString(ProfileId)}/overview";
 }

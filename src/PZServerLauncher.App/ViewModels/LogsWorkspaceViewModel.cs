@@ -55,6 +55,9 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
         ListPlayersCommand = new AsyncRelayCommand(() => SendQuickCommandAsync("players", "Requested current player list."));
         SaveWorldCommand = new AsyncRelayCommand(() => SendQuickCommandAsync("save", "Requested world save."));
         ReloadOptionsCommand = new AsyncRelayCommand(() => SendQuickCommandAsync("reloadoptions", "Requested option reload."));
+        KickPlayerCommand = new AsyncRelayCommand<ConnectedPlayerRowViewModel>(KickPlayerAsync);
+        BanPlayerCommand = new AsyncRelayCommand<ConnectedPlayerRowViewModel>(BanPlayerAsync);
+        WhitelistPlayerCommand = new AsyncRelayCommand<ConnectedPlayerRowViewModel>(WhitelistPlayerAsync);
         _runtimeEventStream.LogLineReceived += OnLogLineReceivedAsync;
         _runtimeEventStream.StatusChanged += OnStatusChangedAsync;
         _runtimeEventStream.LiveOperationsChanged += OnLiveOperationsChangedAsync;
@@ -78,7 +81,7 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
 
     public ObservableCollection<string> LogLines { get; } = [];
 
-    public ObservableCollection<string> ConnectedPlayers { get; } = [];
+    public ObservableCollection<ConnectedPlayerRowViewModel> ConnectedPlayers { get; } = [];
 
     public ObservableCollection<string> RecentPlayerSignals { get; } = [];
 
@@ -156,6 +159,12 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
             ? "The current roster is inferred from recent runtime signals."
             : "The current roster has not been inferred from the buffered runtime feed yet.";
 
+    public string PlayerModerationSummary => SelectedProfile is null
+        ? "Pick a profile before using moderation actions."
+        : CanSendCommands
+            ? "Kick, ban, or whitelist directly from the inferred roster when the runtime is live."
+            : "Targeted moderation actions unlock only while the runtime is live.";
+
     public string PlayerSignalSummary => _liveOperations is null
         ? "No player activity inferred yet."
         : _liveOperations.RecentPlayerSignals.Count == 0
@@ -216,6 +225,12 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
     public IAsyncRelayCommand SaveWorldCommand { get; }
 
     public IAsyncRelayCommand ReloadOptionsCommand { get; }
+
+    public IAsyncRelayCommand<ConnectedPlayerRowViewModel> KickPlayerCommand { get; }
+
+    public IAsyncRelayCommand<ConnectedPlayerRowViewModel> BanPlayerCommand { get; }
+
+    public IAsyncRelayCommand<ConnectedPlayerRowViewModel> WhitelistPlayerCommand { get; }
 
     [ObservableProperty]
     private string loadStatus = "Select a profile to load recent logs.";
@@ -330,6 +345,26 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
         }
     }
 
+    private Task KickPlayerAsync(ConnectedPlayerRowViewModel? player) =>
+        SendTargetedCommandAsync("kickuser", player, "Queued kick command");
+
+    private Task BanPlayerAsync(ConnectedPlayerRowViewModel? player) =>
+        SendTargetedCommandAsync("banuser", player, "Queued ban command");
+
+    private Task WhitelistPlayerAsync(ConnectedPlayerRowViewModel? player) =>
+        SendTargetedCommandAsync("addusertowhitelist", player, "Queued whitelist command");
+
+    private Task SendTargetedCommandAsync(string commandName, ConnectedPlayerRowViewModel? player, string actionLabel)
+    {
+        if (player is null)
+        {
+            return Task.CompletedTask;
+        }
+
+        var command = $"{commandName} {QuoteConsoleArgument(player.UserName)}";
+        return SendQuickCommandAsync(command, $"{actionLabel} for {player.UserName}.");
+    }
+
     private Task OnLogLineReceivedAsync(string profileId, string line)
     {
         if (SelectedProfile is null || !string.Equals(SelectedProfile.ProfileId, profileId, StringComparison.Ordinal))
@@ -386,7 +421,10 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
         ConnectedPlayers.Clear();
         foreach (var player in snapshot?.ConnectedPlayers ?? [])
         {
-            ConnectedPlayers.Add($"{player.UserName} | joined {player.JoinedAtUtc:HH:mm:ss} UTC");
+            ConnectedPlayers.Add(new ConnectedPlayerRowViewModel(
+                player.UserName,
+                $"Joined {player.JoinedAtUtc:HH:mm:ss} UTC",
+                $"Last seen {player.LastSeenAtUtc:HH:mm:ss} UTC"));
         }
 
         RecentPlayerSignals.Clear();
@@ -444,6 +482,7 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
         OnPropertyChanged(nameof(BufferCountSummary));
         OnPropertyChanged(nameof(SignalCountSummary));
         OnPropertyChanged(nameof(RosterPostureSummary));
+        OnPropertyChanged(nameof(PlayerModerationSummary));
         OnPropertyChanged(nameof(PlayerSignalSummary));
         OnPropertyChanged(nameof(PlayerSignalCountSummary));
         OnPropertyChanged(nameof(OperatorActionSummary));
@@ -455,8 +494,16 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
         OnPropertyChanged(nameof(CanSendCommands));
     }
 
+    private static string QuoteConsoleArgument(string value) =>
+        $"\"{value.Replace("\"", "'", StringComparison.Ordinal).Trim()}\"";
+
     private ProjectZomboidLogPostureSummary CurrentSummary =>
         SelectedProfile is null
             ? EmptySummary
             : ProjectZomboidLogPostureSummaryBuilder.Build(_runtimeStatus, LogLines.ToList());
+
+    public sealed record ConnectedPlayerRowViewModel(
+        string UserName,
+        string JoinedSummary,
+        string LastSeenSummary);
 }
