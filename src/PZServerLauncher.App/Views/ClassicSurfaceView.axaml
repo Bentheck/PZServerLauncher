@@ -210,8 +210,8 @@
                                         <TextBlock Classes="kicker" Text="Workspace Pages Live" />
                                         <Border Background="#F1E6D7" CornerRadius="14" Padding="16">
                                             <StackPanel Spacing="8">
-                                                <TextBlock Classes="body" Text="Structured General, Sandbox, Mods &amp; Maps, and Network &amp; Admin settings now live in the workspace pages." TextWrapping="Wrap" />
-                                                <TextBlock Classes="body" Text="Use the new workspace for server identity, primary ports, memory, startup behavior, first-pass sandbox gameplay/world settings, workshop/mod/map management, and bind/admin settings. Classic remains focused on raw files and the still-migrating areas." TextWrapping="Wrap" />
+                                                <TextBlock Classes="body" Text="Structured General, Sandbox, Mods &amp; Maps, Network &amp; Admin, and Backups are now live in the workspace pages." TextWrapping="Wrap" />
+                                                <TextBlock Classes="body" Text="Use the new workspace for server identity, primary ports, memory, startup behavior, first-pass sandbox gameplay/world settings, workshop/mod/map management, bind/admin settings, and backup/restore workflows. Classic remains focused on raw files and the still-migrating areas." TextWrapping="Wrap" />
                                             </StackPanel>
                                         </Border>
                                     </StackPanel>
@@ -280,8 +280,6 @@
                                     <Button Command="{Binding #ClassicRoot.DataContext.StartCommand}" CommandParameter="{Binding .}" Content="Start" />
                                     <Button Command="{Binding #ClassicRoot.DataContext.StopCommand}" CommandParameter="{Binding .}" Content="Stop" />
                                     <Button Command="{Binding #ClassicRoot.DataContext.RestartCommand}" CommandParameter="{Binding .}" Content="Restart" />
-                                    <Button Command="{Binding #ClassicRoot.DataContext.BackupCommand}" CommandParameter="{Binding .}" Content="Backup" />
-                                    <Button Command="{Binding #ClassicRoot.DataContext.RestoreCommand}" CommandParameter="{Binding .}" Content="Restore Latest" IsEnabled="{Binding HasBackup}" />
                                 </WrapPanel>
                             </Grid>
                         </Border>

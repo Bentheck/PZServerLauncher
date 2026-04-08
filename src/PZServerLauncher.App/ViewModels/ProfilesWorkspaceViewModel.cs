@@ -20,11 +20,7 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
         Sandbox = new SandboxWorkspaceViewModel(legacy, hostApiClient);
         ModsAndMaps = new ModsAndMapsWorkspaceViewModel(legacy, hostApiClient);
         NetworkAndAdmin = new NetworkAndAdminWorkspaceViewModel(legacy, hostApiClient);
-        Backups = new WorkspaceSectionViewModel(
-            "Backups",
-            "Backup history, manual backups, restore flow, and retention hints.",
-            "Backups draft cleared.",
-            ["Backup list", "Manual backup", "Restore flow", "Retention"]);
+        Backups = new BackupsWorkspaceViewModel(legacy, hostApiClient);
         Logs = new WorkspaceSectionViewModel(
             "Logs",
             "Live runtime output and recent server messages for the selected profile.",
@@ -96,7 +92,7 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
 
     public NetworkAndAdminWorkspaceViewModel NetworkAndAdmin { get; }
 
-    public WorkspaceSectionViewModel Backups { get; }
+    public BackupsWorkspaceViewModel Backups { get; }
 
     public WorkspaceSectionViewModel Logs { get; }
 

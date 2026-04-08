@@ -145,6 +145,9 @@ public sealed class LocalHostApiClient
     public Task<OperationResultDto?> BackupAsync(string profileId, CancellationToken cancellationToken = default) =>
         PostAsync<OperationResultDto>($"/api/profiles/{profileId}/backup", null, cancellationToken);
 
+    public Task<List<string>?> GetBackupsAsync(string profileId, CancellationToken cancellationToken = default) =>
+        GetAsync<List<string>>($"/api/profiles/{profileId}/backups", cancellationToken);
+
     public Task<List<ProfileImportCandidateDto>?> DiscoverLocalImportsAsync(CancellationToken cancellationToken = default) =>
         GetAsync<List<ProfileImportCandidateDto>>("/api/import/local", cancellationToken);
 

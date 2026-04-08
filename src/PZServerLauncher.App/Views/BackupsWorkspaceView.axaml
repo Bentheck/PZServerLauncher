@@ -1,0 +1,63 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:PZServerLauncher.App.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignWidth="1120"
+             d:DesignHeight="900"
+             x:Class="PZServerLauncher.App.Views.BackupsWorkspaceView"
+             x:DataType="vm:BackupsWorkspaceViewModel">
+    <Border Classes="card" Padding="24">
+        <StackPanel Spacing="18">
+            <StackPanel Spacing="4">
+                <TextBlock Classes="panel-title" FontSize="24" Text="{Binding PageTitle}" />
+                <TextBlock Classes="body" Text="{Binding PageSummary}" TextWrapping="Wrap" />
+            </StackPanel>
+
+            <Border Background="#F6EFE6" CornerRadius="14" Padding="16">
+                <TextBlock Classes="body" Text="{Binding LoadStatus}" TextWrapping="Wrap" />
+            </Border>
+
+            <WrapPanel Orientation="Horizontal" ItemWidth="168" ItemHeight="36">
+                <Button Command="{Binding CreateBackupCommand}" Content="Create Backup" IsEnabled="{Binding CanCreateBackup}" />
+                <Button Command="{Binding RestoreSelectedCommand}" Content="Restore Selected" IsEnabled="{Binding CanRestore}" />
+                <Button Command="{Binding ReloadCommand}" Content="Reload" />
+            </WrapPanel>
+
+            <CheckBox Content="Restart server after restore"
+                      IsChecked="{Binding RestartAfterRestore}"
+                      IsEnabled="{Binding CanRestore}" />
+
+            <Grid ColumnDefinitions="320,*" ColumnSpacing="16">
+                <Border Classes="card" Padding="16">
+                    <StackPanel Spacing="10">
+                        <TextBlock Classes="kicker" Text="Available Backups" />
+                        <ListBox ItemsSource="{Binding Backups}"
+                                 SelectedItem="{Binding SelectedBackup}"
+                                 MinHeight="360">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Classes="body" Text="{Binding .}" TextWrapping="Wrap" />
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                        <TextBlock Classes="body"
+                                   Text="No backups yet. Create the first manual archive from this page."
+                                   IsVisible="{Binding HasNoBackups}"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="1" Classes="card" Padding="16">
+                    <StackPanel Spacing="10">
+                        <TextBlock Classes="kicker" Text="Selected Backup" />
+                        <TextBlock Classes="body" Text="{Binding SelectedBackup}" TextWrapping="Wrap" />
+                        <TextBlock Classes="body" Text="Backups are ZIP archives produced by the host service. Restore will stop the server, unpack the selected archive, and optionally restart it afterward." TextWrapping="Wrap" />
+                        <TextBlock Classes="body" Text="Use this page for normal restore workflows. Advanced file-level recovery still belongs in the raw file and filesystem tooling." TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </StackPanel>
+    </Border>
+</UserControl>
