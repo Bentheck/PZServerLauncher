@@ -1,4 +1,5 @@
 using System.Text.Json;
+using PZServerLauncher.Contracts.Profiles;
 using PZServerLauncher.Core.Profiles;
 using PZServerLauncher.Core.Runtime;
 using PZServerLauncher.Host.Data.Entities;
@@ -180,9 +181,44 @@ public static class EntityMappingExtensions
             entity.ActorId,
             entity.Detail);
 
+    public static NamedWorkshopPresetDto ToDto(this NamedWorkshopPresetEntity entity) =>
+        new(
+            entity.PresetId,
+            entity.ProfileId,
+            entity.Name,
+            (ProjectZomboidBranch)entity.Branch,
+            new WorkshopPreset
+            {
+                WorkshopItemIds = DeserializeList(entity.WorkshopItemIdsJson),
+                EnabledModIds = DeserializeList(entity.EnabledModIdsJson),
+                MapFolders = DeserializeList(entity.MapFoldersJson),
+            },
+            entity.CreatedAtUtc,
+            entity.UpdatedAtUtc);
+
+    public static void ApplyModel(
+        this NamedWorkshopPresetEntity entity,
+        string profileId,
+        ProjectZomboidBranch branch,
+        string name,
+        WorkshopPreset preset)
+    {
+        entity.ProfileId = profileId;
+        entity.Branch = (int)branch;
+        entity.Name = name;
+        entity.NormalizedName = NormalizePresetName(name);
+        entity.WorkshopItemIdsJson = SerializeList(preset.WorkshopItemIds);
+        entity.EnabledModIdsJson = SerializeList(preset.EnabledModIds);
+        entity.MapFoldersJson = SerializeList(preset.MapFolders);
+        entity.UpdatedAtUtc = DateTimeOffset.UtcNow;
+    }
+
     private static IReadOnlyList<string> DeserializeList(string json) =>
         JsonSerializer.Deserialize<List<string>>(json, SerializerOptions) ?? [];
 
     private static string SerializeList(IReadOnlyList<string> values) =>
         JsonSerializer.Serialize(values, SerializerOptions);
+
+    private static string NormalizePresetName(string name) =>
+        name.Trim().ToUpperInvariant();
 }

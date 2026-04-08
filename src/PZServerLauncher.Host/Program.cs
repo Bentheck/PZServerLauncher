@@ -74,6 +74,7 @@ public class Program
         builder.Services.AddScoped<ConfigFileService>();
         builder.Services.AddScoped<StructuredSettingsService>();
         builder.Services.AddScoped<SettingsDraftStore>();
+        builder.Services.AddScoped<NamedWorkshopPresetStore>();
         builder.Services.AddScoped<ServerInstallService>();
         builder.Services.AddScoped<ServerBackupService>();
         builder.Services.AddScoped<LocalServerImportService>();
@@ -560,6 +561,73 @@ public class Program
                 $"Updated workshop preset for {updated.DisplayName}.",
                 cancellationToken: cancellationToken);
             return Results.Ok(normalizedPreset);
+        }).RequireAuthorization("DesktopOrAdmin");
+
+        api.MapGet("/profiles/{profileId}/workshop-presets/library", async (
+            string profileId,
+            ProfileStore store,
+            NamedWorkshopPresetStore presetStore,
+            CancellationToken cancellationToken) =>
+        {
+            var profile = await store.GetAsync(profileId, cancellationToken);
+            return profile is null
+                ? Results.NotFound()
+                : Results.Ok(await presetStore.ListAsync(profileId, cancellationToken));
+        }).RequireAuthorization("DesktopOrViewer");
+
+        api.MapPost("/profiles/{profileId}/workshop-presets/library", async (
+            string profileId,
+            NamedWorkshopPresetUpsertRequestDto request,
+            ProfileStore store,
+            NamedWorkshopPresetStore presetStore,
+            WorkshopPresetScannerService workshopPresetScannerService,
+            AuditStore auditStore,
+            CancellationToken cancellationToken) =>
+        {
+            var profile = await store.GetAsync(profileId, cancellationToken);
+            if (profile is null)
+            {
+                return Results.NotFound();
+            }
+
+            var normalizedPreset = workshopPresetScannerService.Scan(profile.InstallDirectory, request.Preset).Preset;
+            var savedPreset = await presetStore.UpsertAsync(profileId, profile.Branch, request.Name, normalizedPreset, cancellationToken);
+            await auditStore.WriteAsync(
+                "profile.workshop-preset-library.updated",
+                profileId,
+                "local",
+                $"Saved named workshop preset '{savedPreset.Name}' for {profile.DisplayName}.",
+                cancellationToken: cancellationToken);
+            return Results.Ok(savedPreset);
+        }).RequireAuthorization("DesktopOrAdmin");
+
+        api.MapDelete("/profiles/{profileId}/workshop-presets/library/{presetId:guid}", async (
+            string profileId,
+            Guid presetId,
+            ProfileStore store,
+            NamedWorkshopPresetStore presetStore,
+            AuditStore auditStore,
+            CancellationToken cancellationToken) =>
+        {
+            var profile = await store.GetAsync(profileId, cancellationToken);
+            if (profile is null)
+            {
+                return Results.NotFound();
+            }
+
+            var deleted = await presetStore.DeleteAsync(profileId, presetId, cancellationToken);
+            if (!deleted)
+            {
+                return Results.NotFound();
+            }
+
+            await auditStore.WriteAsync(
+                "profile.workshop-preset-library.deleted",
+                profileId,
+                "local",
+                $"Deleted a named workshop preset for {profile.DisplayName}.",
+                cancellationToken: cancellationToken);
+            return Results.NoContent();
         }).RequireAuthorization("DesktopOrAdmin");
 
         api.MapGet("/profiles/{profileId}/config/files/{kind}", async (

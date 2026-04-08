@@ -17,6 +17,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     public DbSet<SettingsDraftEntity> SettingsDrafts => Set<SettingsDraftEntity>();
 
+    public DbSet<NamedWorkshopPresetEntity> NamedWorkshopPresets => Set<NamedWorkshopPresetEntity>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -65,6 +67,19 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             entity.Property(x => x.CatalogId).HasMaxLength(128);
             entity.Property(x => x.PageId).HasMaxLength(64);
             entity.Property(x => x.ValuesJson).HasColumnType("TEXT");
+            entity.HasIndex(x => x.UpdatedAtUtc);
+        });
+
+        builder.Entity<NamedWorkshopPresetEntity>(entity =>
+        {
+            entity.HasKey(x => x.PresetId);
+            entity.Property(x => x.ProfileId).HasMaxLength(64);
+            entity.Property(x => x.Name).HasMaxLength(120);
+            entity.Property(x => x.NormalizedName).HasMaxLength(120);
+            entity.Property(x => x.WorkshopItemIdsJson).HasColumnType("TEXT");
+            entity.Property(x => x.EnabledModIdsJson).HasColumnType("TEXT");
+            entity.Property(x => x.MapFoldersJson).HasColumnType("TEXT");
+            entity.HasIndex(x => new { x.ProfileId, x.NormalizedName }).IsUnique();
             entity.HasIndex(x => x.UpdatedAtUtc);
         });
     }

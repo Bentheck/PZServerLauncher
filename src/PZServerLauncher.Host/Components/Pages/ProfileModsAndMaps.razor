@@ -1,8 +1,10 @@
 @page "/profiles/{ProfileId}/mods-maps"
 @attribute [Authorize(Roles="Owner,Admin")]
+@using PZServerLauncher.Contracts.Profiles
 @inject ProfileStore ProfileStore
 @inject StructuredSettingsService StructuredSettingsService
 @inject WorkshopPresetScannerService WorkshopPresetScannerService
+@inject NamedWorkshopPresetStore NamedWorkshopPresetStore
 @inject RuntimeStateStore RuntimeStateStore
 
 <PageTitle>Mods &amp; Maps</PageTitle>
@@ -163,6 +165,47 @@ else
                         <p>Use Advanced Files only for raw file editing fallback. Workshop and map lists are managed here.</p>
                     </div>
 
+                    <div class="inner-card card">
+                        <div class="card-heading">
+                            <div>
+                                <p class="eyebrow">Named Presets</p>
+                                <h3>Saved Loadouts</h3>
+                            </div>
+                            <span class="pill">@(_namedPresets.Count == 0 ? "Empty" : $"{_namedPresets.Count} saved")</span>
+                        </div>
+
+                        <p class="muted-text">Save the current editor state as a reusable loadout, then load it back into the queue later without touching the live server preset until you hit save.</p>
+
+                        <div class="file-toolbar">
+                            <input @bind="_newPresetName" placeholder="Preset name" />
+                            <button class="nav-button secondary-button" @onclick="SaveNamedPresetAsync" disabled="@(_busy || string.IsNullOrWhiteSpace(_newPresetName))">Save Preset</button>
+                        </div>
+
+                        @if (_namedPresets.Count == 0)
+                        {
+                            <p class="muted-text">No named presets saved for this profile yet.</p>
+                        }
+                        else
+                        {
+                            <ul class="job-list">
+                                @foreach (var preset in _namedPresets)
+                                {
+                                    <li class="job-list__item">
+                                        <div class="job-list__title">
+                                            <strong>@preset.Name</strong>
+                                            <span>@preset.UpdatedAtUtc.ToLocalTime().ToString("g")</span>
+                                        </div>
+                                        <div class="muted-text">@BuildPresetCompositionSummary(preset.Preset)</div>
+                                        <div class="workspace-actions">
+                                            <button class="nav-button secondary-button" @onclick="() => LoadNamedPreset(preset)" disabled="@_busy">Load To Editor</button>
+                                            <button class="nav-button secondary-button" @onclick="() => DeleteNamedPresetAsync(preset)" disabled="@_busy">Delete</button>
+                                        </div>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                    </div>
+
                     @if (_scanResult is not null)
                     {
                         <div class="inner-card card">
@@ -219,10 +262,12 @@ else
     private string _presetHash = string.Empty;
     private WorkshopScanResultDto? _scanResult;
     private IReadOnlyList<string> _scanDiagnostics = [];
+    private IReadOnlyList<NamedWorkshopPresetDto> _namedPresets = [];
     private bool _hasChanges;
     private bool _suppressChangeTracking;
     private bool _requiresAdvancedFilesFallback;
     private string? _fallbackReason;
+    private string _newPresetName = string.Empty;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -247,6 +292,7 @@ else
         var preset = StructuredSettingsService.GetWorkshopPreset(_profile);
         _profile = _profile with { WorkshopPreset = preset };
         LoadPreset(preset);
+        _namedPresets = await NamedWorkshopPresetStore.ListAsync(ProfileId);
         _scanResult = null;
         _scanDiagnostics = [];
         _statusMessage = _requiresAdvancedFilesFallback
@@ -362,6 +408,58 @@ else
         }
     }
 
+    private async Task SaveNamedPresetAsync()
+    {
+        if (_profile is null || string.IsNullOrWhiteSpace(_newPresetName))
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var normalizedPreset = WorkshopPresetScannerService.Scan(_profile.InstallDirectory, BuildPresetFromEditor()).Preset;
+            await NamedWorkshopPresetStore.UpsertAsync(ProfileId, _profile.Branch, _newPresetName, normalizedPreset);
+            _namedPresets = await NamedWorkshopPresetStore.ListAsync(ProfileId);
+            _newPresetName = string.Empty;
+            _statusMessage = "Named preset saved.";
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void LoadNamedPreset(NamedWorkshopPresetDto preset)
+    {
+        LoadPreset(preset.Preset);
+        _hasChanges = true;
+        _statusMessage = $"Loaded named preset '{preset.Name}' into the editor. Save Preset to push it live.";
+    }
+
+    private async Task DeleteNamedPresetAsync(NamedWorkshopPresetDto preset)
+    {
+        _busy = true;
+        try
+        {
+            await NamedWorkshopPresetStore.DeleteAsync(ProfileId, preset.PresetId);
+            _namedPresets = await NamedWorkshopPresetStore.ListAsync(ProfileId);
+            _statusMessage = $"Deleted named preset '{preset.Name}'.";
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
     private void LoadPreset(PZServerLauncher.Core.Profiles.WorkshopPreset preset)
     {
         _suppressChangeTracking = true;
@@ -413,6 +511,9 @@ else
             string.Join(",", preset.MapFolders));
         return Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(source)));
     }
+
+    private static string BuildPresetCompositionSummary(PZServerLauncher.Core.Profiles.WorkshopPreset preset) =>
+        $"{preset.WorkshopItemIds.Count} workshop | {preset.EnabledModIds.Count} mods | {preset.MapFolders.Count} maps";
 
     private string OverviewHref => $"/profiles/{Uri.EscapeDataString(ProfileId)}/overview";
 

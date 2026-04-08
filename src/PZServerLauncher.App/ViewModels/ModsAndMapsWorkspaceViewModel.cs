@@ -30,6 +30,9 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
         AddWorkshopEntryCommand = new RelayCommand(AddWorkshopEntry, () => CanAddWorkshopEntry);
         AddEnabledModEntryCommand = new RelayCommand(AddEnabledModEntry, () => CanAddEnabledModEntry);
         AddMapEntryCommand = new RelayCommand(AddMapEntry, () => CanAddMapEntry);
+        SaveNamedPresetCommand = new AsyncRelayCommand(SaveNamedPresetAsync, () => CanSaveNamedPreset);
+        LoadNamedPresetCommand = new RelayCommand<SavedPresetViewModel>(LoadNamedPreset);
+        DeleteNamedPresetCommand = new AsyncRelayCommand<SavedPresetViewModel>(DeleteNamedPresetAsync);
         MoveEntryUpCommand = new RelayCommand<PresetEntryViewModel>(MoveEntryUp);
         MoveEntryDownCommand = new RelayCommand<PresetEntryViewModel>(MoveEntryDown);
         RemoveEntryCommand = new RelayCommand<PresetEntryViewModel>(RemoveEntry);
@@ -65,6 +68,10 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
         ? "No custom map folders listed."
         : $"{MapEntries.Count} map folder(s) in load order.";
 
+    public string SavedPresetSummary => SavedPresets.Count == 0
+        ? "No named presets saved for this profile yet."
+        : $"{SavedPresets.Count} named preset(s) available for this profile.";
+
     public string ScanReadinessSummary => SelectedProfile is null
         ? "Choose a profile first."
         : HasUnsavedChanges
@@ -94,7 +101,9 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
 
             return Diagnostics.Count > 0
                 ? "Resolve the scanner diagnostics or accept them, then keep the saved order aligned with your map stack."
-                : "Scan again after any install change so the saved preset stays aligned with local workshop content.";
+                : SavedPresets.Count == 0
+                    ? "Save the current loadout as a named preset once it looks right so you can recover or reuse it quickly."
+                    : "Scan again after any install change so the saved preset stays aligned with local workshop content.";
         }
     }
 
@@ -105,6 +114,8 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
     public ObservableCollection<PresetEntryViewModel> EnabledModEntries { get; } = [];
 
     public ObservableCollection<PresetEntryViewModel> MapEntries { get; } = [];
+
+    public ObservableCollection<SavedPresetViewModel> SavedPresets { get; } = [];
 
     public bool HasDiagnostics => Diagnostics.Count > 0;
 
@@ -122,6 +133,10 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
 
     public bool HasNoMapEntries => MapEntries.Count == 0;
 
+    public bool HasSavedPresets => SavedPresets.Count > 0;
+
+    public bool HasNoSavedPresets => SavedPresets.Count == 0;
+
     public IAsyncRelayCommand SaveSettingsCommand { get; }
 
     public IAsyncRelayCommand ReloadCommand { get; }
@@ -133,6 +148,12 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
     public IRelayCommand AddEnabledModEntryCommand { get; }
 
     public IRelayCommand AddMapEntryCommand { get; }
+
+    public IAsyncRelayCommand SaveNamedPresetCommand { get; }
+
+    public IRelayCommand<SavedPresetViewModel> LoadNamedPresetCommand { get; }
+
+    public IAsyncRelayCommand<SavedPresetViewModel> DeleteNamedPresetCommand { get; }
 
     public IRelayCommand<PresetEntryViewModel> MoveEntryUpCommand { get; }
 
@@ -147,6 +168,8 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
     public bool CanAddEnabledModEntry => !string.IsNullOrWhiteSpace(NewEnabledModEntry);
 
     public bool CanAddMapEntry => !string.IsNullOrWhiteSpace(NewMapEntry);
+
+    public bool CanSaveNamedPreset => SelectedProfile is not null && !string.IsNullOrWhiteSpace(NewPresetName);
 
     [ObservableProperty]
     private string loadStatus = "Select a profile to load workshop, mod, and map settings.";
@@ -171,6 +194,9 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
 
     [ObservableProperty]
     private string newMapEntry = string.Empty;
+
+    [ObservableProperty]
+    private string newPresetName = string.Empty;
 
     [ObservableProperty]
     private bool isLoading;
@@ -288,6 +314,7 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
         {
             _catalog = await _hostApiClient.GetSettingsCatalogAsync(profile.ProfileId);
             var preset = await _hostApiClient.GetWorkshopPresetAsync(profile.ProfileId) ?? WorkshopPreset.Empty;
+            var savedPresets = await _hostApiClient.GetNamedWorkshopPresetsAsync(profile.ProfileId) ?? [];
             var draft = await _hostApiClient.GetSettingsDraftAsync(profile.ProfileId, ProfileWorkspacePageIds.ModsAndMaps);
 
             CatalogSummary = _catalog is null
@@ -295,6 +322,7 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
                 : $"{_catalog.CatalogId} v{_catalog.CatalogVersion} | {_catalog.Branch}";
 
             ApplyPreset(preset);
+            ReplaceSavedPresets(savedPresets);
             MarkClean("Loaded Mods & Maps settings from the local host.");
             Diagnostics.Clear();
             OnPropertyChanged(nameof(HasDiagnostics));
@@ -345,6 +373,50 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
         LoadStatus = result.Diagnostics.Count == 0
             ? "Workshop scan passed. Saved preset is present in the local workshop cache."
             : $"Workshop scan completed with {result.Diagnostics.Count} issue(s).";
+        NotifyComputedState();
+    }
+
+    private async Task SaveNamedPresetAsync()
+    {
+        if (SelectedProfile is null)
+        {
+            return;
+        }
+
+        var saved = await _hostApiClient.SaveNamedWorkshopPresetAsync(SelectedProfile.ProfileId, NewPresetName, BuildPreset());
+        if (saved is null)
+        {
+            LoadStatus = "Named preset could not be saved.";
+            return;
+        }
+
+        UpsertSavedPreset(saved);
+        NewPresetName = string.Empty;
+        LoadStatus = $"Saved named preset '{saved.Name}'.";
+        NotifyComputedState();
+    }
+
+    private void LoadNamedPreset(SavedPresetViewModel? preset)
+    {
+        if (preset is null)
+        {
+            return;
+        }
+
+        ApplyPreset(preset.Preset);
+        NotifyEdited($"Loaded named preset '{preset.Name}' into the editor. Apply settings to push it live.");
+    }
+
+    private async Task DeleteNamedPresetAsync(SavedPresetViewModel? preset)
+    {
+        if (SelectedProfile is null || preset is null)
+        {
+            return;
+        }
+
+        await _hostApiClient.DeleteNamedWorkshopPresetAsync(SelectedProfile.ProfileId, preset.PresetId);
+        SavedPresets.Remove(preset);
+        LoadStatus = $"Deleted named preset '{preset.Name}'.";
         NotifyComputedState();
     }
 
@@ -592,6 +664,7 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
         WorkshopEntries.Clear();
         EnabledModEntries.Clear();
         MapEntries.Clear();
+        SavedPresets.Clear();
         OnPropertyChanged(nameof(HasDiagnostics));
         OnPropertyChanged(nameof(HasNoDiagnostics));
 
@@ -604,6 +677,7 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
             NewWorkshopEntry = string.Empty;
             NewEnabledModEntry = string.Empty;
             NewMapEntry = string.Empty;
+            NewPresetName = string.Empty;
         }
         finally
         {
@@ -636,6 +710,12 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
         OnPropertyChanged(nameof(CanAddMapEntry));
     }
 
+    partial void OnNewPresetNameChanged(string value)
+    {
+        SaveNamedPresetCommand.NotifyCanExecuteChanged();
+        OnPropertyChanged(nameof(CanSaveNamedPreset));
+    }
+
     private void NotifyTextEdited()
     {
         if (_isApplyingState)
@@ -664,18 +744,52 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
         OnPropertyChanged(nameof(WorkshopSummary));
         OnPropertyChanged(nameof(EnabledModsSummary));
         OnPropertyChanged(nameof(MapOrderSummary));
+        OnPropertyChanged(nameof(SavedPresetSummary));
         OnPropertyChanged(nameof(ScanReadinessSummary));
         OnPropertyChanged(nameof(ModsNextStepSummary));
         OnPropertyChanged(nameof(CanScan));
         OnPropertyChanged(nameof(CanAddWorkshopEntry));
         OnPropertyChanged(nameof(CanAddEnabledModEntry));
         OnPropertyChanged(nameof(CanAddMapEntry));
+        OnPropertyChanged(nameof(CanSaveNamedPreset));
         OnPropertyChanged(nameof(HasWorkshopEntries));
         OnPropertyChanged(nameof(HasNoWorkshopEntries));
         OnPropertyChanged(nameof(HasEnabledModEntries));
         OnPropertyChanged(nameof(HasNoEnabledModEntries));
         OnPropertyChanged(nameof(HasMapEntries));
         OnPropertyChanged(nameof(HasNoMapEntries));
+        OnPropertyChanged(nameof(HasSavedPresets));
+        OnPropertyChanged(nameof(HasNoSavedPresets));
+    }
+
+    private void ReplaceSavedPresets(IReadOnlyList<NamedWorkshopPresetDto> presets)
+    {
+        SavedPresets.Clear();
+        foreach (var preset in presets.OrderByDescending(item => item.UpdatedAtUtc))
+        {
+            SavedPresets.Add(new SavedPresetViewModel(
+                preset.PresetId,
+                preset.Name,
+                preset.Preset,
+                preset.UpdatedAtUtc,
+                $"{preset.Preset.WorkshopItemIds.Count} workshop | {preset.Preset.EnabledModIds.Count} mods | {preset.Preset.MapFolders.Count} maps"));
+        }
+    }
+
+    private void UpsertSavedPreset(NamedWorkshopPresetDto preset)
+    {
+        var existing = SavedPresets.FirstOrDefault(item => item.PresetId == preset.PresetId);
+        if (existing is not null)
+        {
+            SavedPresets.Remove(existing);
+        }
+
+        SavedPresets.Insert(0, new SavedPresetViewModel(
+            preset.PresetId,
+            preset.Name,
+            preset.Preset,
+            preset.UpdatedAtUtc,
+            $"{preset.Preset.WorkshopItemIds.Count} workshop | {preset.Preset.EnabledModIds.Count} mods | {preset.Preset.MapFolders.Count} maps"));
     }
 
     private static string GetKindLabel(PresetEntryKind kind) =>
@@ -696,6 +810,26 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
         public string OrderLabel => $"{position + 1:00}";
 
         public string Value { get; } = value;
+    }
+
+    public sealed class SavedPresetViewModel(
+        Guid presetId,
+        string name,
+        WorkshopPreset preset,
+        DateTimeOffset updatedAtUtc,
+        string compositionSummary)
+    {
+        public Guid PresetId { get; } = presetId;
+
+        public string Name { get; } = name;
+
+        public WorkshopPreset Preset { get; } = preset;
+
+        public DateTimeOffset UpdatedAtUtc { get; } = updatedAtUtc;
+
+        public string UpdatedLabel => updatedAtUtc.ToLocalTime().ToString("g");
+
+        public string CompositionSummary { get; } = compositionSummary;
     }
 
     public enum PresetEntryKind

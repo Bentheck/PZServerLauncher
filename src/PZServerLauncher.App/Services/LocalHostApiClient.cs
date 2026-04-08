@@ -174,6 +174,32 @@ public sealed class LocalHostApiClient
         CancellationToken cancellationToken = default) =>
         PutAsync<PZServerLauncher.Core.Profiles.WorkshopPreset>($"/api/profiles/{profileId}/workshop-preset", preset, cancellationToken);
 
+    public Task<List<NamedWorkshopPresetDto>?> GetNamedWorkshopPresetsAsync(
+        string profileId,
+        CancellationToken cancellationToken = default) =>
+        GetAsync<List<NamedWorkshopPresetDto>>($"/api/profiles/{profileId}/workshop-presets/library", cancellationToken);
+
+    public Task<NamedWorkshopPresetDto?> SaveNamedWorkshopPresetAsync(
+        string profileId,
+        string name,
+        PZServerLauncher.Core.Profiles.WorkshopPreset preset,
+        CancellationToken cancellationToken = default) =>
+        PostAsync<NamedWorkshopPresetDto>(
+            $"/api/profiles/{profileId}/workshop-presets/library",
+            new NamedWorkshopPresetUpsertRequestDto(name, preset),
+            cancellationToken);
+
+    public async Task DeleteNamedWorkshopPresetAsync(
+        string profileId,
+        Guid presetId,
+        CancellationToken cancellationToken = default)
+    {
+        var state = await LoadStateAsync(cancellationToken);
+        using var client = CreateHttpClient(state);
+        using var response = await client.DeleteAsync($"/api/profiles/{profileId}/workshop-presets/library/{presetId}", cancellationToken);
+        await EnsureSuccessAsync(response, cancellationToken);
+    }
+
     public Task<List<string>?> GetRecentLogsAsync(string profileId, CancellationToken cancellationToken = default) =>
         GetAsync<List<string>>($"/api/profiles/{profileId}/logs/recent", cancellationToken);
 

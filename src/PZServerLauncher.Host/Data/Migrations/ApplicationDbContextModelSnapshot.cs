@@ -339,6 +339,58 @@ namespace PZServerLauncher.Host.Data.Migrations
                     b.ToTable("OperationJobs");
                 });
 
+            modelBuilder.Entity("PZServerLauncher.Host.Data.Entities.NamedWorkshopPresetEntity", b =>
+                {
+                    b.Property<Guid>("PresetId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Branch")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("EnabledModIdsJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("MapFoldersJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("NormalizedName")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ProfileId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("WorkshopItemIdsJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("PresetId");
+
+                    b.HasIndex("ProfileId", "NormalizedName")
+                        .IsUnique();
+
+                    b.HasIndex("UpdatedAtUtc");
+
+                    b.ToTable("NamedWorkshopPresets");
+                });
+
             modelBuilder.Entity("PZServerLauncher.Host.Data.Entities.ServerProfileEntity", b =>
                 {
                     b.Property<string>("ProfileId")
