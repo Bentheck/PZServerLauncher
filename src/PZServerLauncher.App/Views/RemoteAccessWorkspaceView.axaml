@@ -98,16 +98,35 @@
                 </Border>
 
                 <Border Grid.Column="1" Background="#F1E6D7" CornerRadius="14" Padding="16">
-                        <StackPanel Spacing="12">
-                            <StackPanel Spacing="4">
-                                <TextBlock Classes="kicker" Text="Operator Checklist" />
-                                <TextBlock Classes="body" Text="{Binding RemoteActionSummary}" TextWrapping="Wrap" />
-                                <TextBlock Classes="body" Text="{Binding RemoteFirewallIntentSummary}" TextWrapping="Wrap" />
-                                <TextBlock Classes="body" Text="{Binding RemoteNextStepSummary}" TextWrapping="Wrap" />
-                            </StackPanel>
-                            <TextBlock Classes="body"
-                                   FontFamily="Cascadia Code,Consolas,monospace"
-                                   Text="{Binding Legacy.RemoteSelfTestChecks}"
+                    <StackPanel Spacing="12">
+                        <StackPanel Spacing="4">
+                            <TextBlock Classes="kicker" Text="Operator Checklist" />
+                            <TextBlock Classes="body" Text="{Binding RemoteActionSummary}" TextWrapping="Wrap" />
+                            <TextBlock Classes="body" Text="{Binding RemoteFirewallIntentSummary}" TextWrapping="Wrap" />
+                            <TextBlock Classes="body" Text="{Binding RemoteNextStepSummary}" TextWrapping="Wrap" />
+                        </StackPanel>
+
+                        <StackPanel Spacing="8" IsVisible="{Binding HasRemoteSelfTestChecks}">
+                            <TextBlock Classes="kicker" Text="Latest Self-Test Checks" />
+                            <ItemsControl ItemsSource="{Binding RemoteSelfTestChecks}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:RemoteAccessWorkspaceViewModel+RemoteSelfTestCheckViewModel">
+                                        <Border Background="#FFF8F1" CornerRadius="12" Padding="12" Margin="0,0,0,8">
+                                            <StackPanel Spacing="4">
+                                                <Border Background="#2A2927" CornerRadius="999" Padding="8,3" HorizontalAlignment="Left">
+                                                    <TextBlock Foreground="#F7F0E7" FontSize="11" FontWeight="SemiBold" Text="{Binding StatusLabel}" />
+                                                </Border>
+                                                <TextBlock Classes="body" Text="{Binding Message}" TextWrapping="Wrap" />
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+
+                        <TextBlock Classes="body"
+                                   IsVisible="{Binding HasNoRemoteSelfTestChecks}"
+                                   Text="Run the local self-test after saving your HTTPS settings to turn this checklist into actionable results."
                                    TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>

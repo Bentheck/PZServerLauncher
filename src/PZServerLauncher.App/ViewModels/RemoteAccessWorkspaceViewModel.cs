@@ -88,6 +88,14 @@ public sealed class RemoteAccessWorkspaceViewModel : WorkspacePageViewModelBase
         ? "Firewall rule intent is enabled. Apply the rule after the certificate and bind settings pass the local checks."
         : "Firewall rule intent is off. Remote access will still need manual inbound allowance if you expose it later.";
 
+    public IReadOnlyList<RemoteSelfTestCheckViewModel> RemoteSelfTestChecks => GetSelfTestLines()
+        .Select(ParseSelfTestCheck)
+        .ToArray();
+
+    public bool HasRemoteSelfTestChecks => RemoteSelfTestChecks.Count > 0;
+
+    public bool HasNoRemoteSelfTestChecks => !HasRemoteSelfTestChecks;
+
     public string RemoteNextStepSummary
     {
         get
@@ -127,6 +135,9 @@ public sealed class RemoteAccessWorkspaceViewModel : WorkspacePageViewModelBase
             OnPropertyChanged(nameof(RemoteActionSummary));
             OnPropertyChanged(nameof(RemoteReadinessSummary));
             OnPropertyChanged(nameof(RemoteEnabledLabel));
+            OnPropertyChanged(nameof(RemoteSelfTestChecks));
+            OnPropertyChanged(nameof(HasRemoteSelfTestChecks));
+            OnPropertyChanged(nameof(HasNoRemoteSelfTestChecks));
             OnPropertyChanged(nameof(RemoteSelfTestHeadline));
             OnPropertyChanged(nameof(RemoteSelfTestStats));
             OnPropertyChanged(nameof(RemoteNextStepSummary));
@@ -138,4 +149,30 @@ public sealed class RemoteAccessWorkspaceViewModel : WorkspacePageViewModelBase
             ? []
             : Legacy.RemoteSelfTestChecks
                 .Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+    private static RemoteSelfTestCheckViewModel ParseSelfTestCheck(string message)
+    {
+        var normalized = message.ToLowerInvariant();
+        if (normalized.Contains("failed", StringComparison.Ordinal) ||
+            normalized.Contains("could not", StringComparison.Ordinal) ||
+            normalized.Contains("is not", StringComparison.Ordinal))
+        {
+            return new RemoteSelfTestCheckViewModel("Blocking", message, true, false);
+        }
+
+        if (normalized.Contains("manual", StringComparison.Ordinal) ||
+            normalized.Contains("requires administrative rights", StringComparison.Ordinal) ||
+            normalized.Contains("restart the host", StringComparison.Ordinal))
+        {
+            return new RemoteSelfTestCheckViewModel("Follow-up", message, false, true);
+        }
+
+        return new RemoteSelfTestCheckViewModel("Healthy", message, false, false);
+    }
+
+    public sealed record RemoteSelfTestCheckViewModel(
+        string StatusLabel,
+        string Message,
+        bool IsBlocking,
+        bool IsFollowUp);
 }
