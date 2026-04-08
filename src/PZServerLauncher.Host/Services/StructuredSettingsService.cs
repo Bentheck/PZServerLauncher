@@ -592,6 +592,18 @@ public sealed class StructuredSettingsService(
         ValidateMinimumInteger(values, $"{branchPrefix}.sandbox.meta-event", 1, "Meta event frequency must be 1 or greater.", fieldErrors);
         ValidateMinimumInteger(values, $"{branchPrefix}.sandbox.sleeping-event", 1, "Sleeping event frequency must be 1 or greater.", fieldErrors);
         ValidateMinimumInteger(values, $"{branchPrefix}.sandbox.generator-spawning", 1, "Generator spawn rate must be 1 or greater.", fieldErrors);
+        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.zombie-lore-speed", 1, 4, "Zombie speed must be between 1 and 4.", fieldErrors);
+        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.zombie-lore-strength", 1, 4, "Zombie strength must be between 1 and 4.", fieldErrors);
+        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.zombie-lore-toughness", 1, 4, "Zombie toughness must be between 1 and 4.", fieldErrors);
+        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.zombie-lore-transmission", 1, 4, "Transmission must be between 1 and 4.", fieldErrors);
+        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.zombie-lore-mortality", 1, 7, "Mortality must be between 1 and 7.", fieldErrors);
+        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.zombie-lore-reanimate", 1, 5, "Reanimate time must be between 1 and 5.", fieldErrors);
+        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.zombie-lore-cognition", 1, 4, "Cognition must be between 1 and 4.", fieldErrors);
+        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.zombie-lore-memory", 1, 4, "Memory must be between 1 and 4.", fieldErrors);
+        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.zombie-lore-sight", 1, 4, "Sight must be between 1 and 4.", fieldErrors);
+        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.zombie-lore-hearing", 1, 4, "Hearing must be between 1 and 4.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.sandbox.zombie-lore-trigger-house-alarm", "Trigger house alarm must be true or false.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.sandbox.zombie-lore-thump-no-chasing", "Thump without chasing must be true or false.", fieldErrors);
         ValidateRangedInteger(values, $"{branchPrefix}.sandbox.character-free-points", -100, 100, "Character free points must stay between -100 and 100.", fieldErrors);
         ValidateMinimumInteger(values, $"{branchPrefix}.sandbox.construction-bonus-points", 0, "Construction bonus points must be zero or greater.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.sandbox.multi-hit", "Multi-hit must be true or false.", fieldErrors);

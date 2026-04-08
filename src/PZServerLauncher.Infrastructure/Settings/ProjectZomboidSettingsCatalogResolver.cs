@@ -138,6 +138,24 @@ public sealed class ProjectZomboidSettingsCatalogResolver : ISettingsCatalogReso
                         Field($"{branchPrefix}.sandbox.start-time", "Start Time", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "StartTime", defaultValue: "2", helpText: "1 is 7AM, 5 is 5PM, 9 is 5AM."),
                     }),
                 new StructuredSectionDefinition(
+                    $"{branchPrefix}.sandbox.zombie-lore",
+                    "Zombie Lore",
+                    new[]
+                    {
+                        Field($"{branchPrefix}.sandbox.zombie-lore-speed", "Zombie Speed", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "ZombieLore.Speed", defaultValue: "2", helpText: "Project Zomboid zombie speed preset value."),
+                        Field($"{branchPrefix}.sandbox.zombie-lore-strength", "Zombie Strength", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "ZombieLore.Strength", defaultValue: "2", helpText: "Project Zomboid zombie strength preset value."),
+                        Field($"{branchPrefix}.sandbox.zombie-lore-toughness", "Zombie Toughness", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "ZombieLore.Toughness", defaultValue: "2", helpText: "Project Zomboid zombie toughness preset value."),
+                        Field($"{branchPrefix}.sandbox.zombie-lore-transmission", "Infection Transmission", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "ZombieLore.Transmission", defaultValue: "1", helpText: "How bites and scratches transmit the Knox infection."),
+                        Field($"{branchPrefix}.sandbox.zombie-lore-mortality", "Infection Mortality", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "ZombieLore.Mortality", defaultValue: "5", helpText: "How quickly the infection becomes fatal."),
+                        Field($"{branchPrefix}.sandbox.zombie-lore-reanimate", "Reanimate Delay", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "ZombieLore.Reanimate", defaultValue: "2", helpText: "How quickly dead survivors reanimate."),
+                        Field($"{branchPrefix}.sandbox.zombie-lore-cognition", "Zombie Cognition", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "ZombieLore.Cognition", defaultValue: "3", helpText: "How well zombies interact with doors and obstacles."),
+                        Field($"{branchPrefix}.sandbox.zombie-lore-memory", "Zombie Memory", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "ZombieLore.Memory", defaultValue: "2", helpText: "How long zombies remember their target."),
+                        Field($"{branchPrefix}.sandbox.zombie-lore-sight", "Zombie Sight", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "ZombieLore.Sight", defaultValue: "2", helpText: "How quickly zombies spot survivors visually."),
+                        Field($"{branchPrefix}.sandbox.zombie-lore-hearing", "Zombie Hearing", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "ZombieLore.Hearing", defaultValue: "2", helpText: "How sensitive zombies are to sound cues."),
+                        Field($"{branchPrefix}.sandbox.zombie-lore-trigger-house-alarm", "Trigger House Alarm", StructuredValueKind.Boolean, ConfigFileKind.SandboxVars, "ZombieLore.TriggerHouseAlarm", defaultValue: "false", helpText: "Allow zombies to trigger house alarms while moving through homes."),
+                        Field($"{branchPrefix}.sandbox.zombie-lore-thump-no-chasing", "Thump Without Chasing", StructuredValueKind.Boolean, ConfigFileKind.SandboxVars, "ZombieLore.ThumpNoChasing", defaultValue: "false", helpText: "Allow zombies to thump doors and windows even when they are not actively chasing players."),
+                    }),
+                new StructuredSectionDefinition(
                     $"{branchPrefix}.sandbox.utilities",
                     "Utilities",
                     new[]

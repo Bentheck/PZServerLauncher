@@ -103,6 +103,63 @@
 
                     <Border Grid.Column="1" Classes="card" Padding="18">
                         <StackPanel Spacing="12">
+                            <TextBlock Classes="kicker" Text="Zombie Lore" />
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="10">
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="body" Text="Zombie Speed" />
+                                    <TextBox Text="{Binding ZombieLoreSpeed}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Spacing="4">
+                                    <TextBlock Classes="body" Text="Zombie Strength" />
+                                    <TextBox Text="{Binding ZombieLoreStrength}" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="1" Spacing="4">
+                                    <TextBlock Classes="body" Text="Zombie Toughness" />
+                                    <TextBox Text="{Binding ZombieLoreToughness}" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="1" Grid.Column="1" Spacing="4">
+                                    <TextBlock Classes="body" Text="Transmission" />
+                                    <TextBox Text="{Binding ZombieLoreTransmission}" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="2" Spacing="4">
+                                    <TextBlock Classes="body" Text="Mortality" />
+                                    <TextBox Text="{Binding ZombieLoreMortality}" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="2" Grid.Column="1" Spacing="4">
+                                    <TextBlock Classes="body" Text="Reanimate Delay" />
+                                    <TextBox Text="{Binding ZombieLoreReanimate}" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="3" Spacing="4">
+                                    <TextBlock Classes="body" Text="Cognition" />
+                                    <TextBox Text="{Binding ZombieLoreCognition}" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="3" Grid.Column="1" Spacing="4">
+                                    <TextBlock Classes="body" Text="Memory" />
+                                    <TextBox Text="{Binding ZombieLoreMemory}" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="4" Spacing="4">
+                                    <TextBlock Classes="body" Text="Sight" />
+                                    <TextBox Text="{Binding ZombieLoreSight}" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="4" Grid.Column="1" Spacing="4">
+                                    <TextBlock Classes="body" Text="Hearing" />
+                                    <TextBox Text="{Binding ZombieLoreHearing}" />
+                                </StackPanel>
+                                <CheckBox Grid.Row="5"
+                                          Content="Trigger House Alarm"
+                                          IsChecked="{Binding ZombieLoreTriggerHouseAlarm}" />
+                                <CheckBox Grid.Row="5"
+                                          Grid.Column="1"
+                                          Content="Thump Without Chasing"
+                                          IsChecked="{Binding ZombieLoreThumpNoChasing}" />
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <Grid ColumnDefinitions="1.2*,.8*" ColumnSpacing="16" IsEnabled="{Binding CanEdit}">
+                    <Border Classes="card" Padding="18">
+                        <StackPanel Spacing="12">
                             <TextBlock Classes="kicker" Text="Utilities" />
                             <StackPanel Spacing="8">
                                 <StackPanel Spacing="4">
@@ -124,6 +181,18 @@
                                 <CheckBox Content="Starter Kit" IsChecked="{Binding StarterKit}" />
                                 <CheckBox Content="Nutrition" IsChecked="{Binding Nutrition}" />
                             </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="1" Background="#F8F0E5" CornerRadius="14" Padding="16">
+                        <StackPanel Spacing="8">
+                            <TextBlock Classes="kicker" Text="Operator Note" />
+                            <TextBlock Classes="body"
+                                       Text="Zombie Lore controls the feel of the apocalypse more than any other section here. Tune it before you lock in loot and survival pacing."
+                                       TextWrapping="Wrap" />
+                            <TextBlock Classes="body"
+                                       Text="If your file lacks the nested ZombieLore keys, the host now patches them into the existing table or creates the table on first save."
+                                       TextWrapping="Wrap" />
                         </StackPanel>
                     </Border>
                 </Grid>

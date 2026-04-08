@@ -21,7 +21,7 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             "Branch-aware gameplay and world settings from SandboxVars.lua.",
             "Sandbox settings are in sync.",
             legacy,
-            ["World setup", "Utilities", "Loot and climate", "Survival systems", "World events", "Survivor boosts", "Cleanup and wear", "Player experience"])
+            ["World setup", "Zombie lore", "Utilities", "Loot and climate", "Survival systems", "World events", "Survivor boosts", "Cleanup and wear", "Player experience"])
     {
         _hostApiClient = hostApiClient;
         SaveSettingsCommand = new AsyncRelayCommand(SaveSettingsAsync);
@@ -94,6 +94,42 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
     [ObservableProperty]
     private string startTime = string.Empty;
+
+    [ObservableProperty]
+    private string zombieLoreSpeed = string.Empty;
+
+    [ObservableProperty]
+    private string zombieLoreStrength = string.Empty;
+
+    [ObservableProperty]
+    private string zombieLoreToughness = string.Empty;
+
+    [ObservableProperty]
+    private string zombieLoreTransmission = string.Empty;
+
+    [ObservableProperty]
+    private string zombieLoreMortality = string.Empty;
+
+    [ObservableProperty]
+    private string zombieLoreReanimate = string.Empty;
+
+    [ObservableProperty]
+    private string zombieLoreCognition = string.Empty;
+
+    [ObservableProperty]
+    private string zombieLoreMemory = string.Empty;
+
+    [ObservableProperty]
+    private string zombieLoreSight = string.Empty;
+
+    [ObservableProperty]
+    private string zombieLoreHearing = string.Empty;
+
+    [ObservableProperty]
+    private bool zombieLoreTriggerHouseAlarm;
+
+    [ObservableProperty]
+    private bool zombieLoreThumpNoChasing;
 
     [ObservableProperty]
     private string waterShutModifier = string.Empty;
@@ -384,6 +420,18 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             StartMonth = GetValue(values, ".sandbox.start-month");
             StartDay = GetValue(values, ".sandbox.start-day");
             StartTime = GetValue(values, ".sandbox.start-time");
+            ZombieLoreSpeed = GetValue(values, ".sandbox.zombie-lore-speed");
+            ZombieLoreStrength = GetValue(values, ".sandbox.zombie-lore-strength");
+            ZombieLoreToughness = GetValue(values, ".sandbox.zombie-lore-toughness");
+            ZombieLoreTransmission = GetValue(values, ".sandbox.zombie-lore-transmission");
+            ZombieLoreMortality = GetValue(values, ".sandbox.zombie-lore-mortality");
+            ZombieLoreReanimate = GetValue(values, ".sandbox.zombie-lore-reanimate");
+            ZombieLoreCognition = GetValue(values, ".sandbox.zombie-lore-cognition");
+            ZombieLoreMemory = GetValue(values, ".sandbox.zombie-lore-memory");
+            ZombieLoreSight = GetValue(values, ".sandbox.zombie-lore-sight");
+            ZombieLoreHearing = GetValue(values, ".sandbox.zombie-lore-hearing");
+            ZombieLoreTriggerHouseAlarm = bool.TryParse(GetValue(values, ".sandbox.zombie-lore-trigger-house-alarm"), out var zombieLoreTriggerHouseAlarm) && zombieLoreTriggerHouseAlarm;
+            ZombieLoreThumpNoChasing = bool.TryParse(GetValue(values, ".sandbox.zombie-lore-thump-no-chasing"), out var zombieLoreThumpNoChasing) && zombieLoreThumpNoChasing;
             WaterShutModifier = GetValue(values, ".sandbox.water-shut-modifier");
             ElectricityShutModifier = GetValue(values, ".sandbox.electricity-shut-modifier");
             ErosionSpeed = GetValue(values, ".sandbox.erosion-speed");
@@ -439,6 +487,18 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             [$"{prefix}.sandbox.start-month"] = StartMonth,
             [$"{prefix}.sandbox.start-day"] = StartDay,
             [$"{prefix}.sandbox.start-time"] = StartTime,
+            [$"{prefix}.sandbox.zombie-lore-speed"] = ZombieLoreSpeed,
+            [$"{prefix}.sandbox.zombie-lore-strength"] = ZombieLoreStrength,
+            [$"{prefix}.sandbox.zombie-lore-toughness"] = ZombieLoreToughness,
+            [$"{prefix}.sandbox.zombie-lore-transmission"] = ZombieLoreTransmission,
+            [$"{prefix}.sandbox.zombie-lore-mortality"] = ZombieLoreMortality,
+            [$"{prefix}.sandbox.zombie-lore-reanimate"] = ZombieLoreReanimate,
+            [$"{prefix}.sandbox.zombie-lore-cognition"] = ZombieLoreCognition,
+            [$"{prefix}.sandbox.zombie-lore-memory"] = ZombieLoreMemory,
+            [$"{prefix}.sandbox.zombie-lore-sight"] = ZombieLoreSight,
+            [$"{prefix}.sandbox.zombie-lore-hearing"] = ZombieLoreHearing,
+            [$"{prefix}.sandbox.zombie-lore-trigger-house-alarm"] = ZombieLoreTriggerHouseAlarm.ToString(),
+            [$"{prefix}.sandbox.zombie-lore-thump-no-chasing"] = ZombieLoreThumpNoChasing.ToString(),
             [$"{prefix}.sandbox.water-shut-modifier"] = WaterShutModifier,
             [$"{prefix}.sandbox.electricity-shut-modifier"] = ElectricityShutModifier,
             [$"{prefix}.sandbox.erosion-speed"] = ErosionSpeed,
@@ -524,6 +584,18 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             StartMonth = string.Empty;
             StartDay = string.Empty;
             StartTime = string.Empty;
+            ZombieLoreSpeed = string.Empty;
+            ZombieLoreStrength = string.Empty;
+            ZombieLoreToughness = string.Empty;
+            ZombieLoreTransmission = string.Empty;
+            ZombieLoreMortality = string.Empty;
+            ZombieLoreReanimate = string.Empty;
+            ZombieLoreCognition = string.Empty;
+            ZombieLoreMemory = string.Empty;
+            ZombieLoreSight = string.Empty;
+            ZombieLoreHearing = string.Empty;
+            ZombieLoreTriggerHouseAlarm = false;
+            ZombieLoreThumpNoChasing = false;
             WaterShutModifier = string.Empty;
             ElectricityShutModifier = string.Empty;
             ErosionSpeed = string.Empty;
@@ -577,6 +649,18 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
     partial void OnStartMonthChanged(string value) => NotifyFieldEdited();
     partial void OnStartDayChanged(string value) => NotifyFieldEdited();
     partial void OnStartTimeChanged(string value) => NotifyFieldEdited();
+    partial void OnZombieLoreSpeedChanged(string value) => NotifyFieldEdited();
+    partial void OnZombieLoreStrengthChanged(string value) => NotifyFieldEdited();
+    partial void OnZombieLoreToughnessChanged(string value) => NotifyFieldEdited();
+    partial void OnZombieLoreTransmissionChanged(string value) => NotifyFieldEdited();
+    partial void OnZombieLoreMortalityChanged(string value) => NotifyFieldEdited();
+    partial void OnZombieLoreReanimateChanged(string value) => NotifyFieldEdited();
+    partial void OnZombieLoreCognitionChanged(string value) => NotifyFieldEdited();
+    partial void OnZombieLoreMemoryChanged(string value) => NotifyFieldEdited();
+    partial void OnZombieLoreSightChanged(string value) => NotifyFieldEdited();
+    partial void OnZombieLoreHearingChanged(string value) => NotifyFieldEdited();
+    partial void OnZombieLoreTriggerHouseAlarmChanged(bool value) => NotifyFieldEdited();
+    partial void OnZombieLoreThumpNoChasingChanged(bool value) => NotifyFieldEdited();
     partial void OnWaterShutModifierChanged(string value) => NotifyFieldEdited();
     partial void OnElectricityShutModifierChanged(string value) => NotifyFieldEdited();
     partial void OnErosionSpeedChanged(string value) => NotifyFieldEdited();

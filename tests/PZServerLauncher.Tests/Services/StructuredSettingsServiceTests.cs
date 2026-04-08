@@ -660,6 +660,82 @@ public sealed class StructuredSettingsServiceTests : IDisposable
         Assert.Contains("EnableVehicles = true", sandboxText);
     }
 
+    [Fact]
+    public async Task Sandbox_PageWritesZombieLoreFieldsIntoNestedTable()
+    {
+        Directory.CreateDirectory(_tempRoot);
+        var profile = ServerProfileFactory.CreateStarterProfile() with
+        {
+            ProfileId = "profile-zombie-lore",
+            DisplayName = "Profile Zombie Lore",
+            ServerName = "profile-zombie-lore",
+            InstallDirectory = Path.Combine(_tempRoot, "install-zombie-lore"),
+            CacheDirectory = Path.Combine(_tempRoot, "cache-zombie-lore"),
+        };
+
+        var planner = new ProjectZomboidServerPlanner();
+        var paths = planner.ResolvePaths(profile);
+        Directory.CreateDirectory(Path.GetDirectoryName(paths.SandboxVarsFilePath)!);
+        File.WriteAllText(paths.SandboxVarsFilePath, """
+            SandboxVars = {
+                VERSION = 4,
+                Zombies = 4,
+                ZombieLore = {
+                    Speed = 3,
+                    TriggerHouseAlarm = false,
+                    ThumpNoChasing = false,
+                }
+            }
+            """);
+
+        await using var dbContext = TestDatabaseFactory.Create(Path.Combine(_tempRoot, "sandbox-zombie-lore.db"));
+        var profileStore = new ProfileStore(dbContext);
+        await profileStore.UpsertAsync(profile);
+
+        var service = CreateService(profileStore, planner);
+
+        var valueSet = service.GetPage(profile, ProfileWorkspacePageIds.Sandbox);
+
+        Assert.Equal("3", valueSet.Values["b42.sandbox.zombie-lore-speed"]);
+        Assert.Equal("2", valueSet.Values["b42.sandbox.zombie-lore-strength"]);
+        Assert.Equal("3", valueSet.Values["b42.sandbox.zombie-lore-cognition"]);
+        Assert.Equal("false", valueSet.Values["b42.sandbox.zombie-lore-trigger-house-alarm"]);
+        Assert.Equal("false", valueSet.Values["b42.sandbox.zombie-lore-thump-no-chasing"]);
+
+        var saveResult = await service.SaveAsync(profile, ProfileWorkspacePageIds.Sandbox, new Dictionary<string, string?>(valueSet.Values, StringComparer.Ordinal)
+        {
+            ["b42.sandbox.zombie-lore-speed"] = "2",
+            ["b42.sandbox.zombie-lore-strength"] = "4",
+            ["b42.sandbox.zombie-lore-toughness"] = "3",
+            ["b42.sandbox.zombie-lore-transmission"] = "2",
+            ["b42.sandbox.zombie-lore-mortality"] = "6",
+            ["b42.sandbox.zombie-lore-reanimate"] = "1",
+            ["b42.sandbox.zombie-lore-cognition"] = "2",
+            ["b42.sandbox.zombie-lore-memory"] = "3",
+            ["b42.sandbox.zombie-lore-sight"] = "4",
+            ["b42.sandbox.zombie-lore-hearing"] = "2",
+            ["b42.sandbox.zombie-lore-trigger-house-alarm"] = "true",
+            ["b42.sandbox.zombie-lore-thump-no-chasing"] = "true",
+        });
+
+        var sandboxText = File.ReadAllText(paths.SandboxVarsFilePath);
+
+        Assert.True(saveResult.Validation.IsValid);
+        Assert.Contains("ZombieLore = {", sandboxText);
+        Assert.Contains("Speed = 2", sandboxText);
+        Assert.Contains("Strength = 4", sandboxText);
+        Assert.Contains("Toughness = 3", sandboxText);
+        Assert.Contains("Transmission = 2", sandboxText);
+        Assert.Contains("Mortality = 6", sandboxText);
+        Assert.Contains("Reanimate = 1", sandboxText);
+        Assert.Contains("Cognition = 2", sandboxText);
+        Assert.Contains("Memory = 3", sandboxText);
+        Assert.Contains("Sight = 4", sandboxText);
+        Assert.Contains("Hearing = 2", sandboxText);
+        Assert.Contains("TriggerHouseAlarm = true", sandboxText);
+        Assert.Contains("ThumpNoChasing = true", sandboxText);
+    }
+
     private static StructuredSettingsService CreateService(ProfileStore profileStore, ProjectZomboidServerPlanner planner) =>
         new(
             profileStore,

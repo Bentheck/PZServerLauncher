@@ -115,4 +115,44 @@ public sealed class StructuredDocumentServiceTests
         Assert.Contains("WaterShutModifier = 500,", updated);
         Assert.Contains("ZombieLore = {", updated);
     }
+
+    [Fact]
+    public void SandboxVarsDocumentService_InsertsMissingNestedValuesIntoExistingTable()
+    {
+        const string source = """
+            SandboxVars = {
+                VERSION = 4,
+                ZombieLore = {
+                    Speed = 3,
+                }
+            }
+            """;
+
+        var updated = _sandboxService.ApplyValues(source, new Dictionary<string, string?>
+        {
+            ["ZombieLore.Speed"] = "2",
+            ["ZombieLore.Strength"] = "4",
+            ["ZombieLore.Cognition"] = "2",
+        });
+
+        Assert.Contains("Speed = 2,", updated);
+        Assert.Contains("Strength = 4,", updated);
+        Assert.Contains("Cognition = 2,", updated);
+    }
+
+    [Fact]
+    public void SandboxVarsDocumentService_BuildsMissingTopLevelTableForNestedValues()
+    {
+        var updated = _sandboxService.ApplyValues(string.Empty, new Dictionary<string, string?>
+        {
+            ["ZombieLore.Speed"] = "2",
+            ["ZombieLore.Strength"] = "3",
+            ["StarterKit"] = "true",
+        });
+
+        Assert.Contains("StarterKit = true,", updated);
+        Assert.Contains("ZombieLore = {", updated);
+        Assert.Contains("Speed = 2,", updated);
+        Assert.Contains("Strength = 3,", updated);
+    }
 }
