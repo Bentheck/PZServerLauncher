@@ -180,6 +180,27 @@ public sealed class LocalHostApiClient
     public Task<ServerRuntimeStatus?> GetStatusAsync(string profileId, CancellationToken cancellationToken = default) =>
         GetAsync<ServerRuntimeStatus>($"/api/profiles/{profileId}/status", cancellationToken);
 
+    public Task<ProfileLiveOperationsSnapshot?> GetLiveOperationsAsync(string profileId, CancellationToken cancellationToken = default) =>
+        GetAsync<ProfileLiveOperationsSnapshot>($"/api/profiles/{profileId}/operations/live", cancellationToken);
+
+    public Task<ProfileLiveOperationsSnapshot?> SendBroadcastAsync(
+        string profileId,
+        string message,
+        CancellationToken cancellationToken = default) =>
+        PostAsync<ProfileLiveOperationsSnapshot>(
+            $"/api/profiles/{profileId}/operations/broadcast",
+            new BroadcastMessageRequestDto(message),
+            cancellationToken);
+
+    public Task<ProfileLiveOperationsSnapshot?> SendConsoleCommandAsync(
+        string profileId,
+        string command,
+        CancellationToken cancellationToken = default) =>
+        PostAsync<ProfileLiveOperationsSnapshot>(
+            $"/api/profiles/{profileId}/operations/command",
+            new ServerConsoleCommandRequestDto(command),
+            cancellationToken);
+
     public Task<List<UserAccountDto>?> GetUsersAsync(CancellationToken cancellationToken = default) =>
         GetAsync<List<UserAccountDto>>("/api/users", cancellationToken);
 

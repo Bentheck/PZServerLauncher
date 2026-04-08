@@ -7,4 +7,7 @@ public sealed record ServerRuntimeStatus(
     DateTimeOffset? StartedAtUtc,
     DateTimeOffset? StoppedAtUtc,
     string? LastExitReason,
-    string? LatestLogLine);
+    string? LatestLogLine,
+    int ConnectedPlayerCount = 0,
+    DateTimeOffset? LastPlayerActivityAtUtc = null,
+    string? LastOperatorCommandSummary = null);

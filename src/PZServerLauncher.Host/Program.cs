@@ -50,6 +50,7 @@ public class Program
         builder.Services.AddSingleton(appPaths);
         builder.Services.AddSingleton(bootstrapStateStore);
         builder.Services.AddSingleton(new StartupMetadata(DateTimeOffset.UtcNow, typeof(Program).Assembly.GetName().Version?.ToString() ?? "0.0.0"));
+        builder.Services.AddSingleton<ProjectZomboidLiveOperationsInterpreter>();
         builder.Services.AddSingleton<RuntimeStateStore>();
         builder.Services.AddSingleton<ProjectZomboidServerPlanner>();
         builder.Services.AddSingleton<ICapabilityResolver, CapabilityResolver>();
@@ -606,6 +607,60 @@ public class Program
             RuntimeStateStore runtimeStateStore) =>
             Results.Ok(runtimeStateStore.GetRecentLogs(profileId)))
             .RequireAuthorization("DesktopOrViewer");
+
+        api.MapGet("/profiles/{profileId}/operations/live", (
+            string profileId,
+            RuntimeStateStore runtimeStateStore) =>
+            Results.Ok(runtimeStateStore.GetLiveOperations(profileId)))
+            .RequireAuthorization("DesktopOrViewer");
+
+        api.MapPost("/profiles/{profileId}/operations/broadcast", async (
+            string profileId,
+            BroadcastMessageRequestDto request,
+            ServerProcessSupervisor supervisor,
+            AuditStore auditStore,
+            CancellationToken cancellationToken) =>
+        {
+            if (string.IsNullOrWhiteSpace(request.Message))
+            {
+                return Results.BadRequest(new OperationResultDto(false, "Broadcast message is required."));
+            }
+
+            try
+            {
+                var liveOperations = await supervisor.SendBroadcastAsync(profileId, request.Message, cancellationToken);
+                await auditStore.WriteAsync("runtime.broadcast", profileId, "local", $"Broadcast sent: {request.Message.Trim()}", cancellationToken: cancellationToken);
+                return Results.Ok(liveOperations);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.BadRequest(new OperationResultDto(false, ex.Message));
+            }
+        }).RequireAuthorization("DesktopOrOperator");
+
+        api.MapPost("/profiles/{profileId}/operations/command", async (
+            string profileId,
+            ServerConsoleCommandRequestDto request,
+            ServerProcessSupervisor supervisor,
+            AuditStore auditStore,
+            CancellationToken cancellationToken) =>
+        {
+            if (string.IsNullOrWhiteSpace(request.Command))
+            {
+                return Results.BadRequest(new OperationResultDto(false, "Console command is required."));
+            }
+
+            try
+            {
+                var liveOperations = await supervisor.SendCommandAsync(profileId, request.Command, cancellationToken);
+                await auditStore.WriteAsync("runtime.command", profileId, "local", $"Console command sent: {request.Command.Trim()}", cancellationToken: cancellationToken);
+                return Results.Ok(liveOperations);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.BadRequest(new OperationResultDto(false, ex.Message));
+            }
+        }).RequireAuthorization("DesktopOrOperator");
 
         api.MapGet("/settings/host", async (HostSettingsStore store, CancellationToken cancellationToken) =>
             Results.Ok(await store.GetAsync(cancellationToken)))

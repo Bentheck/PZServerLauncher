@@ -99,6 +99,29 @@ else
                 </article>
             </section>
 
+            <section class="metric-grid">
+                <article class="metric-card">
+                    <span class="metric-label">Players Online</span>
+                    <strong class="metric-value">@(_liveOperations?.ConnectedPlayers.Count ?? 0)</strong>
+                    <span class="metric-note">@PlayerSummary</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Player Activity</span>
+                    <strong class="metric-value">Live Feed</strong>
+                    <span class="metric-note">@PlayerSignalSummary</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Operator Action</span>
+                    <strong class="metric-value">Launcher</strong>
+                    <span class="metric-note">@OperatorActionSummary</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Roster</span>
+                    <strong class="metric-value">Players</strong>
+                    <span class="metric-note">@LiveRosterSummary</span>
+                </article>
+            </section>
+
             <div class="cards cards--wide">
                 <section class="card">
                     <div class="card-heading">
@@ -241,6 +264,7 @@ else
     private string _networkSummary = "Network posture summary is not available yet.";
     private string _sandboxSummary = "Sandbox summary is not available yet.";
     private string _welcomeSummary = "No welcome message configured yet.";
+    private ProfileLiveOperationsSnapshot? _liveOperations;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -256,6 +280,7 @@ else
         }
 
         _runtimeStatus = RuntimeStateStore.GetOrDefault(ProfileId);
+        _liveOperations = RuntimeStateStore.GetLiveOperations(ProfileId);
         _backups = BackupService.ListBackups(ProfileId);
         _latestBackup = _backups.FirstOrDefault();
         _recentJobs = (await JobStore.ListRecentAsync(20)).Where(job => string.Equals(job.ProfileId, ProfileId, StringComparison.OrdinalIgnoreCase)).ToList();
@@ -275,6 +300,30 @@ else
         _sandboxSummary = posture.WorldSummary;
         _welcomeSummary = posture.WelcomeSummary;
     }
+
+    private string PlayerSummary => _liveOperations is null
+        ? "No live roster is available yet."
+        : _liveOperations.ConnectedPlayers.Count == 0
+            ? "No players are currently inferred online from runtime output."
+            : $"{_liveOperations.ConnectedPlayers.Count} player(s) are currently inferred online from the runtime feed.";
+
+    private string PlayerSignalSummary => _liveOperations is null
+        ? "No live player activity is available yet."
+        : _liveOperations.RecentPlayerSignals.Count == 0
+            ? "Join and leave signals will appear here when the server emits them."
+            : $"{_liveOperations.RecentPlayerSignals[0].UserName} {_liveOperations.RecentPlayerSignals[0].Activity.ToLowerInvariant()} at {_liveOperations.RecentPlayerSignals[0].TimestampUtc:HH:mm:ss} UTC.";
+
+    private string OperatorActionSummary => _liveOperations is null
+        ? "No recent launcher-driven operator action is available yet."
+        : _liveOperations.RecentOperatorActions.Count == 0
+            ? "No recent broadcast or raw console action has been recorded yet."
+            : _liveOperations.RecentOperatorActions[0].Summary;
+
+    private string LiveRosterSummary => _liveOperations is null
+        ? "No active roster loaded yet."
+        : _liveOperations.ConnectedPlayers.Count == 0
+            ? "No player names are currently inferred online."
+            : string.Join(", ", _liveOperations.ConnectedPlayers.Select(player => player.UserName));
 
     private async Task StartAsync()
     {

@@ -35,6 +35,8 @@ public sealed class ProjectZomboidLogPostureSummaryBuilderTests
         Assert.Contains("1 error or failure signal", summary.SignalPostureSummary);
         Assert.Contains("Investigate", summary.OperatorFocusSummary);
         Assert.Contains("running since", summary.RuntimeWindowSummary);
+        Assert.Equal(0, summary.OperatorCommandCount);
+        Assert.Contains("No launcher-issued console commands", summary.OperatorCommandSummary);
     }
 
     [Fact]
@@ -57,5 +59,37 @@ public sealed class ProjectZomboidLogPostureSummaryBuilderTests
         Assert.Contains("No runtime signals are buffered yet", summary.SignalPostureSummary);
         Assert.Contains("not currently running", summary.OperatorFocusSummary);
         Assert.Contains("clean shutdown", summary.RuntimeWindowSummary);
+        Assert.Contains("No player activity signals", summary.PlayerActivitySummary);
+    }
+
+    [Fact]
+    public void Build_InfersConnectedPlayersAndOperatorCommands()
+    {
+        var status = new ServerRuntimeStatus(
+            "servertest",
+            ServerRuntimeState.Running,
+            7777,
+            DateTimeOffset.Parse("2026-04-08T16:00:00Z"),
+            null,
+            null,
+            "LOG : user \"Alice\" connected");
+
+        var lines = new[]
+        {
+            "[launcher] > players",
+            "LOG : user \"Alice\" connected",
+            "INFO : username=Bob connected to server",
+            "INFO : username=Bob disconnected",
+        };
+
+        var summary = ProjectZomboidLogPostureSummaryBuilder.Build(status, lines);
+
+        Assert.Equal(1, summary.OperatorCommandCount);
+        Assert.Equal(1, summary.ConnectedPlayerCount);
+        Assert.Contains("Alice", summary.ConnectedPlayers);
+        Assert.DoesNotContain("Bob", summary.ConnectedPlayers);
+        Assert.NotEmpty(summary.RecentPlayerSignals);
+        Assert.Contains("launcher command", summary.OperatorCommandSummary);
+        Assert.Contains("Alice", summary.PlayerActivitySummary);
     }
 }

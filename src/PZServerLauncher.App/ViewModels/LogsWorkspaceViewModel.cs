@@ -2,7 +2,6 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PZServerLauncher.App.Services;
-using PZServerLauncher.Contracts.Runtime;
 using PZServerLauncher.Core.Planning;
 using PZServerLauncher.Core.Runtime;
 using PZServerLauncher.Infrastructure.Planning;
@@ -17,17 +16,24 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
         "No runtime signals are buffered yet.",
         "Pick a profile, then start or reload to watch runtime output.",
         "Runtime window: no status is available yet.",
+        "No player activity is available yet.",
+        "No operator commands have been recorded yet.",
+        0,
+        0,
         0,
         0,
         0,
         0,
         false,
         false,
-        false);
+        false,
+        [],
+        []);
 
     private readonly LocalHostApiClient _hostApiClient;
     private readonly RuntimeEventStream _runtimeEventStream;
     private ServerRuntimeStatus? _runtimeStatus;
+    private ProfileLiveOperationsSnapshot? _liveOperations;
 
     public LogsWorkspaceViewModel(
         MainWindowViewModel legacy,
@@ -36,21 +42,27 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
         : base(
             ProfileWorkspacePageIds.Logs,
             "Logs",
-            "Recent runtime output and the latest live line for the selected profile.",
+            "Recent runtime output, inferred live player activity, and operator console actions for the selected profile.",
             "Logs are in sync.",
             legacy,
-            ["Recent log buffer", "Live line feed", "Runtime state"])
+            ["Recent log buffer", "Live line feed", "Player roster", "Operator commands"])
     {
         _hostApiClient = hostApiClient;
         _runtimeEventStream = runtimeEventStream;
         ReloadCommand = new AsyncRelayCommand(ReloadAsync);
+        SendBroadcastCommand = new AsyncRelayCommand(SendBroadcastAsync);
+        SendConsoleCommand = new AsyncRelayCommand(SendConsoleCommandAsync);
+        ListPlayersCommand = new AsyncRelayCommand(() => SendQuickCommandAsync("players", "Requested current player list."));
+        SaveWorldCommand = new AsyncRelayCommand(() => SendQuickCommandAsync("save", "Requested world save."));
+        ReloadOptionsCommand = new AsyncRelayCommand(() => SendQuickCommandAsync("reloadoptions", "Requested option reload."));
         _runtimeEventStream.LogLineReceived += OnLogLineReceivedAsync;
         _runtimeEventStream.StatusChanged += OnStatusChangedAsync;
+        _runtimeEventStream.LiveOperationsChanged += OnLiveOperationsChangedAsync;
     }
 
     public override string PageSummary => SelectedProfile is null
-        ? "Select a profile to view runtime output."
-        : $"Recent runtime output, live status, and operator guidance for {SelectedProfile.DisplayName}.";
+        ? "Select a profile to view runtime output and live operations."
+        : $"Recent runtime output, inferred player activity, and live operator controls for {SelectedProfile.DisplayName}.";
 
     public string ProfileDisplayName => SelectedProfile?.DisplayName ?? "No profile selected";
 
@@ -61,14 +73,32 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
         : $"{SelectedProfile.DisplayName} Live Console";
 
     public string ConsoleHeroCopy => SelectedProfile is null
-        ? "Select a profile to inspect buffered runtime output and the live feed posture."
-        : $"Buffered runtime output, the latest log line, and live operator guidance for {SelectedProfile.DisplayName}.";
+        ? "Select a profile to inspect buffered runtime output and the live operations posture."
+        : $"Buffered runtime output, inferred player presence, and operator controls for {SelectedProfile.DisplayName}.";
 
     public ObservableCollection<string> LogLines { get; } = [];
+
+    public ObservableCollection<string> ConnectedPlayers { get; } = [];
+
+    public ObservableCollection<string> RecentPlayerSignals { get; } = [];
+
+    public ObservableCollection<string> RecentOperatorActions { get; } = [];
 
     public bool HasLogs => LogLines.Count > 0;
 
     public bool HasNoLogs => LogLines.Count == 0;
+
+    public bool HasConnectedPlayers => ConnectedPlayers.Count > 0;
+
+    public bool HasNoConnectedPlayers => ConnectedPlayers.Count == 0;
+
+    public bool HasPlayerSignals => RecentPlayerSignals.Count > 0;
+
+    public bool HasNoPlayerSignals => RecentPlayerSignals.Count == 0;
+
+    public bool HasOperatorActions => RecentOperatorActions.Count > 0;
+
+    public bool HasNoOperatorActions => RecentOperatorActions.Count == 0;
 
     public string LogStreamSummary => SelectedProfile is null
         ? "Choose a profile to inspect server output."
@@ -90,19 +120,66 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
 
     public string ConsoleStatusSummary => SelectedProfile is null
         ? "No console context loaded."
-        : $"{LatestRuntimeState} | {CurrentSummary.BufferedLineCount} buffered line(s)";
+        : $"{LatestRuntimeState} | {CurrentSummary.BufferedLineCount} buffered line(s) | {ActivePlayerCountSummary}";
 
     public string RuntimeWindowSummary => SelectedProfile is null
         ? "Runtime window: no status is available yet."
         : CurrentSummary.RuntimeWindowSummary;
 
+    public string ActivePlayerCountSummary => _liveOperations is null
+        ? "No live roster"
+        : _liveOperations.ConnectedPlayers.Count == 0
+            ? "No players inferred online"
+            : $"{_liveOperations.ConnectedPlayers.Count} player(s) inferred online";
+
+    public string PlayerSignalSummary => _liveOperations is null
+        ? "No player activity inferred yet."
+        : _liveOperations.RecentPlayerSignals.Count == 0
+            ? "No player join or leave signals have been inferred from the recent live buffer yet."
+            : $"Recent player activity is inferred from {_liveOperations.RecentPlayerSignals.Count} live signal(s).";
+
+    public string OperatorActionSummary => _liveOperations is null
+        ? "No operator actions recorded yet."
+        : _liveOperations.RecentOperatorActions.Count == 0
+            ? "Broadcasts and raw console commands will appear here after they are sent."
+            : _liveOperations.RecentOperatorActions[0].Summary;
+
+    public string OperatorCommandPosture => string.IsNullOrWhiteSpace(_runtimeStatus?.LastOperatorCommandSummary)
+        ? "No recent launcher-driven broadcast or console command has been recorded."
+        : _runtimeStatus.LastOperatorCommandSummary!;
+
+    public string BroadcastGuidance => SelectedProfile is null
+        ? "Select a profile to unlock live broadcast and console controls."
+        : CanSendCommands
+            ? "Send a broadcast, request the player list, save the world, or issue a raw console command while the server is live."
+            : "The live console can reload and review signals while the server is stopped, but broadcasts and raw commands unlock only when the runtime is active.";
+
+    public bool CanSendCommands => SelectedProfile is not null &&
+        string.Equals(LatestRuntimeState, ServerRuntimeState.Running.ToString(), StringComparison.OrdinalIgnoreCase);
+
     public IAsyncRelayCommand ReloadCommand { get; }
+
+    public IAsyncRelayCommand SendBroadcastCommand { get; }
+
+    public IAsyncRelayCommand SendConsoleCommand { get; }
+
+    public IAsyncRelayCommand ListPlayersCommand { get; }
+
+    public IAsyncRelayCommand SaveWorldCommand { get; }
+
+    public IAsyncRelayCommand ReloadOptionsCommand { get; }
 
     [ObservableProperty]
     private string loadStatus = "Select a profile to load recent logs.";
 
     [ObservableProperty]
     private string latestRuntimeState = "Unknown";
+
+    [ObservableProperty]
+    private string broadcastMessage = string.Empty;
+
+    [ObservableProperty]
+    private string rawConsoleCommand = string.Empty;
 
     protected override void OnSelectedProfileChangedCore(ProfileCardViewModel? profile)
     {
@@ -127,22 +204,82 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
             return;
         }
 
-        LoadStatus = $"Loading recent logs for {profile.DisplayName}...";
-        _runtimeStatus = await _hostApiClient.GetStatusAsync(profile.ProfileId)
+        LoadStatus = $"Loading live console and ops for {profile.DisplayName}...";
+        var statusTask = _hostApiClient.GetStatusAsync(profile.ProfileId);
+        var logsTask = _hostApiClient.GetRecentLogsAsync(profile.ProfileId);
+        var operationsTask = _hostApiClient.GetLiveOperationsAsync(profile.ProfileId);
+        await Task.WhenAll(statusTask, logsTask, operationsTask);
+
+        _runtimeStatus = statusTask.Result
             ?? new ServerRuntimeStatus(profile.ProfileId, ServerRuntimeState.Stopped, null, null, null, null, profile.LatestLogLine);
         LatestRuntimeState = _runtimeStatus.State.ToString();
-        var lines = await _hostApiClient.GetRecentLogsAsync(profile.ProfileId) ?? [];
 
         LogLines.Clear();
-        foreach (var line in lines)
+        foreach (var line in logsTask.Result ?? [])
         {
             LogLines.Add(line);
         }
 
-        LoadStatus = lines.Count == 0
+        ApplyLiveOperations(operationsTask.Result);
+
+        LoadStatus = LogLines.Count == 0
             ? "No recent log lines are buffered yet. Start the server or wait for new runtime output."
-            : $"Loaded {lines.Count} recent log line(s) for {profile.DisplayName}.";
+            : $"Loaded {LogLines.Count} recent log line(s) for {profile.DisplayName}.";
         NotifyComputedState();
+    }
+
+    private async Task SendBroadcastAsync()
+    {
+        if (SelectedProfile is null || string.IsNullOrWhiteSpace(BroadcastMessage))
+        {
+            return;
+        }
+
+        try
+        {
+            var response = await _hostApiClient.SendBroadcastAsync(SelectedProfile.ProfileId, BroadcastMessage);
+            ApplyLiveOperations(response);
+            LoadStatus = $"Broadcast queued for {SelectedProfile.DisplayName}.";
+            BroadcastMessage = string.Empty;
+            NotifyComputedState();
+        }
+        catch (Exception ex)
+        {
+            LoadStatus = ex.Message;
+            NotifyComputedState();
+        }
+    }
+
+    private async Task SendConsoleCommandAsync()
+    {
+        if (SelectedProfile is null || string.IsNullOrWhiteSpace(RawConsoleCommand))
+        {
+            return;
+        }
+
+        await SendQuickCommandAsync(RawConsoleCommand, $"Console command queued for {SelectedProfile.DisplayName}.");
+        RawConsoleCommand = string.Empty;
+    }
+
+    private async Task SendQuickCommandAsync(string command, string statusMessage)
+    {
+        if (SelectedProfile is null || string.IsNullOrWhiteSpace(command))
+        {
+            return;
+        }
+
+        try
+        {
+            var response = await _hostApiClient.SendConsoleCommandAsync(SelectedProfile.ProfileId, command);
+            ApplyLiveOperations(response);
+            LoadStatus = statusMessage;
+            NotifyComputedState();
+        }
+        catch (Exception ex)
+        {
+            LoadStatus = ex.Message;
+            NotifyComputedState();
+        }
     }
 
     private Task OnLogLineReceivedAsync(string profileId, string line)
@@ -182,12 +319,53 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
         return Task.CompletedTask;
     }
 
+    private Task OnLiveOperationsChangedAsync(ProfileLiveOperationsSnapshot snapshot)
+    {
+        if (SelectedProfile is null || !string.Equals(SelectedProfile.ProfileId, snapshot.ProfileId, StringComparison.Ordinal))
+        {
+            return Task.CompletedTask;
+        }
+
+        ApplyLiveOperations(snapshot);
+        NotifyComputedState();
+        return Task.CompletedTask;
+    }
+
+    private void ApplyLiveOperations(ProfileLiveOperationsSnapshot? snapshot)
+    {
+        _liveOperations = snapshot;
+
+        ConnectedPlayers.Clear();
+        foreach (var player in snapshot?.ConnectedPlayers ?? [])
+        {
+            ConnectedPlayers.Add($"{player.UserName} | joined {player.JoinedAtUtc:HH:mm:ss} UTC");
+        }
+
+        RecentPlayerSignals.Clear();
+        foreach (var signal in snapshot?.RecentPlayerSignals ?? [])
+        {
+            RecentPlayerSignals.Add($"{signal.TimestampUtc:HH:mm:ss} UTC | {signal.UserName} {signal.Activity.ToLowerInvariant()}");
+        }
+
+        RecentOperatorActions.Clear();
+        foreach (var action in snapshot?.RecentOperatorActions ?? [])
+        {
+            RecentOperatorActions.Add($"{action.TimestampUtc:HH:mm:ss} UTC | {action.Kind} | {action.CommandText}");
+        }
+    }
+
     private void Reset()
     {
         LogLines.Clear();
+        ConnectedPlayers.Clear();
+        RecentPlayerSignals.Clear();
+        RecentOperatorActions.Clear();
         _runtimeStatus = null;
+        _liveOperations = null;
         LatestRuntimeState = "Unknown";
         LoadStatus = "Select a profile to load recent logs.";
+        BroadcastMessage = string.Empty;
+        RawConsoleCommand = string.Empty;
         NotifyComputedState();
     }
 
@@ -198,6 +376,12 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
         OnPropertyChanged(nameof(Branch));
         OnPropertyChanged(nameof(HasLogs));
         OnPropertyChanged(nameof(HasNoLogs));
+        OnPropertyChanged(nameof(HasConnectedPlayers));
+        OnPropertyChanged(nameof(HasNoConnectedPlayers));
+        OnPropertyChanged(nameof(HasPlayerSignals));
+        OnPropertyChanged(nameof(HasNoPlayerSignals));
+        OnPropertyChanged(nameof(HasOperatorActions));
+        OnPropertyChanged(nameof(HasNoOperatorActions));
         OnPropertyChanged(nameof(LogStreamSummary));
         OnPropertyChanged(nameof(FeedPostureSummary));
         OnPropertyChanged(nameof(RuntimeGuidance));
@@ -207,6 +391,12 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
         OnPropertyChanged(nameof(RuntimeWindowSummary));
         OnPropertyChanged(nameof(ConsoleHeroTitle));
         OnPropertyChanged(nameof(ConsoleHeroCopy));
+        OnPropertyChanged(nameof(ActivePlayerCountSummary));
+        OnPropertyChanged(nameof(PlayerSignalSummary));
+        OnPropertyChanged(nameof(OperatorActionSummary));
+        OnPropertyChanged(nameof(OperatorCommandPosture));
+        OnPropertyChanged(nameof(BroadcastGuidance));
+        OnPropertyChanged(nameof(CanSendCommands));
     }
 
     private ProjectZomboidLogPostureSummary CurrentSummary =>

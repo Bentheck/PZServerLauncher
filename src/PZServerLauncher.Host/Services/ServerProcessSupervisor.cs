@@ -17,6 +17,7 @@ public sealed class ServerProcessSupervisor(
     ILogger<ServerProcessSupervisor> logger)
 {
     private readonly ConcurrentDictionary<string, Process> _processes = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, SemaphoreSlim> _commandGates = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, bool> _stopRequested = new(StringComparer.OrdinalIgnoreCase);
 
     public async Task StartAsync(PZServerLauncher.Core.Profiles.ServerProfile profile, CancellationToken cancellationToken)
@@ -26,6 +27,7 @@ public sealed class ServerProcessSupervisor(
             throw new InvalidOperationException($"Profile '{profile.ProfileId}' is already running.");
         }
 
+        var liveOperations = runtimeStateStore.ResetLiveOperations(profile.ProfileId);
         runtimeStateStore.Update(new ServerRuntimeStatus(
             profile.ProfileId,
             ServerRuntimeState.Starting,
@@ -35,6 +37,7 @@ public sealed class ServerProcessSupervisor(
             null,
             null));
         await hubContext.Clients.All.SendAsync("statusChanged", runtimeStateStore.GetOrDefault(profile.ProfileId), cancellationToken);
+        await hubContext.Clients.All.SendAsync("liveOperationsChanged", liveOperations, cancellationToken);
 
         var runtimeDir = Path.Combine(appPaths.RuntimeProfileDirectory(profile.ProfileId), "launch");
         Directory.CreateDirectory(runtimeDir);
@@ -62,6 +65,7 @@ public sealed class ServerProcessSupervisor(
                 FileName = "cmd.exe",
                 Arguments = $"/c \"{wrapperPath}\"",
                 WorkingDirectory = launchPlan.WorkingDirectory,
+                RedirectStandardInput = true,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
@@ -80,6 +84,7 @@ public sealed class ServerProcessSupervisor(
         process.BeginErrorReadLine();
 
         _processes[profile.ProfileId] = process;
+        _commandGates[profile.ProfileId] = new SemaphoreSlim(1, 1);
         runtimeStateStore.Update(new ServerRuntimeStatus(
             profile.ProfileId,
             ServerRuntimeState.Running,
@@ -90,6 +95,73 @@ public sealed class ServerProcessSupervisor(
             runtimeStateStore.GetOrDefault(profile.ProfileId).LatestLogLine));
 
         await hubContext.Clients.All.SendAsync("statusChanged", runtimeStateStore.GetOrDefault(profile.ProfileId), cancellationToken);
+    }
+
+    public async Task<ProfileLiveOperationsSnapshot> SendBroadcastAsync(string profileId, string message, CancellationToken cancellationToken)
+    {
+        var normalizedMessage = message.Trim();
+        if (string.IsNullOrWhiteSpace(normalizedMessage))
+        {
+            throw new InvalidOperationException("Broadcast message is required.");
+        }
+
+        return await SendCommandInternalAsync(
+            profileId,
+            $"servermsg \"{normalizedMessage.Replace("\"", "'", StringComparison.Ordinal)}\"",
+            "Broadcast",
+            $"Broadcast sent: {normalizedMessage}",
+            cancellationToken);
+    }
+
+    public async Task<ProfileLiveOperationsSnapshot> SendCommandAsync(string profileId, string command, CancellationToken cancellationToken)
+    {
+        var normalizedCommand = command.Trim();
+        if (string.IsNullOrWhiteSpace(normalizedCommand))
+        {
+            throw new InvalidOperationException("Command text is required.");
+        }
+
+        return await SendCommandInternalAsync(
+            profileId,
+            normalizedCommand,
+            "Console",
+            $"Console command sent: {normalizedCommand}",
+            cancellationToken);
+    }
+
+    private async Task<ProfileLiveOperationsSnapshot> SendCommandInternalAsync(
+        string profileId,
+        string normalizedCommand,
+        string kind,
+        string summary,
+        CancellationToken cancellationToken)
+    {
+        if (!_processes.TryGetValue(profileId, out var process) || process.HasExited)
+        {
+            throw new InvalidOperationException("The selected server is not currently running.");
+        }
+
+        var gate = _commandGates.GetOrAdd(profileId, _ => new SemaphoreSlim(1, 1));
+        await gate.WaitAsync(cancellationToken);
+        try
+        {
+            if (process.HasExited)
+            {
+                throw new InvalidOperationException("The selected server exited before the command could be sent.");
+            }
+
+            await process.StandardInput.WriteLineAsync(normalizedCommand);
+            await process.StandardInput.FlushAsync();
+        }
+        finally
+        {
+            gate.Release();
+        }
+
+        var liveOperations = runtimeStateStore.RecordOperatorAction(profileId, kind, normalizedCommand, summary);
+        await hubContext.Clients.All.SendAsync("statusChanged", runtimeStateStore.GetOrDefault(profileId), cancellationToken);
+        await hubContext.Clients.All.SendAsync("liveOperationsChanged", liveOperations, cancellationToken);
+        return liveOperations;
     }
 
     public async Task StopAsync(string profileId, CancellationToken cancellationToken)
@@ -120,7 +192,12 @@ public sealed class ServerProcessSupervisor(
         }
 
         _processes.TryRemove(profileId, out _);
+        if (_commandGates.TryRemove(profileId, out var commandGate))
+        {
+            commandGate.Dispose();
+        }
         _stopRequested.TryRemove(profileId, out _);
+        var liveOperations = runtimeStateStore.ResetLiveOperations(profileId);
         runtimeStateStore.Update(runtimeStateStore.GetOrDefault(profileId) with
         {
             State = ServerRuntimeState.Stopped,
@@ -129,6 +206,7 @@ public sealed class ServerProcessSupervisor(
             LastExitReason = "Stopped by launcher.",
         });
         await hubContext.Clients.All.SendAsync("statusChanged", runtimeStateStore.GetOrDefault(profileId), cancellationToken);
+        await hubContext.Clients.All.SendAsync("liveOperationsChanged", liveOperations, cancellationToken);
     }
 
     public bool IsRunning(string profileId) =>
@@ -141,15 +219,25 @@ public sealed class ServerProcessSupervisor(
             return;
         }
 
-        runtimeStateStore.AppendLog(profileId, line);
+        var liveOperations = runtimeStateStore.AppendLog(profileId, line);
         await hubContext.Clients.All.SendAsync("logLine", profileId, line);
+        if (liveOperations is not null)
+        {
+            await hubContext.Clients.All.SendAsync("statusChanged", runtimeStateStore.GetOrDefault(profileId));
+            await hubContext.Clients.All.SendAsync("liveOperationsChanged", liveOperations);
+        }
     }
 
     private async Task OnExitedAsync(string profileId, bool autoRestartOnCrash)
     {
         _processes.TryRemove(profileId, out var process);
+        if (_commandGates.TryRemove(profileId, out var commandGate))
+        {
+            commandGate.Dispose();
+        }
         var stopRequested = _stopRequested.TryGetValue(profileId, out var requested) && requested;
         _stopRequested.TryRemove(profileId, out _);
+        var liveOperations = runtimeStateStore.ResetLiveOperations(profileId);
 
         var state = runtimeStateStore.GetOrDefault(profileId) with
         {
@@ -160,6 +248,7 @@ public sealed class ServerProcessSupervisor(
         };
         runtimeStateStore.Update(state);
         await hubContext.Clients.All.SendAsync("statusChanged", state);
+        await hubContext.Clients.All.SendAsync("liveOperationsChanged", liveOperations);
 
         if (!stopRequested && autoRestartOnCrash)
         {

@@ -6,10 +6,16 @@ public sealed record ProjectZomboidLogPostureSummary(
     string SignalPostureSummary,
     string OperatorFocusSummary,
     string RuntimeWindowSummary,
+    string PlayerActivitySummary,
+    string OperatorCommandSummary,
     int BufferedLineCount,
     int ErrorSignalCount,
     int WarningSignalCount,
     int ModSignalCount,
+    int ConnectedPlayerCount,
+    int OperatorCommandCount,
     bool HasErrorSignals,
     bool HasWarningSignals,
-    bool HasModSignals);
+    bool HasModSignals,
+    IReadOnlyList<string> ConnectedPlayers,
+    IReadOnlyList<string> RecentPlayerSignals);

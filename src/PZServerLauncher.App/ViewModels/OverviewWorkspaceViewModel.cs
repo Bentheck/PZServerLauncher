@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.Input;
 using PZServerLauncher.App.Services;
 using PZServerLauncher.Contracts.Runtime;
+using PZServerLauncher.Core.Runtime;
 using PZServerLauncher.Core.Settings;
 
 namespace PZServerLauncher.App.ViewModels;
@@ -8,14 +9,16 @@ namespace PZServerLauncher.App.ViewModels;
 public sealed class OverviewWorkspaceViewModel : ProfileWorkspacePageViewModelBase
 {
     private readonly LocalHostApiClient _hostApiClient;
+    private readonly RuntimeEventStream _runtimeEventStream;
     private int _loadVersion;
     private string _communitySummary = "Select a profile to load community posture.";
     private string _serverRulesSummary = "No server rules loaded.";
     private string _networkPostureSummary = "No network posture loaded.";
     private string _worldSnapshotSummary = "No world snapshot loaded.";
     private string _welcomeMessageSummary = "No welcome message configured yet.";
+    private ProfileLiveOperationsSnapshot? _liveOperations;
 
-    public OverviewWorkspaceViewModel(MainWindowViewModel legacy, LocalHostApiClient hostApiClient)
+    public OverviewWorkspaceViewModel(MainWindowViewModel legacy, LocalHostApiClient hostApiClient, RuntimeEventStream runtimeEventStream)
         : base(
             "overview",
             "Overview",
@@ -25,6 +28,7 @@ public sealed class OverviewWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             ["Runtime state", "Latest log", "Backup summary", "Quick actions"])
     {
         _hostApiClient = hostApiClient;
+        _runtimeEventStream = runtimeEventStream;
         InstallCommand = new AsyncRelayCommand(() => ExecuteProfileCommandAsync(Legacy.InstallCommand));
         UpdateCommand = new AsyncRelayCommand(() => ExecuteProfileCommandAsync(Legacy.UpdateCommand));
         StartCommand = new AsyncRelayCommand(() => ExecuteProfileCommandAsync(Legacy.StartCommand));
@@ -32,6 +36,7 @@ public sealed class OverviewWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         RestartCommand = new AsyncRelayCommand(() => ExecuteProfileCommandAsync(Legacy.RestartCommand));
         BackupCommand = new AsyncRelayCommand(() => ExecuteProfileCommandAsync(Legacy.BackupCommand));
         RestoreCommand = new AsyncRelayCommand(() => ExecuteProfileCommandAsync(Legacy.RestoreCommand));
+        _runtimeEventStream.LiveOperationsChanged += OnLiveOperationsChangedAsync;
     }
 
     public IAsyncRelayCommand InstallCommand { get; }
@@ -94,6 +99,30 @@ public sealed class OverviewWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
     public string WorkshopSummary => SelectedProfile?.WorkshopSummary ?? "No workshop profile loaded.";
 
+    public string LivePlayerSummary => _liveOperations is null
+        ? "Player roster unavailable."
+        : _liveOperations.ConnectedPlayers.Count == 0
+            ? "No players inferred online right now."
+            : $"{_liveOperations.ConnectedPlayers.Count} player(s) inferred online from the live log stream.";
+
+    public string LivePlayerRosterSummary => _liveOperations is null
+        ? "No live roster loaded yet."
+        : _liveOperations.ConnectedPlayers.Count == 0
+            ? "No active player roster has been inferred yet."
+            : string.Join(", ", _liveOperations.ConnectedPlayers.Select(player => player.UserName));
+
+    public string PlayerActivitySummary => _liveOperations is null
+        ? "No recent player activity loaded."
+        : _liveOperations.RecentPlayerSignals.Count == 0
+            ? "Join and leave signals have not been inferred from recent runtime output yet."
+            : $"{_liveOperations.RecentPlayerSignals[0].UserName} {_liveOperations.RecentPlayerSignals[0].Activity.ToLowerInvariant()} at {_liveOperations.RecentPlayerSignals[0].TimestampUtc:HH:mm:ss} UTC.";
+
+    public string OperatorActionSummary => _liveOperations is null
+        ? "No recent broadcast or raw console action has been loaded yet."
+        : _liveOperations.RecentOperatorActions.Count == 0
+            ? "No recent broadcast or raw console action has been sent from the launcher."
+            : _liveOperations.RecentOperatorActions[0].Summary;
+
     public string CommunitySummary => _communitySummary;
 
     public string ServerRulesSummary => _serverRulesSummary;
@@ -151,13 +180,15 @@ public sealed class OverviewWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             "Loading network posture...",
             "Loading world snapshot...",
             "Loading welcome message...");
+        _liveOperations = new ProfileLiveOperationsSnapshot(profile.ProfileId, [], [], [], true, null);
 
         try
         {
             var generalTask = _hostApiClient.GetSettingsPageAsync(profile.ProfileId, ProfileWorkspacePageIds.General);
             var networkTask = _hostApiClient.GetSettingsPageAsync(profile.ProfileId, ProfileWorkspacePageIds.NetworkAndAdmin);
             var sandboxTask = _hostApiClient.GetSettingsPageAsync(profile.ProfileId, ProfileWorkspacePageIds.Sandbox);
-            await Task.WhenAll(generalTask, networkTask, sandboxTask);
+            var liveOperationsTask = _hostApiClient.GetLiveOperationsAsync(profile.ProfileId);
+            await Task.WhenAll(generalTask, networkTask, sandboxTask, liveOperationsTask);
 
             if (loadVersion != _loadVersion || SelectedProfile?.ProfileId != profile.ProfileId)
             {
@@ -167,6 +198,7 @@ public sealed class OverviewWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             var generalValues = generalTask.Result?.Values ?? new Dictionary<string, string?>(StringComparer.Ordinal);
             var networkValues = networkTask.Result?.Values ?? new Dictionary<string, string?>(StringComparer.Ordinal);
             var sandboxValues = sandboxTask.Result?.Values ?? new Dictionary<string, string?>(StringComparer.Ordinal);
+            _liveOperations = liveOperationsTask.Result ?? _liveOperations;
 
             var posture = ProjectZomboidProfilePostureSummaryBuilder.Build(
                 profile.DisplayName,
@@ -180,6 +212,10 @@ public sealed class OverviewWorkspaceViewModel : ProfileWorkspacePageViewModelBa
                 posture.NetworkSummary,
                 posture.WorldSummary,
                 posture.WelcomeSummary);
+            OnPropertyChanged(nameof(LivePlayerSummary));
+            OnPropertyChanged(nameof(LivePlayerRosterSummary));
+            OnPropertyChanged(nameof(PlayerActivitySummary));
+            OnPropertyChanged(nameof(OperatorActionSummary));
         }
         catch
         {
@@ -195,6 +231,21 @@ public sealed class OverviewWorkspaceViewModel : ProfileWorkspacePageViewModelBa
                 "World snapshot is temporarily unavailable.",
                 "Welcome message summary is temporarily unavailable.");
         }
+    }
+
+    private Task OnLiveOperationsChangedAsync(ProfileLiveOperationsSnapshot snapshot)
+    {
+        if (SelectedProfile is null || !string.Equals(SelectedProfile.ProfileId, snapshot.ProfileId, StringComparison.Ordinal))
+        {
+            return Task.CompletedTask;
+        }
+
+        _liveOperations = snapshot;
+        OnPropertyChanged(nameof(LivePlayerSummary));
+        OnPropertyChanged(nameof(LivePlayerRosterSummary));
+        OnPropertyChanged(nameof(PlayerActivitySummary));
+        OnPropertyChanged(nameof(OperatorActionSummary));
+        return Task.CompletedTask;
     }
 
     private void SetStructuredSummaries(
@@ -233,6 +284,10 @@ public sealed class OverviewWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         OnPropertyChanged(nameof(BackupHealth));
         OnPropertyChanged(nameof(MemorySummary));
         OnPropertyChanged(nameof(WorkshopSummary));
+        OnPropertyChanged(nameof(LivePlayerSummary));
+        OnPropertyChanged(nameof(LivePlayerRosterSummary));
+        OnPropertyChanged(nameof(PlayerActivitySummary));
+        OnPropertyChanged(nameof(OperatorActionSummary));
         OnPropertyChanged(nameof(CommunitySummary));
         OnPropertyChanged(nameof(ServerRulesSummary));
         OnPropertyChanged(nameof(NetworkPostureSummary));

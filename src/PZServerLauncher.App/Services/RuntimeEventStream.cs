@@ -20,6 +20,8 @@ public sealed class RuntimeEventStream : IAsyncDisposable
 
     public event Func<string, string, Task>? LogLineReceived;
 
+    public event Func<ProfileLiveOperationsSnapshot, Task>? LiveOperationsChanged;
+
     public async Task EnsureConnectedAsync(CancellationToken cancellationToken = default)
     {
         if (_connection is { State: HubConnectionState.Connected or HubConnectionState.Connecting or HubConnectionState.Reconnecting })
@@ -47,6 +49,7 @@ public sealed class RuntimeEventStream : IAsyncDisposable
             _connection.On<ServerRuntimeStatus>("statusChanged", status => DispatchStatusChangedAsync(status));
             _connection.On<OperationJob>("jobChanged", job => DispatchJobChangedAsync(job));
             _connection.On<string, string>("logLine", (profileId, line) => DispatchLogLineAsync(profileId, line));
+            _connection.On<ProfileLiveOperationsSnapshot>("liveOperationsChanged", snapshot => DispatchLiveOperationsChangedAsync(snapshot));
 
             await _connection.StartAsync(cancellationToken);
         }
@@ -89,4 +92,7 @@ public sealed class RuntimeEventStream : IAsyncDisposable
 
     private Task DispatchLogLineAsync(string profileId, string line) =>
         LogLineReceived?.Invoke(profileId, line) ?? Task.CompletedTask;
+
+    private Task DispatchLiveOperationsChangedAsync(ProfileLiveOperationsSnapshot snapshot) =>
+        LiveOperationsChanged?.Invoke(snapshot) ?? Task.CompletedTask;
 }
