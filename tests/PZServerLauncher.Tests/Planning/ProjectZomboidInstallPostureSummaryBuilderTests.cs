@@ -44,6 +44,9 @@ public sealed class ProjectZomboidInstallPostureSummaryBuilderTests : IDisposabl
         Assert.True(summary.UsesDirectJavaTemplate);
         Assert.Contains("Build 41 Stable", summary.BranchChannelSummary);
         Assert.Contains("app_update 380870 validate", summary.SteamCmdCommandSummary);
+        Assert.Contains("@ShutdownOnFailedCommand 1", summary.SteamCmdScriptPreview);
+        Assert.Contains("force_install_dir", summary.SteamCmdScriptPreview);
+        Assert.Contains("-servername", summary.LaunchCommandPreview);
         Assert.Contains("launcher-managed memory", summary.LaunchReadinessSummary);
         Assert.Contains("core server config files are present", summary.CacheFootprintSummary);
         Assert.Contains("Latest backup: stable-backup.zip", summary.BackupSafetySummary);
@@ -72,6 +75,8 @@ public sealed class ProjectZomboidInstallPostureSummaryBuilderTests : IDisposabl
         Assert.False(summary.UsesDirectJavaTemplate);
         Assert.Contains("Build 42 Unstable", summary.BranchChannelSummary);
         Assert.Contains("-beta unstable", summary.SteamCmdCommandSummary);
+        Assert.Contains("-beta unstable validate", summary.SteamCmdScriptPreview);
+        Assert.Contains(ProjectZomboidDefaults.StableBatchFileName, summary.LaunchCommandPreview);
         Assert.Contains("Vendor batch fallback is active", summary.LaunchReadinessSummary);
         Assert.Contains("No backup archive exists yet", summary.BackupSafetySummary);
     }

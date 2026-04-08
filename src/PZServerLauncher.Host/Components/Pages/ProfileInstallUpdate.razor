@@ -141,6 +141,32 @@ else
                 <section class="card">
                     <div class="card-heading">
                         <div>
+                            <p class="eyebrow">SteamCMD</p>
+                            <h2>Install Script Preview</h2>
+                        </div>
+                    </div>
+
+                    <p class="muted-text">This is the exact SteamCMD script shape the launcher will hand to the host for install or update work.</p>
+                    <pre class="raw-editor">@(_installPosture?.SteamCmdScriptPreview ?? "No SteamCMD script preview available.")</pre>
+                </section>
+
+                <section class="card">
+                    <div class="card-heading">
+                        <div>
+                            <p class="eyebrow">Launch</p>
+                            <h2>Effective Command Preview</h2>
+                        </div>
+                    </div>
+
+                    <p class="muted-text">This preview reflects whether the host can launch via direct Java template extraction or has to fall back to the vendor batch file.</p>
+                    <pre class="raw-editor">@(_installPosture?.LaunchCommandPreview ?? "No launch command preview available.")</pre>
+                </section>
+            </div>
+
+            <div class="cards cards--wide">
+                <section class="card">
+                    <div class="card-heading">
+                        <div>
                             <p class="eyebrow">Queue</p>
                             <h2>Recent Jobs</h2>
                         </div>

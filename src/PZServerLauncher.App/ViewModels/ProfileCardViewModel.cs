@@ -111,6 +111,10 @@ public partial class ProfileCardViewModel : ViewModelBase
 
     public string SteamCmdCommandSummary => InstallPosture.SteamCmdCommandSummary;
 
+    public string SteamCmdScriptPreview => InstallPosture.SteamCmdScriptPreview;
+
+    public string LaunchCommandPreview => InstallPosture.LaunchCommandPreview;
+
     public string ExpectedLauncherPath => InstallPosture.ExpectedLauncherPath;
 
     public string InstallFootprintSummary => InstallPosture.InstallFootprintSummary;

@@ -55,6 +55,10 @@ public sealed class InstallUpdateWorkspaceViewModel : ProfileWorkspacePageViewMo
 
     public string SteamCmdCommandSummary => SelectedProfile?.SteamCmdCommandSummary ?? "SteamCMD command summary unavailable.";
 
+    public string SteamCmdScriptPreview => SelectedProfile?.SteamCmdScriptPreview ?? "SteamCMD script preview unavailable.";
+
+    public string LaunchCommandPreview => SelectedProfile?.LaunchCommandPreview ?? "Launch command preview unavailable.";
+
     public string InstallReadiness => SelectedProfile?.InstallFootprintSummary ?? "No install profile selected.";
 
     public string CacheReadiness => SelectedProfile?.CacheFootprintSummary ?? "No cache profile selected.";
@@ -108,6 +112,8 @@ public sealed class InstallUpdateWorkspaceViewModel : ProfileWorkspacePageViewMo
         OnPropertyChanged(nameof(LastJobSummary));
         OnPropertyChanged(nameof(BranchChannelSummary));
         OnPropertyChanged(nameof(SteamCmdCommandSummary));
+        OnPropertyChanged(nameof(SteamCmdScriptPreview));
+        OnPropertyChanged(nameof(LaunchCommandPreview));
         OnPropertyChanged(nameof(InstallReadiness));
         OnPropertyChanged(nameof(CacheReadiness));
         OnPropertyChanged(nameof(BackupSafety));

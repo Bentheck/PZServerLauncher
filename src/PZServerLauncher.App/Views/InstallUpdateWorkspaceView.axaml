@@ -97,6 +97,28 @@
                         </StackPanel>
                     </Border>
 
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
+                        <Border Background="#FFF8F1" CornerRadius="14" Padding="16">
+                            <StackPanel Spacing="6">
+                                <TextBlock Classes="kicker" Text="SteamCMD Script Preview" />
+                                <SelectableTextBlock Classes="body"
+                                                     FontFamily="Cascadia Code,Consolas,monospace"
+                                                     Text="{Binding SteamCmdScriptPreview}"
+                                                     TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Grid.Column="1" Background="#FFF8F1" CornerRadius="14" Padding="16">
+                            <StackPanel Spacing="6">
+                                <TextBlock Classes="kicker" Text="Launch Preview" />
+                                <SelectableTextBlock Classes="body"
+                                                     FontFamily="Cascadia Code,Consolas,monospace"
+                                                     Text="{Binding LaunchCommandPreview}"
+                                                     TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+
                     <Border Background="#F1E6D7" CornerRadius="14" Padding="16">
                         <StackPanel Spacing="8">
                             <TextBlock Classes="kicker" Text="Preflight" />

@@ -25,6 +25,9 @@ public static class ProjectZomboidInstallPostureSummaryBuilder
 
         var launchPlan = planner.CreateLaunchPlan(profile);
         var usesDirectJava = launchPlan.Strategy == ServerLaunchStrategy.DirectJavaTemplate;
+        var installScript = planner.CreateInstallScript(profile);
+        var steamCmdScriptPreview = planner.FormatSteamCmdScript(installScript);
+        var launchCommandPreview = planner.FormatLaunchCommand(launchPlan);
 
         var branchChannelSummary = profile.Branch switch
         {
@@ -81,6 +84,8 @@ public static class ProjectZomboidInstallPostureSummaryBuilder
         return new ProjectZomboidInstallPostureSummary(
             branchChannelSummary,
             steamCmdCommandSummary,
+            steamCmdScriptPreview,
+            launchCommandPreview,
             expectedLauncherPath,
             installFootprintSummary,
             cacheFootprintSummary,

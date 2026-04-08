@@ -3,6 +3,8 @@ namespace PZServerLauncher.Core.Planning;
 public sealed record ProjectZomboidInstallPostureSummary(
     string BranchChannelSummary,
     string SteamCmdCommandSummary,
+    string SteamCmdScriptPreview,
+    string LaunchCommandPreview,
     string ExpectedLauncherPath,
     string InstallFootprintSummary,
     string CacheFootprintSummary,
