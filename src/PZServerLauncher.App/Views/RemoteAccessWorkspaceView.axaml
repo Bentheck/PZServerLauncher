@@ -16,6 +16,7 @@
                         <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Optional Remote Admin" />
                         <TextBlock FontSize="30" FontWeight="SemiBold" Foreground="#F7F0E7" Text="{Binding PageTitle}" />
                         <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding PageSummary}" TextWrapping="Wrap" />
+                        <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding RemoteModeSummary}" TextWrapping="Wrap" />
                     </StackPanel>
                     <Border Grid.Column="1" Background="#2A2927" CornerRadius="999" Padding="14,8" VerticalAlignment="Top">
                         <TextBlock Foreground="#F7F0E7" FontWeight="SemiBold" Text="{Binding RemoteEnabledLabel}" />
@@ -46,8 +47,8 @@
                 <Border Grid.Column="3" Background="#F6EFE6" CornerRadius="14" Padding="16">
                     <StackPanel Spacing="6">
                         <TextBlock Classes="kicker" Text="Self-Test" />
-                        <TextBlock Classes="body" Text="{Binding RemoteSelfTestHeadline}" TextWrapping="Wrap" />
-                        <TextBlock Classes="body" Text="{Binding RemoteSelfTestStats}" TextWrapping="Wrap" />
+                        <TextBlock Classes="body" Text="{Binding RemoteChecklistHeadline}" TextWrapping="Wrap" />
+                        <TextBlock Classes="body" Text="{Binding RemoteChecklistSummary}" TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
             </Grid>
@@ -60,7 +61,8 @@
                                 <TextBlock Classes="kicker" Text="Remote Setup" />
                                 <TextBlock Classes="panel-title" FontSize="22" Text="{Binding RemoteHostSummary}" TextWrapping="Wrap" />
                                 <TextBlock Classes="body" Text="{Binding RemoteBindingSummary}" TextWrapping="Wrap" />
-                                <TextBlock Classes="body" Text="{Binding RemoteCertificateSummary}" TextWrapping="Wrap" />
+                                <TextBlock Classes="body" Text="{Binding RemoteExposureSummary}" TextWrapping="Wrap" />
+                                <TextBlock Classes="body" Text="{Binding RemoteCertificateStatusSummary}" TextWrapping="Wrap" />
                             </StackPanel>
                             <Border Background="#2A2927" CornerRadius="999" Padding="10,6" VerticalAlignment="Top">
                                 <TextBlock Foreground="#F7F0E7" FontSize="12" Text="Desktop-managed" />
@@ -94,6 +96,13 @@
                             <Button Command="{Binding Legacy.RemoteSelfTestCommand}" Content="Run Local Self-Test" />
                             <Button Command="{Binding Legacy.ApplyFirewallRuleCommand}" Content="Apply Firewall Rule" />
                         </WrapPanel>
+
+                        <Border Background="#FFF4E7" CornerRadius="12" Padding="12">
+                            <StackPanel Spacing="4">
+                                <TextBlock Classes="kicker" Text="Local-Only Guidance" />
+                                <TextBlock Classes="body" Text="{Binding RemoteLocalOnlyGuidance}" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
                 </Border>
 
@@ -102,7 +111,9 @@
                         <StackPanel Spacing="4">
                             <TextBlock Classes="kicker" Text="Operator Checklist" />
                             <TextBlock Classes="body" Text="{Binding RemoteActionSummary}" TextWrapping="Wrap" />
+                            <TextBlock Classes="body" Text="{Binding RemoteOperatorChecklistSummary}" TextWrapping="Wrap" />
                             <TextBlock Classes="body" Text="{Binding RemoteFirewallIntentSummary}" TextWrapping="Wrap" />
+                            <TextBlock Classes="body" Text="{Binding RemoteFirewallActionSummary}" TextWrapping="Wrap" />
                             <TextBlock Classes="body" Text="{Binding RemoteNextStepSummary}" TextWrapping="Wrap" />
                         </StackPanel>
 

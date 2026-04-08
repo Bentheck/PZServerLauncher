@@ -15,6 +15,7 @@
             <p class="eyebrow">Web Admin</p>
             <h1>Remote Access</h1>
             <p class="muted-text">Configure the optional HTTPS listener for remote administration. The host checks certificate details, bind posture, and owner 2FA readiness before you turn it on, so the exposed surface stays intentional.</p>
+            <p class="muted-text">@BuildRemoteModeSummary()</p>
         </div>
 
         @if (_currentRemoteAccess is not null)
@@ -91,6 +92,7 @@
                 <strong>Local setup link</strong>
                 <p><code>@_localTwoFactorPath</code></p>
                 <p>Use the local authenticator page first, then return here to enable the remote HTTPS listener with confidence.</p>
+                <p>@BuildExposureSummary()</p>
             </div>
         </section>
 
@@ -105,6 +107,7 @@
             <div class="status-banner status-banner--warm">
                 <strong>Owner account readiness</strong>
                 <p>Owner accounts with 2FA: @_ownerAccountsWithTwoFactor</p>
+                <p>@BuildReadinessSummary()</p>
             </div>
 
             <p class="muted-text">If this is 0, remote access should stay disabled. Set up TOTP locally first at <a href="/Account/Manage/EnableAuthenticator">Enable Authenticator</a>, then come back to expose HTTPS.</p>
@@ -161,6 +164,52 @@
             <strong>Recommended next step</strong>
             <p>@BuildNextStepSummary()</p>
         </section>
+
+        <section class="status-banner status-banner--warm">
+            <strong>Local-only guidance</strong>
+            <p>@BuildLocalOnlyGuidance()</p>
+        </section>
+    </section>
+
+    <section class="card">
+        <div class="card-heading">
+            <div>
+                <p class="eyebrow">Operator Checklist</p>
+                <h2>Rollout Sequence</h2>
+            </div>
+            <span class="pill">@BuildChecklistStats()</span>
+        </div>
+
+        <p class="muted-text">Treat remote access as a staged rollout: keep the listener local until each prerequisite is intentional.</p>
+
+        @if (RemoteSelfTestChecks.Count == 0)
+        {
+            <div class="empty-state">
+                <p>Run the local self-test after saving your HTTPS settings to turn this panel into a rollout checklist.</p>
+            </div>
+        }
+        else
+        {
+            <div class="users-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th>Check</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var check in RemoteSelfTestChecks)
+                        {
+                            <tr>
+                                <td>@check.StatusLabel</td>
+                                <td>@check.Message</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
     </section>
 </div>
 
@@ -254,6 +303,45 @@
         return _currentRemoteAccess.CreateFirewallRule
             ? "Save the settings, restart the host, and verify the firewall rule before exposing the endpoint to the network."
             : "Save the settings, restart the host, and consider whether you want this endpoint to stay loopback-only or become publicly reachable.";
+    }
+
+    private string BuildRemoteModeSummary() =>
+        _currentRemoteAccess?.IsEnabled == true
+            ? "The listener is staged for exposure, so every change should be treated like a rollout decision."
+            : "The listener is still local-only, which is the safest starting point for desktop-first administration.";
+
+    private string BuildExposureSummary() =>
+        _currentRemoteAccess?.IsEnabled == true
+            ? "Review the endpoint, certificate path, and firewall posture together before you expose HTTPS beyond the host."
+            : "Nothing is exposed yet, so you still have time to stage the certificate and choose whether firewall intent belongs in the rollout.";
+
+    private string BuildReadinessSummary()
+    {
+        if (_ownerAccountsWithTwoFactor == 0)
+        {
+            return "Owner TOTP is still missing, so this should remain loopback-only.";
+        }
+
+        return _currentRemoteAccess?.IsEnabled == true
+            ? "Owner 2FA is ready, so the remaining concerns are certificate, bind address, and firewall posture."
+            : "Owner 2FA is ready, so the remaining concerns are certificate, bind address, and whether you actually want to expose HTTPS.";
+    }
+
+    private string BuildLocalOnlyGuidance() =>
+        _currentRemoteAccess?.IsEnabled == true
+            ? "The listener is no longer local-only. Keep it staged until the certificate and firewall checks both pass."
+            : "Loopback-only mode is active. Use that time to validate the certificate path and TOTP posture before turning on exposure.";
+
+    private string BuildChecklistStats()
+    {
+        if (RemoteSelfTestChecks.Count == 0)
+        {
+            return "No self-test yet";
+        }
+
+        var blocking = RemoteSelfTestChecks.Count(check => check.IsBlocking);
+        var followUp = RemoteSelfTestChecks.Count(check => check.IsFollowUp);
+        return $"{RemoteSelfTestChecks.Count} checks | {blocking} blocking | {followUp} follow-up";
     }
 
     private sealed class RemoteAccessInput
