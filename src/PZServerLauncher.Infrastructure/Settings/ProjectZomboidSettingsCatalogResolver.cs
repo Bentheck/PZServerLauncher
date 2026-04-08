@@ -229,6 +229,29 @@ public sealed class ProjectZomboidSettingsCatalogResolver : ISettingsCatalogReso
                         Field($"{branchPrefix}.network.do-lua-checksum", "Enforce Lua Checksum", StructuredValueKind.Boolean, ConfigFileKind.Ini, "DoLuaChecksum", defaultValue: "true", helpText: "Kick players whose Lua files do not match the server."),
                         Field($"{branchPrefix}.network.upnp", "Enable UPnP", StructuredValueKind.Boolean, ConfigFileKind.Ini, "UPnP", defaultValue: "true", helpText: "Ask routers that support UPnP to open ports automatically."),
                         Field($"{branchPrefix}.network.ping-limit", "Ping Limit", StructuredValueKind.Integer, ConfigFileKind.Ini, "PingLimit", defaultValue: "250", helpText: "Players consistently above this ping can be kicked. Use 100 to disable the limit."),
+                        Field($"{branchPrefix}.network.steam-vac", "Steam VAC", StructuredValueKind.Boolean, ConfigFileKind.Ini, "SteamVAC", defaultValue: "true", helpText: "Enable Valve Anti-Cheat integration for Steam clients."),
+                        Field($"{branchPrefix}.network.kick-fast-players", "Kick Fast Players", StructuredValueKind.Boolean, ConfigFileKind.Ini, "KickFastPlayers", defaultValue: "false", helpText: "Kick players whose movement looks too fast for the simulation."),
+                    }),
+                new StructuredSectionDefinition(
+                    $"{branchPrefix}.network.identity-and-safety",
+                    "Identity & PvP Safety",
+                    new[]
+                    {
+                        Field($"{branchPrefix}.network.display-user-name", "Display Username", StructuredValueKind.Boolean, ConfigFileKind.Ini, "DisplayUserName", defaultValue: "true", helpText: "Show a player's username over their character."),
+                        Field($"{branchPrefix}.network.show-first-last-name", "Show First & Last Name", StructuredValueKind.Boolean, ConfigFileKind.Ini, "ShowFirstAndLastName", defaultValue: "false", helpText: "Show character first and last names instead of just usernames."),
+                        Field($"{branchPrefix}.network.safety-system", "Safety System", StructuredValueKind.Boolean, ConfigFileKind.Ini, "SafetySystem", defaultValue: "true", helpText: "Enable PvP safety toggles for players."),
+                        Field($"{branchPrefix}.network.safety-toggle-timer", "Safety Toggle Timer", StructuredValueKind.Integer, ConfigFileKind.Ini, "SafetyToggleTimer", defaultValue: "100", helpText: "Seconds needed to turn the safety toggle on or off."),
+                        Field($"{branchPrefix}.network.safety-cooldown-timer", "Safety Cooldown Timer", StructuredValueKind.Integer, ConfigFileKind.Ini, "SafetyCooldownTimer", defaultValue: "120", helpText: "Seconds before safety can be toggled again."),
+                    }),
+                new StructuredSectionDefinition(
+                    $"{branchPrefix}.network.voice",
+                    "Voice Chat",
+                    new[]
+                    {
+                        Field($"{branchPrefix}.network.voice-enabled", "Voice Chat Enabled", StructuredValueKind.Boolean, ConfigFileKind.Ini, "VoiceEnable", defaultValue: "true", helpText: "Allow voice chat on the server."),
+                        Field($"{branchPrefix}.network.voice-3d", "3D Voice", StructuredValueKind.Boolean, ConfigFileKind.Ini, "Voice3D", defaultValue: "true", helpText: "Attenuate voice by distance and direction in-world."),
+                        Field($"{branchPrefix}.network.voice-min-distance", "Voice Min Distance", StructuredValueKind.Integer, ConfigFileKind.Ini, "VoiceMinDistance", defaultValue: "10", helpText: "Distance in tiles before voice begins to attenuate."),
+                        Field($"{branchPrefix}.network.voice-max-distance", "Voice Max Distance", StructuredValueKind.Integer, ConfigFileKind.Ini, "VoiceMaxDistance", defaultValue: "100", helpText: "Maximum voice range in tiles."),
                     }),
                 new StructuredSectionDefinition(
                     $"{branchPrefix}.network.bootstrap",

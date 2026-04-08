@@ -283,6 +283,17 @@ public sealed class StructuredSettingsService(
                         ["DoLuaChecksum"] = ParseBool(values, $"{branchPrefix}.network.do-lua-checksum").ToString().ToLowerInvariant(),
                         ["UPnP"] = ParseBool(values, $"{branchPrefix}.network.upnp").ToString().ToLowerInvariant(),
                         ["PingLimit"] = ParseInt(values, $"{branchPrefix}.network.ping-limit").ToString(),
+                        ["SteamVAC"] = ParseBool(values, $"{branchPrefix}.network.steam-vac").ToString().ToLowerInvariant(),
+                        ["KickFastPlayers"] = ParseBool(values, $"{branchPrefix}.network.kick-fast-players").ToString().ToLowerInvariant(),
+                        ["DisplayUserName"] = ParseBool(values, $"{branchPrefix}.network.display-user-name").ToString().ToLowerInvariant(),
+                        ["ShowFirstAndLastName"] = ParseBool(values, $"{branchPrefix}.network.show-first-last-name").ToString().ToLowerInvariant(),
+                        ["SafetySystem"] = ParseBool(values, $"{branchPrefix}.network.safety-system").ToString().ToLowerInvariant(),
+                        ["SafetyToggleTimer"] = ParseInt(values, $"{branchPrefix}.network.safety-toggle-timer").ToString(),
+                        ["SafetyCooldownTimer"] = ParseInt(values, $"{branchPrefix}.network.safety-cooldown-timer").ToString(),
+                        ["VoiceEnable"] = ParseBool(values, $"{branchPrefix}.network.voice-enabled").ToString().ToLowerInvariant(),
+                        ["Voice3D"] = ParseBool(values, $"{branchPrefix}.network.voice-3d").ToString().ToLowerInvariant(),
+                        ["VoiceMinDistance"] = ParseInt(values, $"{branchPrefix}.network.voice-min-distance").ToString(),
+                        ["VoiceMaxDistance"] = ParseInt(values, $"{branchPrefix}.network.voice-max-distance").ToString(),
                     };
 
                     var updatedContent = iniDocumentService.ApplyValues(raw.Content, iniValues);
@@ -609,6 +620,26 @@ public sealed class StructuredSettingsService(
         ValidateBoolean(values, $"{branchPrefix}.network.do-lua-checksum", "Lua checksum enforcement must be true or false.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.network.upnp", "UPnP must be true or false.", fieldErrors);
         ValidateMinimumInteger(values, $"{branchPrefix}.network.ping-limit", 0, "Ping limit must be zero or greater.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.network.steam-vac", "Steam VAC must be true or false.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.network.kick-fast-players", "Kick fast players must be true or false.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.network.display-user-name", "Display username must be true or false.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.network.show-first-last-name", "Show first and last name must be true or false.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.network.safety-system", "Safety system must be true or false.", fieldErrors);
+        ValidateMinimumInteger(values, $"{branchPrefix}.network.safety-toggle-timer", 0, "Safety toggle timer must be zero or greater.", fieldErrors);
+        ValidateMinimumInteger(values, $"{branchPrefix}.network.safety-cooldown-timer", 0, "Safety cooldown timer must be zero or greater.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.network.voice-enabled", "Voice chat enabled must be true or false.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.network.voice-3d", "3D voice must be true or false.", fieldErrors);
+        ValidateMinimumInteger(values, $"{branchPrefix}.network.voice-min-distance", 0, "Voice minimum distance must be zero or greater.", fieldErrors);
+        ValidateMinimumInteger(values, $"{branchPrefix}.network.voice-max-distance", 0, "Voice maximum distance must be zero or greater.", fieldErrors);
+
+        var voiceMinKey = $"{branchPrefix}.network.voice-min-distance";
+        var voiceMaxKey = $"{branchPrefix}.network.voice-max-distance";
+        if (TryParseInt(values, voiceMinKey, out var voiceMinDistance) &&
+            TryParseInt(values, voiceMaxKey, out var voiceMaxDistance) &&
+            voiceMaxDistance < voiceMinDistance)
+        {
+            fieldErrors[voiceMaxKey] = ["Voice maximum distance must be greater than or equal to the minimum distance."];
+        }
 
         var passwordKey = $"{branchPrefix}.network.admin-password";
         var usernameKey = $"{branchPrefix}.network.admin-user";
@@ -909,6 +940,12 @@ public sealed class StructuredSettingsService(
         values.TryGetValue(key, out var value) && int.TryParse(value, out var parsed)
             ? parsed
             : throw new InvalidOperationException($"Invalid integer setting '{key}'.");
+
+    private static bool TryParseInt(IReadOnlyDictionary<string, string?> values, string key, out int parsed)
+    {
+        parsed = 0;
+        return values.TryGetValue(key, out var value) && int.TryParse(value, out parsed);
+    }
 
     private static bool ParseBool(IReadOnlyDictionary<string, string?> values, string key) =>
         values.TryGetValue(key, out var value) && bool.TryParse(value, out var parsed)

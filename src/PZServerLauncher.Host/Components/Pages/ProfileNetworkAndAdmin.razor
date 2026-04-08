@@ -37,7 +37,7 @@ else
                 <div class="workspace-panel__copy">
                     <p class="eyebrow">Network &amp; Admin</p>
                     <h1>@_profile.DisplayName</h1>
-                    <p class="muted-text">This page owns join password, RCON password, auto whitelist, Lua checksum, UPnP, ping limit, bind IP, and launcher admin bootstrap settings. If the host marks it as fallback-only, use Advanced Files for the raw editor instead.</p>
+                    <p class="muted-text">This page owns join and RCON access, anti-cheat and discovery rules, PvP safety and identity settings, voice chat distance controls, bind IP, and launcher admin bootstrap. If the host marks it as fallback-only, use Advanced Files for the raw editor instead.</p>
                 </div>
 
                 <div class="workspace-actions">
@@ -52,18 +52,18 @@ else
             <section class="metric-grid metric-grid--host">
                 <article class="metric-card">
                     <span class="metric-label">Security Controls</span>
-                    <strong class="metric-value">Join, RCON, whitelist, checksum</strong>
-                    <span class="metric-note">Structured access and integrity settings</span>
+                    <strong class="metric-value">Join, RCON, VAC, whitelist</strong>
+                    <span class="metric-note">Structured access, trust, and anti-cheat settings</span>
                 </article>
                 <article class="metric-card">
                     <span class="metric-label">Network Controls</span>
-                    <strong class="metric-value">Bind IP, UPnP, ping limit</strong>
-                    <span class="metric-note">Connection and discovery behavior</span>
+                    <strong class="metric-value">Bind IP, UPnP, ping, voice</strong>
+                    <span class="metric-note">Connection, discovery, and proximity chat behavior</span>
                 </article>
                 <article class="metric-card">
-                    <span class="metric-label">Launcher Admin Bootstrap</span>
-                    <strong class="metric-value">Owner/admin profile fields</strong>
-                    <span class="metric-note">Write-only credentials are applied on save</span>
+                    <span class="metric-label">Identity &amp; Safety</span>
+                    <strong class="metric-value">Names, PvP timers, safety toggles</strong>
+                    <span class="metric-note">Operator-facing rules for public community etiquette</span>
                 </article>
                 <article class="metric-card">
                     <span class="metric-label">Fallback</span>
@@ -82,7 +82,7 @@ else
                         <span class="pill">@(_canEdit ? "Editable" : "Read only")</span>
                     </div>
 
-                    <p class="muted-text">Use this page for the structured network and security controls. Join password and RCON password remain write-only fields, while launcher admin bootstrap keeps the local owner/admin flow aligned with the desktop workspace.</p>
+                    <p class="muted-text">Use this page for structured network, anti-cheat, identity, voice, and security controls. Join password, RCON password, and launcher admin bootstrap remain write-only fields, while the rest of the page maps directly onto Project Zomboid server options.</p>
 
                     @if (_catalog is null || _page is null || _valueSet is null)
                     {

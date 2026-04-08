@@ -21,7 +21,7 @@ public partial class NetworkAndAdminWorkspaceViewModel : ProfileWorkspacePageVie
             "Join passwords, compatibility toggles, bind address, and launcher admin bootstrap settings.",
             "Network & Admin settings are in sync.",
             legacy,
-            ["Access passwords", "Compatibility", "Launcher admin bootstrap"])
+            ["Access passwords", "Compatibility and trust", "Identity and PvP safety", "Voice chat", "Launcher admin bootstrap"])
     {
         _hostApiClient = hostApiClient;
         SaveSettingsCommand = new AsyncRelayCommand(SaveSettingsAsync);
@@ -38,7 +38,7 @@ public partial class NetworkAndAdminWorkspaceViewModel : ProfileWorkspacePageVie
 
     public string WorkspaceSummary => SelectedProfile is null
         ? "Choose a profile to unlock passwords, compatibility, and launcher admin controls."
-        : $"{SelectedProfile.DisplayName} now controls server passwords, compatibility flags, bind IP, and the launcher bootstrap admin.";
+        : $"{SelectedProfile.DisplayName} now controls passwords, connection trust, identity rules, voice chat, bind IP, and the launcher bootstrap admin.";
 
     public string ActionSummary => DraftsDisabled
         ? "Drafts are disabled so write-only password fields never land in workspace storage."
@@ -99,6 +99,39 @@ public partial class NetworkAndAdminWorkspaceViewModel : ProfileWorkspacePageVie
 
     [ObservableProperty]
     private string pingLimit = string.Empty;
+
+    [ObservableProperty]
+    private bool steamVacEnabled;
+
+    [ObservableProperty]
+    private bool kickFastPlayers;
+
+    [ObservableProperty]
+    private bool displayUserName;
+
+    [ObservableProperty]
+    private bool showFirstAndLastName;
+
+    [ObservableProperty]
+    private bool safetySystem;
+
+    [ObservableProperty]
+    private string safetyToggleTimer = string.Empty;
+
+    [ObservableProperty]
+    private string safetyCooldownTimer = string.Empty;
+
+    [ObservableProperty]
+    private bool voiceEnabled;
+
+    [ObservableProperty]
+    private bool voice3d;
+
+    [ObservableProperty]
+    private string voiceMinDistance = string.Empty;
+
+    [ObservableProperty]
+    private string voiceMaxDistance = string.Empty;
 
     [ObservableProperty]
     private string adminUsername = string.Empty;
@@ -233,6 +266,17 @@ public partial class NetworkAndAdminWorkspaceViewModel : ProfileWorkspacePageVie
             DoLuaChecksum = bool.TryParse(GetValue(values, ".network.do-lua-checksum"), out var doLuaChecksum) && doLuaChecksum;
             UpnpEnabled = bool.TryParse(GetValue(values, ".network.upnp"), out var upnpEnabled) && upnpEnabled;
             PingLimit = GetValue(values, ".network.ping-limit");
+            SteamVacEnabled = bool.TryParse(GetValue(values, ".network.steam-vac"), out var steamVacEnabled) && steamVacEnabled;
+            KickFastPlayers = bool.TryParse(GetValue(values, ".network.kick-fast-players"), out var kickFastPlayers) && kickFastPlayers;
+            DisplayUserName = bool.TryParse(GetValue(values, ".network.display-user-name"), out var displayUserName) && displayUserName;
+            ShowFirstAndLastName = bool.TryParse(GetValue(values, ".network.show-first-last-name"), out var showFirstAndLastName) && showFirstAndLastName;
+            SafetySystem = bool.TryParse(GetValue(values, ".network.safety-system"), out var safetySystem) && safetySystem;
+            SafetyToggleTimer = GetValue(values, ".network.safety-toggle-timer");
+            SafetyCooldownTimer = GetValue(values, ".network.safety-cooldown-timer");
+            VoiceEnabled = bool.TryParse(GetValue(values, ".network.voice-enabled"), out var voiceEnabled) && voiceEnabled;
+            Voice3d = bool.TryParse(GetValue(values, ".network.voice-3d"), out var voice3d) && voice3d;
+            VoiceMinDistance = GetValue(values, ".network.voice-min-distance");
+            VoiceMaxDistance = GetValue(values, ".network.voice-max-distance");
             AdminUsername = GetValue(values, ".network.admin-user");
             AdminPassword = string.Empty;
         }
@@ -254,6 +298,17 @@ public partial class NetworkAndAdminWorkspaceViewModel : ProfileWorkspacePageVie
             [$"{prefix}.network.do-lua-checksum"] = DoLuaChecksum.ToString(),
             [$"{prefix}.network.upnp"] = UpnpEnabled.ToString(),
             [$"{prefix}.network.ping-limit"] = PingLimit,
+            [$"{prefix}.network.steam-vac"] = SteamVacEnabled.ToString(),
+            [$"{prefix}.network.kick-fast-players"] = KickFastPlayers.ToString(),
+            [$"{prefix}.network.display-user-name"] = DisplayUserName.ToString(),
+            [$"{prefix}.network.show-first-last-name"] = ShowFirstAndLastName.ToString(),
+            [$"{prefix}.network.safety-system"] = SafetySystem.ToString(),
+            [$"{prefix}.network.safety-toggle-timer"] = SafetyToggleTimer,
+            [$"{prefix}.network.safety-cooldown-timer"] = SafetyCooldownTimer,
+            [$"{prefix}.network.voice-enabled"] = VoiceEnabled.ToString(),
+            [$"{prefix}.network.voice-3d"] = Voice3d.ToString(),
+            [$"{prefix}.network.voice-min-distance"] = VoiceMinDistance,
+            [$"{prefix}.network.voice-max-distance"] = VoiceMaxDistance,
             [$"{prefix}.network.admin-user"] = AdminUsername,
             [$"{prefix}.network.admin-password"] = AdminPassword,
         };
@@ -307,6 +362,17 @@ public partial class NetworkAndAdminWorkspaceViewModel : ProfileWorkspacePageVie
             DoLuaChecksum = false;
             UpnpEnabled = false;
             PingLimit = string.Empty;
+            SteamVacEnabled = false;
+            KickFastPlayers = false;
+            DisplayUserName = false;
+            ShowFirstAndLastName = false;
+            SafetySystem = false;
+            SafetyToggleTimer = string.Empty;
+            SafetyCooldownTimer = string.Empty;
+            VoiceEnabled = false;
+            Voice3d = false;
+            VoiceMinDistance = string.Empty;
+            VoiceMaxDistance = string.Empty;
             AdminUsername = string.Empty;
             AdminPassword = string.Empty;
         }
@@ -326,6 +392,17 @@ public partial class NetworkAndAdminWorkspaceViewModel : ProfileWorkspacePageVie
     partial void OnDoLuaChecksumChanged(bool value) => NotifyFieldEdited();
     partial void OnUpnpEnabledChanged(bool value) => NotifyFieldEdited();
     partial void OnPingLimitChanged(string value) => NotifyFieldEdited();
+    partial void OnSteamVacEnabledChanged(bool value) => NotifyFieldEdited();
+    partial void OnKickFastPlayersChanged(bool value) => NotifyFieldEdited();
+    partial void OnDisplayUserNameChanged(bool value) => NotifyFieldEdited();
+    partial void OnShowFirstAndLastNameChanged(bool value) => NotifyFieldEdited();
+    partial void OnSafetySystemChanged(bool value) => NotifyFieldEdited();
+    partial void OnSafetyToggleTimerChanged(string value) => NotifyFieldEdited();
+    partial void OnSafetyCooldownTimerChanged(string value) => NotifyFieldEdited();
+    partial void OnVoiceEnabledChanged(bool value) => NotifyFieldEdited();
+    partial void OnVoice3dChanged(bool value) => NotifyFieldEdited();
+    partial void OnVoiceMinDistanceChanged(string value) => NotifyFieldEdited();
+    partial void OnVoiceMaxDistanceChanged(string value) => NotifyFieldEdited();
     partial void OnAdminUsernameChanged(string value) => NotifyFieldEdited();
     partial void OnAdminPasswordChanged(string value) => NotifyFieldEdited();
 

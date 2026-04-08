@@ -62,6 +62,17 @@ public sealed class StructuredSettingsServiceTests : IDisposable
             FactionDaySurvivedToCreate=3
             FactionPlayersRequiredForTag=4
             AllowTradeUI=false
+            SteamVAC=false
+            KickFastPlayers=true
+            DisplayUserName=false
+            ShowFirstAndLastName=true
+            SafetySystem=false
+            SafetyToggleTimer=30
+            SafetyCooldownTimer=45
+            VoiceEnable=false
+            Voice3D=false
+            VoiceMinDistance=12
+            VoiceMaxDistance=80
             DefaultPort=16270
             RCONPort=27025
             BindIP=10.0.0.10
@@ -71,6 +82,17 @@ public sealed class StructuredSettingsServiceTests : IDisposable
             DoLuaChecksum=false
             UPnP=false
             PingLimit=200
+            SteamVAC=true
+            KickFastPlayers=false
+            DisplayUserName=true
+            ShowFirstAndLastName=false
+            SafetySystem=true
+            SafetyToggleTimer=3
+            SafetyCooldownTimer=15
+            VoiceEnable=true
+            Voice3D=true
+            VoiceMinDistance=10
+            VoiceMaxDistance=55
             """);
 
         await using var dbContext = TestDatabaseFactory.Create(Path.Combine(_tempRoot, "settings.db"));
@@ -129,6 +151,17 @@ public sealed class StructuredSettingsServiceTests : IDisposable
         Assert.Equal("false", networkValues.Values[$"{branchPrefix}.network.do-lua-checksum"]);
         Assert.Equal("false", networkValues.Values[$"{branchPrefix}.network.upnp"]);
         Assert.Equal("200", networkValues.Values[$"{branchPrefix}.network.ping-limit"]);
+        Assert.Equal("true", networkValues.Values[$"{branchPrefix}.network.steam-vac"]);
+        Assert.Equal("false", networkValues.Values[$"{branchPrefix}.network.kick-fast-players"]);
+        Assert.Equal("true", networkValues.Values[$"{branchPrefix}.network.display-user-name"]);
+        Assert.Equal("false", networkValues.Values[$"{branchPrefix}.network.show-first-last-name"]);
+        Assert.Equal("true", networkValues.Values[$"{branchPrefix}.network.safety-system"]);
+        Assert.Equal("3", networkValues.Values[$"{branchPrefix}.network.safety-toggle-timer"]);
+        Assert.Equal("15", networkValues.Values[$"{branchPrefix}.network.safety-cooldown-timer"]);
+        Assert.Equal("true", networkValues.Values[$"{branchPrefix}.network.voice-enabled"]);
+        Assert.Equal("true", networkValues.Values[$"{branchPrefix}.network.voice-3d"]);
+        Assert.Equal("10", networkValues.Values[$"{branchPrefix}.network.voice-min-distance"]);
+        Assert.Equal("55", networkValues.Values[$"{branchPrefix}.network.voice-max-distance"]);
         Assert.Equal(profile.AdminUsername, networkValues.Values[$"{branchPrefix}.network.admin-user"]);
         Assert.Equal(string.Empty, networkValues.Values[$"{branchPrefix}.network.admin-password"]);
         Assert.False(generalValues.RequiresAdvancedFilesFallback);
@@ -193,6 +226,17 @@ public sealed class StructuredSettingsServiceTests : IDisposable
             DoLuaChecksum=true
             UPnP=true
             PingLimit=250
+            SteamVAC=true
+            KickFastPlayers=false
+            DisplayUserName=true
+            ShowFirstAndLastName=false
+            SafetySystem=true
+            SafetyToggleTimer=2
+            SafetyCooldownTimer=10
+            VoiceEnable=true
+            Voice3D=true
+            VoiceMinDistance=8
+            VoiceMaxDistance=45
             """);
 
         await using var dbContext = TestDatabaseFactory.Create(Path.Combine(_tempRoot, "save.db"));
@@ -248,6 +292,17 @@ public sealed class StructuredSettingsServiceTests : IDisposable
             ["b42.network.do-lua-checksum"] = "false",
             ["b42.network.upnp"] = "false",
             ["b42.network.ping-limit"] = "180",
+            ["b42.network.steam-vac"] = "false",
+            ["b42.network.kick-fast-players"] = "true",
+            ["b42.network.display-user-name"] = "false",
+            ["b42.network.show-first-last-name"] = "true",
+            ["b42.network.safety-system"] = "false",
+            ["b42.network.safety-toggle-timer"] = "6",
+            ["b42.network.safety-cooldown-timer"] = "30",
+            ["b42.network.voice-enabled"] = "true",
+            ["b42.network.voice-3d"] = "false",
+            ["b42.network.voice-min-distance"] = "12",
+            ["b42.network.voice-max-distance"] = "64",
             ["b42.network.admin-user"] = "updated-admin",
             ["b42.network.admin-password"] = "updated-secret",
         });
@@ -293,6 +348,17 @@ public sealed class StructuredSettingsServiceTests : IDisposable
         Assert.Contains("DoLuaChecksum=false", iniText);
         Assert.Contains("UPnP=false", iniText);
         Assert.Contains("PingLimit=180", iniText);
+        Assert.Contains("SteamVAC=false", iniText);
+        Assert.Contains("KickFastPlayers=true", iniText);
+        Assert.Contains("DisplayUserName=false", iniText);
+        Assert.Contains("ShowFirstAndLastName=true", iniText);
+        Assert.Contains("SafetySystem=false", iniText);
+        Assert.Contains("SafetyToggleTimer=6", iniText);
+        Assert.Contains("SafetyCooldownTimer=30", iniText);
+        Assert.Contains("VoiceEnable=true", iniText);
+        Assert.Contains("Voice3D=false", iniText);
+        Assert.Contains("VoiceMinDistance=12", iniText);
+        Assert.Contains("VoiceMaxDistance=64", iniText);
 
         Assert.Equal(16270, updatedProfile!.DefaultPort);
         Assert.Equal(16273, updatedProfile.UdpPort);
@@ -364,6 +430,76 @@ public sealed class StructuredSettingsServiceTests : IDisposable
         Assert.Equal(["1234567890", "2345678901"], updatedProfile!.WorkshopPreset.WorkshopItemIds);
         Assert.Equal(["ExampleMod", "AnotherMod"], updatedProfile.WorkshopPreset.EnabledModIds);
         Assert.Equal(["Muldraugh, KY", "RavenCreek"], updatedProfile.WorkshopPreset.MapFolders);
+    }
+
+    [Fact]
+    public async Task Validate_NetworkPageRejectsVoiceDistanceRangesThatCollapse()
+    {
+        Directory.CreateDirectory(_tempRoot);
+        var profile = ServerProfileFactory.CreateStarterProfile() with
+        {
+            ProfileId = "profile-network-validate",
+            DisplayName = "Profile Network Validate",
+            ServerName = "profile-server",
+            InstallDirectory = Path.Combine(_tempRoot, "install"),
+            CacheDirectory = Path.Combine(_tempRoot, "cache"),
+        };
+
+        var planner = new ProjectZomboidServerPlanner();
+        var paths = planner.ResolvePaths(profile);
+        Directory.CreateDirectory(Path.GetDirectoryName(paths.IniFilePath)!);
+        File.WriteAllText(paths.IniFilePath, """
+            BindIP=
+            Password=
+            RCONPassword=
+            AutoCreateUserInWhiteList=false
+            DoLuaChecksum=true
+            UPnP=true
+            PingLimit=100
+            SteamVAC=true
+            KickFastPlayers=false
+            DisplayUserName=true
+            ShowFirstAndLastName=false
+            SafetySystem=true
+            SafetyToggleTimer=2
+            SafetyCooldownTimer=10
+            VoiceEnable=true
+            Voice3D=true
+            VoiceMinDistance=10
+            VoiceMaxDistance=20
+            """);
+
+        await using var dbContext = TestDatabaseFactory.Create(Path.Combine(_tempRoot, "network-validate.db"));
+        var profileStore = new ProfileStore(dbContext);
+        await profileStore.UpsertAsync(profile);
+
+        var service = CreateService(profileStore, planner);
+        var validation = service.Validate(profile, ProfileWorkspacePageIds.NetworkAndAdmin, new Dictionary<string, string?>
+        {
+            ["b42.network.bind-ip"] = string.Empty,
+            ["b42.network.server-password"] = string.Empty,
+            ["b42.network.rcon-password"] = string.Empty,
+            ["b42.network.auto-whitelist"] = "false",
+            ["b42.network.do-lua-checksum"] = "true",
+            ["b42.network.upnp"] = "true",
+            ["b42.network.ping-limit"] = "100",
+            ["b42.network.steam-vac"] = "true",
+            ["b42.network.kick-fast-players"] = "false",
+            ["b42.network.display-user-name"] = "true",
+            ["b42.network.show-first-last-name"] = "false",
+            ["b42.network.safety-system"] = "true",
+            ["b42.network.safety-toggle-timer"] = "2",
+            ["b42.network.safety-cooldown-timer"] = "10",
+            ["b42.network.voice-enabled"] = "true",
+            ["b42.network.voice-3d"] = "true",
+            ["b42.network.voice-min-distance"] = "30",
+            ["b42.network.voice-max-distance"] = "12",
+            ["b42.network.admin-user"] = "admin",
+            ["b42.network.admin-password"] = string.Empty,
+        });
+
+        Assert.False(validation.IsValid);
+        Assert.Contains("Voice maximum distance must be greater than or equal to the minimum distance.", validation.FieldErrors["b42.network.voice-max-distance"]);
     }
 
     [Fact]

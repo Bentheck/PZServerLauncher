@@ -102,6 +102,8 @@
                                 <TextBlock Classes="kicker" Text="Compatibility &amp; Discovery" />
                                 <CheckBox Content="Auto Create Whitelist Users" IsChecked="{Binding AutoCreateWhitelistUsers}" />
                                 <CheckBox Content="Enforce Lua Checksum" IsChecked="{Binding DoLuaChecksum}" />
+                                <CheckBox Content="Steam VAC" IsChecked="{Binding SteamVacEnabled}" />
+                                <CheckBox Content="Kick Fast Players" IsChecked="{Binding KickFastPlayers}" />
                                 <CheckBox Content="Enable UPnP" IsChecked="{Binding UpnpEnabled}" />
                                 <StackPanel Spacing="4">
                                     <TextBlock Classes="body" Text="Ping Limit" />
@@ -111,11 +113,76 @@
                                                Text="Players consistently above this limit can be kicked. Use 100 to disable the check."
                                                TextWrapping="Wrap" />
                                 </StackPanel>
+                                <TextBlock Classes="body"
+                                           FontSize="12"
+                                           Text="Steam VAC, movement checks, Lua checksum, and whitelist creation all shape how strictly the server trusts connecting players."
+                                           TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Classes="card" Padding="18">
+                            <StackPanel Spacing="14">
+                                <TextBlock Classes="kicker" Text="Identity &amp; PvP Safety" />
+                                <CheckBox Content="Display Username" IsChecked="{Binding DisplayUserName}" />
+                                <CheckBox Content="Show First &amp; Last Name" IsChecked="{Binding ShowFirstAndLastName}" />
+                                <CheckBox Content="Enable Safety System" IsChecked="{Binding SafetySystem}" />
+                                <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Classes="body" Text="Safety Toggle Timer" />
+                                        <TextBox Text="{Binding SafetyToggleTimer}" />
+                                        <TextBlock Classes="body"
+                                                   FontSize="12"
+                                                   Text="Delay before players can toggle PvP safety."
+                                                   TextWrapping="Wrap" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Spacing="4">
+                                        <TextBlock Classes="body" Text="Safety Cooldown Timer" />
+                                        <TextBox Text="{Binding SafetyCooldownTimer}" />
+                                        <TextBlock Classes="body"
+                                                   FontSize="12"
+                                                   Text="Cooldown before players can toggle safety again."
+                                                   TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </Grid>
+                                <TextBlock Classes="body"
+                                           FontSize="12"
+                                           Text="These identity and safety rules shape nameplates, PvP signaling, and grief-prevention on public communities."
+                                           TextWrapping="Wrap" />
                             </StackPanel>
                         </Border>
                     </StackPanel>
 
                     <StackPanel Grid.Column="1" Spacing="16">
+                        <Border Classes="card" Padding="18">
+                            <StackPanel Spacing="14">
+                                <TextBlock Classes="kicker" Text="Voice Chat" />
+                                <CheckBox Content="Enable Voice Chat" IsChecked="{Binding VoiceEnabled}" />
+                                <CheckBox Content="Use 3D Voice" IsChecked="{Binding Voice3d}" />
+                                <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Classes="body" Text="Voice Min Distance" />
+                                        <TextBox Text="{Binding VoiceMinDistance}" />
+                                        <TextBlock Classes="body"
+                                                   FontSize="12"
+                                                   Text="Range where nearby players hear full volume."
+                                                   TextWrapping="Wrap" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Spacing="4">
+                                        <TextBlock Classes="body" Text="Voice Max Distance" />
+                                        <TextBox Text="{Binding VoiceMaxDistance}" />
+                                        <TextBlock Classes="body"
+                                                   FontSize="12"
+                                                   Text="Maximum range before voice is fully attenuated."
+                                                   TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </Grid>
+                                <TextBlock Classes="body"
+                                           FontSize="12"
+                                           Text="Voice settings let you decide whether the server behaves like a private comms channel or an in-world proximity radio."
+                                           TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+
                         <Border Classes="card" Padding="18">
                             <StackPanel Spacing="14">
                                 <TextBlock Classes="kicker" Text="Launcher Admin Bootstrap" />
