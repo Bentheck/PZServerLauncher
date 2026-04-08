@@ -26,14 +26,15 @@ public partial class App : Application
             .AddSingleton<LocalHostApiClient>()
             .AddSingleton<RuntimeEventStream>()
             .AddSingleton<DesktopShellService>()
-            .AddTransient<MainWindowViewModel>()
+            .AddSingleton<MainWindowViewModel>()
+            .AddSingleton<WorkspaceShellViewModel>()
             .BuildServiceProvider();
 
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             var mainWindow = new MainWindow
             {
-                DataContext = _serviceProvider.GetRequiredService<MainWindowViewModel>(),
+                DataContext = _serviceProvider.GetRequiredService<WorkspaceShellViewModel>(),
             };
             desktop.MainWindow = mainWindow;
             _serviceProvider.GetRequiredService<DesktopShellService>().Initialize(desktop, mainWindow);

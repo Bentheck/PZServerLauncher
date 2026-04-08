@@ -1,0 +1,48 @@
+@page "/host"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@using PZServerLauncher.Host.Services
+@inject HostSettingsStore HostSettingsStore
+
+<PageTitle>Host</PageTitle>
+
+<div class="home-shell">
+    <div class="hero">
+        <p class="eyebrow">Workspace</p>
+        <h1>Host</h1>
+        <p>Host lifecycle, startup behavior, and remote exposure live here while the full workspace is being built out.</p>
+    </div>
+
+    @if (_settings is null)
+    {
+        <p>Loading host settings...</p>
+    }
+    else
+    {
+        <div class="cards">
+            <section class="card">
+                <h2>Startup</h2>
+                <p>Loopback port: @_settings.LoopbackPort</p>
+                <p>Start with Windows: @(_settings.StartHostWithWindows ? "On" : "Off")</p>
+                <p>Remote access: @(_settings.RemoteAccess.IsEnabled ? "Enabled" : "Disabled")</p>
+            </section>
+            <section class="card">
+                <h2>Owner Bootstrap</h2>
+                <p>Status: @(_settings.OwnerBootstrap.IsConfigured ? "Configured" : "Pending")</p>
+                <p>Owner: @(_settings.OwnerBootstrap.OwnerUserName ?? "Not set")</p>
+            </section>
+            <section class="card">
+                <h2>Migration Note</h2>
+                <p>The desktop app still has the fuller host-management surface. This page establishes the web workspace route and shared navigation now.</p>
+            </section>
+        </div>
+    }
+</div>
+
+@code {
+    private PZServerLauncher.Core.Runtime.HostSettings? _settings;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _settings = await HostSettingsStore.GetAsync();
+    }
+}

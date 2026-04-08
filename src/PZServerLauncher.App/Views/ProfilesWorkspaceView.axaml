@@ -1,0 +1,108 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:PZServerLauncher.App.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignWidth="1320"
+             d:DesignHeight="980"
+             x:Class="PZServerLauncher.App.Views.ProfilesWorkspaceView"
+             x:Name="ProfilesRoot"
+             x:DataType="vm:ProfilesWorkspaceViewModel">
+    <Grid ColumnDefinitions="320,*" ColumnSpacing="18">
+        <Border Classes="card" Padding="20">
+            <StackPanel Spacing="14">
+                <StackPanel Spacing="4">
+                    <TextBlock Classes="panel-title" FontSize="24" Text="{Binding PageTitle}" />
+                    <TextBlock Classes="body" Text="{Binding PageSummary}" TextWrapping="Wrap" />
+                </StackPanel>
+
+                <Border Background="#F1E6D7" CornerRadius="14" Padding="14">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Selected Profile" />
+                        <TextBlock Classes="body" Text="{Binding SelectedProfileSummary}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+
+                <TextBlock Classes="kicker" Text="Profiles" />
+                <ListBox ItemsSource="{Binding Profiles}"
+                         SelectedItem="{Binding SelectedProfile}"
+                         MinHeight="220">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:ProfileCardViewModel">
+                            <StackPanel Spacing="4" Margin="4">
+                                <TextBlock FontSize="15" FontWeight="SemiBold" Text="{Binding DisplayName}" />
+                                <TextBlock Classes="body" FontSize="12" Text="{Binding Branch}" />
+                                <TextBlock Classes="body" FontSize="12" Text="{Binding RuntimeState}" />
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+
+                <Border Background="#1F1D1B" CornerRadius="14" Padding="14">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Migration Note" />
+                        <TextBlock Classes="body" Foreground="#D3C8BA" Text="This page will become the real per-profile workspace. For now it provides profile selection, section navigation, and a path to the temporary Classic surface." TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Border>
+
+        <Grid Grid.Column="1" RowDefinitions="Auto,Auto,Auto,*" RowSpacing="16">
+            <Border Classes="card" Padding="18">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                    <StackPanel Spacing="4">
+                        <TextBlock Classes="panel-title" FontSize="24" Text="Per-Profile Workspace" />
+                        <TextBlock Classes="body" Text="Choose a profile section below. The section content is placeholder scaffolding until the structured editors land." TextWrapping="Wrap" />
+                    </StackPanel>
+                    <Button Grid.Column="1" Command="{Binding OpenClassicCommand}" Content="Open Classic" />
+                </Grid>
+            </Border>
+
+            <Border Grid.Row="1" Classes="card" IsVisible="{Binding HasPendingSectionNavigation}">
+                <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="12">
+                    <StackPanel Spacing="4">
+                        <TextBlock Classes="panel-title" Text="Unsaved Section Changes" />
+                        <TextBlock Classes="body" Text="{Binding PendingSectionNavigationMessage}" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <Button Grid.Column="1" Command="{Binding ConfirmSectionNavigationSaveCommand}" Content="Save" />
+                    <Button Grid.Column="2" Command="{Binding ConfirmSectionNavigationDiscardCommand}" Content="Discard" />
+                    <Button Grid.Column="3" Command="{Binding CancelSectionNavigationCommand}" Content="Cancel" />
+                </Grid>
+            </Border>
+
+            <Border Grid.Row="2" Classes="card" Padding="12">
+                <ItemsControl ItemsSource="{Binding SectionItems}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:WorkspaceNavigationItemViewModel">
+                            <Button Margin="0,0,10,10"
+                                    Command="{Binding #ProfilesRoot.DataContext.SelectSectionCommand}"
+                                    CommandParameter="{Binding .}">
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                    <TextBlock Text="{Binding Title}" />
+                                    <Border Grid.Column="1"
+                                            Background="#2A2927"
+                                            CornerRadius="999"
+                                            Padding="8,2"
+                                            VerticalAlignment="Center"
+                                            IsVisible="{Binding IsSelected}">
+                                        <TextBlock Foreground="#F7F0E7" FontSize="11" Text="Active" />
+                                    </Border>
+                                </Grid>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Border>
+
+            <Border Grid.Row="3" Classes="card" Padding="0">
+                <ContentControl Content="{Binding CurrentSection}" />
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

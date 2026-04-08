@@ -15,6 +15,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     public DbSet<AuditEntryEntity> AuditEntries => Set<AuditEntryEntity>();
 
+    public DbSet<SettingsDraftEntity> SettingsDrafts => Set<SettingsDraftEntity>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -47,6 +49,23 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         {
             entity.HasKey(x => x.EntryId);
             entity.HasIndex(x => x.OccurredAtUtc);
+        });
+
+        builder.Entity<SettingsDraftEntity>(entity =>
+        {
+            entity.HasKey(x => new
+            {
+                x.ProfileId,
+                x.Branch,
+                x.CatalogId,
+                x.CatalogVersion,
+                x.PageId,
+            });
+            entity.Property(x => x.ProfileId).HasMaxLength(64);
+            entity.Property(x => x.CatalogId).HasMaxLength(128);
+            entity.Property(x => x.PageId).HasMaxLength(64);
+            entity.Property(x => x.ValuesJson).HasColumnType("TEXT");
+            entity.HasIndex(x => x.UpdatedAtUtc);
         });
     }
 }

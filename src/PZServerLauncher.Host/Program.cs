@@ -1,6 +1,7 @@
 using System.Net;
 using System.Security.Claims;
 using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -9,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using PZServerLauncher.Contracts.Profiles;
 using PZServerLauncher.Contracts.Runtime;
 using PZServerLauncher.Core.Runtime;
+using PZServerLauncher.Core.Settings;
 using PZServerLauncher.Host.Components;
 using PZServerLauncher.Host.Components.Account;
 using PZServerLauncher.Host.Data;
@@ -17,6 +19,7 @@ using PZServerLauncher.Host.Infrastructure;
 using PZServerLauncher.Host.Security;
 using PZServerLauncher.Host.Services;
 using PZServerLauncher.Infrastructure.Planning;
+using PZServerLauncher.Infrastructure.Settings;
 
 namespace PZServerLauncher.Host;
 
@@ -49,6 +52,12 @@ public class Program
         builder.Services.AddSingleton(new StartupMetadata(DateTimeOffset.UtcNow, typeof(Program).Assembly.GetName().Version?.ToString() ?? "0.0.0"));
         builder.Services.AddSingleton<RuntimeStateStore>();
         builder.Services.AddSingleton<ProjectZomboidServerPlanner>();
+        builder.Services.AddSingleton<ICapabilityResolver, CapabilityResolver>();
+        builder.Services.AddSingleton<IAuthorizationHandler, CapabilityAuthorizationHandler>();
+        builder.Services.AddScoped<WorkspaceBootstrapService>();
+        builder.Services.AddSingleton<ISettingsCatalogResolver, ProjectZomboidSettingsCatalogResolver>();
+        builder.Services.AddSingleton<IIniDocumentService, IniDocumentService>();
+        builder.Services.AddSingleton<ISandboxVarsDocumentService, SandboxVarsDocumentService>();
         builder.Services.AddHttpClient(nameof(SteamCmdToolService));
         builder.Services.AddSingleton<SteamCmdToolService>();
         builder.Services.AddSingleton<ServerProcessSupervisor>();
@@ -62,6 +71,8 @@ public class Program
         builder.Services.AddScoped<JobStore>();
         builder.Services.AddScoped<AuditStore>();
         builder.Services.AddScoped<ConfigFileService>();
+        builder.Services.AddScoped<StructuredSettingsService>();
+        builder.Services.AddScoped<SettingsDraftStore>();
         builder.Services.AddScoped<ServerInstallService>();
         builder.Services.AddScoped<ServerBackupService>();
         builder.Services.AddScoped<LocalServerImportService>();
@@ -147,13 +158,10 @@ public class Program
         builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 
         builder.Services.AddAuthorizationBuilder()
-            .AddPolicy("DesktopOnly", policy => policy.RequireRole(UserRole.LocalSystem.ToString()))
-            .AddPolicy("DesktopOrViewer", policy => policy.RequireAssertion(context =>
-                IsLocalSystem(context.User) || HasAnyRole(context.User, UserRole.Viewer, UserRole.Operator, UserRole.Admin, UserRole.Owner)))
-            .AddPolicy("DesktopOrOperator", policy => policy.RequireAssertion(context =>
-                IsLocalSystem(context.User) || HasAnyRole(context.User, UserRole.Operator, UserRole.Admin, UserRole.Owner)))
-            .AddPolicy("DesktopOrAdmin", policy => policy.RequireAssertion(context =>
-                IsLocalSystem(context.User) || HasAnyRole(context.User, UserRole.Admin, UserRole.Owner)));
+            .AddPolicy(HostAuthorizationPolicies.DesktopOnly, policy => policy.AddRequirements(new CapabilityRequirement(Capability.ManageLocalHost)))
+            .AddPolicy(HostAuthorizationPolicies.DesktopOrViewer, policy => policy.AddRequirements(new CapabilityRequirement(Capability.ViewDashboard)))
+            .AddPolicy(HostAuthorizationPolicies.DesktopOrOperator, policy => policy.AddRequirements(new CapabilityRequirement(Capability.ManageRuntime)))
+            .AddPolicy(HostAuthorizationPolicies.DesktopOrAdmin, policy => policy.AddRequirements(new CapabilityRequirement(Capability.EditSettings)));
 
         var app = builder.Build();
 
@@ -201,6 +209,12 @@ public class Program
 
             return Results.Ok(new HostInfoDto(health, settings));
         }).RequireAuthorization("DesktopOrViewer");
+
+        api.MapGet("/workspace/bootstrap", (
+            WorkspaceBootstrapService workspaceBootstrapService,
+            ClaimsPrincipal user) =>
+            Results.Ok(workspaceBootstrapService.Build(user)))
+            .RequireAuthorization("DesktopOrViewer");
 
         api.MapPost("/host/stop", async (
             HostShutdownRequestDto request,
@@ -357,6 +371,144 @@ public class Program
             var updated = await store.UpsertAsync(configFileService.ApplyCommonConfig(profile, common), cancellationToken);
             await auditStore.WriteAsync("config.common.updated", profileId, "local", "Updated common profile config.", cancellationToken: cancellationToken);
             return Results.Ok(configFileService.GetCommonConfig(updated));
+        }).RequireAuthorization("DesktopOrAdmin");
+
+        api.MapGet("/profiles/{profileId}/settings/catalog", async (
+            string profileId,
+            ProfileStore store,
+            StructuredSettingsService structuredSettingsService,
+            CancellationToken cancellationToken) =>
+        {
+            var profile = await store.GetAsync(profileId, cancellationToken);
+            return profile is null
+                ? Results.NotFound()
+                : Results.Ok(structuredSettingsService.GetCatalog(profile));
+        }).RequireAuthorization("DesktopOrViewer");
+
+        api.MapGet("/profiles/{profileId}/settings/{pageId}", async (
+            string profileId,
+            string pageId,
+            ProfileStore store,
+            StructuredSettingsService structuredSettingsService,
+            CancellationToken cancellationToken) =>
+        {
+            var profile = await store.GetAsync(profileId, cancellationToken);
+            return profile is null
+                ? Results.NotFound()
+                : Results.Ok(structuredSettingsService.GetPage(profile, pageId));
+        }).RequireAuthorization("DesktopOrViewer");
+
+        api.MapPost("/profiles/{profileId}/settings/{pageId}/validate", async (
+            string profileId,
+            string pageId,
+            SettingsValueSetDto payload,
+            ProfileStore store,
+            StructuredSettingsService structuredSettingsService,
+            CancellationToken cancellationToken) =>
+        {
+            var profile = await store.GetAsync(profileId, cancellationToken);
+            if (profile is null)
+            {
+                return Results.NotFound();
+            }
+
+            return Results.Ok(structuredSettingsService.Validate(profile, pageId, payload.Values));
+        }).RequireAuthorization("DesktopOrAdmin");
+
+        api.MapPut("/profiles/{profileId}/settings/{pageId}", async (
+            string profileId,
+            string pageId,
+            SettingsValueSetDto payload,
+            ProfileStore store,
+            StructuredSettingsService structuredSettingsService,
+            AuditStore auditStore,
+            CancellationToken cancellationToken) =>
+        {
+            var profile = await store.GetAsync(profileId, cancellationToken);
+            if (profile is null)
+            {
+                return Results.NotFound();
+            }
+
+            var result = await structuredSettingsService.SaveAsync(profile, pageId, payload.Values, cancellationToken);
+            if (result.Validation.IsValid && !result.Validation.RequiresAdvancedFilesFallback)
+            {
+                await auditStore.WriteAsync(
+                    "settings.page.updated",
+                    profileId,
+                    "local",
+                    $"Updated structured settings page {pageId}.",
+                    cancellationToken: cancellationToken);
+            }
+
+            return Results.Ok(result);
+        }).RequireAuthorization("DesktopOrAdmin");
+
+        api.MapGet("/profiles/{profileId}/settings/draft/{pageId}", async (
+            string profileId,
+            string pageId,
+            ProfileStore store,
+            StructuredSettingsService structuredSettingsService,
+            SettingsDraftStore draftStore,
+            CancellationToken cancellationToken) =>
+        {
+            var profile = await store.GetAsync(profileId, cancellationToken);
+            if (profile is null)
+            {
+                return Results.NotFound();
+            }
+
+            var catalog = structuredSettingsService.GetCatalog(profile);
+            var draft = await draftStore.GetAsync(profileId, profile.Branch, catalog.CatalogId, catalog.CatalogVersion, pageId, cancellationToken);
+            return draft is null ? Results.NotFound() : Results.Ok(draft);
+        }).RequireAuthorization("DesktopOrViewer");
+
+        api.MapPut("/profiles/{profileId}/settings/draft/{pageId}", async (
+            string profileId,
+            string pageId,
+            SettingsDraftDto payload,
+            ProfileStore store,
+            StructuredSettingsService structuredSettingsService,
+            SettingsDraftStore draftStore,
+            CancellationToken cancellationToken) =>
+        {
+            var profile = await store.GetAsync(profileId, cancellationToken);
+            if (profile is null)
+            {
+                return Results.NotFound();
+            }
+
+            var catalog = structuredSettingsService.GetCatalog(profile);
+            var normalized = payload with
+            {
+                ProfileId = profileId,
+                Branch = profile.Branch,
+                CatalogId = catalog.CatalogId,
+                CatalogVersion = catalog.CatalogVersion,
+                PageId = pageId,
+                UpdatedAtUtc = payload.UpdatedAtUtc == default ? DateTimeOffset.UtcNow : payload.UpdatedAtUtc,
+            };
+
+            return Results.Ok(await draftStore.UpsertAsync(normalized, cancellationToken));
+        }).RequireAuthorization("DesktopOrAdmin");
+
+        api.MapDelete("/profiles/{profileId}/settings/draft/{pageId}", async (
+            string profileId,
+            string pageId,
+            ProfileStore store,
+            StructuredSettingsService structuredSettingsService,
+            SettingsDraftStore draftStore,
+            CancellationToken cancellationToken) =>
+        {
+            var profile = await store.GetAsync(profileId, cancellationToken);
+            if (profile is null)
+            {
+                return Results.NotFound();
+            }
+
+            var catalog = structuredSettingsService.GetCatalog(profile);
+            var deleted = await draftStore.DeleteAsync(profileId, profile.Branch, catalog.CatalogId, catalog.CatalogVersion, pageId, cancellationToken);
+            return deleted ? Results.NoContent() : Results.NotFound();
         }).RequireAuthorization("DesktopOrAdmin");
 
         api.MapPost("/profiles/{profileId}/workshop/scan", async (
@@ -771,12 +923,6 @@ public class Program
 
         await app.RunAsync();
     }
-
-    private static bool IsLocalSystem(System.Security.Claims.ClaimsPrincipal user) =>
-        user.IsInRole(UserRole.LocalSystem.ToString());
-
-    private static bool HasAnyRole(System.Security.Claims.ClaimsPrincipal user, params UserRole[] roles) =>
-        roles.Any(role => user.IsInRole(role.ToString()));
 
     private static async Task EnsureDatabaseAndRolesAsync(IServiceProvider services)
     {

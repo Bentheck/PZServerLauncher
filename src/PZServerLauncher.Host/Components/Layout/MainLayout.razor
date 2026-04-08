@@ -1,13 +1,19 @@
 @inherits LayoutComponentBase
 
 <div class="shell-nav">
-    <a class="brand-link" href="/">PZServerLauncher Host</a>
+    <a class="brand-link" href="/dashboard">PZServerLauncher</a>
 
     <div class="shell-links">
-        <a href="/">Dashboard</a>
-        <AuthorizeView Roles="Owner,Admin">
+        <a href="/dashboard">Dashboard</a>
+        <a href="/profiles">Profiles</a>
+        <a href="/host">Host</a>
+        <AuthorizeView Roles="Owner,Admin,Operator">
             <Authorized>
                 <a href="/remote">Remote Access</a>
+            </Authorized>
+        </AuthorizeView>
+        <AuthorizeView Roles="Owner">
+            <Authorized>
                 <a href="/users">Users</a>
             </Authorized>
         </AuthorizeView>

@@ -1,0 +1,62 @@
+@page "/profiles"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@using PZServerLauncher.Host.Services
+@inject ProfileStore ProfileStore
+@inject RuntimeStateStore RuntimeStateStore
+
+<PageTitle>Profiles</PageTitle>
+
+<div class="home-shell">
+    <div class="hero">
+        <p class="eyebrow">Workspace</p>
+        <h1>Profiles</h1>
+        <p>Profile selection is now a first-class workspace area. Structured per-profile pages will replace the remaining classic flow over the next milestones.</p>
+    </div>
+
+    <section class="profiles card">
+        <h2>Known Profiles</h2>
+        @if (_profiles.Count == 0)
+        {
+            <p>No profiles have been created yet. Use the desktop app to create or import the first server profile.</p>
+        }
+        else
+        {
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Branch</th>
+                        <th>Ports</th>
+                        <th>Runtime</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var profile in _profiles)
+                    {
+                        var runtime = RuntimeStateStore.GetOrDefault(profile.ProfileId);
+                        <tr>
+                            <td>@profile.DisplayName</td>
+                            <td>@profile.Branch</td>
+                            <td>@profile.DefaultPort / @profile.UdpPort / @profile.RconPort</td>
+                            <td>@runtime.State</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </section>
+
+    <section class="card callout-card">
+        <h2>Next Milestone</h2>
+        <p>Desktop and web will converge on the same profile routes: Overview, Install &amp; Update, General, Sandbox, Mods &amp; Maps, Network &amp; Admin, Backups, Logs, and Advanced Files.</p>
+    </section>
+</div>
+
+@code {
+    private IReadOnlyList<PZServerLauncher.Core.Profiles.ServerProfile> _profiles = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _profiles = await ProfileStore.ListAsync();
+    }
+}
