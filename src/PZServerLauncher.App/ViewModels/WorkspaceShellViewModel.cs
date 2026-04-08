@@ -155,7 +155,7 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
     {
         if (CurrentPage is IWorkspaceDirtyState dirtyState)
         {
-            dirtyState.SaveDraft();
+            dirtyState.SaveDraftAsync().GetAwaiter().GetResult();
             UpdateCurrentStatus();
         }
     }
@@ -164,7 +164,7 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
     {
         if (CurrentPage is IWorkspaceDirtyState dirtyState)
         {
-            dirtyState.DiscardDraft();
+            dirtyState.DiscardDraftAsync().GetAwaiter().GetResult();
             UpdateCurrentStatus();
         }
     }

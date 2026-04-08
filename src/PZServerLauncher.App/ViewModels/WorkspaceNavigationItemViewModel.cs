@@ -19,4 +19,7 @@ public partial class WorkspaceNavigationItemViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool isSelected;
+
+    [ObservableProperty]
+    private bool isEnabled = true;
 }

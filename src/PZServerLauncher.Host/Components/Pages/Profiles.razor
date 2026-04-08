@@ -28,6 +28,7 @@
                         <th>Branch</th>
                         <th>Ports</th>
                         <th>Runtime</th>
+                        <th>Workspace</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -39,6 +40,13 @@
                             <td>@profile.Branch</td>
                             <td>@profile.DefaultPort / @profile.UdpPort / @profile.RconPort</td>
                             <td>@runtime.State</td>
+                            <td>
+                                <div class="actions-cell">
+                                    <a class="nav-button secondary-button" href="@BuildProfileHref(profile.ProfileId, "overview")">Overview</a>
+                                    <a class="nav-button secondary-button" href="@BuildProfileHref(profile.ProfileId, "install-update")">Install</a>
+                                    <a class="nav-button secondary-button" href="@BuildProfileHref(profile.ProfileId, "general")">General</a>
+                                </div>
+                            </td>
                         </tr>
                     }
                 </tbody>
@@ -59,4 +67,7 @@
     {
         _profiles = await ProfileStore.ListAsync();
     }
+
+    private static string BuildProfileHref(string profileId, string page) =>
+        $"/profiles/{Uri.EscapeDataString(profileId)}/{page}";
 }

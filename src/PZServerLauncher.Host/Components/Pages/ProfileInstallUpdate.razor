@@ -1,0 +1,191 @@
+@page "/profiles/{ProfileId}/install-update"
+@attribute [Authorize(Roles="Owner,Admin,Operator")]
+@inject ProfileStore ProfileStore
+@inject RuntimeStateStore RuntimeStateStore
+@inject ServerInstallService InstallService
+@inject ServerBackupService BackupService
+@inject BackgroundJobDispatcher JobDispatcher
+@inject JobStore JobStore
+
+<PageTitle>Install &amp; Update</PageTitle>
+
+@if (_profile is null)
+{
+    <div class="home-shell">
+        <div class="card">
+            <p class="eyebrow">Profile Workspace</p>
+            <h1>Profile not found</h1>
+            <p class="muted-text">The selected profile could not be loaded.</p>
+            <a class="nav-button" href="/profiles">Back to profiles</a>
+        </div>
+    </div>
+}
+else
+{
+    <ProfileWorkspaceShell Profile="@_profile"
+                           ActivePage="install-update"
+                           RuntimeStatus="@_runtimeStatus"
+                           InstallDetected="@_installDetected"
+                           CacheDetected="@_cacheDetected">
+        <Actions>
+            <a class="nav-button secondary-button" href="@OverviewHref">Overview</a>
+            <button class="nav-button" @onclick="InstallAsync" disabled="@_busy">Install</button>
+            <button class="nav-button secondary-button" @onclick="UpdateAsync" disabled="@_busy">Update</button>
+        </Actions>
+        <ChildContent>
+            <div class="cards">
+                <section class="card">
+                    <h2>Install State</h2>
+                    <p>Install directory: @_profile.InstallDirectory</p>
+                    <p>Cache directory: @_profile.CacheDirectory</p>
+                    <p>Detected: @(_installDetected ? "Yes" : "No")</p>
+                    <p>Branch: @_profile.Branch</p>
+                </section>
+
+                <section class="card">
+                    <h2>Runtime</h2>
+                    <p>State: <strong>@_runtimeStatus?.State.ToString()</strong></p>
+                    <p>Latest log line: @(_runtimeStatus?.LatestLogLine ?? "No logs yet.")</p>
+                    <p>Auto restart on crash: @(_profile.AutoRestartOnCrash ? "On" : "Off")</p>
+                </section>
+
+                <section class="card">
+                    <h2>Job Queue</h2>
+                    @if (_jobs.Count == 0)
+                    {
+                        <p class="muted-text">No recent install/update jobs.</p>
+                    }
+                    else
+                    {
+                        <ul class="stack-list">
+                            @foreach (var job in _jobs)
+                            {
+                                <li>
+                                    <strong>@job.Kind</strong> - @job.Status
+                                    <div class="muted-text">@job.Detail ?? job.Summary</div>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </section>
+            </div>
+
+            <div class="card">
+                <h2>Preflight</h2>
+                <p class="muted-text">Install and update actions use the host background job pipeline. Pre-update backup is performed automatically by the host service.</p>
+            </div>
+
+            <p class="muted-text">@_statusMessage</p>
+        </ChildContent>
+    </ProfileWorkspaceShell>
+}
+
+@code {
+    [Parameter]
+    public string ProfileId { get; set; } = string.Empty;
+
+    private ServerProfile? _profile;
+    private ServerRuntimeStatus? _runtimeStatus;
+    private IReadOnlyList<OperationJob> _jobs = [];
+    private bool _busy;
+    private string? _statusMessage;
+    private bool _installDetected;
+    private bool _cacheDetected;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        _profile = await ProfileStore.GetAsync(ProfileId);
+        if (_profile is null)
+        {
+            return;
+        }
+
+        _runtimeStatus = RuntimeStateStore.GetOrDefault(ProfileId);
+        _jobs = (await JobStore.ListRecentAsync(20)).Where(job => string.Equals(job.ProfileId, ProfileId, StringComparison.OrdinalIgnoreCase) && (job.Kind is Core.Runtime.OperationJobKind.Install or Core.Runtime.OperationJobKind.Update)).ToList();
+        _installDetected = Directory.Exists(_profile.InstallDirectory);
+        _cacheDetected = Directory.Exists(_profile.CacheDirectory);
+    }
+
+    private async Task InstallAsync() => await QueueInstallAsync(Core.Runtime.OperationJobKind.Install, "Install");
+
+    private async Task UpdateAsync() => await QueueUpdateAsync();
+
+    private async Task QueueInstallAsync(Core.Runtime.OperationJobKind kind, string actionName)
+    {
+        if (_profile is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var job = await JobDispatcher.QueueAsync(
+                kind,
+                _profile.ProfileId,
+                $"{actionName} {_profile.DisplayName}",
+                async (services, runningJob, token) =>
+                {
+                    var installer = services.GetRequiredService<ServerInstallService>();
+                    var jobStore = services.GetRequiredService<JobStore>();
+                    var runtimeStateStore = services.GetRequiredService<RuntimeStateStore>();
+                    await installer.ExecuteInstallAsync(_profile.ProfileId, runningJob, jobStore, runtimeStateStore, token);
+                });
+
+            _statusMessage = $"{actionName} queued. Job {job.JobId:N}.";
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task QueueUpdateAsync()
+    {
+        if (_profile is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var job = await JobDispatcher.QueueAsync(
+                Core.Runtime.OperationJobKind.Update,
+                _profile.ProfileId,
+                $"Update {_profile.DisplayName}",
+                async (services, runningJob, token) =>
+                {
+                    var installer = services.GetRequiredService<ServerInstallService>();
+                    var jobStore = services.GetRequiredService<JobStore>();
+                    var runtimeStateStore = services.GetRequiredService<RuntimeStateStore>();
+                    var backupService = services.GetRequiredService<ServerBackupService>();
+                    await backupService.CreateBackupAsync(_profile.ProfileId, BackupTrigger.PreUpdate, token);
+                    await installer.ExecuteInstallAsync(_profile.ProfileId, runningJob, jobStore, runtimeStateStore, token);
+                });
+
+            _statusMessage = $"Update queued. Job {job.JobId:N}.";
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private string OverviewHref => $"/profiles/{Uri.EscapeDataString(ProfileId)}/overview";
+}

@@ -13,7 +13,14 @@ public interface IWorkspaceDirtyState
 
     string DirtyStateMessage { get; }
 
-    void SaveDraft();
+    Task SaveDraftAsync();
 
-    void DiscardDraft();
+    Task DiscardDraftAsync();
+}
+
+public interface IProfileWorkspacePage : IWorkspacePageHeader
+{
+    string PageId { get; }
+
+    void SetSelectedProfile(ProfileCardViewModel? profile);
 }

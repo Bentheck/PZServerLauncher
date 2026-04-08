@@ -1,0 +1,244 @@
+@page "/profiles/{ProfileId}/overview"
+@attribute [Authorize]
+@inject ProfileStore ProfileStore
+@inject RuntimeStateStore RuntimeStateStore
+@inject ServerProcessSupervisor ProcessSupervisor
+@inject ServerBackupService BackupService
+@inject BackgroundJobDispatcher JobDispatcher
+@inject JobStore JobStore
+
+<PageTitle>Profile Overview</PageTitle>
+
+@if (_profile is null)
+{
+    <div class="home-shell">
+        <div class="card">
+            <p class="eyebrow">Profile Workspace</p>
+            <h1>Profile not found</h1>
+            <p class="muted-text">The selected profile could not be loaded.</p>
+            <a class="nav-button" href="/profiles">Back to profiles</a>
+        </div>
+    </div>
+}
+else
+{
+    <ProfileWorkspaceShell Profile="@_profile"
+                           ActivePage="overview"
+                           RuntimeStatus="@_runtimeStatus"
+                           InstallDetected="@_installDetected"
+                           CacheDetected="@_cacheDetected">
+        <Actions>
+            <a class="nav-button secondary-button" href="@InstallHref">Install &amp; Update</a>
+            <a class="nav-button secondary-button" href="@GeneralHref">General</a>
+            <button class="nav-button" @onclick="StartAsync" disabled="@_busy">Start</button>
+            <button class="nav-button secondary-button" @onclick="StopAsync" disabled="@_busy">Stop</button>
+            <button class="nav-button secondary-button" @onclick="BackupAsync" disabled="@_busy">Backup</button>
+            <button class="nav-button secondary-button" @onclick="RestoreLatestAsync" disabled="@(_busy || string.IsNullOrWhiteSpace(_latestBackup))">Restore Latest</button>
+        </Actions>
+        <ChildContent>
+            <div class="cards">
+                <section class="card">
+                    <h2>Runtime</h2>
+                    <p>State: <strong>@_runtimeStatus?.State.ToString()</strong></p>
+                    <p>Process: @(_runtimeStatus?.ProcessId?.ToString() ?? "Not running")</p>
+                    <p>Last log line: @(_runtimeStatus?.LatestLogLine ?? "No logs yet.")</p>
+                </section>
+
+                <section class="card">
+                    <h2>Install</h2>
+                    <p>Install directory: @_profile.InstallDirectory</p>
+                    <p>Cache directory: @_profile.CacheDirectory</p>
+                    <p>Server config folder: @(_installDetected ? "Detected" : "Missing")</p>
+                    <p>Backups: @(_backups.Count == 0 ? "No backups yet" : $"{_backups.Count} archive(s)")</p>
+                </section>
+
+                <section class="card">
+                    <h2>Summary</h2>
+                    <p>Branch: @_profile.Branch</p>
+                    <p>Ports: @_profile.DefaultPort / @_profile.UdpPort / @_profile.RconPort</p>
+                    <p>Workshop items: @_profile.WorkshopPreset.WorkshopItemIds.Count</p>
+                    <p>Latest backup: @(_latestBackup ?? "None")</p>
+                </section>
+            </div>
+
+            <div class="cards">
+                <section class="card">
+                    <h2>Recent Jobs</h2>
+                    @if (_recentJobs.Count == 0)
+                    {
+                        <p class="muted-text">No jobs have been queued yet.</p>
+                    }
+                    else
+                    {
+                        <ul class="stack-list">
+                            @foreach (var job in _recentJobs)
+                            {
+                                <li>
+                                    <strong>@job.Kind</strong> - @job.Status
+                                    <div class="muted-text">@job.Detail ?? job.Summary</div>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </section>
+
+                <section class="card">
+                    <h2>Latest Backups</h2>
+                    @if (_backups.Count == 0)
+                    {
+                        <p class="muted-text">No backups are available yet.</p>
+                    }
+                    else
+                    {
+                        <ul class="stack-list">
+                            @foreach (var backup in _backups.Take(5))
+                            {
+                                <li>@backup</li>
+                            }
+                        </ul>
+                    }
+                </section>
+            </div>
+
+            <p class="muted-text">@_statusMessage</p>
+        </ChildContent>
+    </ProfileWorkspaceShell>
+}
+
+@code {
+    [Parameter]
+    public string ProfileId { get; set; } = string.Empty;
+
+    private ServerProfile? _profile;
+    private ServerRuntimeStatus? _runtimeStatus;
+    private IReadOnlyList<string> _backups = [];
+    private IReadOnlyList<OperationJob> _recentJobs = [];
+    private bool _busy;
+    private string? _statusMessage;
+    private string? _latestBackup;
+    private bool _installDetected;
+    private bool _cacheDetected;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        _profile = await ProfileStore.GetAsync(ProfileId);
+        if (_profile is null)
+        {
+            return;
+        }
+
+        _runtimeStatus = RuntimeStateStore.GetOrDefault(ProfileId);
+        _backups = BackupService.ListBackups(ProfileId);
+        _latestBackup = _backups.FirstOrDefault();
+        _recentJobs = (await JobStore.ListRecentAsync(20)).Where(job => string.Equals(job.ProfileId, ProfileId, StringComparison.OrdinalIgnoreCase)).ToList();
+
+        var installRoot = Path.Combine(_profile.InstallDirectory, "server");
+        _installDetected = Directory.Exists(_profile.InstallDirectory) || Directory.Exists(installRoot);
+        _cacheDetected = Directory.Exists(_profile.CacheDirectory);
+    }
+
+    private async Task StartAsync()
+    {
+        if (_profile is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            await ProcessSupervisor.StartAsync(_profile, CancellationToken.None);
+            _statusMessage = "Server start requested.";
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task StopAsync()
+    {
+        if (_profile is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            await ProcessSupervisor.StopAsync(_profile.ProfileId, CancellationToken.None);
+            _statusMessage = "Server stop requested.";
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task BackupAsync()
+    {
+        if (_profile is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            await BackupService.CreateBackupAsync(_profile.ProfileId, BackupTrigger.Manual, CancellationToken.None);
+            _statusMessage = "Backup created.";
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task RestoreLatestAsync()
+    {
+        if (_profile is null || string.IsNullOrWhiteSpace(_latestBackup))
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            await BackupService.RestoreBackupAsync(_profile.ProfileId, _latestBackup, CancellationToken.None);
+            _statusMessage = "Latest backup restored.";
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private string InstallHref => $"/profiles/{Uri.EscapeDataString(ProfileId)}/install-update";
+
+    private string GeneralHref => $"/profiles/{Uri.EscapeDataString(ProfileId)}/general";
+}

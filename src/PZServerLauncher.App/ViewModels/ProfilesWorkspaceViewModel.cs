@@ -1,80 +1,88 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using PZServerLauncher.App.Services;
+using PZServerLauncher.Contracts.Runtime;
 
 namespace PZServerLauncher.App.ViewModels;
 
 public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageHeader, IWorkspaceDirtyState
 {
-    private readonly List<WorkspaceSectionViewModel> _sections;
-    private WorkspaceSectionViewModel _currentSection = null!;
+    private readonly IReadOnlyDictionary<string, ViewModelBase> _sections;
 
-    public ProfilesWorkspaceViewModel(MainWindowViewModel legacy, Action openClassicAction)
+    public ProfilesWorkspaceViewModel(MainWindowViewModel legacy, LocalHostApiClient hostApiClient, Action openClassicAction)
     {
         Legacy = legacy;
 
-        Sections =
+        Overview = new OverviewWorkspaceViewModel(legacy);
+        InstallAndUpdate = new InstallUpdateWorkspaceViewModel(legacy);
+        General = new GeneralWorkspaceViewModel(legacy, hostApiClient);
+        Sandbox = new WorkspaceSectionViewModel(
+            "Sandbox",
+            "Near-full structured gameplay and world settings for the selected branch.",
+            "Sandbox draft cleared.",
+            ["Branch-specific catalogs", "Gameplay settings", "World settings", "Fallback to raw files"]);
+        ModsAndMaps = new WorkspaceSectionViewModel(
+            "Mods & Maps",
+            "Workshop items, local mod discovery, map ordering, presets, and validation.",
+            "Mods & Maps draft cleared.",
+            ["Workshop IDs", "Local scans", "Map ordering", "Named presets"]);
+        NetworkAndAdmin = new WorkspaceSectionViewModel(
+            "Network & Admin",
+            "Bind address, admin/RCON settings, and access/security-related server knobs.",
+            "Network & Admin draft cleared.",
+            ["Bind IP", "RCON", "Admin settings", "Security options"]);
+        Backups = new WorkspaceSectionViewModel(
+            "Backups",
+            "Backup history, manual backups, restore flow, and retention hints.",
+            "Backups draft cleared.",
+            ["Backup list", "Manual backup", "Restore flow", "Retention"]);
+        Logs = new WorkspaceSectionViewModel(
+            "Logs",
+            "Live runtime output and recent server messages for the selected profile.",
+            "Logs draft cleared.",
+            ["Live stream", "Recent logs", "Runtime messages", "Host messages"]);
+        AdvancedFiles = new WorkspaceSectionViewModel(
+            "Advanced Files",
+            "Raw ini, SandboxVars, spawnregions, and spawnpoints editing for unsupported or advanced cases.",
+            "Advanced Files draft cleared.",
+            ["Raw ini", "SandboxVars.lua", "SpawnRegions.lua", "SpawnPoints.lua"]);
+
+        _sections = new Dictionary<string, ViewModelBase>(StringComparer.Ordinal)
+        {
+            [ProfileWorkspacePageIds.Overview] = Overview,
+            [ProfileWorkspacePageIds.InstallAndUpdate] = InstallAndUpdate,
+            [ProfileWorkspacePageIds.General] = General,
+            [ProfileWorkspacePageIds.Sandbox] = Sandbox,
+            [ProfileWorkspacePageIds.ModsAndMaps] = ModsAndMaps,
+            [ProfileWorkspacePageIds.NetworkAndAdmin] = NetworkAndAdmin,
+            [ProfileWorkspacePageIds.Backups] = Backups,
+            [ProfileWorkspacePageIds.Logs] = Logs,
+            [ProfileWorkspacePageIds.AdvancedFiles] = AdvancedFiles,
+        };
+
+        SectionItems =
         [
-            new WorkspaceSectionViewModel(
-                "Overview",
-                "Runtime state, branch/build, install state, backup summary, and quick actions for the selected profile.",
-                "Overview draft cleared.",
-                ["Runtime state", "Install state", "Backup summary", "Quick actions"]),
-            new WorkspaceSectionViewModel(
-                "Install & Update",
-                "Branch selection, install directory, preflight checks, and streamed update progress.",
-                "Install & Update draft cleared.",
-                ["Branch selection", "Install directory", "Preflight checks", "Job progress"]),
-            new WorkspaceSectionViewModel(
-                "General",
-                "Structured server identity, memory, startup behavior, and primary ports.",
-                "General draft cleared.",
-                ["Server name", "Memory", "Startup behavior", "Primary ports"]),
-            new WorkspaceSectionViewModel(
-                "Sandbox",
-                "Near-full structured gameplay and world settings for the selected branch.",
-                "Sandbox draft cleared.",
-                ["Branch-specific catalogs", "Gameplay settings", "World settings", "Fallback to raw files when needed"]),
-            new WorkspaceSectionViewModel(
-                "Mods & Maps",
-                "Workshop items, local mod discovery, map ordering, presets, and validation.",
-                "Mods & Maps draft cleared.",
-                ["Workshop IDs", "Local mod discovery", "Map validation", "Named presets"]),
-            new WorkspaceSectionViewModel(
-                "Network & Admin",
-                "Bind address, admin/RCON settings, and access/security-related server knobs.",
-                "Network & Admin draft cleared.",
-                ["Bind IP", "RCON", "Admin settings", "Security options"]),
-            new WorkspaceSectionViewModel(
-                "Backups",
-                "Backup history, manual backups, restore flow, and retention hints.",
-                "Backups draft cleared.",
-                ["Manual backups", "Restore flow", "Retention", "Recent backups"]),
-            new WorkspaceSectionViewModel(
-                "Logs",
-                "Live runtime output and recent server messages for the selected profile.",
-                "Logs draft cleared.",
-                ["Live stream", "Recent messages", "Runtime status", "Host messages"]),
-            new WorkspaceSectionViewModel(
-                "Advanced Files",
-                "Raw ini, SandboxVars, spawnregions, and spawnpoints editing for unsupported or advanced cases.",
-                "Advanced Files draft cleared.",
-                ["Raw ini", "SandboxVars.lua", "SpawnRegions.lua", "SpawnPoints.lua"]),
+            new WorkspaceNavigationItemViewModel(ProfileWorkspacePageIds.Overview, "Overview", "Runtime state, latest log, and quick actions."),
+            new WorkspaceNavigationItemViewModel(ProfileWorkspacePageIds.InstallAndUpdate, "Install & Update", "Install state, branch, and lifecycle actions."),
+            new WorkspaceNavigationItemViewModel(ProfileWorkspacePageIds.General, "General", "Structured server name, ports, startup, and memory."),
+            new WorkspaceNavigationItemViewModel(ProfileWorkspacePageIds.Sandbox, "Sandbox", "Branch-specific gameplay and world settings."),
+            new WorkspaceNavigationItemViewModel(ProfileWorkspacePageIds.ModsAndMaps, "Mods & Maps", "Workshop, mods, map ordering, and presets."),
+            new WorkspaceNavigationItemViewModel(ProfileWorkspacePageIds.NetworkAndAdmin, "Network & Admin", "Network-facing server options and admin controls."),
+            new WorkspaceNavigationItemViewModel(ProfileWorkspacePageIds.Backups, "Backups", "Manual backups, restore, and retention."),
+            new WorkspaceNavigationItemViewModel(ProfileWorkspacePageIds.Logs, "Logs", "Live runtime output and recent history."),
+            new WorkspaceNavigationItemViewModel(ProfileWorkspacePageIds.AdvancedFiles, "Advanced Files", "Raw config editors for unsupported cases."),
         ];
 
-        _currentSection = Sections[0];
-        _sections = Sections.ToList();
-        SectionItems = _sections.Select(section => new WorkspaceNavigationItemViewModel(section.PageTitle, section.PageTitle, section.PageSummary)).ToList();
-        CurrentSection = _currentSection;
-        SelectedProfile = Profiles.FirstOrDefault();
-        UpdateSectionSelection(_currentSection);
+        CurrentSection = Overview;
+        UpdateSectionSelection(ProfileWorkspacePageIds.Overview);
 
         SelectSectionCommand = new RelayCommand<WorkspaceNavigationItemViewModel>(SelectSection);
         OpenClassicCommand = new RelayCommand(openClassicAction);
-        SaveCurrentDraftCommand = new RelayCommand(SaveDraft);
-        DiscardCurrentDraftCommand = new RelayCommand(DiscardDraft);
-        ConfirmSectionNavigationSaveCommand = new RelayCommand(ConfirmSectionNavigationSave);
-        ConfirmSectionNavigationDiscardCommand = new RelayCommand(ConfirmSectionNavigationDiscard);
+        SaveCurrentDraftCommand = new AsyncRelayCommand(SaveDraftAsync);
+        DiscardCurrentDraftCommand = new AsyncRelayCommand(DiscardDraftAsync);
+        ConfirmSectionNavigationSaveCommand = new AsyncRelayCommand(ConfirmSectionNavigationSaveAsync);
+        ConfirmSectionNavigationDiscardCommand = new AsyncRelayCommand(ConfirmSectionNavigationDiscardAsync);
         CancelSectionNavigationCommand = new RelayCommand(CancelSectionNavigation);
     }
 
@@ -82,29 +90,45 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
 
     public string PageTitle => "Profiles";
 
-    public string PageSummary => "Choose a profile, then use the per-profile workspace sections. Classic remains available from the main shell during migration.";
-
-    public ObservableCollection<WorkspaceSectionViewModel> Sections { get; }
+    public string PageSummary => "Choose a profile, then move through the real per-profile workspace. Classic remains available while we cut over the old surface.";
 
     public IReadOnlyList<WorkspaceNavigationItemViewModel> SectionItems { get; }
 
     public IReadOnlyList<ProfileCardViewModel> Profiles => Legacy.Profiles;
 
+    public OverviewWorkspaceViewModel Overview { get; }
+
+    public InstallUpdateWorkspaceViewModel InstallAndUpdate { get; }
+
+    public GeneralWorkspaceViewModel General { get; }
+
+    public WorkspaceSectionViewModel Sandbox { get; }
+
+    public WorkspaceSectionViewModel ModsAndMaps { get; }
+
+    public WorkspaceSectionViewModel NetworkAndAdmin { get; }
+
+    public WorkspaceSectionViewModel Backups { get; }
+
+    public WorkspaceSectionViewModel Logs { get; }
+
+    public WorkspaceSectionViewModel AdvancedFiles { get; }
+
     public string SelectedProfileSummary => SelectedProfile is null
         ? "No profile selected yet."
         : $"{SelectedProfile.DisplayName} | {SelectedProfile.Branch} | {SelectedProfile.RuntimeState}";
+
+    public bool HasUnsavedChanges => CurrentSection is IWorkspaceDirtyState dirtyState && dirtyState.HasUnsavedChanges;
+
+    public string DirtyStateMessage => CurrentSection is IWorkspaceDirtyState dirtyState
+        ? dirtyState.DirtyStateMessage
+        : "No unsaved section changes.";
 
     [ObservableProperty]
     private ProfileCardViewModel? selectedProfile;
 
     [ObservableProperty]
-    private WorkspaceSectionViewModel currentSection = null!;
-
-    [ObservableProperty]
-    private bool hasUnsavedChanges;
-
-    [ObservableProperty]
-    private string dirtyStateMessage = "No unsaved changes.";
+    private ViewModelBase currentSection = null!;
 
     [ObservableProperty]
     private bool hasPendingSectionNavigation;
@@ -113,89 +137,112 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
     private string pendingSectionNavigationMessage = string.Empty;
 
     [ObservableProperty]
-    private WorkspaceSectionViewModel? pendingSection;
+    private WorkspaceNavigationItemViewModel? pendingSectionTarget;
 
     public IRelayCommand<WorkspaceNavigationItemViewModel> SelectSectionCommand { get; }
 
     public IRelayCommand OpenClassicCommand { get; }
 
-    public IRelayCommand SaveCurrentDraftCommand { get; }
+    public IAsyncRelayCommand SaveCurrentDraftCommand { get; }
 
-    public IRelayCommand DiscardCurrentDraftCommand { get; }
+    public IAsyncRelayCommand DiscardCurrentDraftCommand { get; }
 
-    public IRelayCommand ConfirmSectionNavigationSaveCommand { get; }
+    public IAsyncRelayCommand ConfirmSectionNavigationSaveCommand { get; }
 
-    public IRelayCommand ConfirmSectionNavigationDiscardCommand { get; }
+    public IAsyncRelayCommand ConfirmSectionNavigationDiscardCommand { get; }
 
     public IRelayCommand CancelSectionNavigationCommand { get; }
 
-    public void SaveDraft()
+    public void ApplyBootstrap(IReadOnlyList<WorkspacePageDto> profilePages)
     {
-        CurrentSection.SaveDraft();
-        SyncDirtyState();
+        foreach (var item in SectionItems)
+        {
+            var page = profilePages.FirstOrDefault(candidate => string.Equals(candidate.Id, item.Key, StringComparison.Ordinal));
+            item.IsEnabled = page?.IsEnabled ?? item.IsEnabled;
+        }
     }
 
-    public void DiscardDraft()
+    public async Task SaveDraftAsync()
     {
-        CurrentSection.DiscardDraft();
-        SyncDirtyState();
+        if (CurrentSection is IWorkspaceDirtyState dirtyState)
+        {
+            await dirtyState.SaveDraftAsync();
+            OnPropertyChanged(nameof(DirtyStateMessage));
+            OnPropertyChanged(nameof(HasUnsavedChanges));
+        }
     }
 
-    public void SelectSection(WorkspaceNavigationItemViewModel? section)
+    public async Task DiscardDraftAsync()
     {
-        if (section is null)
+        if (CurrentSection is IWorkspaceDirtyState dirtyState)
+        {
+            await dirtyState.DiscardDraftAsync();
+            OnPropertyChanged(nameof(DirtyStateMessage));
+            OnPropertyChanged(nameof(HasUnsavedChanges));
+        }
+    }
+
+    private void SelectSection(WorkspaceNavigationItemViewModel? section)
+    {
+        if (section is null || !section.IsEnabled)
         {
             return;
         }
 
-        var next = _sections.FirstOrDefault(x => string.Equals(x.PageTitle, section.Key, StringComparison.OrdinalIgnoreCase));
+        var next = ResolvePage(section.Key);
         if (next is null || ReferenceEquals(next, CurrentSection))
         {
             return;
         }
 
-        if (CurrentSection.HasUnsavedChanges)
+        if (CurrentSection is IWorkspaceDirtyState dirtyState && dirtyState.HasUnsavedChanges)
         {
-            PendingSection = next;
-            PendingSectionNavigationMessage = $"Save or discard changes in {CurrentSection.PageTitle} before switching to {next.PageTitle}.";
+            PendingSectionTarget = section;
+            PendingSectionNavigationMessage = $"Save or discard changes in {((IWorkspacePageHeader)CurrentSection).PageTitle} before switching to {section.Title}.";
             HasPendingSectionNavigation = true;
             return;
         }
 
-        SwitchSection(next);
+        SwitchSection(section.Key, next);
     }
 
-    private void ConfirmSectionNavigationSave()
+    private async Task ConfirmSectionNavigationSaveAsync()
     {
         if (!HasPendingSectionNavigation)
         {
             return;
         }
 
-        CurrentSection.SaveDraft();
-        var next = PendingSection;
+        await SaveDraftAsync();
+        var target = PendingSectionTarget;
         ClearPendingSectionNavigation();
-
-        if (next is not null)
+        if (target is not null)
         {
-            SwitchSection(next);
+            var next = ResolvePage(target.Key);
+            if (next is not null)
+            {
+                SwitchSection(target.Key, next);
+            }
         }
     }
 
-    private void ConfirmSectionNavigationDiscard()
+    private async Task ConfirmSectionNavigationDiscardAsync()
     {
         if (!HasPendingSectionNavigation)
         {
             return;
         }
 
-        CurrentSection.DiscardDraft();
-        var next = PendingSection;
+        await DiscardDraftAsync();
+        var target = PendingSectionTarget;
         ClearPendingSectionNavigation();
-
-        if (next is not null)
+        if (target is not null)
         {
-            SwitchSection(next);
+            var next = ResolvePage(target.Key);
+            if (next is not null)
+            {
+                SwitchSection(target.Key, next);
+            }
         }
     }
 
@@ -204,41 +251,47 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
         ClearPendingSectionNavigation();
     }
 
-    private void SwitchSection(WorkspaceSectionViewModel next)
+    private ViewModelBase? ResolvePage(string pageId) =>
+        _sections.TryGetValue(pageId, out var page)
+            ? page
+            : null;
+
+    private void SwitchSection(string pageId, ViewModelBase section)
     {
-        CurrentSection = next;
-        UpdateSectionSelection(next);
-        SyncDirtyState();
+        CurrentSection = section;
+        UpdateSectionSelection(pageId);
+        OnPropertyChanged(nameof(HasUnsavedChanges));
+        OnPropertyChanged(nameof(DirtyStateMessage));
     }
 
-    private void UpdateSectionSelection(WorkspaceSectionViewModel section)
+    private void UpdateSectionSelection(string selectedPageId)
     {
         foreach (var navItem in SectionItems)
         {
-            navItem.IsSelected = string.Equals(navItem.Title, section.PageTitle, StringComparison.OrdinalIgnoreCase);
+            navItem.IsSelected = string.Equals(navItem.Key, selectedPageId, StringComparison.Ordinal);
         }
-    }
-
-    private void SyncDirtyState()
-    {
-        HasUnsavedChanges = CurrentSection.HasUnsavedChanges;
-        DirtyStateMessage = CurrentSection.DirtyStateMessage;
     }
 
     private void ClearPendingSectionNavigation()
     {
-        PendingSection = null;
+        PendingSectionTarget = null;
         PendingSectionNavigationMessage = string.Empty;
         HasPendingSectionNavigation = false;
     }
 
-    partial void OnCurrentSectionChanged(WorkspaceSectionViewModel value)
+    partial void OnCurrentSectionChanged(ViewModelBase value)
     {
-        SyncDirtyState();
+        OnPropertyChanged(nameof(HasUnsavedChanges));
+        OnPropertyChanged(nameof(DirtyStateMessage));
     }
 
     partial void OnSelectedProfileChanged(ProfileCardViewModel? value)
     {
         OnPropertyChanged(nameof(SelectedProfileSummary));
+
+        foreach (var page in _sections.Values.OfType<IProfileWorkspacePage>())
+        {
+            page.SetSelectedProfile(value);
+        }
     }
 }

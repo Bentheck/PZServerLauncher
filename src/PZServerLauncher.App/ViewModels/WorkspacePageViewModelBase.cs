@@ -18,13 +18,13 @@ public abstract partial class WorkspacePageViewModelBase : ViewModelBase, IWorks
         _emptyDirtyMessage = emptyDirtyMessage;
         Highlights = highlights?.ToArray() ?? [];
         DirtyStateMessage = emptyDirtyMessage;
-        SaveDraftCommand = new RelayCommand(SaveDraft);
-        DiscardDraftCommand = new RelayCommand(DiscardDraft);
+        SaveDraftCommand = new AsyncRelayCommand(SaveDraftAsync);
+        DiscardDraftCommand = new AsyncRelayCommand(DiscardDraftAsync);
     }
 
     public string PageTitle { get; }
 
-    public string PageSummary { get; }
+    public virtual string PageSummary { get; }
 
     public IReadOnlyList<string> Highlights { get; }
 
@@ -37,9 +37,19 @@ public abstract partial class WorkspacePageViewModelBase : ViewModelBase, IWorks
     [ObservableProperty]
     private string dirtyStateMessage = string.Empty;
 
-    public IRelayCommand SaveDraftCommand { get; }
+    public IAsyncRelayCommand SaveDraftCommand { get; }
 
-    public IRelayCommand DiscardDraftCommand { get; }
+    public IAsyncRelayCommand DiscardDraftCommand { get; }
+
+    public void SaveDraft()
+    {
+        SaveDraftAsync().GetAwaiter().GetResult();
+    }
+
+    public void DiscardDraft()
+    {
+        DiscardDraftAsync().GetAwaiter().GetResult();
+    }
 
     protected void MarkDirty(string message)
     {
@@ -73,19 +83,21 @@ public abstract partial class WorkspacePageViewModelBase : ViewModelBase, IWorks
         OnDraftEdited(value);
     }
 
-    public virtual void SaveDraft()
+    public virtual Task SaveDraftAsync()
     {
         MarkClean($"Saved placeholder draft for {PageTitle}.");
+        return Task.CompletedTask;
     }
 
-    public virtual void DiscardDraft()
+    public virtual Task DiscardDraftAsync()
     {
         if (!string.IsNullOrEmpty(DraftNote))
         {
             DraftNote = string.Empty;
-            return;
+            return Task.CompletedTask;
         }
 
         MarkClean();
+        return Task.CompletedTask;
     }
 }

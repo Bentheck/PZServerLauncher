@@ -1,0 +1,225 @@
+@page "/profiles/{ProfileId}/general"
+@attribute [Authorize(Roles="Owner,Admin")]
+@inject ProfileStore ProfileStore
+@inject StructuredSettingsService StructuredSettingsService
+@inject RuntimeStateStore RuntimeStateStore
+
+<PageTitle>General</PageTitle>
+
+@if (_profile is null)
+{
+    <div class="home-shell">
+        <div class="card">
+            <p class="eyebrow">Profile Workspace</p>
+            <h1>Profile not found</h1>
+            <p class="muted-text">The selected profile could not be loaded.</p>
+            <a class="nav-button" href="/profiles">Back to profiles</a>
+        </div>
+    </div>
+}
+else
+{
+    <ProfileWorkspaceShell Profile="@_profile"
+                           ActivePage="general"
+                           RuntimeStatus="@_runtimeStatus"
+                           InstallDetected="@_installDetected"
+                           CacheDetected="@_cacheDetected">
+        <Actions>
+            <a class="nav-button secondary-button" href="@OverviewHref">Overview</a>
+            <a class="nav-button secondary-button" href="@InstallHref">Install &amp; Update</a>
+            <button class="nav-button" @onclick="SaveAsync" disabled="@_busy">Save General</button>
+        </Actions>
+        <ChildContent>
+            <div class="card">
+                <h2>Structured Editor</h2>
+                <p class="muted-text">This editor is backed by the host structured-settings service and only writes the fields it owns.</p>
+
+                @if (_catalog is null || _page is null)
+                {
+                    <p>Loading editor...</p>
+                }
+                else
+                {
+                @foreach (var sectionDef in _page.Sections)
+                {
+                    <div class="profile-section">
+                        <h3>@sectionDef.Title</h3>
+                        @if (!string.IsNullOrWhiteSpace(sectionDef.Description))
+                        {
+                            <p class="muted-text">@sectionDef.Description</p>
+                        }
+
+                        <div class="field-grid">
+                            @foreach (var field in sectionDef.Fields)
+                            {
+                                <label class="field-card">
+                                    <span class="field-label">@field.Label</span>
+                                    @RenderField(field)
+                                    @if (!string.IsNullOrWhiteSpace(field.HelpText))
+                                    {
+                                        <small class="muted-text">@field.HelpText</small>
+                                    }
+                                    @if (_fieldErrors.TryGetValue(field.FieldId, out var errors))
+                                    {
+                                        @foreach (var error in errors)
+                                        {
+                                            <span class="validation-message">@error</span>
+                                        }
+                                    }
+                                </label>
+                            }
+                        </div>
+                    </div>
+                }
+                }
+
+                @if (_pageValidation is not null)
+                {
+                    <div class="card inner-card">
+                        <h3>Validation</h3>
+                        @if (_pageValidation.PageErrors.Count == 0 && _pageValidation.FieldErrors.Count == 0)
+                        {
+                            <p class="muted-text">No validation errors.</p>
+                        }
+                        else
+                        {
+                            <ul class="stack-list">
+                                @foreach (var error in _pageValidation.PageErrors)
+                                {
+                                    <li>@error</li>
+                                }
+                            </ul>
+                        }
+                    </div>
+                }
+            </div>
+
+            <p class="muted-text">@_statusMessage</p>
+        </ChildContent>
+    </ProfileWorkspaceShell>
+}
+
+@code {
+    [Parameter]
+    public string ProfileId { get; set; } = string.Empty;
+
+    private ServerProfile? _profile;
+    private ServerRuntimeStatus? _runtimeStatus;
+    private SettingsCatalogDto? _catalog;
+    private SettingsPageDto? _page;
+    private SettingsValueSetDto? _valueSet;
+    private SettingsValidationResultDto? _pageValidation;
+    private Dictionary<string, string?> _values = new(StringComparer.Ordinal);
+    private Dictionary<string, IReadOnlyList<string>> _fieldErrors = new(StringComparer.Ordinal);
+    private bool _busy;
+    private string? _statusMessage;
+    private bool _installDetected;
+    private bool _cacheDetected;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        _profile = await ProfileStore.GetAsync(ProfileId);
+        if (_profile is null)
+        {
+            return;
+        }
+
+        _runtimeStatus = RuntimeStateStore.GetOrDefault(ProfileId);
+        _catalog = StructuredSettingsService.GetCatalog(_profile);
+        _page = _catalog.Pages.FirstOrDefault(page => string.Equals(page.PageId, "general", StringComparison.OrdinalIgnoreCase));
+        _valueSet = StructuredSettingsService.GetPage(_profile, "general");
+        _values = new Dictionary<string, string?>(_valueSet.Values, StringComparer.Ordinal);
+        _fieldErrors = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
+        _pageValidation = null;
+        _installDetected = Directory.Exists(_profile.InstallDirectory);
+        _cacheDetected = Directory.Exists(_profile.CacheDirectory);
+    }
+
+    private async Task SaveAsync()
+    {
+        if (_profile is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var result = await StructuredSettingsService.SaveAsync(_profile, "general", _values);
+            _pageValidation = result.Validation;
+            _fieldErrors = new Dictionary<string, IReadOnlyList<string>>(result.Validation.FieldErrors, StringComparer.Ordinal);
+            _statusMessage = result.Validation.IsValid
+                ? "General settings saved."
+                : result.Validation.FallbackReason ?? "Validation failed.";
+
+            if (result.Validation.IsValid && !result.Validation.RequiresAdvancedFilesFallback)
+            {
+                _profile = await ProfileStore.GetAsync(ProfileId);
+                _valueSet = StructuredSettingsService.GetPage(_profile!, "general");
+                _values = new Dictionary<string, string?>(_valueSet.Values, StringComparer.Ordinal);
+            }
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private RenderFragment RenderField(SettingsFieldDto field) => builder =>
+    {
+        var seq = 0;
+        var value = _values.TryGetValue(field.FieldId, out var currentValue) ? currentValue ?? string.Empty : string.Empty;
+
+        switch (field.Control)
+        {
+            case SettingsFieldControlKind.Checkbox:
+                builder.OpenElement(seq++, "input");
+                builder.AddAttribute(seq++, "type", "checkbox");
+                builder.AddAttribute(seq++, "checked", bool.TryParse(value, out var parsed) && parsed);
+                builder.AddAttribute(seq++, "onchange", EventCallback.Factory.Create<ChangeEventArgs>(this, args => SetValue(field.FieldId, args.Value?.ToString())));
+                builder.CloseElement();
+                break;
+            case SettingsFieldControlKind.Numeric:
+                builder.OpenElement(seq++, "input");
+                builder.AddAttribute(seq++, "type", "number");
+                builder.AddAttribute(seq++, "value", value);
+                builder.AddAttribute(seq++, "oninput", EventCallback.Factory.Create<ChangeEventArgs>(this, args => SetValue(field.FieldId, args.Value?.ToString())));
+                builder.CloseElement();
+                break;
+            case SettingsFieldControlKind.MultiLineText:
+                builder.OpenElement(seq++, "textarea");
+                builder.AddAttribute(seq++, "rows", "4");
+                builder.AddAttribute(seq++, "value", value);
+                builder.AddAttribute(seq++, "oninput", EventCallback.Factory.Create<ChangeEventArgs>(this, args => SetValue(field.FieldId, args.Value?.ToString())));
+                builder.AddContent(seq++, value);
+                builder.CloseElement();
+                break;
+            default:
+                builder.OpenElement(seq++, "input");
+                builder.AddAttribute(seq++, "type", "text");
+                builder.AddAttribute(seq++, "value", value);
+                builder.AddAttribute(seq++, "oninput", EventCallback.Factory.Create<ChangeEventArgs>(this, args => SetValue(field.FieldId, args.Value?.ToString())));
+                builder.CloseElement();
+                break;
+        }
+    };
+
+    private void SetValue(string fieldId, string? value)
+    {
+        _values[fieldId] = value;
+        _statusMessage = null;
+    }
+
+    private string OverviewHref => $"/profiles/{Uri.EscapeDataString(ProfileId)}/overview";
+
+    private string InstallHref => $"/profiles/{Uri.EscapeDataString(ProfileId)}/install-update";
+}

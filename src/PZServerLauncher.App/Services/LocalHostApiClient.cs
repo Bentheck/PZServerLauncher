@@ -51,6 +51,56 @@ public sealed class LocalHostApiClient
         return new HostSnapshot(hostInfo, profiles, statuses, backups, jobs);
     }
 
+    public Task<WorkspaceBootstrapDto?> GetWorkspaceBootstrapAsync(CancellationToken cancellationToken = default) =>
+        GetAsync<WorkspaceBootstrapDto>("/api/workspace/bootstrap", cancellationToken);
+
+    public Task<SettingsCatalogDto?> GetSettingsCatalogAsync(string profileId, CancellationToken cancellationToken = default) =>
+        GetAsync<SettingsCatalogDto>($"/api/profiles/{profileId}/settings/catalog", cancellationToken);
+
+    public Task<SettingsValueSetDto?> GetSettingsPageAsync(
+        string profileId,
+        string pageId,
+        CancellationToken cancellationToken = default) =>
+        GetAsync<SettingsValueSetDto>($"/api/profiles/{profileId}/settings/{pageId}", cancellationToken);
+
+    public Task<SettingsValidationResultDto?> ValidateSettingsPageAsync(
+        string profileId,
+        string pageId,
+        SettingsValueSetDto payload,
+        CancellationToken cancellationToken = default) =>
+        PostAsync<SettingsValidationResultDto>($"/api/profiles/{profileId}/settings/{pageId}/validate", payload, cancellationToken);
+
+    public Task<SettingsSaveResultDto?> SaveSettingsPageAsync(
+        string profileId,
+        string pageId,
+        SettingsValueSetDto payload,
+        CancellationToken cancellationToken = default) =>
+        PutAsync<SettingsSaveResultDto>($"/api/profiles/{profileId}/settings/{pageId}", payload, cancellationToken);
+
+    public Task<SettingsDraftDto?> GetSettingsDraftAsync(
+        string profileId,
+        string pageId,
+        CancellationToken cancellationToken = default) =>
+        GetAsync<SettingsDraftDto>($"/api/profiles/{profileId}/settings/draft/{pageId}", cancellationToken);
+
+    public Task<SettingsDraftDto?> SaveSettingsDraftAsync(
+        string profileId,
+        string pageId,
+        SettingsDraftDto payload,
+        CancellationToken cancellationToken = default) =>
+        PutAsync<SettingsDraftDto>($"/api/profiles/{profileId}/settings/draft/{pageId}", payload, cancellationToken);
+
+    public async Task DeleteSettingsDraftAsync(
+        string profileId,
+        string pageId,
+        CancellationToken cancellationToken = default)
+    {
+        var state = await LoadStateAsync(cancellationToken);
+        using var client = CreateHttpClient(state);
+        using var response = await client.DeleteAsync($"/api/profiles/{profileId}/settings/draft/{pageId}", cancellationToken);
+        await EnsureSuccessAsync(response, cancellationToken);
+    }
+
     public async Task CreateStarterProfileAsync(CancellationToken cancellationToken = default)
     {
         var starter = ServerProfileFactory.CreateStarterProfile();

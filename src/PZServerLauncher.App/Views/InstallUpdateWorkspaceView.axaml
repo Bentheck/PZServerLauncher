@@ -1,0 +1,65 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:PZServerLauncher.App.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignWidth="1120"
+             d:DesignHeight="900"
+             x:Class="PZServerLauncher.App.Views.InstallUpdateWorkspaceView"
+             x:DataType="vm:InstallUpdateWorkspaceViewModel">
+    <Border Classes="card" Padding="24">
+        <StackPanel Spacing="18">
+            <StackPanel Spacing="4">
+                <TextBlock Classes="panel-title" FontSize="24" Text="{Binding PageTitle}" />
+                <TextBlock Classes="body" Text="{Binding PageSummary}" TextWrapping="Wrap" />
+            </StackPanel>
+
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="14">
+                <Border Background="#F6EFE6" CornerRadius="14" Padding="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Branch" />
+                        <TextBlock FontSize="20" FontWeight="SemiBold" Text="{Binding Branch}" />
+                        <TextBlock Classes="body" Text="{Binding RuntimeState}" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="1" Background="#F6EFE6" CornerRadius="14" Padding="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Recent Job" />
+                        <TextBlock Classes="body" Text="{Binding LastJobSummary}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="14">
+                <Border Background="#FFF8F1" CornerRadius="14" Padding="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Install Directory" />
+                        <TextBlock Classes="body" FontFamily="Cascadia Code,Consolas,monospace" Text="{Binding InstallDirectory}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="1" Background="#FFF8F1" CornerRadius="14" Padding="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Cache Directory" />
+                        <TextBlock Classes="body" FontFamily="Cascadia Code,Consolas,monospace" Text="{Binding CacheDirectory}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <Border Background="#F1E6D7" CornerRadius="14" Padding="16">
+                <StackPanel Spacing="8">
+                    <TextBlock Classes="kicker" Text="Operator Flow" />
+                    <TextBlock Classes="body" Text="Use Install for first-time setup, Update to refresh the server binaries, then control runtime from the same page while we finish the deeper preflight UX." TextWrapping="Wrap" />
+                    <WrapPanel Orientation="Horizontal" ItemWidth="140" ItemHeight="36">
+                        <Button Command="{Binding InstallCommand}" Content="Install" />
+                        <Button Command="{Binding UpdateCommand}" Content="Update" />
+                        <Button Command="{Binding StartCommand}" Content="Start" />
+                        <Button Command="{Binding StopCommand}" Content="Stop" />
+                        <Button Command="{Binding RestartCommand}" Content="Restart" />
+                        <Button Command="{Binding RefreshCommand}" Content="Refresh Host State" />
+                    </WrapPanel>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </Border>
+</UserControl>
