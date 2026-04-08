@@ -29,9 +29,8 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
         Dashboard = new DashboardWorkspaceViewModel(legacy);
         Host = new HostWorkspaceViewModel(legacy);
         RemoteAccess = new RemoteAccessWorkspaceViewModel(legacy);
-        Users = new UsersWorkspaceViewModel(legacy);
-        Profiles = new ProfilesWorkspaceViewModel(legacy, hostApiClient, runtimeEventStream, () => SelectGlobalPageByKey("classic"));
-        Classic = new ClassicWorkspaceViewModel(legacy);
+        Users = new UsersWorkspaceViewModel(legacy, hostApiClient);
+        Profiles = new ProfilesWorkspaceViewModel(legacy, hostApiClient, runtimeEventStream);
 
         _pages = new Dictionary<string, ViewModelBase>(StringComparer.Ordinal)
         {
@@ -40,7 +39,6 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
             [WorkspacePageIds.Host] = Host,
             [WorkspacePageIds.RemoteAccess] = RemoteAccess,
             [WorkspacePageIds.Users] = Users,
-            ["classic"] = Classic,
         };
 
         GlobalNavigation =
@@ -61,7 +59,6 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
         ConfirmNavigationSaveCommand = new AsyncRelayCommand(ConfirmNavigationSaveAsync);
         ConfirmNavigationDiscardCommand = new AsyncRelayCommand(ConfirmNavigationDiscardAsync);
         CancelNavigationCommand = new RelayCommand(CancelNavigation);
-        OpenClassicCommand = new RelayCommand(() => SelectGlobalPageByKey("classic"));
         ExitDesktopCommand = new RelayCommand(() => _desktopShellService.ExitDesktop());
         RefreshLegacyCommand = new AsyncRelayCommand(RefreshAsync);
 
@@ -74,7 +71,7 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
 
     public string PageTitle => "Project Zomboid Workspace";
 
-    public string PageSummary => "Workspace shell with dedicated dashboard, profiles, host, remote access, users, and a temporary legacy fallback.";
+    public string PageSummary => "Workspace shell with dedicated dashboard, profiles, host, remote access, and users pages.";
 
     public string CurrentPageTitle => CurrentPage is IWorkspacePageHeader header ? header.PageTitle : PageTitle;
 
@@ -91,8 +88,6 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
     public RemoteAccessWorkspaceViewModel RemoteAccess { get; }
 
     public UsersWorkspaceViewModel Users { get; }
-
-    public ClassicWorkspaceViewModel Classic { get; }
 
     [ObservableProperty]
     private ViewModelBase currentPage = null!;
@@ -123,8 +118,6 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
     public IAsyncRelayCommand ConfirmNavigationDiscardCommand { get; }
 
     public IRelayCommand CancelNavigationCommand { get; }
-
-    public IRelayCommand OpenClassicCommand { get; }
 
     public IRelayCommand ExitDesktopCommand { get; }
 

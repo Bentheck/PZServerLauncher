@@ -41,7 +41,6 @@
 
                     <WrapPanel HorizontalAlignment="Right" ItemWidth="132" ItemHeight="36">
                         <Button Command="{Binding RefreshLegacyCommand}" Content="Refresh" />
-                        <Button Command="{Binding OpenClassicCommand}" Content="Open Legacy" />
                         <Button Command="{Binding ExitDesktopCommand}" Content="Exit Desktop" />
                     </WrapPanel>
                 </StackPanel>
@@ -64,7 +63,7 @@
             <Border Classes="card" Padding="14">
                 <StackPanel Spacing="12">
                     <TextBlock Classes="panel-title" FontSize="22" Text="Workspace" />
-                    <TextBlock Classes="body" Text="Global navigation switches between product areas. Profiles contains the per-profile workspace and the temporary Classic surface." TextWrapping="Wrap" />
+                    <TextBlock Classes="body" Text="Global navigation switches between product areas. Profiles contains the full per-profile workspace, while the rest of the shell handles host-level control." TextWrapping="Wrap" />
 
                     <ItemsControl ItemsSource="{Binding GlobalNavigation}">
                         <ItemsControl.ItemTemplate>
@@ -96,7 +95,7 @@
                     <Border Background="#F1E6D7" CornerRadius="14" Padding="14">
                         <StackPanel Spacing="6">
                             <TextBlock Classes="kicker" Text="Migration Note" />
-                            <TextBlock Classes="body" Text="Dashboard, Profiles, Host, Remote Access, and Users now have dedicated workspace pages. Legacy stays available only as a fallback while the final cleanup lands." TextWrapping="Wrap" />
+                            <TextBlock Classes="body" Text="Dashboard, Profiles, Host, Remote Access, and Users now have dedicated workspace pages. The desktop shell no longer depends on the legacy Classic surface." TextWrapping="Wrap" />
                         </StackPanel>
                     </Border>
                 </StackPanel>

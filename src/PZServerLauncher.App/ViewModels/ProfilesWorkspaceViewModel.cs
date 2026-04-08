@@ -10,7 +10,7 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
 {
     private readonly IReadOnlyDictionary<string, ViewModelBase> _sections;
 
-    public ProfilesWorkspaceViewModel(MainWindowViewModel legacy, LocalHostApiClient hostApiClient, RuntimeEventStream runtimeEventStream, Action openClassicAction)
+    public ProfilesWorkspaceViewModel(MainWindowViewModel legacy, LocalHostApiClient hostApiClient, RuntimeEventStream runtimeEventStream)
     {
         Legacy = legacy;
 
@@ -54,7 +54,6 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
         UpdateSectionSelection(ProfileWorkspacePageIds.Overview);
 
         SelectSectionCommand = new RelayCommand<WorkspaceNavigationItemViewModel>(SelectSection);
-        OpenClassicCommand = new RelayCommand(openClassicAction);
         SaveCurrentDraftCommand = new AsyncRelayCommand(SaveDraftAsync);
         DiscardCurrentDraftCommand = new AsyncRelayCommand(DiscardDraftAsync);
         ConfirmSectionNavigationSaveCommand = new AsyncRelayCommand(ConfirmSectionNavigationSaveAsync);
@@ -66,7 +65,7 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
 
     public string PageTitle => "Profiles";
 
-    public string PageSummary => "Choose a profile, then move through the full per-profile workspace. Classic now remains only as a temporary bridge for the leftover global host surfaces.";
+    public string PageSummary => "Choose a profile, then move through the full per-profile workspace. Every per-profile surface now lives here.";
 
     public IReadOnlyList<WorkspaceNavigationItemViewModel> SectionItems { get; }
 
@@ -116,8 +115,6 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
     private WorkspaceNavigationItemViewModel? pendingSectionTarget;
 
     public IRelayCommand<WorkspaceNavigationItemViewModel> SelectSectionCommand { get; }
-
-    public IRelayCommand OpenClassicCommand { get; }
 
     public IAsyncRelayCommand SaveCurrentDraftCommand { get; }
 

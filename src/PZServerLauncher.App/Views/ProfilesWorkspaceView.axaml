@@ -41,8 +41,8 @@
 
                 <Border Background="#1F1D1B" CornerRadius="14" Padding="14">
                     <StackPanel Spacing="6">
-                        <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Migration Note" />
-                        <TextBlock Classes="body" Foreground="#D3C8BA" Text="This page will become the real per-profile workspace. For now it provides profile selection, section navigation, and a path to the temporary Classic surface." TextWrapping="Wrap" />
+                        <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Workspace Ready" />
+                        <TextBlock Classes="body" Foreground="#D3C8BA" Text="This is now the primary per-profile workspace. Use the section navigation below for every server-specific task, including raw file fallback editing." TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
             </StackPanel>
@@ -50,13 +50,10 @@
 
         <Grid Grid.Column="1" RowDefinitions="Auto,Auto,Auto,*" RowSpacing="16">
             <Border Classes="card" Padding="18">
-                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                    <StackPanel Spacing="4">
-                        <TextBlock Classes="panel-title" FontSize="24" Text="Per-Profile Workspace" />
-                        <TextBlock Classes="body" Text="Choose a profile section below. Every per-profile workspace page is now live, including Advanced Files as the raw fallback for unsupported cases." TextWrapping="Wrap" />
-                    </StackPanel>
-                    <Button Grid.Column="1" Command="{Binding OpenClassicCommand}" Content="Open Legacy" />
-                </Grid>
+                <StackPanel Spacing="4">
+                    <TextBlock Classes="panel-title" FontSize="24" Text="Per-Profile Workspace" />
+                    <TextBlock Classes="body" Text="Choose a profile section below. Every per-profile workspace page is now live, including Advanced Files as the raw fallback for unsupported cases." TextWrapping="Wrap" />
+                </StackPanel>
             </Border>
 
             <Border Grid.Row="1" Classes="card" IsVisible="{Binding HasPendingSectionNavigation}">

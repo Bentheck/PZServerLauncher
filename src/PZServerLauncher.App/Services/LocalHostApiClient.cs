@@ -177,6 +177,28 @@ public sealed class LocalHostApiClient
     public Task<List<string>?> GetRecentLogsAsync(string profileId, CancellationToken cancellationToken = default) =>
         GetAsync<List<string>>($"/api/profiles/{profileId}/logs/recent", cancellationToken);
 
+    public Task<List<UserAccountDto>?> GetUsersAsync(CancellationToken cancellationToken = default) =>
+        GetAsync<List<UserAccountDto>>("/api/users", cancellationToken);
+
+    public Task<UserAccountDto?> CreateUserAsync(
+        CreateUserRequestDto payload,
+        CancellationToken cancellationToken = default) =>
+        PostAsync<UserAccountDto>("/api/users", payload, cancellationToken);
+
+    public Task<UserAccountDto?> UpdateUserAsync(
+        string userId,
+        UpdateUserRequestDto payload,
+        CancellationToken cancellationToken = default) =>
+        PutAsync<UserAccountDto>($"/api/users/{userId}", payload, cancellationToken);
+
+    public async Task DeleteUserAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        var state = await LoadStateAsync(cancellationToken);
+        using var client = CreateHttpClient(state);
+        using var response = await client.DeleteAsync($"/api/users/{userId}", cancellationToken);
+        await EnsureSuccessAsync(response, cancellationToken);
+    }
+
     public Task<RawConfigFileDto?> GetRawConfigAsync(
         string profileId,
         PZServerLauncher.Core.Runtime.ConfigFileKind kind,
