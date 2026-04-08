@@ -1,11 +1,13 @@
 @page "/"
 @page "/dashboard"
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@using PZServerLauncher.Infrastructure.Planning
 @using PZServerLauncher.Host.Services
 @inject HostSettingsStore HostSettingsStore
 @inject ProfileStore ProfileStore
 @inject RuntimeStateStore RuntimeStateStore
 @inject UserManagementService UserManagementService
+@inject ServerBackupService BackupService
 
 <PageTitle>PZ Server Launcher Host</PageTitle>
 
@@ -25,7 +27,7 @@
         {
             <div class="workspace-actions">
                 <span class="pill">Loopback @_settings.LoopbackPort</span>
-                <span class="pill">Profiles @_profiles.Count</span>
+                <span class="pill">Profiles @_rows.Count</span>
                 <span class="pill">Users @_users.Count</span>
                 <span class="pill">@(_settings.RemoteAccess.IsEnabled ? "Remote access enabled" : "Remote access disabled")</span>
             </div>
@@ -42,25 +44,36 @@
     {
         <section class="metric-grid metric-grid--host">
             <article class="metric-card">
-                <span class="metric-label">Host Port</span>
-                <strong class="metric-value">@_settings.LoopbackPort</strong>
-                <span class="metric-note">Local loopback control channel</span>
-            </article>
-            <article class="metric-card">
                 <span class="metric-label">Profiles</span>
-                <strong class="metric-value">@_profiles.Count</strong>
+                <strong class="metric-value">@_rows.Count</strong>
                 <span class="metric-note">Managed server workspaces</span>
             </article>
             <article class="metric-card">
-                <span class="metric-label">Users</span>
-                <strong class="metric-value">@_users.Count</strong>
-                <span class="metric-note">Local operator accounts</span>
+                <span class="metric-label">Running</span>
+                <strong class="metric-value">@RunningProfileCount</strong>
+                <span class="metric-note">Active server processes</span>
             </article>
             <article class="metric-card">
-                <span class="metric-label">Remote Access</span>
-                <strong class="metric-value">@(_settings.RemoteAccess.IsEnabled ? "Enabled" : "Disabled")</strong>
-                <span class="metric-note">@(_settings.RemoteAccess.IsEnabled ? $"https://{(_settings.RemoteAccess.PublicHostname ?? _settings.RemoteAccess.BindAddress)}:{_settings.RemoteAccess.HttpsPort}" : "Not exposed yet")</span>
+                <span class="metric-label">Recovery Ready</span>
+                <strong class="metric-value">@RecoveryReadyCount</strong>
+                <span class="metric-note">@ProfilesMissingBackupCount profile(s) still missing a backup archive</span>
             </article>
+            <article class="metric-card">
+                <span class="metric-label">Direct Java</span>
+                <strong class="metric-value">@DirectJavaReadyCount</strong>
+                <span class="metric-note">@FallbackLaunchCount profile(s) still on batch fallback</span>
+            </article>
+        </section>
+
+        <section class="card callout-card">
+            <div class="card-heading">
+                <div>
+                    <p class="eyebrow">Fleet Posture</p>
+                    <h2>Deployment And Recovery Snapshot</h2>
+                </div>
+            </div>
+            <p>@FleetSummary</p>
+            <p>@FleetRiskSummary</p>
         </section>
 
         <div class="cards cards--wide">
@@ -89,6 +102,14 @@
                     <div class="info-item">
                         <span class="info-label">Remote endpoint</span>
                         <span class="info-value">@(_settings.RemoteAccess.IsEnabled ? $"https://{(_settings.RemoteAccess.PublicHostname ?? _settings.RemoteAccess.BindAddress)}:{_settings.RemoteAccess.HttpsPort}" : "Not exposed")</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Profiles missing install</span>
+                        <span class="info-value">@ProfilesMissingInstallCount</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Profiles missing backup</span>
+                        <span class="info-value">@ProfilesMissingBackupCount</span>
                     </div>
                 </div>
             </section>
@@ -176,18 +197,25 @@
                             <th>Branch</th>
                             <th>Ports</th>
                             <th>Runtime</th>
+                            <th>Deploy</th>
+                            <th>Launch</th>
+                            <th>Recovery</th>
                             <th>Workspace</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var profile in _profiles)
+                        @foreach (var row in _rows)
                         {
-                            var runtime = RuntimeStateStore.GetOrDefault(profile.ProfileId);
+                            var profile = row.Profile;
+                            var runtime = row.Runtime;
                             <tr>
                                 <td>@profile.DisplayName</td>
                                 <td>@profile.Branch</td>
                                 <td>@profile.DefaultPort / @profile.UdpPort / @profile.RconPort</td>
                                 <td>@runtime.State</td>
+                                <td>@(row.InstallDetected ? "Installed" : "Missing install")</td>
+                                <td>@(row.UsesDirectJavaTemplate ? "Direct Java" : row.LauncherDetected ? "Batch fallback" : "Launcher missing")</td>
+                                <td>@(row.HasBackup ? "Protected" : "Needs backup")</td>
                                 <td>
                                     <div class="actions-cell">
                                         <a class="nav-button secondary-button" href="@BuildProfileHref(profile.ProfileId, "overview")">Overview</a>
@@ -215,14 +243,68 @@
     private PZServerLauncher.Core.Runtime.HostSettings? _settings;
     private IReadOnlyList<PZServerLauncher.Core.Profiles.ServerProfile> _profiles = [];
     private IReadOnlyList<PZServerLauncher.Contracts.Runtime.UserAccountDto> _users = [];
+    private IReadOnlyList<HomeProfileRow> _rows = [];
+
+    private int RunningProfileCount => _rows.Count(row => row.Runtime.State == PZServerLauncher.Core.Runtime.ServerRuntimeState.Running);
+
+    private int RecoveryReadyCount => _rows.Count(row => row.HasBackup);
+
+    private int ProfilesMissingBackupCount => _rows.Count(row => !row.HasBackup);
+
+    private int DirectJavaReadyCount => _rows.Count(row => row.UsesDirectJavaTemplate);
+
+    private int FallbackLaunchCount => _rows.Count(row => row.LauncherDetected && !row.UsesDirectJavaTemplate);
+
+    private int ProfilesMissingInstallCount => _rows.Count(row => !row.InstallDetected);
+
+    private string FleetSummary => _rows.Count == 0
+        ? "No fleet posture is available until the first server profile exists."
+        : $"{_rows.Count - ProfilesMissingInstallCount}/{_rows.Count} installed | {RecoveryReadyCount} recovery-ready | {DirectJavaReadyCount} direct-Java | {FallbackLaunchCount} fallback launch.";
+
+    private string FleetRiskSummary => _rows.Count == 0
+        ? "Create or import a profile from the desktop app to start building the fleet."
+        : ProfilesMissingBackupCount > 0
+            ? $"{ProfilesMissingBackupCount} profile(s) still need a backup before deeper update or mod work."
+            : ProfilesMissingInstallCount > 0
+                ? $"{ProfilesMissingInstallCount} profile(s) still need a detected install footprint."
+                : FallbackLaunchCount > 0
+                    ? $"{FallbackLaunchCount} installed profile(s) are still falling back to the vendor batch launcher."
+                    : "Install, recovery, and launch posture look healthy across the current fleet.";
 
     protected override async Task OnInitializedAsync()
     {
         _settings = await HostSettingsStore.GetAsync();
         _profiles = await ProfileStore.ListAsync();
         _users = await UserManagementService.ListAsync();
+
+        _rows = _profiles.Select(profile =>
+        {
+            var runtime = RuntimeStateStore.GetOrDefault(profile.ProfileId);
+            var backups = BackupService.ListBackups(profile.ProfileId);
+            var posture = ProjectZomboidInstallPostureSummaryBuilder.Build(
+                profile,
+                runtime.State.ToString(),
+                backups.Count > 0,
+                backups.FirstOrDefault() ?? "No backups");
+
+            return new HomeProfileRow(
+                profile,
+                runtime,
+                backups.Count > 0,
+                posture.InstallDetected,
+                posture.LauncherDetected,
+                posture.UsesDirectJavaTemplate);
+        }).ToArray();
     }
 
     private static string BuildProfileHref(string profileId, string page) =>
         $"/profiles/{Uri.EscapeDataString(profileId)}/{page}";
+
+    private sealed record HomeProfileRow(
+        PZServerLauncher.Core.Profiles.ServerProfile Profile,
+        PZServerLauncher.Core.Runtime.ServerRuntimeStatus Runtime,
+        bool HasBackup,
+        bool InstallDetected,
+        bool LauncherDetected,
+        bool UsesDirectJavaTemplate);
 }
