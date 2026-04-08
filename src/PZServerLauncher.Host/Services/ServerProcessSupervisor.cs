@@ -40,11 +40,18 @@ public sealed class ServerProcessSupervisor(
         Directory.CreateDirectory(runtimeDir);
         var wrapperPath = Path.Combine(runtimeDir, "launch.cmd");
         var launchPlan = planner.CreateLaunchPlan(profile);
+        if (!string.IsNullOrWhiteSpace(launchPlan.Notes))
+        {
+            runtimeStateStore.AppendLog(profile.ProfileId, launchPlan.Notes);
+            await hubContext.Clients.All.SendAsync("logLine", profile.ProfileId, launchPlan.Notes, cancellationToken);
+        }
+
+        var launchCommand = planner.FormatLaunchCommand(launchPlan);
         var scriptContent = $"""
             @echo off
             setlocal
             cd /d "{launchPlan.WorkingDirectory}"
-            call {planner.FormatLaunchCommand(launchPlan)}
+            {(launchPlan.UsesVendorBatch ? "call " : string.Empty)}{launchCommand}
             """;
         await File.WriteAllTextAsync(wrapperPath, scriptContent, cancellationToken);
 

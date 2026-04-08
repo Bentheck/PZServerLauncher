@@ -1,3 +1,4 @@
+using PZServerLauncher.Core.Planning;
 using PZServerLauncher.Core.Profiles;
 using PZServerLauncher.Infrastructure.Planning;
 
@@ -36,19 +37,90 @@ public sealed class ProjectZomboidServerPlannerTests
     [Fact]
     public void CreateLaunchPlan_IncludesServerSpecificArguments()
     {
+        var installDirectory = CreateInstallDirectory(
+            """
+            @echo off
+            setlocal
+            set "JAVA_HOME=%~dp0jre64"
+            "%JAVA_HOME%\bin\java.exe" ^
+              -Dzomboid.steam=1 ^
+              -Djava.awt.headless=true ^
+              -Xms2048m ^
+              -Xmx2048m ^
+              -cp "%~dp0zombie.jar;%~dp0lib\*" ^
+              zombie.network.GameServer ^
+              -cachedir "%UserProfile%\Zomboid" ^
+              -servername servertest
+            """);
+
         var profile = ServerProfileFactory.CreateStarterProfile() with
         {
+            InstallDirectory = installDirectory,
             CacheDirectory = @"D:\Servers\Profiles\bravo server",
             AdminPassword = "secret-password",
+            PreferredMemoryInGigabytes = 8,
         };
 
-        var plan = _planner.CreateLaunchPlan(profile);
-        var commandLine = _planner.FormatLaunchCommand(plan);
+        try
+        {
+            var plan = _planner.CreateLaunchPlan(profile);
+            var commandLine = _planner.FormatLaunchCommand(plan);
 
-        Assert.Contains("-cachedir", plan.Arguments);
-        Assert.Contains("-servername", plan.Arguments);
-        Assert.Contains("-adminpassword", plan.Arguments);
-        Assert.Contains("\"D:\\Servers\\Profiles\\bravo server\"", commandLine);
-        Assert.Contains("secret-password", commandLine);
+            Assert.Equal(ServerLaunchStrategy.DirectJavaTemplate, plan.Strategy);
+            Assert.EndsWith(Path.Combine("jre64", "bin", "java.exe"), plan.LauncherPath, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("-Xms8g", plan.Arguments);
+            Assert.Contains("-Xmx8g", plan.Arguments);
+            Assert.DoesNotContain("-Xms2048m", plan.Arguments);
+            Assert.DoesNotContain("-Xmx2048m", plan.Arguments);
+            Assert.Contains("-cachedir", plan.Arguments);
+            Assert.Contains("-servername", plan.Arguments);
+            Assert.Contains("-adminpassword", plan.Arguments);
+            Assert.Contains("\"D:\\Servers\\Profiles\\bravo server\"", commandLine);
+            Assert.Contains("secret-password", commandLine);
+            Assert.DoesNotContain("servertest", commandLine, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            Directory.Delete(installDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void CreateLaunchPlan_FallsBackToVendorBatchWhenTemplateCannotBeParsed()
+    {
+        var installDirectory = CreateInstallDirectory(
+            """
+            @echo off
+            echo unsupported launcher
+            """);
+
+        var profile = ServerProfileFactory.CreateStarterProfile() with
+        {
+            InstallDirectory = installDirectory,
+        };
+
+        try
+        {
+            var plan = _planner.CreateLaunchPlan(profile);
+
+            Assert.Equal(ServerLaunchStrategy.VendorBatchFallback, plan.Strategy);
+            Assert.EndsWith("StartServer64.bat", plan.LauncherPath, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("Falling back", plan.Notes, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain(plan.Arguments, argument => argument.StartsWith("-Xms", StringComparison.OrdinalIgnoreCase));
+        }
+        finally
+        {
+            Directory.Delete(installDirectory, recursive: true);
+        }
+    }
+
+    private static string CreateInstallDirectory(string batchFileContent)
+    {
+        var installDirectory = Path.Combine(Path.GetTempPath(), $"pz-launch-plan-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(installDirectory);
+        Directory.CreateDirectory(Path.Combine(installDirectory, "jre64", "bin"));
+        File.WriteAllText(Path.Combine(installDirectory, "jre64", "bin", "java.exe"), string.Empty);
+        File.WriteAllText(Path.Combine(installDirectory, "StartServer64.bat"), batchFileContent);
+        return installDirectory;
     }
 }
