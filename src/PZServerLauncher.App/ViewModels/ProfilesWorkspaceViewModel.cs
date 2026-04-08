@@ -120,7 +120,7 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
 
     public string SelectedProfilePortsSummary => SelectedProfile is null
         ? "Ports unavailable."
-        : $"TCP {SelectedProfile.DefaultPort} | UDP {SelectedProfile.UdpPort} | RCON {SelectedProfile.RconPort}";
+        : $"TCP {SelectedProfile.EditableDefaultPort} | UDP {SelectedProfile.EditableUdpPort} | RCON {SelectedProfile.EditableRconPort}";
 
     public string SelectedWorkspaceSummary => SelectedProfile is null
         ? "Select a profile to unlock the workspace rail."

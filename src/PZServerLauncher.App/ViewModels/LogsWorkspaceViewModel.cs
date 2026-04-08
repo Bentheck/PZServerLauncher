@@ -4,7 +4,6 @@ using CommunityToolkit.Mvvm.Input;
 using PZServerLauncher.App.Services;
 using PZServerLauncher.Contracts.Runtime;
 using PZServerLauncher.Core.Runtime;
-
 namespace PZServerLauncher.App.ViewModels;
 
 public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
@@ -53,7 +52,7 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
 
     public string RuntimeGuidance => SelectedProfile is null
         ? "No runtime guidance available."
-        : string.Equals(LatestRuntimeState, nameof(ServerProcessState.Running), StringComparison.OrdinalIgnoreCase)
+        : string.Equals(LatestRuntimeState, "Running", StringComparison.OrdinalIgnoreCase)
             ? "The server is live. Keep this page open during testing, config reloads, and mod validation to watch the latest output."
             : "The server is not currently running. Use Overview or Install & Update to start it, then return here for live output.";
 
