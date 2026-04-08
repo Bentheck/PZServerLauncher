@@ -51,6 +51,37 @@
                 </Border>
             </Grid>
 
+            <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="14">
+                <Border Background="#FFF8F1" CornerRadius="14" Padding="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Startup Roster" />
+                        <TextBlock FontSize="20" FontWeight="SemiBold" Text="{Binding StartupRosterCount, StringFormat='{}{0} profile(s)'}" />
+                        <TextBlock Classes="body" Text="{Binding HostStartupCoverageSummary}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="1" Background="#FFF8F1" CornerRadius="14" Padding="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Crash Recovery" />
+                        <TextBlock FontSize="20" FontWeight="SemiBold" Text="{Binding AutoRestartCoverageCount, StringFormat='{}{0} profile(s)'}" />
+                        <TextBlock Classes="body" Text="{Binding HostAutomationSummary}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="2" Background="#FFF8F1" CornerRadius="14" Padding="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Recovery Coverage" />
+                        <TextBlock FontSize="20" FontWeight="SemiBold" Text="{Binding BackupCoverageCount, StringFormat='{}{0} profile(s)'}" />
+                        <TextBlock Classes="body" Text="{Binding HostRecoveryCoverageSummary}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="3" Background="#FFF8F1" CornerRadius="14" Padding="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Live Runtime" />
+                        <TextBlock FontSize="20" FontWeight="SemiBold" Text="{Binding RunningProfileCount, StringFormat='{}{0} profile(s)'}" />
+                        <TextBlock Classes="body" Text="{Binding HostRuntimeCoverageSummary}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
             <Border Background="#FFF8F1" CornerRadius="14" Padding="16">
                 <StackPanel Spacing="12">
                     <StackPanel Spacing="4">
@@ -68,6 +99,7 @@
                                             <TextBlock FontSize="18" FontWeight="SemiBold" Text="{Binding DisplayName}" />
                                             <TextBlock Classes="body" Text="{Binding Ports}" TextWrapping="Wrap" />
                                             <TextBlock Classes="body" Text="{Binding RuntimeState, StringFormat='Runtime: {0}'}" TextWrapping="Wrap" />
+                                            <TextBlock Classes="body" Text="{Binding RosterSummary}" TextWrapping="Wrap" />
                                         </StackPanel>
                                         <WrapPanel Grid.Column="1" Orientation="Horizontal" ItemHeight="28" VerticalAlignment="Top">
                                             <Border Background="#2A2927" CornerRadius="999" Padding="10,4" Margin="0,0,8,8">
@@ -111,6 +143,7 @@
                             <StackPanel Spacing="8">
                                 <TextBlock Classes="body" Text="{Binding HostActionSummary}" TextWrapping="Wrap" />
                                 <TextBlock Classes="body" Text="{Binding HostRecoverySummary}" TextWrapping="Wrap" />
+                                <TextBlock Classes="body" Text="{Binding HostRiskSummary}" TextWrapping="Wrap" />
                                 <TextBlock Classes="body" Text="{Binding HostNextStepSummary}" TextWrapping="Wrap" />
                             </StackPanel>
                         </Border>

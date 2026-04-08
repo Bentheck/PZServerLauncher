@@ -57,6 +57,29 @@
             </article>
         </section>
 
+        <section class="metric-grid metric-grid--host">
+            <article class="metric-card">
+                <span class="metric-label">Startup Roster</span>
+                <strong class="metric-value">@_profiles.Count(profile => profile.StartWithHost)</strong>
+                <span class="metric-note">@BuildStartupCoverageSummary()</span>
+            </article>
+            <article class="metric-card">
+                <span class="metric-label">Crash Recovery</span>
+                <strong class="metric-value">@_profiles.Count(profile => profile.AutoRestartOnCrash)</strong>
+                <span class="metric-note">@BuildAutomationCoverageSummary()</span>
+            </article>
+            <article class="metric-card">
+                <span class="metric-label">Installed Profiles</span>
+                <strong class="metric-value">@_profiles.Count(profile => Directory.Exists(profile.InstallDirectory) || Directory.Exists(Path.Combine(profile.InstallDirectory, "server")))</strong>
+                <span class="metric-note">Profiles that currently show an install root</span>
+            </article>
+            <article class="metric-card">
+                <span class="metric-label">Fleet Guidance</span>
+                <strong class="metric-value">@BuildFleetRiskHeadline()</strong>
+                <span class="metric-note">@BuildFleetRiskSummary()</span>
+            </article>
+        </section>
+
         <section class="card">
             <div class="card-heading">
                 <div>
@@ -81,6 +104,7 @@
                         <div class="field-card">
                             <span class="field-label">@profile.DisplayName</span>
                             <span>@profile.Branch</span>
+                            <span>@BuildRosterSummary(profile)</span>
                             <span>Start with host: @(profile.StartWithHost ? "On" : "Off")</span>
                             <span>Auto-restart: @(profile.AutoRestartOnCrash ? "On" : "Off")</span>
                             <span>Install root: @profile.InstallDirectory</span>
@@ -121,6 +145,11 @@
                 <div class="status-banner">
                     <strong>Operator note</strong>
                     <p>@(_settings.StartHostWithWindows ? "The host is configured like a persistent control service. Use this when the machine should behave like a dedicated server controller." : "The host stays manual until you opt in, which is a safer default while you are still setting up profiles and remote access.")</p>
+                </div>
+
+                <div class="status-banner status-banner--warm">
+                    <strong>Fleet risk</strong>
+                    <p>@BuildFleetRiskSummary()</p>
                 </div>
             </section>
 
@@ -195,5 +224,79 @@
     {
         _settings = await HostSettingsStore.GetAsync();
         _profiles = await ProfileStore.ListAsync();
+    }
+
+    private string BuildStartupCoverageSummary()
+    {
+        if (_profiles.Count == 0)
+        {
+            return "No profiles are available yet.";
+        }
+
+        var startupCount = _profiles.Count(profile => profile.StartWithHost);
+        return startupCount == 0
+            ? "Everything still starts manually."
+            : $"{startupCount} profile(s) will come online with the host.";
+    }
+
+    private string BuildAutomationCoverageSummary()
+    {
+        if (_profiles.Count == 0)
+        {
+            return "Automation appears after the first profile exists.";
+        }
+
+        var autoRestartCount = _profiles.Count(profile => profile.AutoRestartOnCrash);
+        return autoRestartCount == 0
+            ? "Crashes currently need operator intervention."
+            : $"{autoRestartCount} profile(s) restart after a crash.";
+    }
+
+    private string BuildFleetRiskHeadline()
+    {
+        if (_profiles.Count == 0)
+        {
+            return "No fleet";
+        }
+
+        return HasStartupInstallMismatch() || _profiles.Count(profile => profile.AutoRestartOnCrash) == 0
+            ? "Needs review"
+            : "Steady";
+    }
+
+    private string BuildFleetRiskSummary()
+    {
+        if (_profiles.Count == 0)
+        {
+            return "Create or import the first server profile before the host becomes an always-on controller.";
+        }
+
+        if (HasStartupInstallMismatch())
+        {
+            return "At least one profile is marked to start with the host but does not currently show an install root.";
+        }
+
+        if (_settings?.RemoteAccess.IsEnabled == true && !_settings.OwnerBootstrap.IsConfigured)
+        {
+            return "Remote exposure is configured before owner bootstrap is complete. Finish the owner and 2FA path first.";
+        }
+
+        return "Startup, exposure, and restart posture are aligned for the currently loaded fleet.";
+    }
+
+    private bool HasStartupInstallMismatch() =>
+        _profiles.Any(profile =>
+            profile.StartWithHost &&
+            !(Directory.Exists(profile.InstallDirectory) || Directory.Exists(Path.Combine(profile.InstallDirectory, "server"))));
+
+    private static string BuildRosterSummary(ServerProfile profile)
+    {
+        var notes = new List<string>
+        {
+            profile.StartWithHost ? "Starts with host" : "Manual start",
+            profile.AutoRestartOnCrash ? "Auto-restart" : "Manual recovery",
+        };
+
+        return string.Join(" | ", notes);
     }
 }
