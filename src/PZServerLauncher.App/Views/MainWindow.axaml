@@ -34,6 +34,7 @@
                         <StackPanel Spacing="6">
                             <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Local Host" />
                             <TextBlock FontSize="18" FontWeight="SemiBold" Foreground="#F7F0E7" Text="{Binding Legacy.HostSummary}" />
+                            <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding ActorSummary}" TextWrapping="Wrap" />
                             <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding Legacy.StatusMessage}" TextWrapping="Wrap" />
                         </StackPanel>
                     </Border>
@@ -71,7 +72,8 @@
                                 <Button HorizontalAlignment="Stretch"
                                         Margin="0,0,0,8"
                                         Command="{Binding #RootWindow.DataContext.SelectGlobalPageCommand}"
-                                        CommandParameter="{Binding .}">
+                                        CommandParameter="{Binding .}"
+                                        IsEnabled="{Binding IsEnabled}">
                                     <Grid ColumnDefinitions="*,Auto">
                                         <StackPanel Spacing="2">
                                             <TextBlock FontSize="15" FontWeight="SemiBold" Text="{Binding Title}" />
@@ -94,7 +96,7 @@
                     <Border Background="#F1E6D7" CornerRadius="14" Padding="14">
                         <StackPanel Spacing="6">
                             <TextBlock Classes="kicker" Text="Migration Note" />
-                            <TextBlock Classes="body" Text="The new workspace pages are placeholders for now. The current monolithic screen remains available inside Classic while we migrate feature areas one by one." TextWrapping="Wrap" />
+                            <TextBlock Classes="body" Text="Overview, Install &amp; Update, and General are now real workspace pages. Classic remains available for the remaining areas while the rest of the migration lands." TextWrapping="Wrap" />
                         </StackPanel>
                     </Border>
                 </StackPanel>

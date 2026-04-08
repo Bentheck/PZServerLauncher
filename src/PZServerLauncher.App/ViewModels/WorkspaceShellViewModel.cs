@@ -2,21 +2,27 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PZServerLauncher.App.Services;
+using PZServerLauncher.Contracts.Runtime;
 
 namespace PZServerLauncher.App.ViewModels;
 
 public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHeader
 {
     private readonly DesktopShellService _desktopShellService;
+    private readonly LocalHostApiClient _hostApiClient;
 
     public WorkspaceShellViewModel()
-        : this(new MainWindowViewModel(), new DesktopShellService())
+        : this(new MainWindowViewModel(), new LocalHostApiClient(), new DesktopShellService())
     {
     }
 
-    public WorkspaceShellViewModel(MainWindowViewModel legacy, DesktopShellService desktopShellService)
+    public WorkspaceShellViewModel(
+        MainWindowViewModel legacy,
+        LocalHostApiClient hostApiClient,
+        DesktopShellService desktopShellService)
     {
         Legacy = legacy;
+        _hostApiClient = hostApiClient;
         _desktopShellService = desktopShellService;
 
         Dashboard = new WorkspaceSectionViewModel(
@@ -39,31 +45,45 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
             "Owner bootstrap and the future web-role surface will land here.",
             "Users draft cleared.",
             ["Owner bootstrap", "Admin roles", "Operator roles", "Viewer roles"]);
-        Profiles = new ProfilesWorkspaceViewModel(legacy, () => SelectGlobalPageByKey(nameof(Classic)));
+        Profiles = new ProfilesWorkspaceViewModel(legacy, hostApiClient, () => SelectGlobalPageByKey("classic"));
         Classic = new ClassicWorkspaceViewModel(legacy);
+
+        _pages = new Dictionary<string, ViewModelBase>(StringComparer.Ordinal)
+        {
+            [WorkspacePageIds.Dashboard] = Dashboard,
+            [WorkspacePageIds.Profiles] = Profiles,
+            [WorkspacePageIds.Host] = Host,
+            [WorkspacePageIds.RemoteAccess] = RemoteAccess,
+            [WorkspacePageIds.Users] = Users,
+            ["classic"] = Classic,
+        };
 
         GlobalNavigation =
         [
-            new WorkspaceNavigationItemViewModel(nameof(Dashboard), Dashboard.PageTitle, Dashboard.PageSummary),
-            new WorkspaceNavigationItemViewModel(nameof(Profiles), Profiles.PageTitle, Profiles.PageSummary),
-            new WorkspaceNavigationItemViewModel(nameof(Host), Host.PageTitle, Host.PageSummary),
-            new WorkspaceNavigationItemViewModel(nameof(RemoteAccess), RemoteAccess.PageTitle, RemoteAccess.PageSummary),
-            new WorkspaceNavigationItemViewModel(nameof(Users), Users.PageTitle, Users.PageSummary),
+            new WorkspaceNavigationItemViewModel(WorkspacePageIds.Dashboard, "Dashboard", Dashboard.PageSummary),
+            new WorkspaceNavigationItemViewModel(WorkspacePageIds.Profiles, "Profiles", Profiles.PageSummary),
+            new WorkspaceNavigationItemViewModel(WorkspacePageIds.Host, "Host", Host.PageSummary),
+            new WorkspaceNavigationItemViewModel(WorkspacePageIds.RemoteAccess, "Remote Access", RemoteAccess.PageSummary),
+            new WorkspaceNavigationItemViewModel(WorkspacePageIds.Users, "Users", Users.PageSummary),
         ];
 
         CurrentPage = Dashboard;
-        MarkNavigationSelection(nameof(Dashboard));
+        MarkNavigationSelection(WorkspacePageIds.Dashboard);
 
         SelectGlobalPageCommand = new RelayCommand<WorkspaceNavigationItemViewModel>(SelectGlobalPage);
-        SaveCurrentDraftCommand = new RelayCommand(SaveCurrentDraft);
-        DiscardCurrentDraftCommand = new RelayCommand(DiscardCurrentDraft);
-        ConfirmNavigationSaveCommand = new RelayCommand(ConfirmNavigationSave);
-        ConfirmNavigationDiscardCommand = new RelayCommand(ConfirmNavigationDiscard);
+        SaveCurrentDraftCommand = new AsyncRelayCommand(SaveCurrentDraftAsync);
+        DiscardCurrentDraftCommand = new AsyncRelayCommand(DiscardCurrentDraftAsync);
+        ConfirmNavigationSaveCommand = new AsyncRelayCommand(ConfirmNavigationSaveAsync);
+        ConfirmNavigationDiscardCommand = new AsyncRelayCommand(ConfirmNavigationDiscardAsync);
         CancelNavigationCommand = new RelayCommand(CancelNavigation);
-        OpenClassicCommand = new RelayCommand(() => SelectGlobalPageByKey(nameof(Classic)));
+        OpenClassicCommand = new RelayCommand(() => SelectGlobalPageByKey("classic"));
         ExitDesktopCommand = new RelayCommand(() => _desktopShellService.ExitDesktop());
-        RefreshLegacyCommand = new AsyncRelayCommand(() => Legacy.RefreshCommand.ExecuteAsync(null));
+        RefreshLegacyCommand = new AsyncRelayCommand(RefreshAsync);
+
+        _ = InitializeAsync();
     }
+
+    private readonly IReadOnlyDictionary<string, ViewModelBase> _pages;
 
     public MainWindowViewModel Legacy { get; }
 
@@ -104,15 +124,18 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
     [ObservableProperty]
     private WorkspaceNavigationItemViewModel? pendingNavigationTarget;
 
+    [ObservableProperty]
+    private string actorSummary = "Loading workspace capabilities...";
+
     public IRelayCommand<WorkspaceNavigationItemViewModel> SelectGlobalPageCommand { get; }
 
-    public IRelayCommand SaveCurrentDraftCommand { get; }
+    public IAsyncRelayCommand SaveCurrentDraftCommand { get; }
 
-    public IRelayCommand DiscardCurrentDraftCommand { get; }
+    public IAsyncRelayCommand DiscardCurrentDraftCommand { get; }
 
-    public IRelayCommand ConfirmNavigationSaveCommand { get; }
+    public IAsyncRelayCommand ConfirmNavigationSaveCommand { get; }
 
-    public IRelayCommand ConfirmNavigationDiscardCommand { get; }
+    public IAsyncRelayCommand ConfirmNavigationDiscardCommand { get; }
 
     public IRelayCommand CancelNavigationCommand { get; }
 
@@ -124,7 +147,7 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
 
     public void SelectGlobalPage(WorkspaceNavigationItemViewModel? target)
     {
-        if (target is null)
+        if (target is null || !target.IsEnabled)
         {
             return;
         }
@@ -151,32 +174,67 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
         NavigateTo(next, key);
     }
 
-    public void SaveCurrentDraft()
+    private async Task InitializeAsync()
+    {
+        await RefreshAsync();
+    }
+
+    private async Task RefreshAsync()
+    {
+        await Legacy.RefreshCommand.ExecuteAsync(null);
+
+        try
+        {
+            var bootstrap = await _hostApiClient.GetWorkspaceBootstrapAsync();
+            if (bootstrap is not null)
+            {
+                ApplyBootstrap(bootstrap);
+            }
+        }
+        catch
+        {
+        }
+    }
+
+    private void ApplyBootstrap(WorkspaceBootstrapDto bootstrap)
+    {
+        ActorSummary = $"{bootstrap.Actor.DisplayName} | {bootstrap.Actor.Surface} | {bootstrap.Actor.Roles.Count} role(s)";
+
+        foreach (var item in GlobalNavigation)
+        {
+            var page = bootstrap.GlobalPages.FirstOrDefault(candidate => string.Equals(candidate.Id, item.Key, StringComparison.Ordinal));
+            item.IsEnabled = page?.IsEnabled ?? item.IsEnabled;
+        }
+
+        Profiles.ApplyBootstrap(bootstrap.ProfilePages);
+    }
+
+    private async Task SaveCurrentDraftAsync()
     {
         if (CurrentPage is IWorkspaceDirtyState dirtyState)
         {
-            dirtyState.SaveDraftAsync().GetAwaiter().GetResult();
+            await dirtyState.SaveDraftAsync();
             UpdateCurrentStatus();
         }
     }
 
-    public void DiscardCurrentDraft()
+    private async Task DiscardCurrentDraftAsync()
     {
         if (CurrentPage is IWorkspaceDirtyState dirtyState)
         {
-            dirtyState.DiscardDraftAsync().GetAwaiter().GetResult();
+            await dirtyState.DiscardDraftAsync();
             UpdateCurrentStatus();
         }
     }
 
-    private void ConfirmNavigationSave()
+    private async Task ConfirmNavigationSaveAsync()
     {
         if (!HasPendingNavigation)
         {
             return;
         }
 
-        SaveCurrentDraft();
+        await SaveCurrentDraftAsync();
         var next = PendingNavigationTarget;
         ClearPendingNavigation();
         if (next is not null)
@@ -185,14 +243,14 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
         }
     }
 
-    private void ConfirmNavigationDiscard()
+    private async Task ConfirmNavigationDiscardAsync()
     {
         if (!HasPendingNavigation)
         {
             return;
         }
 
-        DiscardCurrentDraft();
+        await DiscardCurrentDraftAsync();
         var next = PendingNavigationTarget;
         ClearPendingNavigation();
         if (next is not null)
@@ -214,16 +272,9 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
     }
 
     private ViewModelBase? ResolvePage(string key) =>
-        key switch
-        {
-            nameof(Dashboard) => Dashboard,
-            nameof(Profiles) => Profiles,
-            nameof(Host) => Host,
-            nameof(RemoteAccess) => RemoteAccess,
-            nameof(Users) => Users,
-            nameof(Classic) => Classic,
-            _ => null,
-        };
+        _pages.TryGetValue(key, out var page)
+            ? page
+            : null;
 
     private void MarkNavigationSelection(string key)
     {

@@ -207,43 +207,13 @@
 
                                 <Grid Grid.Row="2" ColumnDefinitions="*,*" ColumnSpacing="18">
                                     <StackPanel Spacing="8">
-                                        <TextBlock Classes="kicker" Text="Common Settings" />
-                                        <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
-                                            <StackPanel Spacing="4">
-                                                <TextBlock Classes="body" Text="Server Name" />
-                                                <TextBox Text="{Binding EditableServerName}" />
+                                        <TextBlock Classes="kicker" Text="General Moved" />
+                                        <Border Background="#F1E6D7" CornerRadius="14" Padding="16">
+                                            <StackPanel Spacing="8">
+                                                <TextBlock Classes="body" Text="Structured General settings now live in the workspace General page." TextWrapping="Wrap" />
+                                                <TextBlock Classes="body" Text="Use the new workspace for server name, primary ports, memory, and startup behavior. Classic remains focused on raw files and the still-migrating areas." TextWrapping="Wrap" />
                                             </StackPanel>
-                                            <StackPanel Grid.Column="1" Spacing="4">
-                                                <TextBlock Classes="body" Text="Default Port" />
-                                                <TextBox Text="{Binding EditableDefaultPort}" />
-                                            </StackPanel>
-                                            <StackPanel Grid.Column="2" Spacing="4">
-                                                <TextBlock Classes="body" Text="UDP Port" />
-                                                <TextBox Text="{Binding EditableUdpPort}" />
-                                            </StackPanel>
-                                        </Grid>
-                                        <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
-                                            <StackPanel Spacing="4">
-                                                <TextBlock Classes="body" Text="RCON Port" />
-                                                <TextBox Text="{Binding EditableRconPort}" />
-                                            </StackPanel>
-                                            <StackPanel Grid.Column="1" Spacing="4">
-                                                <TextBlock Classes="body" Text="Bind IP" />
-                                                <TextBox Text="{Binding EditableBindIp}" />
-                                            </StackPanel>
-                                            <StackPanel Grid.Column="2" Spacing="4">
-                                                <TextBlock Classes="body" Text="Admin Username" />
-                                                <TextBox Text="{Binding EditableAdminUsername}" />
-                                            </StackPanel>
-                                        </Grid>
-                                        <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="14">
-                                            <StackPanel Spacing="4">
-                                                <TextBlock Classes="body" Text="Memory (GB)" />
-                                                <TextBox Width="100" Text="{Binding EditableMemoryInGigabytes}" />
-                                            </StackPanel>
-                                            <CheckBox Grid.Column="1" VerticalAlignment="Bottom" Content="Start With Host" IsChecked="{Binding EditableStartWithHost}" />
-                                            <CheckBox Grid.Column="2" VerticalAlignment="Bottom" Content="Auto Restart On Crash" IsChecked="{Binding EditableAutoRestartOnCrash}" />
-                                        </Grid>
+                                        </Border>
                                     </StackPanel>
 
                                     <StackPanel Grid.Column="1" Spacing="8">
@@ -305,7 +275,6 @@
                                 </Grid>
 
                                 <WrapPanel Grid.Row="4" ItemHeight="36" ItemWidth="132" Orientation="Horizontal">
-                                    <Button Command="{Binding #ClassicRoot.DataContext.SaveCommonConfigCommand}" CommandParameter="{Binding .}" Content="Save Settings" />
                                     <Button Command="{Binding #ClassicRoot.DataContext.ScanWorkshopCommand}" CommandParameter="{Binding .}" Content="Scan Workshop" />
                                     <Button Command="{Binding #ClassicRoot.DataContext.InstallCommand}" CommandParameter="{Binding .}" Content="Install" />
                                     <Button Command="{Binding #ClassicRoot.DataContext.UpdateCommand}" CommandParameter="{Binding .}" Content="Update" />
