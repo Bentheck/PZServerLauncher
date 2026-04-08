@@ -49,16 +49,20 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
         ? "Desktop account management is now active. Create operators, viewers, or admins before you expose the optional web admin."
         : "Create the initial owner account first, then return here to manage local web-admin users.";
 
+    public string RosterSummary => OwnerBootstrapConfigured
+        ? $"{Users.Count} managed account(s) across {OwnerCount} owner(s), {AdminCount} admin(s), {OperatorCount} operator(s), and {ViewerCount} viewer(s)."
+        : "No managed user accounts yet. Finish owner bootstrap before opening shared administration.";
+
     public string UserCountSummary => OwnerBootstrapConfigured
-        ? $"{Users.Count} managed user account(s)."
+        ? $"{Users.Count} managed account(s) are currently registered."
         : "No managed user accounts yet.";
 
     public string TwoFactorSummary => OwnerBootstrapConfigured
-        ? $"{Users.Count(user => user.RequiresTwoFactor)} account(s) require TOTP for web sign-in."
+        ? $"{PrivilegedAccountCount} privileged account(s) require TOTP, and {PendingTwoFactorCount} still need enrollment."
         : "TOTP enforcement applies after the owner account is created.";
 
     public string ActionSummary => OwnerBootstrapConfigured
-        ? "Use Create User to add new accounts, then Save or Delete from each row as you refine roles."
+        ? "Create an account above, then save or remove individual rows below as you tighten access."
         : "Use Owner Bootstrap first so the account manager can become active.";
 
     public string OwnerBootstrapLabel => OwnerBootstrapConfigured
@@ -66,7 +70,7 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
         : "Configured: Off";
 
     public string RoleCoverageSummary => OwnerBootstrapConfigured
-        ? $"{Users.Count(user => string.Equals(user.RoleName, nameof(UserRole.Owner), StringComparison.Ordinal))} owner | {Users.Count(user => string.Equals(user.RoleName, nameof(UserRole.Admin), StringComparison.Ordinal))} admin | {Users.Count(user => string.Equals(user.RoleName, nameof(UserRole.Operator), StringComparison.Ordinal))} operator | {Users.Count(user => string.Equals(user.RoleName, nameof(UserRole.Viewer), StringComparison.Ordinal))} viewer."
+        ? $"{OwnerCount} owner(s), {AdminCount} admin(s), {OperatorCount} operator(s), and {ViewerCount} viewer(s)."
         : "Role coverage appears after the owner account is created.";
 
     public string SecurityPostureSummary
@@ -78,16 +82,14 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
                 return "Owner bootstrap must finish before the desktop can evaluate user security posture.";
             }
 
-            var privilegedUsers = Users.Where(user => user.RequiresTwoFactor).ToArray();
-            if (privilegedUsers.Length == 0)
+            if (PrivilegedAccountCount == 0)
             {
                 return "No privileged users exist yet. Keep elevated access limited until you really need it.";
             }
 
-            var pending = privilegedUsers.Count(user => !user.TwoFactorEnabled);
-            return pending == 0
-                ? "Every privileged account currently shown has 2FA enabled."
-                : $"{pending} privileged account(s) still need TOTP before web sign-in is safe.";
+            return PendingTwoFactorCount == 0
+                ? $"Every privileged account currently shown has 2FA enabled. {OwnerCount} owner(s) and {AdminCount} admin(s) are covered."
+                : $"{PendingTwoFactorCount} privileged account(s) still need TOTP before web sign-in is safe.";
         }
     }
 
@@ -105,17 +107,71 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
                 return "Create the first operator or viewer account if you want shared administration.";
             }
 
-            return Users.Any(user => user.RequiresTwoFactor && !user.TwoFactorEnabled)
-                ? "Finish 2FA enrollment for privileged users before you rely on the optional web admin."
-                : "Review roles and keep elevated access limited to the smallest set of accounts you actually need.";
+            if (PendingTwoFactorCount > 0)
+            {
+                return "Finish 2FA enrollment for privileged users before you rely on the optional web admin.";
+            }
+
+            return "Review roles and keep elevated access limited to the smallest set of accounts you actually need.";
         }
     }
+
+    public string OwnerProtectionSummary => OwnerBootstrapConfigured
+        ? OwnerCount == 1
+            ? "One owner account protects the host. Keep it paired with TOTP and avoid creating extra owners unless you need them."
+            : $"{OwnerCount} owner accounts exist. Keep at least one owner reserved for emergency recovery."
+        : "Owner protection appears after bootstrap finishes.";
+
+    public string CreateFormSummary => OwnerBootstrapConfigured
+        ? $"The selected {CreateRoleName} role will be created as a local account and edited from this page after it appears in the roster."
+        : "Bootstrap the owner account first, then return here to add operators, admins, or viewers.";
+
+    public string CreateRoleSummary => OwnerBootstrapConfigured
+        ? CreateRoleName switch
+        {
+            nameof(UserRole.Owner) => "Owner is full control and should be rare. It needs TOTP before the optional web admin will trust it.",
+            nameof(UserRole.Admin) => "Admin can manage configuration and remote access, so keep the role narrow and pair it with TOTP.",
+            nameof(UserRole.Operator) => "Operator can handle lifecycle, backups, and day-to-day maintenance without ownership transfer.",
+            nameof(UserRole.Viewer) => "Viewer is read-only and is safest when someone only needs visibility into the host.",
+            _ => "Custom role selection.",
+        }
+        : "Role guidance becomes available after bootstrap.";
+
+    public string CreateRoleGuardrailSummary => OwnerBootstrapConfigured
+        ? RequiresTwoFactorForSelectedRole(CreateRoleName)
+            ? "This is a privileged role. The account will require TOTP before web sign-in is considered safe."
+            : "This role is intentionally lower risk and does not require TOTP by policy."
+        : "Role guardrails appear after bootstrap.";
+
+    public string PendingChangeSummary => OwnerBootstrapConfigured
+        ? IsCreateFormDirty || Users.Any(user => user.IsDirty)
+            ? "Unsaved changes are present. Save edited rows before you navigate away."
+            : "No unsaved user changes are pending."
+        : "No user edits can be made until bootstrap completes.";
+
+    public string ReviewSummary => OwnerBootstrapConfigured
+        ? $"{PrivilegedAccountCount} privileged account(s), {TwoFactorEnabledCount} account(s) already protected by TOTP, and {PendingTwoFactorCount} still waiting on enrollment."
+        : "Security review is unavailable until bootstrap completes.";
 
     public IReadOnlyList<string> RoleOptions { get; }
 
     public ObservableCollection<EditableUserRowViewModel> Users { get; } = [];
 
     public bool CanManageUsers => OwnerBootstrapConfigured && !IsBusy;
+
+    public int OwnerCount => Users.Count(user => string.Equals(user.RoleName, nameof(UserRole.Owner), StringComparison.Ordinal));
+
+    public int AdminCount => Users.Count(user => string.Equals(user.RoleName, nameof(UserRole.Admin), StringComparison.Ordinal));
+
+    public int OperatorCount => Users.Count(user => string.Equals(user.RoleName, nameof(UserRole.Operator), StringComparison.Ordinal));
+
+    public int ViewerCount => Users.Count(user => string.Equals(user.RoleName, nameof(UserRole.Viewer), StringComparison.Ordinal));
+
+    public int PrivilegedAccountCount => OwnerCount + AdminCount;
+
+    public int TwoFactorEnabledCount => Users.Count(user => user.TwoFactorEnabled);
+
+    public int PendingTwoFactorCount => Users.Count(user => user.RequiresTwoFactor && !user.TwoFactorEnabled);
 
     public bool HasUsers => Users.Count > 0;
 
@@ -384,6 +440,7 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
         if (!OwnerBootstrapConfigured)
         {
             MarkClean("Owner bootstrap is required before desktop user management becomes available.");
+            RefreshSummaryProperties();
             return;
         }
 
@@ -391,24 +448,19 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
         if (dirtyRowCount > 0)
         {
             MarkDirty($"{dirtyRowCount} desktop user row(s) have unsaved changes.");
+            RefreshSummaryProperties();
             return;
         }
 
         if (IsCreateFormDirty)
         {
             MarkDirty("New desktop user details have unsaved changes.");
+            RefreshSummaryProperties();
             return;
         }
 
         MarkClean("User settings are in sync.");
-        OnPropertyChanged(nameof(UserCountSummary));
-        OnPropertyChanged(nameof(TwoFactorSummary));
-        OnPropertyChanged(nameof(ActionSummary));
-        OnPropertyChanged(nameof(OwnerSummary));
-        OnPropertyChanged(nameof(UsersPageSummary));
-        OnPropertyChanged(nameof(RoleCoverageSummary));
-        OnPropertyChanged(nameof(SecurityPostureSummary));
-        OnPropertyChanged(nameof(UserNextStepSummary));
+        RefreshSummaryProperties();
     }
 
     private void RefreshCommandStates()
@@ -423,12 +475,7 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
     {
         if (string.IsNullOrEmpty(e.PropertyName) || e.PropertyName == nameof(MainWindowViewModel.OwnerBootstrapRequired))
         {
-            OnPropertyChanged(nameof(OwnerBootstrapConfigured));
-            OnPropertyChanged(nameof(UsersPageSummary));
-            OnPropertyChanged(nameof(OwnerSummary));
-            OnPropertyChanged(nameof(RoleCoverageSummary));
-            OnPropertyChanged(nameof(SecurityPostureSummary));
-            OnPropertyChanged(nameof(UserNextStepSummary));
+            RefreshSummaryProperties();
             RefreshCommandStates();
             RefreshDirtyState();
 
@@ -442,11 +489,7 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
             e.PropertyName == nameof(MainWindowViewModel.OwnerSummary) ||
             e.PropertyName == nameof(MainWindowViewModel.OwnerBootstrapRequired))
         {
-            OnPropertyChanged(nameof(OwnerSummary));
-            OnPropertyChanged(nameof(UsersPageSummary));
-            OnPropertyChanged(nameof(RoleCoverageSummary));
-            OnPropertyChanged(nameof(SecurityPostureSummary));
-            OnPropertyChanged(nameof(UserNextStepSummary));
+            RefreshSummaryProperties();
         }
     }
 
@@ -479,25 +522,13 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
         if (string.IsNullOrEmpty(e.PropertyName) || e.PropertyName == nameof(EditableUserRowViewModel.IsDirty))
         {
             RefreshDirtyState();
-            OnPropertyChanged(nameof(UserCountSummary));
-            OnPropertyChanged(nameof(TwoFactorSummary));
-            OnPropertyChanged(nameof(ActionSummary));
-            OnPropertyChanged(nameof(RoleCoverageSummary));
-            OnPropertyChanged(nameof(SecurityPostureSummary));
-            OnPropertyChanged(nameof(UserNextStepSummary));
+            RefreshSummaryProperties();
         }
     }
 
     private void OnUsersCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
-        OnPropertyChanged(nameof(HasUsers));
-        OnPropertyChanged(nameof(HasNoUsers));
-        OnPropertyChanged(nameof(UserCountSummary));
-        OnPropertyChanged(nameof(TwoFactorSummary));
-        OnPropertyChanged(nameof(ActionSummary));
-        OnPropertyChanged(nameof(RoleCoverageSummary));
-        OnPropertyChanged(nameof(SecurityPostureSummary));
-        OnPropertyChanged(nameof(UserNextStepSummary));
+        RefreshSummaryProperties();
         RefreshDirtyState();
     }
 
@@ -536,6 +567,40 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
     private static bool RoleRequiresTwoFactor(UserRole role) =>
         role is UserRole.Owner or UserRole.Admin;
 
+    private static bool RequiresTwoFactorForSelectedRole(string roleName) =>
+        string.Equals(roleName, nameof(UserRole.Owner), StringComparison.Ordinal) ||
+        string.Equals(roleName, nameof(UserRole.Admin), StringComparison.Ordinal);
+
+    private void RefreshSummaryProperties()
+    {
+        OnPropertyChanged(nameof(OwnerBootstrapConfigured));
+        OnPropertyChanged(nameof(OwnerSummary));
+        OnPropertyChanged(nameof(UsersPageSummary));
+        OnPropertyChanged(nameof(RosterSummary));
+        OnPropertyChanged(nameof(UserCountSummary));
+        OnPropertyChanged(nameof(TwoFactorSummary));
+        OnPropertyChanged(nameof(ActionSummary));
+        OnPropertyChanged(nameof(OwnerBootstrapLabel));
+        OnPropertyChanged(nameof(RoleCoverageSummary));
+        OnPropertyChanged(nameof(SecurityPostureSummary));
+        OnPropertyChanged(nameof(UserNextStepSummary));
+        OnPropertyChanged(nameof(OwnerProtectionSummary));
+        OnPropertyChanged(nameof(CreateFormSummary));
+        OnPropertyChanged(nameof(CreateRoleSummary));
+        OnPropertyChanged(nameof(CreateRoleGuardrailSummary));
+        OnPropertyChanged(nameof(PendingChangeSummary));
+        OnPropertyChanged(nameof(ReviewSummary));
+        OnPropertyChanged(nameof(HasUsers));
+        OnPropertyChanged(nameof(HasNoUsers));
+        OnPropertyChanged(nameof(PrivilegedAccountCount));
+        OnPropertyChanged(nameof(TwoFactorEnabledCount));
+        OnPropertyChanged(nameof(PendingTwoFactorCount));
+        OnPropertyChanged(nameof(OwnerCount));
+        OnPropertyChanged(nameof(AdminCount));
+        OnPropertyChanged(nameof(OperatorCount));
+        OnPropertyChanged(nameof(ViewerCount));
+    }
+
     public sealed partial class EditableUserRowViewModel : ObservableObject
     {
         private string _originalUserName;
@@ -572,6 +637,25 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
             !string.Equals(Email, _originalEmail, StringComparison.Ordinal) ||
             !string.Equals(RoleName, _originalRoleName, StringComparison.Ordinal);
 
+        public string DirtySummary => IsDirty ? "Unsaved changes" : "Saved";
+
+        public string RoleSummary => RoleName switch
+        {
+            nameof(UserRole.Owner) => "Owner can recover the host and should remain rare.",
+            nameof(UserRole.Admin) => "Admin can manage configuration and remote access.",
+            nameof(UserRole.Operator) => "Operator can handle lifecycle and backups.",
+            nameof(UserRole.Viewer) => "Viewer is read-only and lowest risk.",
+            _ => "Custom role selection.",
+        };
+
+        public string SecuritySummary => RequiresTwoFactor
+            ? TwoFactorEnabled
+                ? "Privileged role with TOTP already enabled."
+                : "Privileged role; finish TOTP before web sign-in is trusted."
+            : TwoFactorEnabled
+                ? "Lower-risk role with optional TOTP."
+                : "Lower-risk role with no web-sign-in requirement.";
+
         [ObservableProperty]
         private string userName;
 
@@ -594,6 +678,9 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
             _originalEmail = Email;
             _originalRoleName = RoleName;
             OnPropertyChanged(nameof(IsDirty));
+            OnPropertyChanged(nameof(DirtySummary));
+            OnPropertyChanged(nameof(RoleSummary));
+            OnPropertyChanged(nameof(SecuritySummary));
         }
 
         public void MarkSaved(string userName, string email, string roleName, bool twoFactorEnabled, bool requiresTwoFactor)
@@ -609,12 +696,29 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
             OnPropertyChanged(nameof(TwoFactorEnabled));
             OnPropertyChanged(nameof(RequiresTwoFactor));
             OnPropertyChanged(nameof(IsDirty));
+            OnPropertyChanged(nameof(DirtySummary));
+            OnPropertyChanged(nameof(RoleSummary));
+            OnPropertyChanged(nameof(SecuritySummary));
         }
 
-        partial void OnUserNameChanged(string value) => OnPropertyChanged(nameof(IsDirty));
+        partial void OnUserNameChanged(string value)
+        {
+            OnPropertyChanged(nameof(IsDirty));
+            OnPropertyChanged(nameof(DirtySummary));
+        }
 
-        partial void OnEmailChanged(string value) => OnPropertyChanged(nameof(IsDirty));
+        partial void OnEmailChanged(string value)
+        {
+            OnPropertyChanged(nameof(IsDirty));
+            OnPropertyChanged(nameof(DirtySummary));
+        }
 
-        partial void OnRoleNameChanged(string value) => OnPropertyChanged(nameof(IsDirty));
+        partial void OnRoleNameChanged(string value)
+        {
+            OnPropertyChanged(nameof(IsDirty));
+            OnPropertyChanged(nameof(DirtySummary));
+            OnPropertyChanged(nameof(RoleSummary));
+            OnPropertyChanged(nameof(SecuritySummary));
+        }
     }
 }
