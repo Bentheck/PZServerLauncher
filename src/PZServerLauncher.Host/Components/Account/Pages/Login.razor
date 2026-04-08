@@ -99,6 +99,8 @@
 
     public async Task LoginUser()
     {
+        ApplicationUser? passwordUser = null;
+
         if (!string.IsNullOrEmpty(Input.Passkey?.Error))
         {
             errorMessage = $"Error: {Input.Passkey.Error}";
@@ -119,13 +121,34 @@
                 return;
             }
 
-            // This doesn't count login failures towards account lockout
-            // To enable password failures to trigger account lockout, set lockoutOnFailure: true
-            result = await SignInManager.PasswordSignInAsync(Input.Email, Input.Password, Input.RememberMe, lockoutOnFailure: false);
+            passwordUser = await UserManager.FindByEmailAsync(Input.Email);
+            if (passwordUser is null)
+            {
+                errorMessage = "Error: Invalid login attempt.";
+                return;
+            }
+
+            result = await SignInManager.PasswordSignInAsync(passwordUser.UserName!, Input.Password, Input.RememberMe, lockoutOnFailure: true);
         }
 
         if (result.Succeeded)
         {
+            var signedInUser = passwordUser ?? await UserManager.FindByEmailAsync(Input.Email);
+            if (signedInUser is not null)
+            {
+                var roles = await UserManager.GetRolesAsync(signedInUser);
+                var requiresTwoFactor = roles.Any(role =>
+                    Enum.TryParse<PZServerLauncher.Core.Runtime.UserRole>(role, out var parsed) &&
+                    PZServerLauncher.Host.Services.UserManagementService.RoleRequiresTwoFactor(parsed));
+
+                if (requiresTwoFactor && !signedInUser.TwoFactorEnabled)
+                {
+                    await SignInManager.SignOutAsync();
+                    errorMessage = "Error: This account requires an authenticator app before web sign-in. Open the local host and complete setup at /Account/Manage/EnableAuthenticator.";
+                    return;
+                }
+            }
+
             Logger.LogInformation("User logged in.");
             RedirectManager.RedirectTo(ReturnUrl);
         }

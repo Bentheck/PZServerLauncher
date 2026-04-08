@@ -1,7 +1,10 @@
 using System.Net;
+using System.Security.Claims;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using PZServerLauncher.Contracts.Profiles;
 using PZServerLauncher.Contracts.Runtime;
@@ -62,6 +65,7 @@ public class Program
         builder.Services.AddScoped<ServerInstallService>();
         builder.Services.AddScoped<ServerBackupService>();
         builder.Services.AddScoped<LocalServerImportService>();
+        builder.Services.AddScoped<UserManagementService>();
 
         builder.Services.AddRazorComponents()
             .AddInteractiveServerComponents();
@@ -104,11 +108,39 @@ public class Program
             {
                 options.SignIn.RequireConfirmedAccount = false;
                 options.Stores.SchemaVersion = IdentitySchemaVersions.Version3;
+                options.Lockout.AllowedForNewUsers = true;
+                options.Lockout.MaxFailedAccessAttempts = 5;
+                options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+                options.User.RequireUniqueEmail = true;
             })
             .AddRoles<IdentityRole>()
             .AddEntityFrameworkStores<ApplicationDbContext>()
             .AddSignInManager()
             .AddDefaultTokenProviders();
+
+        builder.Services.AddRateLimiter(options =>
+        {
+            options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+            options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+            {
+                if (!HttpMethods.IsPost(context.Request.Method) ||
+                    !context.Request.Path.StartsWithSegments("/Account", StringComparison.OrdinalIgnoreCase))
+                {
+                    return RateLimitPartition.GetNoLimiter("default");
+                }
+
+                var ipAddress = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+                return RateLimitPartition.GetFixedWindowLimiter(
+                    $"auth:{ipAddress}",
+                    _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 5,
+                        Window = TimeSpan.FromMinutes(15),
+                        QueueLimit = 0,
+                        AutoReplenishment = true,
+                    });
+            });
+        });
 
         builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 
@@ -136,6 +168,7 @@ public class Program
         }
 
         app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
+        app.UseRateLimiter();
         app.UseAuthentication();
         app.UseAuthorization();
         app.UseAntiforgery();
@@ -353,9 +386,14 @@ public class Program
         api.MapPut("/settings/remote-access", async (
             RemoteAccessSettingsDto dto,
             HostSettingsStore store,
+            UserManagementService userManagementService,
             CancellationToken cancellationToken) =>
         {
             RemoteAccessSettingsValidator.Validate(dto);
+            if (dto.IsEnabled)
+            {
+                await userManagementService.EnsureRemoteAccessReadyAsync(cancellationToken);
+            }
 
             var current = await store.GetAsync(cancellationToken);
             var updated = current with
@@ -546,18 +584,75 @@ public class Program
         }).RequireAuthorization("DesktopOrOperator");
 
         api.MapGet("/users", async (
-            UserManager<ApplicationUser> userManager,
+            UserManagementService userManagementService,
+            CancellationToken cancellationToken) =>
+            Results.Ok(await userManagementService.ListAsync(cancellationToken)))
+            .RequireAuthorization("DesktopOrAdmin");
+
+        api.MapPost("/users", async (
+            CreateUserRequestDto request,
+            UserManagementService userManagementService,
+            AuditStore auditStore,
+            ClaimsPrincipal user,
             CancellationToken cancellationToken) =>
         {
-            var users = await userManager.Users.OrderBy(x => x.UserName).ToListAsync(cancellationToken);
-            var results = new List<UserAccountDto>(users.Count);
-            foreach (var user in users)
+            try
             {
-                var roles = await userManager.GetRolesAsync(user);
-                results.Add(user.ToDto(roles.Select(role => Enum.Parse<UserRole>(role)).ToArray()));
+                var created = await userManagementService.CreateAsync(request, cancellationToken);
+                await auditStore.WriteAsync("user.created", created.UserId, "local", $"Created user {created.UserName}.", user.FindFirstValue(ClaimTypes.NameIdentifier), cancellationToken);
+                return Results.Ok(created);
             }
+            catch (InvalidOperationException ex)
+            {
+                return Results.BadRequest(new OperationResultDto(false, ex.Message));
+            }
+        }).RequireAuthorization("DesktopOrAdmin");
 
-            return Results.Ok(results);
+        api.MapPut("/users/{userId}", async (
+            string userId,
+            UpdateUserRequestDto request,
+            UserManagementService userManagementService,
+            AuditStore auditStore,
+            ClaimsPrincipal user,
+            CancellationToken cancellationToken) =>
+        {
+            try
+            {
+                var updated = await userManagementService.UpdateAsync(userId, request, user.FindFirstValue(ClaimTypes.NameIdentifier), cancellationToken);
+                await auditStore.WriteAsync("user.updated", updated.UserId, "local", $"Updated user {updated.UserName}.", user.FindFirstValue(ClaimTypes.NameIdentifier), cancellationToken);
+                return Results.Ok(updated);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return Results.NotFound(new OperationResultDto(false, ex.Message));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.BadRequest(new OperationResultDto(false, ex.Message));
+            }
+        }).RequireAuthorization("DesktopOrAdmin");
+
+        api.MapDelete("/users/{userId}", async (
+            string userId,
+            UserManagementService userManagementService,
+            AuditStore auditStore,
+            ClaimsPrincipal user,
+            CancellationToken cancellationToken) =>
+        {
+            try
+            {
+                await userManagementService.DeleteAsync(userId, user.FindFirstValue(ClaimTypes.NameIdentifier), cancellationToken);
+                await auditStore.WriteAsync("user.deleted", userId, "local", $"Deleted user {userId}.", user.FindFirstValue(ClaimTypes.NameIdentifier), cancellationToken);
+                return Results.NoContent();
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return Results.NotFound(new OperationResultDto(false, ex.Message));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.BadRequest(new OperationResultDto(false, ex.Message));
+            }
         }).RequireAuthorization("DesktopOrAdmin");
 
         api.MapPost("/onboarding/bootstrap", async (
