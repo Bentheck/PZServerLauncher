@@ -53,12 +53,15 @@ public static class ProjectZomboidProfilePostureSummaryBuilder
 
         var zombies = GetValue(sandboxValues, ".sandbox.zombies", "4");
         var dayLength = GetValue(sandboxValues, ".sandbox.day-length", "3");
-        var waterShutoff = GetValue(sandboxValues, ".sandbox.water-shut-modifier", "500");
-        var electricityShutoff = GetValue(sandboxValues, ".sandbox.electricity-shut-modifier", "480");
+        var helicopter = GetValue(sandboxValues, ".sandbox.helicopter", "2");
         var lootRespawn = GetValue(sandboxValues, ".sandbox.loot-respawn", "2");
+        var vehiclesEnabled = ParseBool(sandboxValues, ".sandbox.enable-vehicles", true);
+        var fireSpread = ParseBool(sandboxValues, ".sandbox.fire-spread", true);
+        var corpseCleanupHours = GetValue(sandboxValues, ".sandbox.hours-for-corpse-removal", "216");
+        var multiHit = ParseBool(sandboxValues, ".sandbox.multi-hit");
         var starterKit = ParseBool(sandboxValues, ".sandbox.starter-kit");
         var nutrition = ParseBool(sandboxValues, ".sandbox.nutrition");
-        var worldSummary = $"Zombies {zombies} | day length {dayLength} | water shutoff {waterShutoff} days | electricity shutoff {electricityShutoff} days | loot respawn {lootRespawn} | starter kit {(starterKit ? "on" : "off")} | nutrition {(nutrition ? "on" : "off")}.";
+        var worldSummary = $"Zombies {zombies} | day length {dayLength} | helicopter {helicopter} | loot respawn {lootRespawn} | vehicles {(vehiclesEnabled ? "on" : "off")} | fire spread {(fireSpread ? "on" : "off")} | corpse cleanup {corpseCleanupHours}h | multi-hit {(multiHit ? "on" : "off")} | starter kit {(starterKit ? "on" : "off")} | nutrition {(nutrition ? "on" : "off")}.";
 
         var welcomeMessage = GetValue(generalValues, ".server.welcome-message");
         var welcomeSummary = string.IsNullOrWhiteSpace(welcomeMessage)

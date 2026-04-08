@@ -81,9 +81,12 @@ public sealed class ProjectZomboidProfilePostureSummaryBuilderTests
         {
             ["b42.sandbox.zombies"] = "5",
             ["b42.sandbox.day-length"] = "9",
-            ["b42.sandbox.water-shut-modifier"] = "60",
-            ["b42.sandbox.electricity-shut-modifier"] = "90",
+            ["b42.sandbox.helicopter"] = "4",
             ["b42.sandbox.loot-respawn"] = "2",
+            ["b42.sandbox.enable-vehicles"] = "true",
+            ["b42.sandbox.fire-spread"] = "false",
+            ["b42.sandbox.hours-for-corpse-removal"] = "120",
+            ["b42.sandbox.multi-hit"] = "true",
             ["b42.sandbox.starter-kit"] = "true",
             ["b42.sandbox.nutrition"] = "false",
         };
@@ -94,7 +97,7 @@ public sealed class ProjectZomboidProfilePostureSummaryBuilderTests
             new Dictionary<string, string?>(StringComparer.Ordinal),
             sandboxValues);
 
-        Assert.Equal("Zombies 5 | day length 9 | water shutoff 60 days | electricity shutoff 90 days | loot respawn 2 | starter kit on | nutrition off.", summary.WorldSummary);
+        Assert.Equal("Zombies 5 | day length 9 | helicopter 4 | loot respawn 2 | vehicles on | fire spread off | corpse cleanup 120h | multi-hit on | starter kit on | nutrition off.", summary.WorldSummary);
     }
 
     [Fact]
