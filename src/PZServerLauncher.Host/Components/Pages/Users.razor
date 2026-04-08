@@ -1,0 +1,244 @@
+@page "/users"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Owner,Admin")]
+@using PZServerLauncher.Contracts.Runtime
+@using PZServerLauncher.Core.Runtime
+@using PZServerLauncher.Host.Services
+@inject AuditStore AuditStore
+@inject UserManagementService UserManagementService
+
+<PageTitle>User Management</PageTitle>
+
+<div class="home-shell">
+    <div class="hero">
+        <p class="eyebrow">Web Admin</p>
+        <h1>User Management</h1>
+        <p>Create local accounts, change roles, and verify which privileged users still need an authenticator app.</p>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(_statusMessage))
+    {
+        <section class="card status-card">
+            <p>@_statusMessage</p>
+        </section>
+    }
+
+    <section class="card">
+        <h2>Create User</h2>
+        <p class="muted-text">Owner and Admin accounts must configure TOTP before they can sign in to the web admin.</p>
+        <div class="admin-grid">
+            <label>
+                <span>Username</span>
+                <input @bind="_createUser.UserName" />
+            </label>
+            <label>
+                <span>Email</span>
+                <input @bind="_createUser.Email" />
+            </label>
+            <label>
+                <span>Temporary Password</span>
+                <input @bind="_createUser.Password" type="password" />
+            </label>
+            <label>
+                <span>Role</span>
+                <select @bind="_createUser.RoleName">
+                    @foreach (var roleName in ManagedRoleNames)
+                    {
+                        <option value="@roleName">@roleName</option>
+                    }
+                </select>
+            </label>
+        </div>
+
+        <button class="nav-button" type="button" @onclick="CreateAsync">Create User</button>
+    </section>
+
+    <section class="card">
+        <h2>Current Users</h2>
+        <p class="muted-text">This v1 admin view assigns one application role per account.</p>
+
+        @if (_users.Count == 0)
+        {
+            <p>No users found.</p>
+        }
+        else
+        {
+            <div class="users-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>2FA</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in _users)
+                        {
+                            <tr>
+                                <td><input @bind="row.UserName" /></td>
+                                <td><input @bind="row.Email" /></td>
+                                <td>
+                                    <select @bind="row.RoleName">
+                                        @foreach (var roleName in ManagedRoleNames)
+                                        {
+                                            <option value="@roleName">@roleName</option>
+                                        }
+                                    </select>
+                                </td>
+                                <td>@(row.TwoFactorEnabled ? "Enabled" : row.RequiresTwoFactor ? "Required before sign-in" : "Optional")</td>
+                                <td class="actions-cell">
+                                    <button type="button" class="nav-button" @onclick="() => SaveAsync(row)">Save</button>
+                                    <button type="button" class="nav-button secondary-button" @onclick="() => DeleteAsync(row)">Delete</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+</div>
+
+@code {
+    private static readonly string[] ManagedRoleNames =
+    [
+        nameof(UserRole.Owner),
+        nameof(UserRole.Admin),
+        nameof(UserRole.Operator),
+        nameof(UserRole.Viewer),
+    ];
+
+    private readonly CreateUserInput _createUser = new();
+    private readonly List<EditableUserRow> _users = [];
+    private string? _statusMessage;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        var users = await UserManagementService.ListAsync();
+        _users.Clear();
+        _users.AddRange(users.Select(MapRow));
+    }
+
+    private async Task CreateAsync()
+    {
+        try
+        {
+            var created = await UserManagementService.CreateAsync(new CreateUserRequestDto(
+                _createUser.UserName,
+                _createUser.Email,
+                _createUser.Password,
+                [Enum.Parse<UserRole>(_createUser.RoleName, ignoreCase: true)]));
+            await AuditStore.WriteAsync("user.created", created.UserId, "web", $"Created user {created.UserName}.", CurrentUserId);
+
+            _statusMessage = $"Created user {_createUser.UserName}.";
+            _createUser.Reset();
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+    }
+
+    private async Task SaveAsync(EditableUserRow row)
+    {
+        try
+        {
+            await UserManagementService.UpdateAsync(
+                row.UserId,
+                new UpdateUserRequestDto(
+                    row.UserName,
+                    row.Email,
+                    [Enum.Parse<UserRole>(row.RoleName, ignoreCase: true)]),
+                actingUserId: CurrentUserId);
+            await AuditStore.WriteAsync("user.updated", row.UserId, "web", $"Updated user {row.UserName}.", CurrentUserId);
+
+            _statusMessage = $"Saved {row.UserName}.";
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+    }
+
+    private async Task DeleteAsync(EditableUserRow row)
+    {
+        try
+        {
+            await UserManagementService.DeleteAsync(row.UserId, actingUserId: CurrentUserId);
+            await AuditStore.WriteAsync("user.deleted", row.UserId, "web", $"Deleted user {row.UserName}.", CurrentUserId);
+            _statusMessage = $"Deleted {row.UserName}.";
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+    }
+
+    private static EditableUserRow MapRow(UserAccountDto user)
+    {
+        var role = user.Roles.FirstOrDefault(role => role != UserRole.LocalSystem);
+        return new EditableUserRow(
+            user.UserId,
+            user.UserName,
+            user.Email ?? string.Empty,
+            role == default ? nameof(UserRole.Viewer) : role.ToString(),
+            user.TwoFactorEnabled,
+            user.Roles.Any(UserManagementService.RoleRequiresTwoFactor));
+    }
+
+    private string? CurrentUserId =>
+        HttpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+    private sealed class CreateUserInput
+    {
+        public string UserName { get; set; } = string.Empty;
+
+        public string Email { get; set; } = string.Empty;
+
+        public string Password { get; set; } = string.Empty;
+
+        public string RoleName { get; set; } = nameof(UserRole.Viewer);
+
+        public void Reset()
+        {
+            UserName = string.Empty;
+            Email = string.Empty;
+            Password = string.Empty;
+            RoleName = nameof(UserRole.Viewer);
+        }
+    }
+
+    private sealed class EditableUserRow(
+        string userId,
+        string userName,
+        string email,
+        string roleName,
+        bool twoFactorEnabled,
+        bool requiresTwoFactor)
+    {
+        public string UserId { get; } = userId;
+
+        public string UserName { get; set; } = userName;
+
+        public string Email { get; set; } = email;
+
+        public string RoleName { get; set; } = roleName;
+
+        public bool TwoFactorEnabled { get; } = twoFactorEnabled;
+
+        public bool RequiresTwoFactor { get; } = requiresTwoFactor;
+    }
+}

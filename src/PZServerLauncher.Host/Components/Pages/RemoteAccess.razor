@@ -1,0 +1,182 @@
+@page "/remote"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Owner,Admin")]
+@using PZServerLauncher.Contracts.Runtime
+@using PZServerLauncher.Core.Runtime
+@using PZServerLauncher.Host.Services
+@inject AuditStore AuditStore
+@inject HostSettingsStore HostSettingsStore
+@inject UserManagementService UserManagementService
+
+<PageTitle>Remote Access</PageTitle>
+
+<div class="home-shell">
+    <div class="hero">
+        <p class="eyebrow">Web Admin</p>
+        <h1>Remote Access</h1>
+        <p>Configure the optional HTTPS listener. Router forwarding is still manual in v1, but the host will validate your certificate and owner 2FA readiness before enabling remote access.</p>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(_statusMessage))
+    {
+        <section class="card status-card">
+            <p>@_statusMessage</p>
+        </section>
+    }
+
+    <div class="cards">
+        <section class="card">
+            <h2>Remote Listener</h2>
+            <p>Current state: @(_currentRemoteAccess?.IsEnabled == true ? "Enabled" : "Disabled")</p>
+            <p>Endpoint: @(_currentRemoteAccess?.IsEnabled == true ? $"https://{(_currentRemoteAccess.PublicHostname ?? _currentRemoteAccess.BindAddress)}:{_currentRemoteAccess.HttpsPort}" : "Not exposed")</p>
+            <p>Loopback setup link: <code>@_localTwoFactorPath</code></p>
+        </section>
+        <section class="card">
+            <h2>Readiness</h2>
+            <p>Owner accounts with 2FA: @_ownerAccountsWithTwoFactor</p>
+            <p>If this is 0, remote access cannot be enabled yet.</p>
+            <p>Set up TOTP locally first at <a href="/Account/Manage/EnableAuthenticator">Enable Authenticator</a>.</p>
+        </section>
+    </div>
+
+    <section class="card">
+        <h2>Settings</h2>
+        <p class="muted-text">Saving these settings updates the host configuration. Restart the host afterwards to apply HTTPS binding changes.</p>
+
+        <div class="admin-grid">
+            <label class="checkbox-label">
+                <input type="checkbox" @bind="_model.IsEnabled" />
+                <span>Enable remote HTTPS access</span>
+            </label>
+            <label>
+                <span>Bind IPv4 address</span>
+                <input @bind="_model.BindAddress" />
+            </label>
+            <label>
+                <span>HTTPS port</span>
+                <input @bind="_model.HttpsPort" type="number" min="1" max="65535" />
+            </label>
+            <label>
+                <span>Public hostname</span>
+                <input @bind="_model.PublicHostname" />
+            </label>
+            <label>
+                <span>PFX certificate path</span>
+                <input @bind="_model.CertificatePath" />
+            </label>
+            <label>
+                <span>PFX password</span>
+                <input @bind="_model.CertificatePassword" type="password" />
+            </label>
+            <label class="checkbox-label">
+                <input type="checkbox" @bind="_model.CreateFirewallRule" />
+                <span>Remember firewall rule intent</span>
+            </label>
+        </div>
+
+        <button class="nav-button" type="button" @onclick="SaveAsync">Save Remote Settings</button>
+    </section>
+</div>
+
+@code {
+    private readonly RemoteAccessInput _model = new();
+    private RemoteAccessSettings? _currentRemoteAccess;
+    private string _localTwoFactorPath = string.Empty;
+    private int _ownerAccountsWithTwoFactor;
+    private string? _statusMessage;
+
+    [CascadingParameter]
+    private HttpContext HttpContext { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        var settings = await HostSettingsStore.GetAsync();
+        _currentRemoteAccess = settings.RemoteAccess;
+        _localTwoFactorPath = $"http://127.0.0.1:{settings.LoopbackPort}/Account/Manage/EnableAuthenticator";
+        _model.Load(settings.RemoteAccess);
+
+        var users = await UserManagementService.ListAsync();
+        _ownerAccountsWithTwoFactor = users.Count(user =>
+            user.TwoFactorEnabled &&
+            user.Roles.Contains(UserRole.Owner));
+    }
+
+    private async Task SaveAsync()
+    {
+        try
+        {
+            var dto = new RemoteAccessSettingsDto(
+                _model.IsEnabled,
+                _model.BindAddress,
+                _model.HttpsPort,
+                NullIfWhiteSpace(_model.PublicHostname),
+                NullIfWhiteSpace(_model.CertificatePath),
+                NullIfWhiteSpace(_model.CertificatePassword),
+                _model.CreateFirewallRule);
+
+            RemoteAccessSettingsValidator.Validate(dto);
+            if (dto.IsEnabled)
+            {
+                await UserManagementService.EnsureRemoteAccessReadyAsync();
+            }
+
+            var current = await HostSettingsStore.GetAsync();
+            await HostSettingsStore.UpdateAsync(current with
+            {
+                RemoteAccess = new RemoteAccessSettings
+                {
+                    IsEnabled = dto.IsEnabled,
+                    BindAddress = dto.BindAddress,
+                    HttpsPort = dto.HttpsPort,
+                    PublicHostname = dto.PublicHostname,
+                    CertificatePath = dto.CertificatePath,
+                    CreateFirewallRule = dto.CreateFirewallRule,
+                    RequiresHostRestart = true,
+                },
+            }, dto.CertificatePassword);
+            await AuditStore.WriteAsync("remote.access.updated", "host", "web", "Updated remote access settings.", HttpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value);
+
+            _statusMessage = "Saved remote access settings. Restart the host to apply HTTPS binding changes.";
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+    }
+
+    private static string? NullIfWhiteSpace(string value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private sealed class RemoteAccessInput
+    {
+        public bool IsEnabled { get; set; }
+
+        public string BindAddress { get; set; } = "0.0.0.0";
+
+        public int HttpsPort { get; set; } = 8443;
+
+        public string PublicHostname { get; set; } = string.Empty;
+
+        public string CertificatePath { get; set; } = string.Empty;
+
+        public string CertificatePassword { get; set; } = string.Empty;
+
+        public bool CreateFirewallRule { get; set; }
+
+        public void Load(RemoteAccessSettings settings)
+        {
+            IsEnabled = settings.IsEnabled;
+            BindAddress = settings.BindAddress;
+            HttpsPort = settings.HttpsPort;
+            PublicHostname = settings.PublicHostname ?? string.Empty;
+            CertificatePath = settings.CertificatePath ?? string.Empty;
+            CertificatePassword = string.Empty;
+            CreateFirewallRule = settings.CreateFirewallRule;
+        }
+    }
+}

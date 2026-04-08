@@ -4,6 +4,7 @@
 @inject HostSettingsStore HostSettingsStore
 @inject ProfileStore ProfileStore
 @inject RuntimeStateStore RuntimeStateStore
+@inject UserManagementService UserManagementService
 
 <PageTitle>PZ Server Launcher Host</PageTitle>
 
@@ -33,7 +34,22 @@
                 <p>Status: @(_settings.OwnerBootstrap.IsConfigured ? "Configured" : "Pending")</p>
                 <p>Owner: @(_settings.OwnerBootstrap.OwnerUserName ?? "Not set")</p>
             </section>
+            <section class="card">
+                <h2>Web Admin Readiness</h2>
+                <p>Users: @_users.Count</p>
+                <p>Privileged accounts with 2FA: @_users.Count(user => user.TwoFactorEnabled && user.Roles.Any(role => role is PZServerLauncher.Core.Runtime.UserRole.Owner or PZServerLauncher.Core.Runtime.UserRole.Admin))</p>
+                <p>Use <a href="/remote">Remote Access</a> to configure HTTPS exposure and <a href="/users">Users</a> to manage roles.</p>
+            </section>
         </div>
+
+        <section class="card callout-card">
+            <h2>Recommended Next Steps</h2>
+            <ol>
+                <li>Configure an authenticator app for your owner account under <a href="/Account/Manage/TwoFactorAuthentication">2FA</a>.</li>
+                <li>Open <a href="/remote">Remote Access</a> and add your HTTPS certificate details.</li>
+                <li>Create additional operators or viewers under <a href="/users">Users</a> if you want shared administration.</li>
+            </ol>
+        </section>
 
         <section class="profiles card">
             <h2>Profiles</h2>
@@ -73,10 +89,12 @@
 @code {
     private PZServerLauncher.Core.Runtime.HostSettings? _settings;
     private IReadOnlyList<PZServerLauncher.Core.Profiles.ServerProfile> _profiles = [];
+    private IReadOnlyList<PZServerLauncher.Contracts.Runtime.UserAccountDto> _users = [];
 
     protected override async Task OnInitializedAsync()
     {
         _settings = await HostSettingsStore.GetAsync();
         _profiles = await ProfileStore.ListAsync();
+        _users = await UserManagementService.ListAsync();
     }
 }

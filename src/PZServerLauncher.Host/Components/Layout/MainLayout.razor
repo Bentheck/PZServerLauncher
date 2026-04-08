@@ -1,9 +1,42 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
+
+<div class="shell-nav">
+    <a class="brand-link" href="/">PZServerLauncher Host</a>
+
+    <div class="shell-links">
+        <a href="/">Dashboard</a>
+        <AuthorizeView Roles="Owner,Admin">
+            <Authorized>
+                <a href="/remote">Remote Access</a>
+                <a href="/users">Users</a>
+            </Authorized>
+        </AuthorizeView>
+        <AuthorizeView>
+            <Authorized>
+                <a href="/Account/Manage">Account</a>
+                <a href="/Account/Manage/TwoFactorAuthentication">2FA</a>
+            </Authorized>
+        </AuthorizeView>
+    </div>
+
+    <AuthorizeView>
+        <Authorized>
+            <form action="/Account/Logout" method="post" class="logout-form">
+                <AntiforgeryToken />
+                <input type="hidden" name="returnUrl" value="" />
+                <button type="submit" class="nav-button">Log out</button>
+            </form>
+        </Authorized>
+        <NotAuthorized>
+            <a class="nav-button" href="/Account/Login">Log in</a>
+        </NotAuthorized>
+    </AuthorizeView>
+</div>
 
 @Body
 
 <div id="blazor-error-ui" data-nosnippet>
     An unhandled error has occurred.
     <a href="." class="reload">Reload</a>
-    <span class="dismiss">🗙</span>
+    <span class="dismiss">x</span>
 </div>
