@@ -51,6 +51,10 @@ public sealed class ProjectZomboidInstallPostureSummaryBuilderTests : IDisposabl
         Assert.Contains("core server config files are present", summary.CacheFootprintSummary);
         Assert.Contains("Latest backup: stable-backup.zip", summary.BackupSafetySummary);
         Assert.Contains("look ready for a clean update cycle", summary.PreflightSummary);
+        Assert.Contains("launcher-managed Java template", summary.DeploymentPostureSummary);
+        Assert.Contains("Stable 41", summary.BranchIsolationSummary);
+        Assert.Contains("Recommended sequence", summary.OperatorSequenceSummary);
+        Assert.Contains(summary.PreflightChecks, check => check.Contains("Install root:", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -79,6 +83,8 @@ public sealed class ProjectZomboidInstallPostureSummaryBuilderTests : IDisposabl
         Assert.Contains(ProjectZomboidDefaults.StableBatchFileName, summary.LaunchCommandPreview);
         Assert.Contains("Vendor batch fallback is active", summary.LaunchReadinessSummary);
         Assert.Contains("No backup archive exists yet", summary.BackupSafetySummary);
+        Assert.Contains("vendor batch script", summary.DeploymentPostureSummary);
+        Assert.Contains("Unstable 42", summary.BranchIsolationSummary);
     }
 
     [Fact]
@@ -99,6 +105,8 @@ public sealed class ProjectZomboidInstallPostureSummaryBuilderTests : IDisposabl
         Assert.Contains("Cache root is missing", summary.CacheFootprintSummary);
         Assert.Contains("blocked because the expected launcher script is missing", summary.LaunchReadinessSummary);
         Assert.Contains("Run Install before you try to update", summary.PreflightSummary);
+        Assert.Contains("first dedicated-server install", summary.DeploymentPostureSummary);
+        Assert.Contains("Recommended sequence", summary.OperatorSequenceSummary);
         Assert.EndsWith(ProjectZomboidDefaults.StableBatchFileName, summary.ExpectedLauncherPath);
     }
 

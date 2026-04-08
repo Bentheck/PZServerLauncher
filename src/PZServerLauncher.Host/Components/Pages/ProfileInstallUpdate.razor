@@ -39,7 +39,7 @@ else
                 <div class="workspace-panel__copy">
                     <p class="eyebrow">Install &amp; Update</p>
                     <h2>@_profile.DisplayName</h2>
-                    <p class="muted-text">Install first, then update with confidence. This page surfaces the branch channel, launcher footprint, cache/config readiness, and runtime posture before you queue a new deployment cycle.</p>
+                    <p class="muted-text">@(_installPosture?.DeploymentPostureSummary ?? "Install first, then update with confidence. This page surfaces the branch channel, launcher footprint, cache/config readiness, and runtime posture before you queue a new deployment cycle.")</p>
                 </div>
 
                 <div class="workspace-actions">
@@ -67,9 +67,9 @@ else
                     <span class="metric-note">@(_installPosture?.LaunchReadinessSummary ?? "No launch summary.")</span>
                 </article>
                 <article class="metric-card">
-                    <span class="metric-label">Queued Jobs</span>
-                    <strong class="metric-value">@(_jobs.Count == 0 ? "0" : _jobs.Count.ToString())</strong>
-                    <span class="metric-note">Recent install and update activity</span>
+                    <span class="metric-label">Maintenance Window</span>
+                    <strong class="metric-value">@(_runtimeStatus?.State.ToString() ?? "Unknown")</strong>
+                    <span class="metric-note">@(_installPosture?.MaintenanceWindowSummary ?? "No maintenance window summary.")</span>
                 </article>
             </section>
 
@@ -123,16 +123,14 @@ else
                         <strong>Before you update</strong>
                         <p>@(_installPosture?.BackupSafetySummary ?? "Backup safety summary unavailable.")</p>
                         <p>@(_installPosture?.PreflightSummary ?? "Preflight summary unavailable.")</p>
+                        <p>@(_installPosture?.BranchIsolationSummary ?? "Branch isolation summary unavailable.")</p>
                     </div>
 
                     <ul class="check-list">
-                        <li>Install directory exists: <strong>@(_installPosture?.InstallDetected == true ? "Yes" : "No")</strong></li>
-                        <li>Cache directory exists: <strong>@(_installPosture?.CacheDetected == true ? "Yes" : "No")</strong></li>
-                        <li>Launcher script exists: <strong>@(_installPosture?.LauncherDetected == true ? "Yes" : "No")</strong></li>
-                        <li>Config directory exists: <strong>@(_installPosture?.ConfigDirectoryDetected == true ? "Yes" : "No")</strong></li>
-                        <li>INI and sandbox files exist: <strong>@(_installPosture?.IniDetected == true && _installPosture?.SandboxDetected == true ? "Yes" : "No")</strong></li>
-                        <li>World save exists: <strong>@(_installPosture?.WorldDetected == true ? "Yes" : "No")</strong></li>
-                        <li>Runtime state: <strong>@(_runtimeStatus?.State.ToString() ?? "Unknown")</strong></li>
+                        @foreach (var check in _installPosture?.PreflightChecks ?? [])
+                        {
+                            <li>@check</li>
+                        }
                     </ul>
                 </section>
             </div>
@@ -205,6 +203,7 @@ else
                     </div>
 
                     <p class="muted-text">@(_installPosture?.RuntimePolicySummary ?? "Runtime policy summary unavailable.")</p>
+                    <p class="muted-text">@(_installPosture?.OperatorSequenceSummary ?? "Operator sequence summary unavailable.")</p>
 
                     <div class="workspace-actions">
                         <button class="nav-button" @onclick="InstallAsync" disabled="@_busy">Install</button>

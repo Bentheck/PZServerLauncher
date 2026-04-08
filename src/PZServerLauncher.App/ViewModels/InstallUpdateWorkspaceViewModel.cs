@@ -65,6 +65,16 @@ public sealed class InstallUpdateWorkspaceViewModel : ProfileWorkspacePageViewMo
 
     public string BackupSafety => SelectedProfile?.BackupSafetySummary ?? "No backup context available.";
 
+    public string DeploymentPosture => SelectedProfile?.InstallPosture.DeploymentPostureSummary ?? "No deployment posture available.";
+
+    public string MaintenanceWindowSummary => SelectedProfile?.InstallPosture.MaintenanceWindowSummary ?? "No maintenance window summary available.";
+
+    public string BranchIsolationSummary => SelectedProfile?.InstallPosture.BranchIsolationSummary ?? "No branch isolation summary available.";
+
+    public string OperatorSequenceSummary => SelectedProfile?.InstallPosture.OperatorSequenceSummary ?? "No operator sequence summary available.";
+
+    public IReadOnlyList<string> PreflightChecks => SelectedProfile?.InstallPosture.PreflightChecks ?? [];
+
     public string NextRecommendedAction => SelectedProfile is null
         ? "Pick a profile to continue."
         : !SelectedProfile.IsInstallDetected
@@ -117,6 +127,11 @@ public sealed class InstallUpdateWorkspaceViewModel : ProfileWorkspacePageViewMo
         OnPropertyChanged(nameof(InstallReadiness));
         OnPropertyChanged(nameof(CacheReadiness));
         OnPropertyChanged(nameof(BackupSafety));
+        OnPropertyChanged(nameof(DeploymentPosture));
+        OnPropertyChanged(nameof(MaintenanceWindowSummary));
+        OnPropertyChanged(nameof(BranchIsolationSummary));
+        OnPropertyChanged(nameof(OperatorSequenceSummary));
+        OnPropertyChanged(nameof(PreflightChecks));
         OnPropertyChanged(nameof(NextRecommendedAction));
         OnPropertyChanged(nameof(LifecycleGuidance));
         OnPropertyChanged(nameof(LaunchReadiness));
