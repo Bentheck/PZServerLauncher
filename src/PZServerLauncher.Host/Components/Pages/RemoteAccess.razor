@@ -14,7 +14,7 @@
         <div class="workspace-panel__copy">
             <p class="eyebrow">Web Admin</p>
             <h1>Remote Access</h1>
-            <p class="muted-text">Configure the optional HTTPS listener. Router forwarding is still manual in v1, but the host will validate your certificate and owner 2FA readiness before enabling remote access.</p>
+            <p class="muted-text">Configure the optional HTTPS listener for remote administration. The host checks certificate details, bind posture, and owner 2FA readiness before you turn it on, so the exposed surface stays intentional.</p>
         </div>
 
         @if (_currentRemoteAccess is not null)
@@ -23,6 +23,7 @@
                 <span class="pill">@(_currentRemoteAccess.IsEnabled ? "Enabled" : "Disabled")</span>
                 <span class="pill">@_currentRemoteAccess.HttpsPort</span>
                 <span class="pill">@(_ownerAccountsWithTwoFactor > 0 ? "2FA ready" : "Needs 2FA")</span>
+                <span class="pill">@(_currentRemoteAccess.CreateFirewallRule ? "Firewall intent on" : "Firewall intent off")</span>
             </div>
         }
     </section>
@@ -38,7 +39,7 @@
         <article class="metric-card">
             <span class="metric-label">Remote Listener</span>
             <strong class="metric-value">@(_currentRemoteAccess?.IsEnabled == true ? "Enabled" : "Disabled")</strong>
-            <span class="metric-note">@(_currentRemoteAccess?.IsEnabled == true ? $"https://{(_currentRemoteAccess.PublicHostname ?? _currentRemoteAccess.BindAddress)}:{_currentRemoteAccess.HttpsPort}" : "Not exposed")</span>
+            <span class="metric-note">@(_currentRemoteAccess?.IsEnabled == true ? $"https://{(_currentRemoteAccess.PublicHostname ?? _currentRemoteAccess.BindAddress)}:{_currentRemoteAccess.HttpsPort}" : "Loopback-only until you enable it")</span>
         </article>
         <article class="metric-card">
             <span class="metric-label">Owner Accounts with 2FA</span>
@@ -87,8 +88,9 @@
             </div>
 
             <div class="status-banner">
-                <strong>Loopback setup link</strong>
+                <strong>Local setup link</strong>
                 <p><code>@_localTwoFactorPath</code></p>
+                <p>Use the local authenticator page first, then return here to enable the remote HTTPS listener with confidence.</p>
             </div>
         </section>
 
@@ -105,7 +107,7 @@
                 <p>Owner accounts with 2FA: @_ownerAccountsWithTwoFactor</p>
             </div>
 
-            <p class="muted-text">If this is 0, remote access cannot be enabled yet. Set up TOTP locally first at <a href="/Account/Manage/EnableAuthenticator">Enable Authenticator</a>.</p>
+            <p class="muted-text">If this is 0, remote access should stay disabled. Set up TOTP locally first at <a href="/Account/Manage/EnableAuthenticator">Enable Authenticator</a>, then come back to expose HTTPS.</p>
         </section>
     </div>
 
@@ -154,6 +156,11 @@
             <button class="nav-button" type="button" @onclick="SaveAsync">Save Remote Settings</button>
             <a class="nav-button secondary-button" href="/users">Users</a>
         </div>
+
+        <section class="status-banner">
+            <strong>Recommended next step</strong>
+            <p>@BuildNextStepSummary()</p>
+        </section>
     </section>
 </div>
 
@@ -231,6 +238,23 @@
 
     private static string? NullIfWhiteSpace(string value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private string BuildNextStepSummary()
+    {
+        if (_currentRemoteAccess?.IsEnabled != true)
+        {
+            return "Keep remote access disabled until the bind address, certificate path, and owner 2FA checks all look good.";
+        }
+
+        if (_ownerAccountsWithTwoFactor == 0)
+        {
+            return "Finish owner 2FA enrollment before exposing HTTPS, even if the certificate and endpoint settings are already present.";
+        }
+
+        return _currentRemoteAccess.CreateFirewallRule
+            ? "Save the settings, restart the host, and verify the firewall rule before exposing the endpoint to the network."
+            : "Save the settings, restart the host, and consider whether you want this endpoint to stay loopback-only or become publicly reachable.";
+    }
 
     private sealed class RemoteAccessInput
     {

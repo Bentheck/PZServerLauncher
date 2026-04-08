@@ -10,15 +10,16 @@
         <div class="workspace-panel__copy">
             <p class="eyebrow">Workspace</p>
             <h1>Host</h1>
-            <p class="muted-text">Host lifecycle, startup behavior, and remote exposure live here while the full workspace is being built out.</p>
+            <p class="muted-text">This is the control plane for the local launcher host: startup policy, loopback control, remote exposure, and owner bootstrap readiness all converge here.</p>
         </div>
 
         @if (_settings is not null)
         {
             <div class="workspace-actions">
                 <span class="pill">Loopback @_settings.LoopbackPort</span>
-                <span class="pill">@(_settings.StartHostWithWindows ? "Starts with Windows" : "Manual start")</span>
-                <span class="pill">@(_settings.RemoteAccess.IsEnabled ? "Remote access enabled" : "Remote access disabled")</span>
+                <span class="pill">@(_settings.StartHostWithWindows ? "Windows startup on" : "Windows startup off")</span>
+                <span class="pill">@(_settings.RemoteAccess.IsEnabled ? "Remote access enabled" : "Loopback-only")</span>
+                <span class="pill">@(_settings.OwnerBootstrap.IsConfigured ? "Owner bootstrap complete" : "Owner bootstrap pending")</span>
             </div>
         }
     </section>
@@ -35,22 +36,22 @@
             <article class="metric-card">
                 <span class="metric-label">Loopback Port</span>
                 <strong class="metric-value">@_settings.LoopbackPort</strong>
-                <span class="metric-note">Local control channel</span>
+                <span class="metric-note">Private control channel used by the desktop app</span>
             </article>
             <article class="metric-card">
                 <span class="metric-label">Startup</span>
                 <strong class="metric-value">@(_settings.StartHostWithWindows ? "On" : "Off")</strong>
-                <span class="metric-note">Automatic launch on sign-in</span>
+                <span class="metric-note">Whether the host comes up automatically at sign-in</span>
             </article>
             <article class="metric-card">
                 <span class="metric-label">Remote Access</span>
                 <strong class="metric-value">@(_settings.RemoteAccess.IsEnabled ? "Enabled" : "Disabled")</strong>
-                <span class="metric-note">@(_settings.RemoteAccess.IsEnabled ? $"https://{(_settings.RemoteAccess.PublicHostname ?? _settings.RemoteAccess.BindAddress)}:{_settings.RemoteAccess.HttpsPort}" : "Not exposed yet")</span>
+                <span class="metric-note">@(_settings.RemoteAccess.IsEnabled ? $"https://{(_settings.RemoteAccess.PublicHostname ?? _settings.RemoteAccess.BindAddress)}:{_settings.RemoteAccess.HttpsPort}" : "Not exposed beyond loopback")</span>
             </article>
             <article class="metric-card">
                 <span class="metric-label">Owner Bootstrap</span>
                 <strong class="metric-value">@(_settings.OwnerBootstrap.IsConfigured ? "Configured" : "Pending")</strong>
-                <span class="metric-note">@(_settings.OwnerBootstrap.OwnerUserName ?? "No owner assigned")</span>
+                <span class="metric-note">@(_settings.OwnerBootstrap.OwnerUserName ?? "No owner assigned yet")</span>
             </article>
         </section>
 
@@ -59,7 +60,7 @@
                 <div class="card-heading">
                     <div>
                         <p class="eyebrow">Startup</p>
-                        <h2>Control Plane</h2>
+                        <h2>Host Control Plane</h2>
                     </div>
                 </div>
 
@@ -69,7 +70,7 @@
                         <span class="info-value">@_settings.LoopbackPort</span>
                     </div>
                     <div class="info-item">
-                        <span class="info-label">Start with Windows</span>
+                        <span class="info-label">Windows start</span>
                         <span class="info-value">@(_settings.StartHostWithWindows ? "On" : "Off")</span>
                     </div>
                     <div class="info-item">
@@ -78,8 +79,13 @@
                     </div>
                     <div class="info-item">
                         <span class="info-label">Remote endpoint</span>
-                        <span class="info-value">@(_settings.RemoteAccess.IsEnabled ? $"https://{(_settings.RemoteAccess.PublicHostname ?? _settings.RemoteAccess.BindAddress)}:{_settings.RemoteAccess.HttpsPort}" : "Not exposed")</span>
+                        <span class="info-value">@(_settings.RemoteAccess.IsEnabled ? $"https://{(_settings.RemoteAccess.PublicHostname ?? _settings.RemoteAccess.BindAddress)}:{_settings.RemoteAccess.HttpsPort}" : "Loopback-only")</span>
                     </div>
+                </div>
+
+                <div class="status-banner">
+                    <strong>Operator note</strong>
+                    <p>@(_settings.StartHostWithWindows ? "The host is configured like a persistent control service. Use this when the machine should behave like a dedicated server controller." : "The host stays manual until you opt in, which is a safer default while you are still setting up profiles and remote access.")</p>
                 </div>
             </section>
 
@@ -106,6 +112,11 @@
                         <span class="info-value">@(_settings.OwnerBootstrap.IsConfigured ? "Can enable web admin" : "Needs bootstrap first")</span>
                     </div>
                 </div>
+
+                <div class="status-banner status-banner--warm">
+                    <strong>Security posture</strong>
+                    <p>@(_settings.OwnerBootstrap.IsConfigured ? "The owner account exists, so you can move on to 2FA and remote access hardening." : "Bootstrap the owner account first so web admin and remote exposure can be secured properly.")</p>
+                </div>
             </section>
 
             <section class="card">
@@ -121,6 +132,11 @@
                 <div class="workspace-actions">
                     <a class="nav-button secondary-button" href="/remote">Remote Access</a>
                     <a class="nav-button secondary-button" href="/users">Users</a>
+                </div>
+
+                <div class="status-banner">
+                    <strong>Recommended next step</strong>
+                    <p>@(_settings.RemoteAccess.IsEnabled ? "Review the remote endpoint, then verify user roles and 2FA readiness before exposing the host more broadly." : "Open Remote Access to add certificate details and validate the endpoint before enabling public exposure.")</p>
                 </div>
             </section>
         </div>
