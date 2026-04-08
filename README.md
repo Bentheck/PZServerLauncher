@@ -47,3 +47,13 @@ Optional parameters:
 ```
 
 The script stages published outputs under `artifacts/publish` and then builds the WiX MSI from those staged folders.
+
+Run the local installer smoke test with:
+
+```powershell
+./scripts/test-installer.ps1
+```
+
+That script builds two MSI versions, installs the first, upgrades to the second, checks that app data survives the upgrade, and then uninstalls the product. The same flow runs in GitHub Actions on `windows-latest` through `.github/workflows/installer-smoke.yml`.
+
+Local smoke testing requires an elevated PowerShell session because the MSI is authored as a per-machine installer.

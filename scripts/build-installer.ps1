@@ -7,6 +7,20 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+function Invoke-ExternalStep {
+    param(
+        [Parameter(Mandatory = $true)]
+        [scriptblock]$Action,
+        [Parameter(Mandatory = $true)]
+        [string]$FailureMessage
+    )
+
+    & $Action
+    if ($LASTEXITCODE -ne 0) {
+        throw "$FailureMessage Exit code: $LASTEXITCODE"
+    }
+}
+
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
 $artifactsRoot = Join-Path $repoRoot "artifacts"
 $publishRoot = Join-Path $artifactsRoot "publish"
@@ -20,27 +34,33 @@ if (Test-Path $localDotnet) {
 }
 
 Write-Host "Publishing desktop app to $appPublishDir"
-dotnet publish (Join-Path $repoRoot "src\PZServerLauncher.App\PZServerLauncher.App.csproj") `
-    -c $Configuration `
-    -r $RuntimeIdentifier `
-    --self-contained false `
-    /p:PublishSingleFile=false `
-    -o $appPublishDir
+Invoke-ExternalStep -FailureMessage "Desktop app publish failed." -Action {
+    dotnet publish (Join-Path $repoRoot "src\PZServerLauncher.App\PZServerLauncher.App.csproj") `
+        -c $Configuration `
+        -r $RuntimeIdentifier `
+        --self-contained false `
+        /p:PublishSingleFile=false `
+        -o $appPublishDir
+}
 
 Write-Host "Publishing host to $hostPublishDir"
-dotnet publish (Join-Path $repoRoot "src\PZServerLauncher.Host\PZServerLauncher.Host.csproj") `
-    -c $Configuration `
-    -r $RuntimeIdentifier `
-    --self-contained false `
-    /p:PublishSingleFile=false `
-    -o $hostPublishDir
+Invoke-ExternalStep -FailureMessage "Host publish failed." -Action {
+    dotnet publish (Join-Path $repoRoot "src\PZServerLauncher.Host\PZServerLauncher.Host.csproj") `
+        -c $Configuration `
+        -r $RuntimeIdentifier `
+        --self-contained false `
+        /p:PublishSingleFile=false `
+        -o $hostPublishDir
+}
 
 Write-Host "Building WiX installer"
-dotnet build (Join-Path $repoRoot "installer\PZServerLauncher.Setup.wixproj") `
-    -c $Configuration `
-    -p:AppPublishDir="$appPublishDir" `
-    -p:HostPublishDir="$hostPublishDir" `
-    -p:InstallerVersion="$InstallerVersion"
+Invoke-ExternalStep -FailureMessage "WiX installer build failed." -Action {
+    dotnet build (Join-Path $repoRoot "installer\PZServerLauncher.Setup.wixproj") `
+        -c $Configuration `
+        -p:AppPublishDir="$appPublishDir" `
+        -p:HostPublishDir="$hostPublishDir" `
+        -p:InstallerVersion="$InstallerVersion"
+}
 
 $msi = Get-ChildItem -Path (Join-Path $repoRoot "installer\bin") -Filter *.msi -Recurse |
     Sort-Object LastWriteTimeUtc -Descending |

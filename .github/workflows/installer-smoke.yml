@@ -1,0 +1,46 @@
+name: Installer Smoke Test
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - codex/**
+
+permissions:
+  contents: read
+
+jobs:
+  installer-smoke:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.201
+
+      - name: Run solution tests
+        shell: pwsh
+        run: dotnet test PZServerLauncher.sln
+
+      - name: Report runner elevation
+        shell: pwsh
+        run: |
+          $principal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
+          Write-Host "Runner is admin: $($principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator))"
+
+      - name: Run installer smoke test
+        shell: pwsh
+        run: ./scripts/test-installer.ps1
+
+      - name: Upload installer logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: installer-smoke-logs
+          path: artifacts/installer-smoke
+          if-no-files-found: warn
