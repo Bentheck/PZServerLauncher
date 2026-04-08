@@ -10,36 +10,113 @@
 <PageTitle>Remote Access</PageTitle>
 
 <div class="home-shell">
-    <div class="hero">
-        <p class="eyebrow">Web Admin</p>
-        <h1>Remote Access</h1>
-        <p>Configure the optional HTTPS listener. Router forwarding is still manual in v1, but the host will validate your certificate and owner 2FA readiness before enabling remote access.</p>
-    </div>
+    <section class="workspace-panel hero-panel">
+        <div class="workspace-panel__copy">
+            <p class="eyebrow">Web Admin</p>
+            <h1>Remote Access</h1>
+            <p class="muted-text">Configure the optional HTTPS listener. Router forwarding is still manual in v1, but the host will validate your certificate and owner 2FA readiness before enabling remote access.</p>
+        </div>
+
+        @if (_currentRemoteAccess is not null)
+        {
+            <div class="workspace-actions">
+                <span class="pill">@(_currentRemoteAccess.IsEnabled ? "Enabled" : "Disabled")</span>
+                <span class="pill">@_currentRemoteAccess.HttpsPort</span>
+                <span class="pill">@(_ownerAccountsWithTwoFactor > 0 ? "2FA ready" : "Needs 2FA")</span>
+            </div>
+        }
+    </section>
 
     @if (!string.IsNullOrWhiteSpace(_statusMessage))
     {
-        <section class="card status-card">
+        <section class="card status-card status-line">
             <p>@_statusMessage</p>
         </section>
     }
 
-    <div class="cards">
+    <section class="metric-grid metric-grid--host">
+        <article class="metric-card">
+            <span class="metric-label">Remote Listener</span>
+            <strong class="metric-value">@(_currentRemoteAccess?.IsEnabled == true ? "Enabled" : "Disabled")</strong>
+            <span class="metric-note">@(_currentRemoteAccess?.IsEnabled == true ? $"https://{(_currentRemoteAccess.PublicHostname ?? _currentRemoteAccess.BindAddress)}:{_currentRemoteAccess.HttpsPort}" : "Not exposed")</span>
+        </article>
+        <article class="metric-card">
+            <span class="metric-label">Owner Accounts with 2FA</span>
+            <strong class="metric-value">@_ownerAccountsWithTwoFactor</strong>
+            <span class="metric-note">Required before web admin can be enabled</span>
+        </article>
+        <article class="metric-card">
+            <span class="metric-label">Local 2FA Link</span>
+            <strong class="metric-value">Ready</strong>
+            <span class="metric-note">@_localTwoFactorPath</span>
+        </article>
+        <article class="metric-card">
+            <span class="metric-label">Restart Requirement</span>
+            <strong class="metric-value">Host restart</strong>
+            <span class="metric-note">HTTPS binding changes apply after restart</span>
+        </article>
+    </section>
+
+    <div class="cards cards--wide">
         <section class="card">
-            <h2>Remote Listener</h2>
-            <p>Current state: @(_currentRemoteAccess?.IsEnabled == true ? "Enabled" : "Disabled")</p>
-            <p>Endpoint: @(_currentRemoteAccess?.IsEnabled == true ? $"https://{(_currentRemoteAccess.PublicHostname ?? _currentRemoteAccess.BindAddress)}:{_currentRemoteAccess.HttpsPort}" : "Not exposed")</p>
-            <p>Loopback setup link: <code>@_localTwoFactorPath</code></p>
+            <div class="card-heading">
+                <div>
+                    <p class="eyebrow">Remote Listener</p>
+                    <h2>Exposure</h2>
+                </div>
+                <span class="pill">@(_currentRemoteAccess?.IsEnabled == true ? "Enabled" : "Disabled")</span>
+            </div>
+
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="info-label">Endpoint</span>
+                    <span class="info-value">@(_currentRemoteAccess?.IsEnabled == true ? $"https://{(_currentRemoteAccess.PublicHostname ?? _currentRemoteAccess.BindAddress)}:{_currentRemoteAccess.HttpsPort}" : "Not exposed")</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Bind address</span>
+                    <span class="info-value">@(_currentRemoteAccess?.BindAddress ?? "Not configured")</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">HTTPS port</span>
+                    <span class="info-value">@(_currentRemoteAccess?.HttpsPort.ToString() ?? "Not configured")</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Firewall intent</span>
+                    <span class="info-value">@(_currentRemoteAccess?.CreateFirewallRule == true ? "Remembered" : "Not set")</span>
+                </div>
+            </div>
+
+            <div class="status-banner">
+                <strong>Loopback setup link</strong>
+                <p><code>@_localTwoFactorPath</code></p>
+            </div>
         </section>
+
         <section class="card">
-            <h2>Readiness</h2>
-            <p>Owner accounts with 2FA: @_ownerAccountsWithTwoFactor</p>
-            <p>If this is 0, remote access cannot be enabled yet.</p>
-            <p>Set up TOTP locally first at <a href="/Account/Manage/EnableAuthenticator">Enable Authenticator</a>.</p>
+            <div class="card-heading">
+                <div>
+                    <p class="eyebrow">Readiness</p>
+                    <h2>Security Preconditions</h2>
+                </div>
+            </div>
+
+            <div class="status-banner status-banner--warm">
+                <strong>Owner account readiness</strong>
+                <p>Owner accounts with 2FA: @_ownerAccountsWithTwoFactor</p>
+            </div>
+
+            <p class="muted-text">If this is 0, remote access cannot be enabled yet. Set up TOTP locally first at <a href="/Account/Manage/EnableAuthenticator">Enable Authenticator</a>.</p>
         </section>
     </div>
 
     <section class="card">
-        <h2>Settings</h2>
+        <div class="card-heading">
+            <div>
+                <p class="eyebrow">Settings</p>
+                <h2>HTTPS Listener Configuration</h2>
+            </div>
+        </div>
+
         <p class="muted-text">Saving these settings updates the host configuration. Restart the host afterwards to apply HTTPS binding changes.</p>
 
         <div class="admin-grid">
@@ -73,7 +150,10 @@
             </label>
         </div>
 
-        <button class="nav-button" type="button" @onclick="SaveAsync">Save Remote Settings</button>
+        <div class="workspace-actions">
+            <button class="nav-button" type="button" @onclick="SaveAsync">Save Remote Settings</button>
+            <a class="nav-button secondary-button" href="/users">Users</a>
+        </div>
     </section>
 </div>
 

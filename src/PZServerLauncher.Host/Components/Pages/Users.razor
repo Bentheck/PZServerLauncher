@@ -9,22 +9,61 @@
 <PageTitle>User Management</PageTitle>
 
 <div class="home-shell">
-    <div class="hero">
-        <p class="eyebrow">Web Admin</p>
-        <h1>User Management</h1>
-        <p>Create local accounts, change roles, and verify which privileged users still need an authenticator app.</p>
-    </div>
+    <section class="workspace-panel hero-panel">
+        <div class="workspace-panel__copy">
+            <p class="eyebrow">Web Admin</p>
+            <h1>User Management</h1>
+            <p class="muted-text">Create local accounts, change roles, and verify which privileged users still need an authenticator app.</p>
+        </div>
+
+        <div class="workspace-actions">
+            <span class="pill">Users @_users.Count</span>
+            <span class="pill">Owners @_users.Count(user => user.Roles.Contains(UserRole.Owner))</span>
+            <span class="pill">Admins @_users.Count(user => user.Roles.Contains(UserRole.Admin))</span>
+        </div>
+    </section>
 
     @if (!string.IsNullOrWhiteSpace(_statusMessage))
     {
-        <section class="card status-card">
+        <section class="card status-card status-line">
             <p>@_statusMessage</p>
         </section>
     }
 
+    <section class="metric-grid metric-grid--host">
+        <article class="metric-card">
+            <span class="metric-label">Users</span>
+            <strong class="metric-value">@_users.Count</strong>
+            <span class="metric-note">Local accounts in the web admin</span>
+        </article>
+        <article class="metric-card">
+            <span class="metric-label">Privileged Accounts</span>
+            <strong class="metric-value">@_users.Count(user => user.Roles.Any(role => role is UserRole.Owner or UserRole.Admin))</strong>
+            <span class="metric-note">Owners and admins with elevated access</span>
+        </article>
+        <article class="metric-card">
+            <span class="metric-label">2FA Enabled</span>
+            <strong class="metric-value">@_users.Count(user => user.TwoFactorEnabled)</strong>
+            <span class="metric-note">Accounts protected by authenticator apps</span>
+        </article>
+        <article class="metric-card">
+            <span class="metric-label">2FA Required</span>
+            <strong class="metric-value">@_users.Count(user => user.RequiresTwoFactor)</strong>
+            <span class="metric-note">Accounts that must finish setup before sign-in</span>
+        </article>
+    </section>
+
     <section class="card">
-        <h2>Create User</h2>
+        <div class="card-heading">
+            <div>
+                <p class="eyebrow">Create User</p>
+                <h2>New Account</h2>
+            </div>
+            <span class="pill">Owner and Admin require TOTP</span>
+        </div>
+
         <p class="muted-text">Owner and Admin accounts must configure TOTP before they can sign in to the web admin.</p>
+
         <div class="admin-grid">
             <label>
                 <span>Username</span>
@@ -49,16 +88,27 @@
             </label>
         </div>
 
-        <button class="nav-button" type="button" @onclick="CreateAsync">Create User</button>
+        <div class="workspace-actions">
+            <button class="nav-button" type="button" @onclick="CreateAsync">Create User</button>
+            <a class="nav-button secondary-button" href="/remote">Remote Access</a>
+        </div>
     </section>
 
     <section class="card">
-        <h2>Current Users</h2>
+        <div class="card-heading">
+            <div>
+                <p class="eyebrow">Current Users</p>
+                <h2>Account Registry</h2>
+            </div>
+        </div>
+
         <p class="muted-text">This v1 admin view assigns one application role per account.</p>
 
         @if (_users.Count == 0)
         {
-            <p>No users found.</p>
+            <div class="empty-state">
+                <p>No users found.</p>
+            </div>
         }
         else
         {
