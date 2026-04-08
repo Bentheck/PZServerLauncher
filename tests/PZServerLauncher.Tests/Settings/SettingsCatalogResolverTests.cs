@@ -54,6 +54,11 @@ public sealed class SettingsCatalogResolverTests
         Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.zombie-lore-drag-down" && field.Target.KeyPath == "ZombieLore.ZombiesDragDown");
         Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.zombie-lore-fence-lunge" && field.Target.KeyPath == "ZombieLore.ZombiesFenceLunge");
         Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.multi-hit");
+        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.bone-fracture" && field.Target.KeyPath == "BoneFracture");
+        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.attack-block-movements" && field.Target.KeyPath == "AttackBlockMovements");
+        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.all-clothes-unlocked" && field.Target.KeyPath == "AllClothesUnlocked");
+        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.vehicle-easy-use" && field.Target.KeyPath == "VehicleEasyUse");
+        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.player-damage-from-crash" && field.Target.KeyPath == "PlayerDamageFromCrash");
         Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.fire-spread");
         Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.enable-vehicles");
         Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.network.steam-vac");

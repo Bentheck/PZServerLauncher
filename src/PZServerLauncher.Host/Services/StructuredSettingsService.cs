@@ -645,6 +645,11 @@ public sealed class StructuredSettingsService(
         ValidateMinimumInteger(values, $"{branchPrefix}.sandbox.construction-bonus-points", 0, "Construction bonus points must be zero or greater.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.sandbox.multi-hit", "Multi-hit must be true or false.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.sandbox.allow-exterior-generator", "Allow exterior generator must be true or false.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.sandbox.bone-fracture", "Bone fracture must be true or false.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.sandbox.attack-block-movements", "Attack blocks movement must be true or false.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.sandbox.all-clothes-unlocked", "All clothes unlocked must be true or false.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.sandbox.vehicle-easy-use", "Vehicle easy use must be true or false.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.sandbox.player-damage-from-crash", "Player damage from crash must be true or false.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.sandbox.fire-spread", "Fire spread must be true or false.", fieldErrors);
         ValidateMinimumInteger(values, $"{branchPrefix}.sandbox.hours-for-corpse-removal", -1, "Hours for corpse removal must be -1 or greater.", fieldErrors);
         ValidateMinimumInteger(values, $"{branchPrefix}.sandbox.decaying-corpse-health-impact", 1, "Corpse health impact must be 1 or greater.", fieldErrors);

@@ -267,6 +267,21 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
     private bool allowExteriorGenerator;
 
     [ObservableProperty]
+    private bool boneFracture;
+
+    [ObservableProperty]
+    private bool attackBlockMovements;
+
+    [ObservableProperty]
+    private bool allClothesUnlocked;
+
+    [ObservableProperty]
+    private bool vehicleEasyUse;
+
+    [ObservableProperty]
+    private bool playerDamageFromCrash;
+
+    [ObservableProperty]
     private bool fireSpread;
 
     [ObservableProperty]
@@ -531,6 +546,11 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             ConstructionBonusPoints = GetValue(values, ".sandbox.construction-bonus-points");
             MultiHit = bool.TryParse(GetValue(values, ".sandbox.multi-hit"), out var multiHit) && multiHit;
             AllowExteriorGenerator = bool.TryParse(GetValue(values, ".sandbox.allow-exterior-generator"), out var allowExteriorGenerator) && allowExteriorGenerator;
+            BoneFracture = bool.TryParse(GetValue(values, ".sandbox.bone-fracture"), out var boneFracture) && boneFracture;
+            AttackBlockMovements = bool.TryParse(GetValue(values, ".sandbox.attack-block-movements"), out var attackBlockMovements) && attackBlockMovements;
+            AllClothesUnlocked = bool.TryParse(GetValue(values, ".sandbox.all-clothes-unlocked"), out var allClothesUnlocked) && allClothesUnlocked;
+            VehicleEasyUse = bool.TryParse(GetValue(values, ".sandbox.vehicle-easy-use"), out var vehicleEasyUse) && vehicleEasyUse;
+            PlayerDamageFromCrash = bool.TryParse(GetValue(values, ".sandbox.player-damage-from-crash"), out var playerDamageFromCrash) && playerDamageFromCrash;
             FireSpread = bool.TryParse(GetValue(values, ".sandbox.fire-spread"), out var fireSpread) && fireSpread;
             HoursForCorpseRemoval = GetValue(values, ".sandbox.hours-for-corpse-removal");
             DecayingCorpseHealthImpact = GetValue(values, ".sandbox.decaying-corpse-health-impact");
@@ -616,6 +636,11 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             [$"{prefix}.sandbox.construction-bonus-points"] = ConstructionBonusPoints,
             [$"{prefix}.sandbox.multi-hit"] = MultiHit.ToString(),
             [$"{prefix}.sandbox.allow-exterior-generator"] = AllowExteriorGenerator.ToString(),
+            [$"{prefix}.sandbox.bone-fracture"] = BoneFracture.ToString(),
+            [$"{prefix}.sandbox.attack-block-movements"] = AttackBlockMovements.ToString(),
+            [$"{prefix}.sandbox.all-clothes-unlocked"] = AllClothesUnlocked.ToString(),
+            [$"{prefix}.sandbox.vehicle-easy-use"] = VehicleEasyUse.ToString(),
+            [$"{prefix}.sandbox.player-damage-from-crash"] = PlayerDamageFromCrash.ToString(),
             [$"{prefix}.sandbox.fire-spread"] = FireSpread.ToString(),
             [$"{prefix}.sandbox.hours-for-corpse-removal"] = HoursForCorpseRemoval,
             [$"{prefix}.sandbox.decaying-corpse-health-impact"] = DecayingCorpseHealthImpact,
@@ -731,6 +756,11 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             ConstructionBonusPoints = string.Empty;
             MultiHit = false;
             AllowExteriorGenerator = false;
+            BoneFracture = false;
+            AttackBlockMovements = false;
+            AllClothesUnlocked = false;
+            VehicleEasyUse = false;
+            PlayerDamageFromCrash = false;
             FireSpread = false;
             HoursForCorpseRemoval = string.Empty;
             DecayingCorpseHealthImpact = string.Empty;
@@ -814,6 +844,11 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
     partial void OnConstructionBonusPointsChanged(string value) => NotifyFieldEdited();
     partial void OnMultiHitChanged(bool value) => NotifyFieldEdited();
     partial void OnAllowExteriorGeneratorChanged(bool value) => NotifyFieldEdited();
+    partial void OnBoneFractureChanged(bool value) => NotifyFieldEdited();
+    partial void OnAttackBlockMovementsChanged(bool value) => NotifyFieldEdited();
+    partial void OnAllClothesUnlockedChanged(bool value) => NotifyFieldEdited();
+    partial void OnVehicleEasyUseChanged(bool value) => NotifyFieldEdited();
+    partial void OnPlayerDamageFromCrashChanged(bool value) => NotifyFieldEdited();
     partial void OnFireSpreadChanged(bool value) => NotifyFieldEdited();
     partial void OnHoursForCorpseRemovalChanged(string value) => NotifyFieldEdited();
     partial void OnDecayingCorpseHealthImpactChanged(string value) => NotifyFieldEdited();

@@ -620,6 +620,11 @@ public sealed class StructuredSettingsServiceTests : IDisposable
                 ConstructionBonusPoints = 3,
                 MultiHit = false,
                 AllowExteriorGenerator = false,
+                BoneFracture = true,
+                AttackBlockMovements = true,
+                AllClothesUnlocked = false,
+                VehicleEasyUse = false,
+                PlayerDamageFromCrash = true,
                 FireSpread = true,
                 HoursForCorpseRemoval = 216,
                 DecayingCorpseHealthImpact = 2,
@@ -654,6 +659,11 @@ public sealed class StructuredSettingsServiceTests : IDisposable
         Assert.Equal("3", valueSet.Values["b42.sandbox.construction-bonus-points"]);
         Assert.Equal("false", valueSet.Values["b42.sandbox.multi-hit"]);
         Assert.Equal("false", valueSet.Values["b42.sandbox.allow-exterior-generator"]);
+        Assert.Equal("true", valueSet.Values["b42.sandbox.bone-fracture"]);
+        Assert.Equal("true", valueSet.Values["b42.sandbox.attack-block-movements"]);
+        Assert.Equal("false", valueSet.Values["b42.sandbox.all-clothes-unlocked"]);
+        Assert.Equal("false", valueSet.Values["b42.sandbox.vehicle-easy-use"]);
+        Assert.Equal("true", valueSet.Values["b42.sandbox.player-damage-from-crash"]);
         Assert.Equal("true", valueSet.Values["b42.sandbox.fire-spread"]);
         Assert.Equal("216", valueSet.Values["b42.sandbox.hours-for-corpse-removal"]);
         Assert.Equal("2", valueSet.Values["b42.sandbox.decaying-corpse-health-impact"]);
@@ -684,6 +694,11 @@ public sealed class StructuredSettingsServiceTests : IDisposable
             ["b42.sandbox.construction-bonus-points"] = "4",
             ["b42.sandbox.multi-hit"] = "true",
             ["b42.sandbox.allow-exterior-generator"] = "true",
+            ["b42.sandbox.bone-fracture"] = "false",
+            ["b42.sandbox.attack-block-movements"] = "false",
+            ["b42.sandbox.all-clothes-unlocked"] = "true",
+            ["b42.sandbox.vehicle-easy-use"] = "true",
+            ["b42.sandbox.player-damage-from-crash"] = "false",
             ["b42.sandbox.fire-spread"] = "false",
             ["b42.sandbox.hours-for-corpse-removal"] = "120",
             ["b42.sandbox.decaying-corpse-health-impact"] = "4",
@@ -716,6 +731,11 @@ public sealed class StructuredSettingsServiceTests : IDisposable
         Assert.Contains("ConstructionBonusPoints = 4", sandboxText);
         Assert.Contains("MultiHit = true", sandboxText);
         Assert.Contains("AllowExteriorGenerator = true", sandboxText);
+        Assert.Contains("BoneFracture = false", sandboxText);
+        Assert.Contains("AttackBlockMovements = false", sandboxText);
+        Assert.Contains("AllClothesUnlocked = true", sandboxText);
+        Assert.Contains("VehicleEasyUse = true", sandboxText);
+        Assert.Contains("PlayerDamageFromCrash = false", sandboxText);
         Assert.Contains("FireSpread = false", sandboxText);
         Assert.Contains("HoursForCorpseRemoval = 120", sandboxText);
         Assert.Contains("DecayingCorpseHealthImpact = 4", sandboxText);

@@ -378,7 +378,7 @@
 
                     <Border Grid.Column="1" Classes="card" Padding="18">
                         <StackPanel Spacing="12">
-                            <TextBlock Classes="kicker" Text="Survivor Boosts" />
+                            <TextBlock Classes="kicker" Text="Survivor Rules &amp; Boosts" />
                             <StackPanel Spacing="8">
                                 <StackPanel Spacing="4">
                                     <TextBlock Classes="body" Text="Character Free Points" />
@@ -390,6 +390,11 @@
                                 </StackPanel>
                                 <CheckBox Content="Multi-Hit" IsChecked="{Binding MultiHit}" />
                                 <CheckBox Content="Allow Exterior Generator" IsChecked="{Binding AllowExteriorGenerator}" />
+                                <CheckBox Content="Bone Fracture" IsChecked="{Binding BoneFracture}" />
+                                <CheckBox Content="Attack Blocks Movement" IsChecked="{Binding AttackBlockMovements}" />
+                                <CheckBox Content="All Clothes Unlocked" IsChecked="{Binding AllClothesUnlocked}" />
+                                <CheckBox Content="Vehicle Easy Use" IsChecked="{Binding VehicleEasyUse}" />
+                                <CheckBox Content="Player Damage From Crash" IsChecked="{Binding PlayerDamageFromCrash}" />
                             </StackPanel>
                         </StackPanel>
                     </Border>

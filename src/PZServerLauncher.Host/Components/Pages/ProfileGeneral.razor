@@ -34,7 +34,7 @@ else
                 <div class="workspace-panel__copy">
                     <p class="eyebrow">General</p>
                     <h1>@_profile.DisplayName</h1>
-                    <p class="muted-text">This page now owns the Project Zomboid server browser identity, public listing behavior, player access rules, sleep and fire rules, safehouses, factions, trading, and the launcher runtime knobs that still belong to the host profile.</p>
+                    <p class="muted-text">This page now owns the Project Zomboid server browser identity, public listing behavior, spawn and loot lifecycle, survival rules, safehouses, factions, trading, and the launcher runtime knobs that still belong to the host profile.</p>
                 </div>
 
                 <div class="workspace-actions">
@@ -359,6 +359,8 @@ else
             ? "Visible name, description, and browser-facing access rules."
             : sectionId.EndsWith(".world-access", StringComparison.Ordinal)
                 ? "Core server-side behavior that shapes how the world feels when players connect."
+                : sectionId.EndsWith(".spawn-and-loot", StringComparison.Ordinal)
+                    ? "Spawn kits, loot respawn cadence, and construction-based loot protection."
                 : sectionId.EndsWith(".survival-rules", StringComparison.Ordinal)
                     ? "Sleep, fire, and death-announcement rules that shape multiplayer pacing."
                     : sectionId.EndsWith(".safehouses", StringComparison.Ordinal)

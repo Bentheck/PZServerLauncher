@@ -91,6 +91,16 @@ public sealed class ProjectZomboidSettingsCatalogResolver : ISettingsCatalogReso
                         Field($"{branchPrefix}.server.allow-sledgehammer-destruction", "Allow Sledgehammer Destruction", StructuredValueKind.Boolean, ConfigFileKind.Ini, "AllowDestructionBySledgehammer", defaultValue: "true", helpText: "Allow survivors to destroy world objects with a sledgehammer."),
                     }),
                 new StructuredSectionDefinition(
+                    $"{branchPrefix}.general.respawn-and-cleanup",
+                    "Respawn & Cleanup",
+                    new[]
+                    {
+                        Field($"{branchPrefix}.server.respawn-with-self", "Respawn At Death Location", StructuredValueKind.Boolean, ConfigFileKind.Ini, "PlayerRespawnWithSelf", defaultValue: "false", helpText: "Let players respawn at their own place of death and keep playing in the same world."),
+                        Field($"{branchPrefix}.server.respawn-with-other", "Respawn With Split-Screen Partner", StructuredValueKind.Boolean, ConfigFileKind.Ini, "PlayerRespawnWithOther", defaultValue: "false", helpText: "Allow spawning at a split-screen partner's location."),
+                        Field($"{branchPrefix}.server.world-item-removal-hours", "World Item Removal Hours", StructuredValueKind.Text, ConfigFileKind.Ini, "HoursForWorldItemRemoval", defaultValue: "0.0", helpText: "In-game hours before configured ground items are cleaned up. Use 0 to disable removal."),
+                        Field($"{branchPrefix}.server.world-item-removal-list", "World Item Removal List", StructuredValueKind.MultiLineText, ConfigFileKind.Ini, "WorldItemRemovalList", helpText: "One item per line. The launcher writes them back as a comma-separated Project Zomboid cleanup list."),
+                    }),
+                new StructuredSectionDefinition(
                     $"{branchPrefix}.general.safehouses",
                     "Safehouses",
                     new[]
@@ -247,6 +257,11 @@ public sealed class ProjectZomboidSettingsCatalogResolver : ISettingsCatalogReso
                         Field($"{branchPrefix}.sandbox.construction-bonus-points", "Construction Bonus Points", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "ConstructionBonusPoints", defaultValue: "3", helpText: "Bonus points available in the construction menu."),
                         Field($"{branchPrefix}.sandbox.multi-hit", "Multi-Hit", StructuredValueKind.Boolean, ConfigFileKind.SandboxVars, "MultiHit", defaultValue: "false", helpText: "Allow melee weapons to strike multiple zombies."),
                         Field($"{branchPrefix}.sandbox.allow-exterior-generator", "Allow Exterior Generator", StructuredValueKind.Boolean, ConfigFileKind.SandboxVars, "AllowExteriorGenerator", defaultValue: "false", helpText: "Permit generators to run while placed outside."),
+                        Field($"{branchPrefix}.sandbox.bone-fracture", "Bone Fracture", StructuredValueKind.Boolean, ConfigFileKind.SandboxVars, "BoneFracture", defaultValue: "true", helpText: "Allow serious injuries to cause broken bones."),
+                        Field($"{branchPrefix}.sandbox.attack-block-movements", "Attack Blocks Movement", StructuredValueKind.Boolean, ConfigFileKind.SandboxVars, "AttackBlockMovements", defaultValue: "true", helpText: "Let attack animations interrupt movement while fighting."),
+                        Field($"{branchPrefix}.sandbox.all-clothes-unlocked", "All Clothes Unlocked", StructuredValueKind.Boolean, ConfigFileKind.SandboxVars, "AllClothesUnlocked", defaultValue: "false", helpText: "Unlock all clothing choices in the character creator."),
+                        Field($"{branchPrefix}.sandbox.vehicle-easy-use", "Vehicle Easy Use", StructuredValueKind.Boolean, ConfigFileKind.SandboxVars, "VehicleEasyUse", defaultValue: "false", helpText: "Relax the normal restrictions around using vehicles."),
+                        Field($"{branchPrefix}.sandbox.player-damage-from-crash", "Player Damage From Crash", StructuredValueKind.Boolean, ConfigFileKind.SandboxVars, "PlayerDamageFromCrash", defaultValue: "true", helpText: "Allow vehicle crashes to injure the player."),
                     }),
                 new StructuredSectionDefinition(
                     $"{branchPrefix}.sandbox.cleanup-and-wear",
@@ -334,6 +349,15 @@ public sealed class ProjectZomboidSettingsCatalogResolver : ISettingsCatalogReso
                         Field($"{branchPrefix}.network.max-accounts-per-user", "Max Accounts Per User", StructuredValueKind.Integer, ConfigFileKind.Ini, "MaxAccountsPerUser", defaultValue: "0", helpText: "Limit how many different server accounts a single Steam user may create. Use 0 for unlimited."),
                         Field($"{branchPrefix}.network.allow-non-ascii-username", "Allow Non-ASCII Usernames", StructuredValueKind.Boolean, ConfigFileKind.Ini, "AllowNonAsciiUsername", defaultValue: "false", helpText: "Permit usernames that contain non-ASCII characters."),
                         Field($"{branchPrefix}.network.player-save-on-damage", "Save Player On Damage", StructuredValueKind.Boolean, ConfigFileKind.Ini, "PlayerSaveOnDamage", defaultValue: "true", helpText: "Persist character state when damage is taken to reduce rollback after crashes."),
+                    }),
+                new StructuredSectionDefinition(
+                    $"{branchPrefix}.network.player-presence",
+                    "Player Presence",
+                    new[]
+                    {
+                        Field($"{branchPrefix}.network.mouse-over-display-name", "Mouse Over To See Display Name", StructuredValueKind.Boolean, ConfigFileKind.Ini, "MouseOverToSeeDisplayName", defaultValue: "true", helpText: "Show player display names when hovered in the world."),
+                        Field($"{branchPrefix}.network.hide-players-behind-you", "Hide Players Behind You", StructuredValueKind.Boolean, ConfigFileKind.Ini, "HidePlayersBehindYou", defaultValue: "true", helpText: "Hide player models when they are directly behind the camera to reduce clutter."),
+                        Field($"{branchPrefix}.network.player-bump-player", "Player Bump Player", StructuredValueKind.Boolean, ConfigFileKind.Ini, "PlayerBumpPlayer", defaultValue: "false", helpText: "Allow survivors to physically bump into one another."),
                     }),
                 new StructuredSectionDefinition(
                     $"{branchPrefix}.network.voice",
