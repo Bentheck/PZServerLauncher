@@ -39,6 +39,23 @@ function Invoke-PowerShellScript {
     }
 }
 
+function Test-ProcessPathRunning {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$ExecutablePath
+    )
+
+    $normalizedPath = [IO.Path]::GetFullPath($ExecutablePath)
+    $processes = Get-CimInstance Win32_Process -Filter "Name = 'PZServerLauncher.Host.exe'" -ErrorAction SilentlyContinue
+    foreach ($process in $processes) {
+        if ($process.ExecutablePath -and [string]::Equals([IO.Path]::GetFullPath($process.ExecutablePath), $normalizedPath, [StringComparison]::OrdinalIgnoreCase)) {
+            return $true
+        }
+    }
+
+    return $false
+}
+
 function Get-LatestMsiPath {
     param([string]$RepoRoot)
 
@@ -122,40 +139,58 @@ if (!(Test-Path $hostExe)) {
 New-Item -ItemType Directory -Force -Path (Split-Path $sentinelFile -Parent) | Out-Null
 Set-Content -Path $sentinelFile -Value "Created before upgrade $(Get-Date -Format o)"
 
-Write-Host "Building upgrade installer $UpgradeVersion"
-Invoke-PowerShellScript -ScriptPath $buildInstallerScript -FailureMessage "Upgrade installer build failed." -Arguments @(
-    "-Configuration", $Configuration,
-    "-RuntimeIdentifier", $RuntimeIdentifier,
-    "-InstallerVersion", $UpgradeVersion)
+$hostProcess = Start-Process -FilePath $hostExe -WorkingDirectory (Split-Path $hostExe -Parent) -PassThru
+try {
+    Start-Sleep -Seconds 3
+    if (-not (Test-ProcessPathRunning -ExecutablePath $hostExe)) {
+        throw "The installed host did not stay running before the upgrade verification began."
+    }
 
-$upgradeMsi = Get-LatestMsiPath -RepoRoot $repoRoot
-$upgradeMsiCopy = Join-Path $installerCopiesRoot "PZServerLauncher-$UpgradeVersion.msi"
-Copy-Item -Path $upgradeMsi -Destination $upgradeMsiCopy -Force
+    Write-Host "Building upgrade installer $UpgradeVersion"
+    Invoke-PowerShellScript -ScriptPath $buildInstallerScript -FailureMessage "Upgrade installer build failed." -Arguments @(
+        "-Configuration", $Configuration,
+        "-RuntimeIdentifier", $RuntimeIdentifier,
+        "-InstallerVersion", $UpgradeVersion)
 
-$upgradeLog = Join-Path $logsRoot "upgrade-$UpgradeVersion.log"
-Write-Host "Upgrading installation with MSI $UpgradeVersion"
-Invoke-MsiExec -Arguments @(
-    "/i", "`"$upgradeMsiCopy`"",
-    "INSTALLFOLDER=`"$installDirectory`"",
-    "/qn",
-    "/norestart",
-    "/l*v", "`"$upgradeLog`"") -LogPath $upgradeLog
+    $upgradeMsi = Get-LatestMsiPath -RepoRoot $repoRoot
+    $upgradeMsiCopy = Join-Path $installerCopiesRoot "PZServerLauncher-$UpgradeVersion.msi"
+    Copy-Item -Path $upgradeMsi -Destination $upgradeMsiCopy -Force
 
-if (!(Test-Path $desktopExe) -or !(Test-Path $hostExe)) {
-    throw "Installed binaries were not present after upgrade."
+    $upgradeLog = Join-Path $logsRoot "upgrade-$UpgradeVersion.log"
+    Write-Host "Upgrading installation with MSI $UpgradeVersion"
+    Invoke-MsiExec -Arguments @(
+        "/i", "`"$upgradeMsiCopy`"",
+        "INSTALLFOLDER=`"$installDirectory`"",
+        "/qn",
+        "/norestart",
+        "/l*v", "`"$upgradeLog`"") -LogPath $upgradeLog
+
+    if (!(Test-Path $desktopExe) -or !(Test-Path $hostExe)) {
+        throw "Installed binaries were not present after upgrade."
+    }
+
+    if (!(Test-Path $sentinelFile)) {
+        throw "Expected app data sentinel to survive the installer upgrade."
+    }
+
+    Start-Sleep -Seconds 3
+    if (-not (Test-ProcessPathRunning -ExecutablePath $hostExe)) {
+        throw "Expected the installer upgrade to restart the host because it was running before the upgrade."
+    }
+
+    $uninstallLog = Join-Path $logsRoot "uninstall-$UpgradeVersion.log"
+    Write-Host "Uninstalling upgraded MSI"
+    Invoke-MsiExec -Arguments @(
+        "/x", "`"$upgradeMsiCopy`"",
+        "/qn",
+        "/norestart",
+        "/l*v", "`"$uninstallLog`"") -LogPath $uninstallLog
 }
-
-if (!(Test-Path $sentinelFile)) {
-    throw "Expected app data sentinel to survive the installer upgrade."
+finally {
+    if ($hostProcess -and !$hostProcess.HasExited) {
+        Stop-Process -Id $hostProcess.Id -Force -ErrorAction SilentlyContinue
+    }
 }
-
-$uninstallLog = Join-Path $logsRoot "uninstall-$UpgradeVersion.log"
-Write-Host "Uninstalling upgraded MSI"
-Invoke-MsiExec -Arguments @(
-    "/x", "`"$upgradeMsiCopy`"",
-    "/qn",
-    "/norestart",
-    "/l*v", "`"$uninstallLog`"") -LogPath $uninstallLog
 
 if ((Test-Path $desktopExe) -or (Test-Path $hostExe)) {
     throw "Installed binaries still exist after uninstall."

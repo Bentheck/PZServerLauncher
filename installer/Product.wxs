@@ -26,9 +26,23 @@
       Id="CloseHost"
       Target="PZServerLauncher.Host.exe"
       Description="PZ Server Launcher host"
+      Property="HOST_WAS_RUNNING"
       CloseMessage="yes"
       ElevatedCloseMessage="yes"
       PromptToContinue="yes" />
+    <SetProperty Id="HOST_RESTART_PATH"
+                 Before="RestartHostAfterInstall"
+                 Sequence="execute"
+                 Value="[HOSTFOLDER]PZServerLauncher.Host.exe" />
+    <CustomAction Id="RestartHostAfterInstall"
+                  Property="HOST_RESTART_PATH"
+                  ExeCommand=""
+                  Return="asyncNoWait" />
+    <InstallExecuteSequence>
+      <Custom Action="RestartHostAfterInstall"
+              After="InstallFinalize"
+              Condition="HOST_WAS_RUNNING AND NOT REMOVE~=&quot;ALL&quot;" />
+    </InstallExecuteSequence>
 
     <StandardDirectory Id="ProgramFiles64Folder">
       <Directory Id="INSTALLFOLDER" Name="PZServerLauncher">
