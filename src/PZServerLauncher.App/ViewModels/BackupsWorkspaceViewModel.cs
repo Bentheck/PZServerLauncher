@@ -3,11 +3,30 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PZServerLauncher.App.Services;
 using PZServerLauncher.Contracts.Runtime;
+using PZServerLauncher.Core.Planning;
+using PZServerLauncher.Core.Profiles;
+using PZServerLauncher.Infrastructure.Planning;
 
 namespace PZServerLauncher.App.ViewModels;
 
 public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
 {
+    private static readonly ProjectZomboidBackupPostureSummary EmptySummary = new(
+        "Pick a profile to inspect recovery coverage.",
+        "Latest archive: none captured yet.",
+        "No recovery point is currently selected.",
+        "Retention posture is unavailable until a profile is selected.",
+        "Restore safety is unavailable until a profile is selected.",
+        "Recovery continuity will appear once a profile is selected.",
+        "Archive mix: none yet.",
+        0,
+        0,
+        0,
+        0,
+        false,
+        false,
+        false);
+
     private readonly LocalHostApiClient _hostApiClient;
 
     public BackupsWorkspaceViewModel(MainWindowViewModel legacy, LocalHostApiClient hostApiClient)
@@ -33,6 +52,14 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
     public string Branch => SelectedProfile?.Branch ?? "Unknown";
 
+    public string RecoveryHeroTitle => SelectedProfile is null
+        ? "Recovery Center"
+        : $"{SelectedProfile.DisplayName} Recovery Center";
+
+    public string RecoveryHeroCopy => SelectedProfile is null
+        ? "Select a profile to review archive history, retention policy, and restore behavior."
+        : $"Latest archive, retention posture, and restore behavior for {SelectedProfile.DisplayName}.";
+
     public ObservableCollection<string> Backups { get; } = [];
 
     public bool HasBackups => Backups.Count > 0;
@@ -45,19 +72,35 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
     public string BackupPosture => SelectedProfile is null
         ? "Pick a profile to inspect backup posture."
-        : Backups.Count == 0
-            ? "No archive has been captured yet. Create a manual backup before major config or update work."
-            : $"{Backups.Count} archive(s) are currently available for recovery.";
+        : CurrentSummary.CoverageSummary;
+
+    public string BackupInventorySummary => SelectedProfile is null
+        ? "Choose a profile to inspect archive history."
+        : CurrentSummary.ArchiveMixSummary;
 
     public string RecoveryGuidance => SelectedProfile is null
         ? "Choose a profile to review restore guidance."
-        : RestartAfterRestore
-            ? "Restore will stop the server, unpack the selected archive, then request a restart after recovery."
-            : "Restore will stop the server and unpack the selected archive without bringing it back up automatically.";
+        : $"{CurrentSummary.RestoreSafetySummary} {(RestartAfterRestore
+            ? "The host will request a restart after recovery."
+            : "The server will stay offline afterward for inspection.")}";
 
-    public string LatestBackupSummary => Backups.Count == 0
-        ? "No backup selected."
-        : $"Selected recovery point: {SelectedBackup}";
+    public string LatestBackupSummary => CurrentSummary.LatestArchiveSummary;
+
+    public string SelectedBackupDetails => CurrentSummary.SelectedArchiveSummary;
+
+    public string PolicySummary => SelectedProfile is null
+        ? "No recovery policy loaded."
+        : CurrentSummary.RetentionSummary;
+
+    public string RestoreModeSummary => SelectedProfile is null
+        ? "Restore behavior not loaded."
+        : RestartAfterRestore
+            ? "Restore mode: stop the server, unpack the archive, and request a restart."
+            : "Restore mode: stop the server, unpack the archive, and leave it offline for inspection.";
+
+    public string OperatorNextStep => SelectedProfile is null
+        ? "Select a profile to begin recovery work."
+        : CurrentSummary.ContinuitySummary;
 
     public IAsyncRelayCommand CreateBackupCommand { get; }
 
@@ -193,6 +236,7 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
     partial void OnRestartAfterRestoreChanged(bool value)
     {
         OnPropertyChanged(nameof(RecoveryGuidance));
+        OnPropertyChanged(nameof(RestoreModeSummary));
     }
 
     private void NotifyComputedState()
@@ -205,7 +249,35 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         OnPropertyChanged(nameof(CanRestore));
         OnPropertyChanged(nameof(CanCreateBackup));
         OnPropertyChanged(nameof(BackupPosture));
+        OnPropertyChanged(nameof(BackupInventorySummary));
         OnPropertyChanged(nameof(RecoveryGuidance));
         OnPropertyChanged(nameof(LatestBackupSummary));
+        OnPropertyChanged(nameof(SelectedBackupDetails));
+        OnPropertyChanged(nameof(PolicySummary));
+        OnPropertyChanged(nameof(RestoreModeSummary));
+        OnPropertyChanged(nameof(OperatorNextStep));
+        OnPropertyChanged(nameof(RecoveryHeroTitle));
+        OnPropertyChanged(nameof(RecoveryHeroCopy));
     }
+
+    private ProjectZomboidBackupPostureSummary CurrentSummary =>
+        SelectedProfile is null
+            ? EmptySummary
+            : ProjectZomboidBackupPostureSummaryBuilder.Build(
+                ToPlanningProfile(SelectedProfile),
+                Backups.ToList(),
+                SelectedBackup,
+                SelectedProfile.RuntimeState);
+
+    private static ServerProfile ToPlanningProfile(ProfileCardViewModel profile) =>
+        new()
+        {
+            ProfileId = profile.ProfileId,
+            DisplayName = profile.DisplayName,
+            ServerName = profile.EditableServerName,
+            InstallDirectory = profile.InstallDirectory,
+            CacheDirectory = profile.CacheDirectory,
+            Branch = profile.BranchValue,
+            BackupPolicy = profile.BackupPolicy,
+        };
 }

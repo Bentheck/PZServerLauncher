@@ -16,22 +16,25 @@
             </StackPanel>
 
             <Border Background="#1F1D1B" CornerRadius="16" Padding="18">
-                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                <StackPanel Spacing="12">
                     <StackPanel Spacing="6">
                         <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Live Console" />
-                        <TextBlock Foreground="#F7F0E7" FontSize="28" FontWeight="SemiBold" Text="{Binding ProfileDisplayName}" />
-                        <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding RuntimeGuidance}" TextWrapping="Wrap" />
+                        <TextBlock Foreground="#F7F0E7" FontSize="28" FontWeight="SemiBold" Text="{Binding ConsoleHeroTitle}" />
+                        <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding ConsoleHeroCopy}" TextWrapping="Wrap" />
                     </StackPanel>
-                    <StackPanel Grid.Column="1" Spacing="10" HorizontalAlignment="Right">
-                        <Border Background="#2A2927" CornerRadius="999" Padding="14,8">
+                    <WrapPanel Orientation="Horizontal">
+                        <Border Background="#2A2927" CornerRadius="999" Padding="14,8" Margin="0,0,10,0">
                             <TextBlock Foreground="#F7F0E7" FontWeight="SemiBold" Text="{Binding Branch}" />
                         </Border>
+                        <Border Background="#2A2927" CornerRadius="999" Padding="14,8" Margin="0,0,10,0">
+                            <TextBlock Foreground="#F7F0E7" Text="{Binding ConsoleStatusSummary}" />
+                        </Border>
                         <Button Command="{Binding ReloadCommand}" Content="Reload" />
-                    </StackPanel>
-                </Grid>
+                    </WrapPanel>
+                </StackPanel>
             </Border>
 
-            <Grid ColumnDefinitions="*,*" ColumnSpacing="14">
+            <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="14">
                 <Border Background="#F6EFE6" CornerRadius="14" Padding="16">
                     <StackPanel Spacing="6">
                         <TextBlock Classes="kicker" Text="Runtime State" />
@@ -41,11 +44,31 @@
                 </Border>
                 <Border Grid.Column="1" Background="#F6EFE6" CornerRadius="14" Padding="16">
                     <StackPanel Spacing="6">
-                        <TextBlock Classes="kicker" Text="Host Feed" />
-                        <TextBlock Classes="body" Text="{Binding LoadStatus}" TextWrapping="Wrap" />
+                        <TextBlock Classes="kicker" Text="Signals" />
+                        <TextBlock Classes="body" Text="{Binding FeedPostureSummary}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="2" Background="#F6EFE6" CornerRadius="14" Padding="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Latest Signal" />
+                        <TextBlock Classes="body" Text="{Binding LatestLineSummary}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="3" Background="#F6EFE6" CornerRadius="14" Padding="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Runtime Window" />
+                        <TextBlock Classes="body" Text="{Binding RuntimeWindowSummary}" TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
             </Grid>
+
+            <Border Background="#FFF8F1" CornerRadius="14" Padding="16">
+                <StackPanel Spacing="10">
+                    <TextBlock Classes="kicker" Text="Host Feed" />
+                    <TextBlock Classes="body" Text="{Binding LoadStatus}" TextWrapping="Wrap" />
+                    <TextBlock Classes="body" Text="{Binding OperatorNextStep}" TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
 
             <Border Classes="card" Padding="0">
                 <Grid RowDefinitions="Auto,*">
@@ -67,7 +90,7 @@
             </Border>
 
             <Border Background="#F6EFE6" CornerRadius="14" Padding="16" IsVisible="{Binding HasNoLogs}">
-                <TextBlock Classes="body" Text="No buffered logs are available yet. Start the profile, then come back here or reload to inspect output." TextWrapping="Wrap" />
+                <TextBlock Classes="body" Text="No buffered logs are available yet. Start the profile, then return here to watch the live console fill with runtime output." TextWrapping="Wrap" />
             </Border>
         </StackPanel>
     </Border>

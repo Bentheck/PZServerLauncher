@@ -4,6 +4,8 @@
 @inject RuntimeStateStore RuntimeStateStore
 @inject ServerBackupService BackupService
 @inject ServerProcessSupervisor ProcessSupervisor
+@using PZServerLauncher.Core.Planning
+@using PZServerLauncher.Infrastructure.Planning
 
 <PageTitle>Backups</PageTitle>
 
@@ -33,6 +35,40 @@ else
             <button class="nav-button secondary-button" @onclick="ReloadAsync" disabled="@_busy">Reload</button>
         </Actions>
         <ChildContent>
+            <section class="card">
+                <div class="hero">
+                    <div class="hero-copy">
+                        <p class="eyebrow">Recovery Center</p>
+                        <h1>@_profile.DisplayName</h1>
+                        <p class="muted-text">Manual recovery points, pre-update safety nets, and scheduled snapshots all converge here so you can recover the world confidently before risky admin work.</p>
+                    </div>
+                    <div class="hero-pills">
+                        <span class="pill">@_profile.Branch</span>
+                        <span class="pill">@(_backupSummary?.ArchiveMixSummary ?? "Archive mix unavailable")</span>
+                        <span class="pill pill--strong">@(_backupSummary?.LatestArchiveSummary ?? "Latest archive unavailable")</span>
+                    </div>
+                </div>
+            </section>
+
+            <div class="cards cards--four">
+                <section class="card">
+                    <h2>Coverage</h2>
+                    <p class="muted-text">@(_backupSummary?.CoverageSummary ?? "Recovery coverage is unavailable.")</p>
+                </section>
+                <section class="card">
+                    <h2>Retention</h2>
+                    <p class="muted-text">@(_backupSummary?.RetentionSummary ?? "Retention posture is unavailable.")</p>
+                </section>
+                <section class="card">
+                    <h2>Restore Safety</h2>
+                    <p class="muted-text">@BuildRestoreSafetyCopy()</p>
+                </section>
+                <section class="card">
+                    <h2>Continuity</h2>
+                    <p class="muted-text">@(_backupSummary?.ContinuitySummary ?? "Recovery continuity is unavailable.")</p>
+                </section>
+            </div>
+
             <div class="cards">
                 <section class="card">
                     <h2>Backup History</h2>
@@ -42,7 +78,7 @@ else
                         <div class="admin-grid">
                             <label>
                                 <span>Available Backups</span>
-                                <select size="8" @bind="_selectedBackup" disabled="@_busy">
+                                <select size="8" @bind="_selectedBackup" @bind:after="RefreshBackupSummary" disabled="@_busy">
                                     @if (_backups.Count == 0)
                                     {
                                         <option value="">No backups yet</option>
@@ -59,7 +95,7 @@ else
 
                             <label>
                                 <span>Selected Backup</span>
-                                <input value="@(_selectedBackup ?? "None")" disabled />
+                                <input value="@(_backupSummary?.SelectedArchiveSummary ?? "No recovery point is currently selected.")" disabled />
                             </label>
                         </div>
                     </div>
@@ -90,7 +126,7 @@ else
                         </div>
                         <div class="field-card">
                             <span class="field-label">Latest Backup</span>
-                            <span>@(_latestBackup ?? "None")</span>
+                            <span>@(_backupSummary?.LatestArchiveSummary ?? "Latest archive unavailable")</span>
                         </div>
                     </div>
 
@@ -124,10 +160,10 @@ else
                     <div class="profile-section">
                         <h3>Restore Options</h3>
                         <label class="checkbox-label">
-                            <input type="checkbox" @bind="_restartAfterRestore" disabled="@_busy" />
+                            <input type="checkbox" @bind="_restartAfterRestore" @bind:after="RefreshBackupSummary" disabled="@_busy" />
                             Restart server after restore
                         </label>
-                        <p class="muted-text">Restore uses the host backup service and can bring the server back online automatically when the checkbox is enabled.</p>
+                        <p class="muted-text">@BuildRestoreModeSummary()</p>
                     </div>
                 </section>
             </div>
@@ -150,6 +186,7 @@ else
     private bool _cacheDetected;
     private string? _selectedBackup;
     private bool _restartAfterRestore = true;
+    private ProjectZomboidBackupPostureSummary? _backupSummary;
 
     private string? _latestBackup => _backups.FirstOrDefault();
 
@@ -174,6 +211,7 @@ else
         }
         _installDetected = Directory.Exists(_profile.InstallDirectory);
         _cacheDetected = Directory.Exists(_profile.CacheDirectory);
+        RefreshBackupSummary();
         _statusMessage = _backups.Count == 0
             ? "No backups exist yet. Create the first manual archive from this page."
             : $"Loaded {_backups.Count} backup archive(s) for {_profile.DisplayName}.";
@@ -260,6 +298,34 @@ else
             _busy = false;
         }
     }
+
+    private void RefreshBackupSummary()
+    {
+        if (_profile is null)
+        {
+            _backupSummary = null;
+            return;
+        }
+
+        _backupSummary = ProjectZomboidBackupPostureSummaryBuilder.Build(
+            _profile,
+            _backups,
+            _selectedBackup,
+            _runtimeStatus?.State.ToString() ?? "Stopped");
+    }
+
+    private string BuildRestoreSafetyCopy()
+    {
+        var posture = _backupSummary?.RestoreSafetySummary ?? "Restore safety is unavailable.";
+        return _restartAfterRestore
+            ? $"{posture} The host will request a restart after recovery."
+            : $"{posture} The server will stay offline afterward for inspection.";
+    }
+
+    private string BuildRestoreModeSummary() =>
+        _restartAfterRestore
+            ? "Restore mode: stop the server, unpack the archive, and request a restart."
+            : "Restore mode: stop the server, unpack the archive, and leave it offline for inspection.";
 
     private string OverviewHref => $"/profiles/{Uri.EscapeDataString(ProfileId)}/overview";
 }

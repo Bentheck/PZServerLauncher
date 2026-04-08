@@ -2,6 +2,8 @@
 @attribute [Authorize]
 @inject ProfileStore ProfileStore
 @inject RuntimeStateStore RuntimeStateStore
+@using PZServerLauncher.Core.Planning
+@using PZServerLauncher.Infrastructure.Planning
 
 <PageTitle>Logs</PageTitle>
 
@@ -28,6 +30,40 @@ else
             <button class="nav-button" @onclick="ReloadAsync">Reload Logs</button>
         </Actions>
         <ChildContent>
+            <section class="card">
+                <div class="hero">
+                    <div class="hero-copy">
+                        <p class="eyebrow">Live Console</p>
+                        <h1>@_profile.DisplayName</h1>
+                        <p class="muted-text">Watch the recent runtime feed, latest signal, and server posture here while you validate startup, mod loading, and live admin changes.</p>
+                    </div>
+                    <div class="hero-pills">
+                        <span class="pill">@_profile.Branch</span>
+                        <span class="pill">@(_logSummary?.BufferSummary ?? "Buffer unavailable")</span>
+                        <span class="pill pill--strong">@(_logSummary?.LatestSignalSummary ?? "Latest signal unavailable")</span>
+                    </div>
+                </div>
+            </section>
+
+            <div class="cards cards--four">
+                <section class="card">
+                    <h2>Buffer</h2>
+                    <p class="muted-text">@(_logSummary?.BufferSummary ?? "Buffer posture is unavailable.")</p>
+                </section>
+                <section class="card">
+                    <h2>Signals</h2>
+                    <p class="muted-text">@(_logSummary?.SignalPostureSummary ?? "Signal posture is unavailable.")</p>
+                </section>
+                <section class="card">
+                    <h2>Latest Signal</h2>
+                    <p class="muted-text">@(_logSummary?.LatestSignalSummary ?? "Latest signal is unavailable.")</p>
+                </section>
+                <section class="card">
+                    <h2>Runtime Window</h2>
+                    <p class="muted-text">@(_logSummary?.RuntimeWindowSummary ?? "Runtime window is unavailable.")</p>
+                </section>
+            </div>
+
             <div class="card">
                 <h2>Recent Runtime Output</h2>
                 <p class="muted-text">This page shows the host's recent in-memory log buffer for the selected profile.</p>
@@ -68,7 +104,12 @@ else
                 </div>
             </div>
 
-            <p class="muted-text">@_statusMessage</p>
+            <section class="card">
+                <h2>Operator Focus</h2>
+                <p class="muted-text">@(_logSummary?.OperatorFocusSummary ?? "Operator guidance is unavailable.")</p>
+                <p class="muted-text">@_statusMessage</p>
+            </section>
+
         </ChildContent>
     </ProfileWorkspaceShell>
 }
@@ -83,6 +124,7 @@ else
     private string _statusMessage = "Loading logs...";
     private bool _installDetected;
     private bool _cacheDetected;
+    private ProjectZomboidLogPostureSummary? _logSummary;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -101,6 +143,7 @@ else
         _logLines = RuntimeStateStore.GetRecentLogs(ProfileId).ToList();
         _installDetected = Directory.Exists(_profile.InstallDirectory);
         _cacheDetected = Directory.Exists(_profile.CacheDirectory);
+        _logSummary = ProjectZomboidLogPostureSummaryBuilder.Build(_runtimeStatus, _logLines);
         _statusMessage = _logLines.Count == 0
             ? "No buffered logs are available yet."
             : $"Loaded {_logLines.Count} recent log line(s).";

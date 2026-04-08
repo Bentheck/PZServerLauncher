@@ -3,13 +3,31 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PZServerLauncher.App.Services;
 using PZServerLauncher.Contracts.Runtime;
+using PZServerLauncher.Core.Planning;
 using PZServerLauncher.Core.Runtime;
+using PZServerLauncher.Infrastructure.Planning;
+
 namespace PZServerLauncher.App.ViewModels;
 
 public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
 {
+    private static readonly ProjectZomboidLogPostureSummary EmptySummary = new(
+        "No buffered lines are available yet. Select a profile to inspect runtime output.",
+        "Latest signal: no runtime output captured yet.",
+        "No runtime signals are buffered yet.",
+        "Pick a profile, then start or reload to watch runtime output.",
+        "Runtime window: no status is available yet.",
+        0,
+        0,
+        0,
+        0,
+        false,
+        false,
+        false);
+
     private readonly LocalHostApiClient _hostApiClient;
     private readonly RuntimeEventStream _runtimeEventStream;
+    private ServerRuntimeStatus? _runtimeStatus;
 
     public LogsWorkspaceViewModel(
         MainWindowViewModel legacy,
@@ -38,6 +56,14 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
 
     public string Branch => SelectedProfile?.Branch ?? "Unknown";
 
+    public string ConsoleHeroTitle => SelectedProfile is null
+        ? "Live Console"
+        : $"{SelectedProfile.DisplayName} Live Console";
+
+    public string ConsoleHeroCopy => SelectedProfile is null
+        ? "Select a profile to inspect buffered runtime output and the live feed posture."
+        : $"Buffered runtime output, the latest log line, and live operator guidance for {SelectedProfile.DisplayName}.";
+
     public ObservableCollection<string> LogLines { get; } = [];
 
     public bool HasLogs => LogLines.Count > 0;
@@ -46,15 +72,29 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
 
     public string LogStreamSummary => SelectedProfile is null
         ? "Choose a profile to inspect server output."
-        : LogLines.Count == 0
-            ? "No buffered output is available yet. Start the server or wait for the next runtime event."
-            : $"Showing {LogLines.Count} buffered line(s) for the selected profile.";
+        : CurrentSummary.BufferSummary;
+
+    public string FeedPostureSummary => SelectedProfile is null
+        ? "No live feed is available yet."
+        : CurrentSummary.SignalPostureSummary;
 
     public string RuntimeGuidance => SelectedProfile is null
         ? "No runtime guidance available."
-        : string.Equals(LatestRuntimeState, "Running", StringComparison.OrdinalIgnoreCase)
-            ? "The server is live. Keep this page open during testing, config reloads, and mod validation to watch the latest output."
-            : "The server is not currently running. Use Overview or Install & Update to start it, then return here for live output.";
+        : CurrentSummary.OperatorFocusSummary;
+
+    public string LatestLineSummary => CurrentSummary.LatestSignalSummary;
+
+    public string OperatorNextStep => SelectedProfile is null
+        ? "Pick a profile, then start or reload to watch runtime output."
+        : CurrentSummary.OperatorFocusSummary;
+
+    public string ConsoleStatusSummary => SelectedProfile is null
+        ? "No console context loaded."
+        : $"{LatestRuntimeState} | {CurrentSummary.BufferedLineCount} buffered line(s)";
+
+    public string RuntimeWindowSummary => SelectedProfile is null
+        ? "Runtime window: no status is available yet."
+        : CurrentSummary.RuntimeWindowSummary;
 
     public IAsyncRelayCommand ReloadCommand { get; }
 
@@ -88,7 +128,9 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
         }
 
         LoadStatus = $"Loading recent logs for {profile.DisplayName}...";
-        LatestRuntimeState = profile.RuntimeState;
+        _runtimeStatus = await _hostApiClient.GetStatusAsync(profile.ProfileId)
+            ?? new ServerRuntimeStatus(profile.ProfileId, ServerRuntimeState.Stopped, null, null, null, null, profile.LatestLogLine);
+        LatestRuntimeState = _runtimeStatus.State.ToString();
         var lines = await _hostApiClient.GetRecentLogsAsync(profile.ProfileId) ?? [];
 
         LogLines.Clear();
@@ -116,6 +158,12 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
             LogLines.RemoveAt(0);
         }
 
+        _runtimeStatus = (_runtimeStatus ?? new ServerRuntimeStatus(profileId, ServerRuntimeState.Stopped, null, null, null, null, null))
+            with
+            {
+                LatestLogLine = line,
+            };
+
         LoadStatus = $"Live log update received for {SelectedProfile.DisplayName}.";
         NotifyComputedState();
         return Task.CompletedTask;
@@ -128,6 +176,7 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
             return Task.CompletedTask;
         }
 
+        _runtimeStatus = status;
         LatestRuntimeState = status.State.ToString();
         NotifyComputedState();
         return Task.CompletedTask;
@@ -136,6 +185,7 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
     private void Reset()
     {
         LogLines.Clear();
+        _runtimeStatus = null;
         LatestRuntimeState = "Unknown";
         LoadStatus = "Select a profile to load recent logs.";
         NotifyComputedState();
@@ -149,6 +199,18 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
         OnPropertyChanged(nameof(HasLogs));
         OnPropertyChanged(nameof(HasNoLogs));
         OnPropertyChanged(nameof(LogStreamSummary));
+        OnPropertyChanged(nameof(FeedPostureSummary));
         OnPropertyChanged(nameof(RuntimeGuidance));
+        OnPropertyChanged(nameof(LatestLineSummary));
+        OnPropertyChanged(nameof(OperatorNextStep));
+        OnPropertyChanged(nameof(ConsoleStatusSummary));
+        OnPropertyChanged(nameof(RuntimeWindowSummary));
+        OnPropertyChanged(nameof(ConsoleHeroTitle));
+        OnPropertyChanged(nameof(ConsoleHeroCopy));
     }
+
+    private ProjectZomboidLogPostureSummary CurrentSummary =>
+        SelectedProfile is null
+            ? EmptySummary
+            : ProjectZomboidLogPostureSummaryBuilder.Build(_runtimeStatus, LogLines.ToList());
 }

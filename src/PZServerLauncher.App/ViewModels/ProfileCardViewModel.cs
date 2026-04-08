@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using PZServerLauncher.Core.Planning;
+using PZServerLauncher.Core.Profiles;
 using PZServerLauncher.Core.Runtime;
 using PZServerLauncher.Core.Settings;
 
@@ -11,6 +12,7 @@ public partial class ProfileCardViewModel : ViewModelBase
         string profileId,
         string displayName,
         string branch,
+        ProjectZomboidBranch branchValue,
         string ports,
         string runtimeState,
         string installDirectory,
@@ -18,6 +20,7 @@ public partial class ProfileCardViewModel : ViewModelBase
         string lastBackup,
         string latestLogLine,
         bool hasBackup,
+        BackupPolicy backupPolicy,
         string editableServerName,
         string editableDefaultPort,
         string editableUdpPort,
@@ -35,6 +38,7 @@ public partial class ProfileCardViewModel : ViewModelBase
         ProfileId = profileId;
         DisplayName = displayName;
         Branch = branch;
+        BranchValue = branchValue;
         Ports = ports;
         RuntimeState = runtimeState;
         InstallDirectory = installDirectory;
@@ -42,6 +46,7 @@ public partial class ProfileCardViewModel : ViewModelBase
         LastBackup = lastBackup;
         LatestLogLine = latestLogLine;
         HasBackup = hasBackup;
+        BackupPolicy = backupPolicy;
         EditableServerName = editableServerName;
         EditableDefaultPort = editableDefaultPort;
         EditableUdpPort = editableUdpPort;
@@ -66,11 +71,15 @@ public partial class ProfileCardViewModel : ViewModelBase
 
     public string Branch { get; }
 
+    public ProjectZomboidBranch BranchValue { get; }
+
     public string Ports { get; }
 
     public string InstallDirectory { get; }
 
     public string CacheDirectory { get; }
+
+    public BackupPolicy BackupPolicy { get; }
 
     public ProjectZomboidProfilePostureSummary Posture { get; }
 

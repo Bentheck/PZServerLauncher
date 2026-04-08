@@ -177,6 +177,9 @@ public sealed class LocalHostApiClient
     public Task<List<string>?> GetRecentLogsAsync(string profileId, CancellationToken cancellationToken = default) =>
         GetAsync<List<string>>($"/api/profiles/{profileId}/logs/recent", cancellationToken);
 
+    public Task<ServerRuntimeStatus?> GetStatusAsync(string profileId, CancellationToken cancellationToken = default) =>
+        GetAsync<ServerRuntimeStatus>($"/api/profiles/{profileId}/status", cancellationToken);
+
     public Task<List<UserAccountDto>?> GetUsersAsync(CancellationToken cancellationToken = default) =>
         GetAsync<List<UserAccountDto>>("/api/users", cancellationToken);
 
