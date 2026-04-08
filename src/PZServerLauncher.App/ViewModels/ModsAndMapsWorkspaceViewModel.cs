@@ -383,17 +383,24 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
             return;
         }
 
-        var saved = await _hostApiClient.SaveNamedWorkshopPresetAsync(SelectedProfile.ProfileId, NewPresetName, BuildPreset());
-        if (saved is null)
+        try
         {
-            LoadStatus = "Named preset could not be saved.";
-            return;
-        }
+            var saved = await _hostApiClient.SaveNamedWorkshopPresetAsync(SelectedProfile.ProfileId, NewPresetName, BuildPreset());
+            if (saved is null)
+            {
+                LoadStatus = "Named preset could not be saved.";
+                return;
+            }
 
-        UpsertSavedPreset(saved);
-        NewPresetName = string.Empty;
-        LoadStatus = $"Saved named preset '{saved.Name}'.";
-        NotifyComputedState();
+            UpsertSavedPreset(saved);
+            NewPresetName = string.Empty;
+            LoadStatus = $"Saved named preset '{saved.Name}'.";
+            NotifyComputedState();
+        }
+        catch (Exception ex)
+        {
+            LoadStatus = ex.Message;
+        }
     }
 
     private void LoadNamedPreset(SavedPresetViewModel? preset)
@@ -414,10 +421,17 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
             return;
         }
 
-        await _hostApiClient.DeleteNamedWorkshopPresetAsync(SelectedProfile.ProfileId, preset.PresetId);
-        SavedPresets.Remove(preset);
-        LoadStatus = $"Deleted named preset '{preset.Name}'.";
-        NotifyComputedState();
+        try
+        {
+            await _hostApiClient.DeleteNamedWorkshopPresetAsync(SelectedProfile.ProfileId, preset.PresetId);
+            SavedPresets.Remove(preset);
+            LoadStatus = $"Deleted named preset '{preset.Name}'.";
+            NotifyComputedState();
+        }
+        catch (Exception ex)
+        {
+            LoadStatus = ex.Message;
+        }
     }
 
     private void ApplyPreset(WorkshopPreset preset)

@@ -41,17 +41,22 @@ public sealed class NamedWorkshopPresetStoreTests : IDisposable
         };
 
         var updated = await store.UpsertAsync("profile-a", ProjectZomboidBranch.Stable41, "mainline", updatedPreset);
+        await store.UpsertAsync("profile-b", ProjectZomboidBranch.Unstable42, "Mainline", initialPreset);
         var all = await store.ListAsync("profile-a");
+        var otherProfilePresets = await store.ListAsync("profile-b");
 
         Assert.Single(all);
         Assert.Equal(saved.PresetId, updated.PresetId);
         Assert.Equal(2, all[0].Preset.WorkshopItemIds.Count);
         Assert.Equal(ProjectZomboidBranch.Stable41, all[0].Branch);
+        Assert.Single(otherProfilePresets);
+        Assert.Equal(ProjectZomboidBranch.Unstable42, otherProfilePresets[0].Branch);
 
         var deleted = await store.DeleteAsync("profile-a", updated.PresetId);
 
         Assert.True(deleted);
         Assert.Empty(await store.ListAsync("profile-a"));
+        Assert.Single(await store.ListAsync("profile-b"));
     }
 
     public void Dispose()
