@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using PZServerLauncher.Core.Runtime;
 
 namespace PZServerLauncher.App.ViewModels;
 
@@ -48,6 +49,9 @@ public partial class ProfileCardViewModel : ViewModelBase
         EditableAutoRestartOnCrash = editableAutoRestartOnCrash;
         WorkshopSummary = workshopSummary;
         WorkshopDiagnostics = workshopDiagnostics;
+        SelectedRawConfigKind = ConfigFileOptionViewModel.All[0];
+        RawConfigDiagnostics = "Load a raw config file to run validation.";
+        RawConfigStatus = "No raw config file loaded yet.";
     }
 
     public string ProfileId { get; }
@@ -61,6 +65,8 @@ public partial class ProfileCardViewModel : ViewModelBase
     public string InstallDirectory { get; }
 
     public string CacheDirectory { get; }
+
+    public IReadOnlyList<ConfigFileOptionViewModel> RawConfigKinds { get; } = ConfigFileOptionViewModel.All;
 
     [ObservableProperty]
     private string runtimeState;
@@ -106,4 +112,33 @@ public partial class ProfileCardViewModel : ViewModelBase
 
     [ObservableProperty]
     private string workshopDiagnostics;
+
+    [ObservableProperty]
+    private ConfigFileOptionViewModel selectedRawConfigKind;
+
+    [ObservableProperty]
+    private string rawConfigContent = string.Empty;
+
+    [ObservableProperty]
+    private string rawConfigDiagnostics;
+
+    [ObservableProperty]
+    private string rawConfigStatus;
+
+    [ObservableProperty]
+    private string loadedRawConfigSha256 = string.Empty;
+
+    [ObservableProperty]
+    private ConfigFileKind loadedRawConfigKind;
+
+    [ObservableProperty]
+    private bool isRawConfigLoaded;
+
+    partial void OnSelectedRawConfigKindChanged(ConfigFileOptionViewModel value)
+    {
+        if (IsRawConfigLoaded && LoadedRawConfigKind != value.Kind)
+        {
+            RawConfigStatus = $"Selected {value.Label}. Load it before editing or saving.";
+        }
+    }
 }

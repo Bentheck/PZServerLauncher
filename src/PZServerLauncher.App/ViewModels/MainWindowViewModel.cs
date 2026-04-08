@@ -44,6 +44,8 @@ public partial class MainWindowViewModel : ViewModelBase
         RestoreCommand = new AsyncRelayCommand<ProfileCardViewModel>(RestoreLatestBackupAsync);
         SaveCommonConfigCommand = new AsyncRelayCommand<ProfileCardViewModel>(SaveCommonConfigAsync);
         ScanWorkshopCommand = new AsyncRelayCommand<ProfileCardViewModel>(ScanWorkshopAsync);
+        LoadRawConfigCommand = new AsyncRelayCommand<ProfileCardViewModel>(LoadRawConfigAsync);
+        SaveRawConfigCommand = new AsyncRelayCommand<ProfileCardViewModel>(SaveRawConfigAsync);
 
         _runtimeEventStream.StatusChanged += OnStatusChangedAsync;
         _runtimeEventStream.JobChanged += OnJobChangedAsync;
@@ -116,6 +118,10 @@ public partial class MainWindowViewModel : ViewModelBase
     public IAsyncRelayCommand<ProfileCardViewModel> SaveCommonConfigCommand { get; }
 
     public IAsyncRelayCommand<ProfileCardViewModel> ScanWorkshopCommand { get; }
+
+    public IAsyncRelayCommand<ProfileCardViewModel> LoadRawConfigCommand { get; }
+
+    public IAsyncRelayCommand<ProfileCardViewModel> SaveRawConfigCommand { get; }
 
     private async Task InitializeAsync()
     {
@@ -339,6 +345,60 @@ public partial class MainWindowViewModel : ViewModelBase
                 : string.Join(" ", result.Diagnostics);
             StatusMessage = $"Workshop scan completed for {profile.DisplayName}.";
         }, $"Scanning workshop content for {profile.DisplayName}...");
+    }
+
+    private async Task LoadRawConfigAsync(ProfileCardViewModel? profile)
+    {
+        if (profile is null)
+        {
+            return;
+        }
+
+        await RunBusyAsync(async () =>
+        {
+            var result = await _hostApiClient.GetRawConfigAsync(profile.ProfileId, profile.SelectedRawConfigKind.Kind, CancellationToken.None);
+            if (result is null)
+            {
+                StatusMessage = $"Unable to load {profile.SelectedRawConfigKind.Label}.";
+                return;
+            }
+
+            RawConfigEditorState.Apply(profile, result);
+            StatusMessage = $"Loaded {profile.SelectedRawConfigKind.Label} for {profile.DisplayName}.";
+        }, $"Loading {profile.SelectedRawConfigKind.Label} for {profile.DisplayName}...");
+    }
+
+    private async Task SaveRawConfigAsync(ProfileCardViewModel? profile)
+    {
+        if (profile is null)
+        {
+            return;
+        }
+
+        if (!profile.IsRawConfigLoaded || profile.LoadedRawConfigKind != profile.SelectedRawConfigKind.Kind)
+        {
+            StatusMessage = $"Load {profile.SelectedRawConfigKind.Label} before saving it.";
+            return;
+        }
+
+        await RunBusyAsync(async () =>
+        {
+            var payload = new RawConfigFileDto(
+                profile.SelectedRawConfigKind.Kind,
+                profile.RawConfigContent,
+                profile.LoadedRawConfigSha256,
+                []);
+
+            var result = await _hostApiClient.SaveRawConfigAsync(profile.ProfileId, profile.SelectedRawConfigKind.Kind, payload, CancellationToken.None);
+            if (result is null)
+            {
+                StatusMessage = $"Unable to save {profile.SelectedRawConfigKind.Label}.";
+                return;
+            }
+
+            RawConfigEditorState.Apply(profile, result);
+            StatusMessage = $"Saved {profile.SelectedRawConfigKind.Label} for {profile.DisplayName}.";
+        }, $"Saving {profile.SelectedRawConfigKind.Label} for {profile.DisplayName}...");
     }
 
     private Task OnStatusChangedAsync(ServerRuntimeStatus status)

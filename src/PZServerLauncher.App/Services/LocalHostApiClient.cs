@@ -110,6 +110,19 @@ public sealed class LocalHostApiClient
     public Task<WorkshopScanResultDto?> ScanWorkshopAsync(string profileId, CancellationToken cancellationToken = default) =>
         PostAsync<WorkshopScanResultDto>($"/api/profiles/{profileId}/workshop/scan", null, cancellationToken);
 
+    public Task<RawConfigFileDto?> GetRawConfigAsync(
+        string profileId,
+        PZServerLauncher.Core.Runtime.ConfigFileKind kind,
+        CancellationToken cancellationToken = default) =>
+        GetAsync<RawConfigFileDto>($"/api/profiles/{profileId}/config/files/{kind}", cancellationToken);
+
+    public Task<RawConfigFileDto?> SaveRawConfigAsync(
+        string profileId,
+        PZServerLauncher.Core.Runtime.ConfigFileKind kind,
+        RawConfigFileDto payload,
+        CancellationToken cancellationToken = default) =>
+        PutAsync<RawConfigFileDto>($"/api/profiles/{profileId}/config/files/{kind}", payload, cancellationToken);
+
     public Task<OperationResultDto?> RestoreAsync(
         string profileId,
         string backupFileName,
@@ -201,7 +214,7 @@ public sealed class LocalHostApiClient
         var state = await LoadStateAsync(cancellationToken);
         using var client = CreateHttpClient(state);
         using var response = await client.PostAsJsonAsync(path, payload, JsonOptions, cancellationToken);
-        response.EnsureSuccessStatusCode();
+        await EnsureSuccessAsync(response, cancellationToken);
     }
 
     private async Task<T?> PostAsync<T>(string path, object? payload, CancellationToken cancellationToken)
@@ -212,7 +225,7 @@ public sealed class LocalHostApiClient
             ? await client.PostAsync(path, content: null, cancellationToken)
             : await client.PostAsJsonAsync(path, payload, JsonOptions, cancellationToken);
 
-        response.EnsureSuccessStatusCode();
+        await EnsureSuccessAsync(response, cancellationToken);
         return await response.Content.ReadFromJsonAsync<T>(JsonOptions, cancellationToken);
     }
 
@@ -221,8 +234,36 @@ public sealed class LocalHostApiClient
         var state = await LoadStateAsync(cancellationToken);
         using var client = CreateHttpClient(state);
         using var response = await client.PutAsJsonAsync(path, payload, JsonOptions, cancellationToken);
-        response.EnsureSuccessStatusCode();
+        await EnsureSuccessAsync(response, cancellationToken);
         return await response.Content.ReadFromJsonAsync<T>(JsonOptions, cancellationToken);
+    }
+
+    private static async Task EnsureSuccessAsync(HttpResponseMessage response, CancellationToken cancellationToken)
+    {
+        if (response.IsSuccessStatusCode)
+        {
+            return;
+        }
+
+        try
+        {
+            var operation = await response.Content.ReadFromJsonAsync<OperationResultDto>(JsonOptions, cancellationToken);
+            if (!string.IsNullOrWhiteSpace(operation?.Message))
+            {
+                throw new HttpRequestException(operation.Message, null, response.StatusCode);
+            }
+        }
+        catch (JsonException)
+        {
+        }
+
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        if (!string.IsNullOrWhiteSpace(body))
+        {
+            throw new HttpRequestException(body, null, response.StatusCode);
+        }
+
+        response.EnsureSuccessStatusCode();
     }
 
     private async Task<LocalHostBootstrapState> LoadStateAsync(CancellationToken cancellationToken)

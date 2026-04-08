@@ -129,7 +129,7 @@
                 <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:ProfileCardViewModel">
                         <Border Classes="card" Margin="0,0,0,16">
-                            <Grid RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="14">
+                            <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="14">
                                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                                     <StackPanel Spacing="4">
                                         <TextBlock Classes="panel-title" FontSize="22" Text="{Binding DisplayName}" />
@@ -203,7 +203,57 @@
                                     </StackPanel>
                                 </Grid>
 
-                                <WrapPanel Grid.Row="3" ItemHeight="36" ItemWidth="132" Orientation="Horizontal">
+                                <Grid Grid.Row="3" ColumnDefinitions="*,320" ColumnSpacing="18">
+                                    <StackPanel Spacing="8">
+                                        <Grid ColumnDefinitions="240,Auto,Auto,*" ColumnSpacing="10">
+                                            <StackPanel Spacing="4">
+                                                <TextBlock Classes="kicker" Text="Raw Config Editor" />
+                                                <ComboBox ItemsSource="{Binding RawConfigKinds}"
+                                                          SelectedItem="{Binding SelectedRawConfigKind}">
+                                                    <ComboBox.ItemTemplate>
+                                                        <DataTemplate x:DataType="vm:ConfigFileOptionViewModel">
+                                                            <TextBlock Text="{Binding Label}" />
+                                                        </DataTemplate>
+                                                    </ComboBox.ItemTemplate>
+                                                </ComboBox>
+                                            </StackPanel>
+                                            <Button Grid.Column="1"
+                                                    VerticalAlignment="Bottom"
+                                                    Command="{Binding #RootWindow.DataContext.LoadRawConfigCommand}"
+                                                    CommandParameter="{Binding .}"
+                                                    Content="Load File" />
+                                            <Button Grid.Column="2"
+                                                    VerticalAlignment="Bottom"
+                                                    Command="{Binding #RootWindow.DataContext.SaveRawConfigCommand}"
+                                                    CommandParameter="{Binding .}"
+                                                    Content="Save File"
+                                                    IsEnabled="{Binding IsRawConfigLoaded}" />
+                                            <TextBlock Grid.Column="3"
+                                                       VerticalAlignment="Bottom"
+                                                       Classes="body"
+                                                       Text="{Binding RawConfigStatus}"
+                                                       TextWrapping="Wrap" />
+                                        </Grid>
+
+                                        <TextBox MinHeight="240"
+                                                 AcceptsReturn="True"
+                                                 AcceptsTab="True"
+                                                 FontFamily="Cascadia Code,Consolas,monospace"
+                                                 HorizontalAlignment="Stretch"
+                                                 Text="{Binding RawConfigContent}"
+                                                 TextWrapping="NoWrap"
+                                                 VerticalContentAlignment="Top" />
+                                    </StackPanel>
+
+                                    <StackPanel Grid.Column="1" Spacing="8">
+                                        <TextBlock Classes="kicker" Text="Raw Diagnostics" />
+                                        <TextBlock Classes="body"
+                                                   Text="{Binding RawConfigDiagnostics}"
+                                                   TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </Grid>
+
+                                <WrapPanel Grid.Row="4" ItemHeight="36" ItemWidth="132" Orientation="Horizontal">
                                     <Button Command="{Binding #RootWindow.DataContext.SaveCommonConfigCommand}" CommandParameter="{Binding .}" Content="Save Settings" />
                                     <Button Command="{Binding #RootWindow.DataContext.ScanWorkshopCommand}" CommandParameter="{Binding .}" Content="Scan Workshop" />
                                     <Button Command="{Binding #RootWindow.DataContext.InstallCommand}" CommandParameter="{Binding .}" Content="Install" />
