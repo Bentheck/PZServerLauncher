@@ -182,7 +182,7 @@
 
         <p class="muted-text">Treat remote access as a staged rollout: keep the listener local until each prerequisite is intentional.</p>
 
-        @if (RemoteSelfTestChecks.Count == 0)
+        @if (RemoteChecklistSteps.Count == 0)
         {
             <div class="empty-state">
                 <p>Run the local self-test after saving your HTTPS settings to turn this panel into a rollout checklist.</p>
@@ -199,7 +199,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var check in RemoteSelfTestChecks)
+                        @foreach (var check in RemoteChecklistSteps)
                         {
                             <tr>
                                 <td>@check.StatusLabel</td>
@@ -334,15 +334,33 @@
 
     private string BuildChecklistStats()
     {
-        if (RemoteSelfTestChecks.Count == 0)
+        if (RemoteChecklistSteps.Count == 0)
         {
             return "No self-test yet";
         }
 
-        var blocking = RemoteSelfTestChecks.Count(check => check.IsBlocking);
-        var followUp = RemoteSelfTestChecks.Count(check => check.IsFollowUp);
-        return $"{RemoteSelfTestChecks.Count} checks | {blocking} blocking | {followUp} follow-up";
+        var blocking = RemoteChecklistSteps.Count(check => check.IsBlocking);
+        var followUp = RemoteChecklistSteps.Count(check => check.IsFollowUp);
+        return $"{RemoteChecklistSteps.Count} checks | {blocking} blocking | {followUp} follow-up";
     }
+
+    private IReadOnlyList<RemoteChecklistStep> RemoteChecklistSteps =>
+    [
+        _ownerAccountsWithTwoFactor == 0
+            ? new RemoteChecklistStep("Blocking", "Finish owner TOTP enrollment before you trust remote sign-in.", true, false)
+            : new RemoteChecklistStep("Healthy", "Owner TOTP readiness is in place for remote administration.", false, false),
+        string.IsNullOrWhiteSpace(_model.CertificatePath)
+            ? new RemoteChecklistStep("Blocking", "Choose a PFX certificate path so the host can validate HTTPS binding.", true, false)
+            : new RemoteChecklistStep("Healthy", "A certificate path is staged for host validation.", false, false),
+        _model.IsEnabled
+            ? new RemoteChecklistStep("Follow-up", $"Remote HTTPS is enabled for {_model.BindAddress}:{_model.HttpsPort}. Restart the host after saving.", false, true)
+            : new RemoteChecklistStep("Healthy", "Remote HTTPS is still disabled, so the host remains local-only while you stage the rollout.", false, false),
+        _model.CreateFirewallRule
+            ? new RemoteChecklistStep("Follow-up", "Firewall intent is enabled. Apply or verify the inbound rule only after the local checks pass.", false, true)
+            : new RemoteChecklistStep("Follow-up", "Firewall intent is off. Manual inbound access will still be required if you expose the listener later.", false, true),
+    ];
+
+    private sealed record RemoteChecklistStep(string StatusLabel, string Message, bool IsBlocking, bool IsFollowUp);
 
     private sealed class RemoteAccessInput
     {
