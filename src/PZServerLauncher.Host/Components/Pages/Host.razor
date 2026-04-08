@@ -1,7 +1,9 @@
 @page "/host"
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@using PZServerLauncher.Core.Profiles
 @using PZServerLauncher.Host.Services
 @inject HostSettingsStore HostSettingsStore
+@inject ProfileStore ProfileStore
 
 <PageTitle>Host</PageTitle>
 
@@ -53,6 +55,39 @@
                 <strong class="metric-value">@(_settings.OwnerBootstrap.IsConfigured ? "Configured" : "Pending")</strong>
                 <span class="metric-note">@(_settings.OwnerBootstrap.OwnerUserName ?? "No owner assigned yet")</span>
             </article>
+        </section>
+
+        <section class="card">
+            <div class="card-heading">
+                <div>
+                    <p class="eyebrow">Managed Profiles</p>
+                    <h2>Host Supervision Roster</h2>
+                </div>
+            </div>
+
+            @if (_profiles.Count == 0)
+            {
+                <div class="empty-state">
+                    <p class="muted-text">No Project Zomboid profiles are loaded yet, so the host has nothing to supervise.</p>
+                </div>
+            }
+            else
+            {
+                <p class="muted-text">@_profiles.Count profile(s) loaded | @_profiles.Count(profile => profile.StartWithHost) set to start with host | @_profiles.Count(profile => profile.AutoRestartOnCrash) set to auto-restart on crash.</p>
+
+                <div class="field-grid">
+                    @foreach (var profile in _profiles)
+                    {
+                        <div class="field-card">
+                            <span class="field-label">@profile.DisplayName</span>
+                            <span>@profile.Branch</span>
+                            <span>Start with host: @(profile.StartWithHost ? "On" : "Off")</span>
+                            <span>Auto-restart: @(profile.AutoRestartOnCrash ? "On" : "Off")</span>
+                            <span>Install root: @profile.InstallDirectory</span>
+                        </div>
+                    }
+                </div>
+            }
         </section>
 
         <div class="cards cards--wide">
@@ -154,9 +189,11 @@
 
 @code {
     private PZServerLauncher.Core.Runtime.HostSettings? _settings;
+    private IReadOnlyList<ServerProfile> _profiles = [];
 
     protected override async Task OnInitializedAsync()
     {
         _settings = await HostSettingsStore.GetAsync();
+        _profiles = await ProfileStore.ListAsync();
     }
 }
