@@ -1,4 +1,6 @@
+using System.Collections.Specialized;
 using CommunityToolkit.Mvvm.Input;
+using PZServerLauncher.Core.Runtime;
 
 namespace PZServerLauncher.App.ViewModels;
 
@@ -13,6 +15,7 @@ public sealed class InstallUpdateWorkspaceViewModel : ProfileWorkspacePageViewMo
             legacy,
             ["Install path", "Update actions", "Runtime controls", "Recent jobs"])
     {
+        Legacy.RecentOperationJobs.CollectionChanged += OnRecentOperationJobsChanged;
         InstallCommand = new AsyncRelayCommand(() => ExecuteProfileCommandAsync(Legacy.InstallCommand));
         UpdateCommand = new AsyncRelayCommand(() => ExecuteProfileCommandAsync(Legacy.UpdateCommand));
         StartCommand = new AsyncRelayCommand(() => ExecuteProfileCommandAsync(Legacy.StartCommand));
@@ -47,9 +50,26 @@ public sealed class InstallUpdateWorkspaceViewModel : ProfileWorkspacePageViewMo
 
     public string CacheDirectory => SelectedProfile?.CacheDirectory ?? "No cache path available";
 
-    public string LastJobSummary => Legacy.RecentJobs.Count == 0
-        ? "No recent jobs recorded."
-        : Legacy.RecentJobs[0].Title + " | " + Legacy.RecentJobs[0].Detail;
+    public IReadOnlyList<OperationJob> RecentProfileJobs => SelectedProfile is null
+        ? []
+        : Legacy.RecentOperationJobs
+            .Where(job =>
+                string.Equals(job.ProfileId, SelectedProfile.ProfileId, StringComparison.OrdinalIgnoreCase) &&
+                (job.Kind is OperationJobKind.Install or OperationJobKind.Update))
+            .Take(5)
+            .ToArray();
+
+    public bool HasRecentProfileJobs => RecentProfileJobs.Count > 0;
+
+    public string LastJobSummary => !HasRecentProfileJobs
+        ? "No recent install or update jobs recorded for this profile."
+        : $"{RecentProfileJobs[0].Kind} - {RecentProfileJobs[0].Status} | {RecentProfileJobs[0].Detail ?? RecentProfileJobs[0].Summary}";
+
+    public string JobHistorySummary => SelectedProfile is null
+        ? "Select a profile to see install and update history."
+        : HasRecentProfileJobs
+            ? $"{RecentProfileJobs.Count} recent install/update job(s) are attached to this profile."
+            : "This profile does not have install or update history yet.";
 
     public string BranchChannelSummary => SelectedProfile?.BranchChannelSummary ?? "No branch channel summary available.";
 
@@ -119,7 +139,10 @@ public sealed class InstallUpdateWorkspaceViewModel : ProfileWorkspacePageViewMo
         OnPropertyChanged(nameof(RuntimeState));
         OnPropertyChanged(nameof(InstallDirectory));
         OnPropertyChanged(nameof(CacheDirectory));
+        OnPropertyChanged(nameof(RecentProfileJobs));
+        OnPropertyChanged(nameof(HasRecentProfileJobs));
         OnPropertyChanged(nameof(LastJobSummary));
+        OnPropertyChanged(nameof(JobHistorySummary));
         OnPropertyChanged(nameof(BranchChannelSummary));
         OnPropertyChanged(nameof(SteamCmdCommandSummary));
         OnPropertyChanged(nameof(SteamCmdScriptPreview));
@@ -138,5 +161,13 @@ public sealed class InstallUpdateWorkspaceViewModel : ProfileWorkspacePageViewMo
         OnPropertyChanged(nameof(PreflightSummary));
         OnPropertyChanged(nameof(ExpectedLauncherPath));
         OnPropertyChanged(nameof(ConfigFootprintSummary));
+    }
+
+    private void OnRecentOperationJobsChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        OnPropertyChanged(nameof(RecentProfileJobs));
+        OnPropertyChanged(nameof(HasRecentProfileJobs));
+        OnPropertyChanged(nameof(LastJobSummary));
+        OnPropertyChanged(nameof(JobHistorySummary));
     }
 }

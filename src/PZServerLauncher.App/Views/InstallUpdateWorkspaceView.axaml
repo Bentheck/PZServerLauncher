@@ -151,7 +151,21 @@
                             <Button Command="{Binding RefreshCommand}" Content="Refresh" />
                         </WrapPanel>
                         <TextBlock Classes="body" Text="{Binding OperatorSequenceSummary}" TextWrapping="Wrap" />
+                        <TextBlock Classes="body" Text="{Binding JobHistorySummary}" TextWrapping="Wrap" />
                         <TextBlock Classes="body" Text="{Binding LastJobSummary}" TextWrapping="Wrap" />
+                        <ItemsControl ItemsSource="{Binding RecentProfileJobs}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="#F1E6D7" CornerRadius="10" Padding="10" Margin="0,4,0,0">
+                                        <StackPanel Spacing="4">
+                                            <TextBlock FontWeight="SemiBold" Text="{Binding Kind}" />
+                                            <TextBlock Classes="body" Text="{Binding Status}" />
+                                            <TextBlock Classes="body" Text="{Binding Detail}" TextWrapping="Wrap" />
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
                         <TextBlock Classes="body" Text="{Binding LaunchReadiness}" TextWrapping="Wrap" />
                         <TextBlock Classes="body" Text="{Binding NextRecommendedAction}" TextWrapping="Wrap" />
                     </StackPanel>

@@ -142,6 +142,8 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public ObservableCollection<ShellItemViewModel> RecentJobs { get; } = [];
 
+    public ObservableCollection<OperationJob> RecentOperationJobs { get; } = [];
+
     public IAsyncRelayCommand RefreshCommand { get; }
 
     public IAsyncRelayCommand CreateStarterProfileCommand { get; }
@@ -258,8 +260,10 @@ public partial class MainWindowViewModel : ViewModelBase
             }
 
             RecentJobs.Clear();
+            RecentOperationJobs.Clear();
             foreach (var job in snapshot.Jobs)
             {
+                RecentOperationJobs.Add(job);
                 RecentJobs.Add(new ShellItemViewModel(
                     job.JobId.ToString("N"),
                     $"{job.Kind} - {job.Status}",
@@ -622,6 +626,22 @@ public partial class MainWindowViewModel : ViewModelBase
         Dispatcher.UIThread.Post(() =>
         {
             var key = job.JobId.ToString("N");
+            var existingOperationJobIndex = RecentOperationJobs
+                .Select((value, index) => new { value, index })
+                .FirstOrDefault(entry => entry.value.JobId == job.JobId)?.index;
+            if (existingOperationJobIndex is int operationIndex)
+            {
+                RecentOperationJobs[operationIndex] = job;
+            }
+            else
+            {
+                RecentOperationJobs.Insert(0, job);
+                while (RecentOperationJobs.Count > 20)
+                {
+                    RecentOperationJobs.RemoveAt(RecentOperationJobs.Count - 1);
+                }
+            }
+
             var existing = RecentJobs.FirstOrDefault(x => x.Key == key);
             if (existing is null)
             {

@@ -110,6 +110,32 @@ public sealed class ProjectZomboidInstallPostureSummaryBuilderTests : IDisposabl
         Assert.EndsWith(ProjectZomboidDefaults.StableBatchFileName, summary.ExpectedLauncherPath);
     }
 
+    [Fact]
+    public void Build_ReportsMaintenanceWindowWhenServerIsRunning()
+    {
+        var profile = CreateProfile("running-maintenance", ProjectZomboidBranch.Stable41);
+        var planner = new ProjectZomboidServerPlanner();
+        var paths = planner.ResolvePaths(profile);
+
+        Directory.CreateDirectory(profile.InstallDirectory);
+        File.WriteAllText(
+            Path.Combine(profile.InstallDirectory, ProjectZomboidDefaults.StableBatchFileName),
+            """
+            @echo off
+            echo launcher exists but no java template can be extracted
+            """);
+        Directory.CreateDirectory(paths.ServerConfigDirectory);
+        File.WriteAllText(paths.IniFilePath, "Public=true");
+        File.WriteAllText(paths.SandboxVarsFilePath, "SandboxVars = {\n    VERSION = 4,\n}");
+
+        var summary = ProjectZomboidInstallPostureSummaryBuilder.Build(profile, "Running", hasBackup: true, latestBackup: "pre-maintenance.zip");
+
+        Assert.Contains("maintenance operation", summary.DeploymentPostureSummary);
+        Assert.Contains("Maintenance window required", summary.MaintenanceWindowSummary);
+        Assert.Contains("Announce maintenance", summary.OperatorSequenceSummary);
+        Assert.Contains(summary.PreflightChecks, check => check.Contains("Runtime window: Running", StringComparison.Ordinal));
+    }
+
     private ServerProfile CreateProfile(string id, ProjectZomboidBranch branch) =>
         ServerProfileFactory.CreateStarterProfile() with
         {
