@@ -32,6 +32,9 @@
                         <Border Background="#2A2927" CornerRadius="999" Padding="14,8">
                             <TextBlock Foreground="#F7F0E7" Text="{Binding LatestBackupSummary}" />
                         </Border>
+                        <Border Background="#2A2927" CornerRadius="999" Padding="14,8" Margin="10,0,0,0">
+                            <TextBlock Foreground="#F7F0E7" Text="{Binding BackupCountSummary}" />
+                        </Border>
                     </WrapPanel>
                 </StackPanel>
             </Border>
@@ -65,19 +68,40 @@
 
             <Grid ColumnDefinitions="340,*" ColumnSpacing="16">
                 <Border Classes="card" Padding="16">
-                    <StackPanel Spacing="10">
-                        <TextBlock Classes="kicker" Text="Available Backups" />
-                        <ListBox ItemsSource="{Binding Backups}"
-                                 SelectedItem="{Binding SelectedBackup}"
-                                 MinHeight="360">
-                            <ListBox.ItemTemplate>
-                                <DataTemplate>
-                                    <TextBlock Classes="body" Text="{Binding .}" TextWrapping="Wrap" />
-                                </DataTemplate>
-                            </ListBox.ItemTemplate>
-                        </ListBox>
-                        <TextBlock Classes="body"
-                                   Text="No backups yet. Create the first manual archive from this page."
+                        <StackPanel Spacing="10">
+                            <TextBlock Classes="kicker" Text="Available Backups" />
+                            <TextBlock Classes="body"
+                                       Text="Manual snapshots, pre-update safety nets, and scheduled archives are shown newest-first."
+                                       TextWrapping="Wrap" />
+                            <ListBox ItemsSource="{Binding BackupEntries}"
+                                     SelectedItem="{Binding SelectedBackupArchive}"
+                                     MinHeight="360">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="#F1E6D7" CornerRadius="12" Padding="12" Margin="0,0,0,8">
+                                            <StackPanel Spacing="4">
+                                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                                    <TextBlock FontWeight="SemiBold" Text="{Binding Title}" />
+                                                    <Border Background="#E5A26B" CornerRadius="999" Padding="8,2" IsVisible="{Binding IsLatest}">
+                                                        <TextBlock Foreground="#1F1D1B" FontSize="11" FontWeight="SemiBold" Text="Latest" />
+                                                    </Border>
+                                                    <Border Background="#2A2927" CornerRadius="999" Padding="8,2">
+                                                        <TextBlock Foreground="#F7F0E7" FontSize="11" Text="{Binding KindLabel}" />
+                                                    </Border>
+                                                </StackPanel>
+                                                <TextBlock Classes="body" Text="{Binding TimestampLabel}" TextWrapping="Wrap" />
+                                                <TextBlock Classes="body"
+                                                           FontFamily="Cascadia Code,Consolas,monospace"
+                                                           FontSize="12"
+                                                           Text="{Binding FileLabel}"
+                                                           TextWrapping="Wrap" />
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                            <TextBlock Classes="body"
+                                       Text="No backups yet. Create the first manual archive from this page."
                                    IsVisible="{Binding HasNoBackups}"
                                    TextWrapping="Wrap" />
                     </StackPanel>
@@ -87,9 +111,14 @@
                     <Border Classes="card" Padding="16">
                         <StackPanel Spacing="10">
                             <TextBlock Classes="kicker" Text="Selected Backup" />
+                            <TextBlock FontSize="22"
+                                       FontWeight="SemiBold"
+                                       Text="{Binding SelectedBackupHeadline}"
+                                       TextWrapping="Wrap" />
                             <TextBlock Classes="body" Text="{Binding SelectedBackupDetails}" TextWrapping="Wrap" />
                             <TextBlock Classes="body" Text="{Binding LatestBackupSummary}" TextWrapping="Wrap" />
-                            <TextBlock Classes="body" Text="Backups are ZIP archives produced by the host service. Restore stops the server, unpacks the selected archive, and optionally requests a restart afterward." TextWrapping="Wrap" />
+                            <TextBlock Classes="body" Text="{Binding RecoveryGuidance}" TextWrapping="Wrap" />
+                            <TextBlock Classes="body" Text="Backups are ZIP archives produced by the host service. Manual archives stay protected from retention, pre-update archives are created before risky upgrades, and scheduled archives only rotate when enabled." TextWrapping="Wrap" />
                             <TextBlock Classes="body" Text="Use this page for standard recovery workflows. Advanced file-level recovery still belongs in filesystem tooling and Advanced Files." TextWrapping="Wrap" />
                         </StackPanel>
                     </Border>
@@ -107,6 +136,7 @@
                                       IsChecked="{Binding RestartAfterRestore}"
                                       IsEnabled="{Binding CanRestore}" />
                             <TextBlock Classes="body" Text="{Binding RestoreModeSummary}" TextWrapping="Wrap" />
+                            <TextBlock Classes="body" Text="{Binding PolicySummary}" TextWrapping="Wrap" />
                             <TextBlock Classes="body" Text="{Binding LoadStatus}" TextWrapping="Wrap" />
                         </StackPanel>
                     </Border>

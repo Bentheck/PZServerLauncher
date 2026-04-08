@@ -1,4 +1,6 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
+using System.Text.RegularExpressions;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PZServerLauncher.App.Services;
@@ -11,6 +13,10 @@ namespace PZServerLauncher.App.ViewModels;
 
 public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
 {
+    private static readonly Regex BackupPattern = new(
+        "-(manual|preupdate|scheduled)-(\\d{8}-\\d{6})\\.zip$",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+
     private static readonly ProjectZomboidBackupPostureSummary EmptySummary = new(
         "Pick a profile to inspect recovery coverage.",
         "Latest archive: none captured yet.",
@@ -62,13 +68,21 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
     public ObservableCollection<string> Backups { get; } = [];
 
-    public bool HasBackups => Backups.Count > 0;
+    public ObservableCollection<BackupArchiveRowViewModel> BackupEntries { get; } = [];
 
-    public bool HasNoBackups => Backups.Count == 0;
+    public bool HasBackups => BackupEntries.Count > 0;
 
-    public bool CanRestore => SelectedProfile is not null && !string.IsNullOrWhiteSpace(SelectedBackup) && !IsBusy;
+    public bool HasNoBackups => BackupEntries.Count == 0;
+
+    public bool CanRestore => SelectedProfile is not null && SelectedBackupArchive is not null && !IsBusy;
 
     public bool CanCreateBackup => SelectedProfile is not null && !IsBusy;
+
+    public string BackupCountSummary => SelectedProfile is null
+        ? "No archive count available."
+        : HasBackups
+            ? $"{CurrentSummary.TotalBackupCount} total | {CurrentSummary.ManualBackupCount} manual | {CurrentSummary.PreUpdateBackupCount} pre-update | {CurrentSummary.ScheduledBackupCount} scheduled"
+            : "No archives yet";
 
     public string BackupPosture => SelectedProfile is null
         ? "Pick a profile to inspect backup posture."
@@ -85,6 +99,8 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             : "The server will stay offline afterward for inspection.")}";
 
     public string LatestBackupSummary => CurrentSummary.LatestArchiveSummary;
+
+    public string SelectedBackupHeadline => SelectedBackupArchive?.Title ?? "No recovery point selected";
 
     public string SelectedBackupDetails => CurrentSummary.SelectedArchiveSummary;
 
@@ -113,6 +129,9 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
     [ObservableProperty]
     private string? selectedBackup;
+
+    [ObservableProperty]
+    private BackupArchiveRowViewModel? selectedBackupArchive;
 
     [ObservableProperty]
     private bool restartAfterRestore = true;
@@ -182,12 +201,15 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             var backups = await _hostApiClient.GetBackupsAsync(profile.ProfileId) ?? [];
 
             Backups.Clear();
+            BackupEntries.Clear();
             foreach (var backup in backups)
             {
                 Backups.Add(backup);
+                BackupEntries.Add(ParseBackupEntry(backup, BackupEntries.Count == 0));
             }
 
-            SelectedBackup = Backups.FirstOrDefault();
+            SelectedBackupArchive = BackupEntries.FirstOrDefault();
+            SelectedBackup = SelectedBackupArchive?.ArchiveFileName;
             LoadStatus = backups.Count == 0
                 ? "No backups exist yet. Create the first manual archive from this page."
                 : $"Loaded {backups.Count} backup archive(s) for {profile.DisplayName}.";
@@ -198,7 +220,9 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
     private void Reset()
     {
         Backups.Clear();
+        BackupEntries.Clear();
         SelectedBackup = null;
+        SelectedBackupArchive = null;
         RestartAfterRestore = true;
         LoadStatus = "Select a profile to load backups.";
         NotifyComputedState();
@@ -230,6 +254,17 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
     partial void OnSelectedBackupChanged(string? value)
     {
+        if (!string.Equals(SelectedBackupArchive?.ArchiveFileName, value, StringComparison.Ordinal))
+        {
+            SelectedBackupArchive = BackupEntries.FirstOrDefault(entry => string.Equals(entry.ArchiveFileName, value, StringComparison.Ordinal));
+        }
+
+        NotifyComputedState();
+    }
+
+    partial void OnSelectedBackupArchiveChanged(BackupArchiveRowViewModel? value)
+    {
+        SelectedBackup = value?.ArchiveFileName;
         NotifyComputedState();
     }
 
@@ -248,10 +283,12 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         OnPropertyChanged(nameof(HasNoBackups));
         OnPropertyChanged(nameof(CanRestore));
         OnPropertyChanged(nameof(CanCreateBackup));
+        OnPropertyChanged(nameof(BackupCountSummary));
         OnPropertyChanged(nameof(BackupPosture));
         OnPropertyChanged(nameof(BackupInventorySummary));
         OnPropertyChanged(nameof(RecoveryGuidance));
         OnPropertyChanged(nameof(LatestBackupSummary));
+        OnPropertyChanged(nameof(SelectedBackupHeadline));
         OnPropertyChanged(nameof(SelectedBackupDetails));
         OnPropertyChanged(nameof(PolicySummary));
         OnPropertyChanged(nameof(RestoreModeSummary));
@@ -265,9 +302,43 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             ? EmptySummary
             : ProjectZomboidBackupPostureSummaryBuilder.Build(
                 ToPlanningProfile(SelectedProfile),
-                Backups.ToList(),
+                BackupEntries.Select(entry => entry.ArchiveFileName).ToList(),
                 SelectedBackup,
                 SelectedProfile.RuntimeState);
+
+    private static BackupArchiveRowViewModel ParseBackupEntry(string archiveFileName, bool isLatest)
+    {
+        var match = BackupPattern.Match(archiveFileName);
+        var (title, kindLabel) = match.Success
+            ? match.Groups[1].Value.ToLowerInvariant() switch
+            {
+                "manual" => ("Manual Snapshot", "Manual"),
+                "preupdate" => ("Pre-Update Safety Net", "Pre-Update"),
+                "scheduled" => ("Scheduled Archive", "Scheduled"),
+                _ => ("Recovery Archive", "Archive"),
+            }
+            : ("Recovery Archive", "Archive");
+
+        var timestampLabel = "Timestamp unavailable.";
+        if (match.Success &&
+            DateTimeOffset.TryParseExact(
+                match.Groups[2].Value,
+                "yyyyMMdd-HHmmss",
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+                out var createdAtUtc))
+        {
+            timestampLabel = createdAtUtc.ToLocalTime().ToString("MMM d, yyyy 'at' h:mm tt", CultureInfo.CurrentCulture);
+        }
+
+        return new BackupArchiveRowViewModel(
+            archiveFileName,
+            title,
+            kindLabel,
+            timestampLabel,
+            archiveFileName,
+            isLatest);
+    }
 
     private static ServerProfile ToPlanningProfile(ProfileCardViewModel profile) =>
         new()
@@ -280,4 +351,12 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             Branch = profile.BranchValue,
             BackupPolicy = profile.BackupPolicy,
         };
+
+    public sealed record BackupArchiveRowViewModel(
+        string ArchiveFileName,
+        string Title,
+        string KindLabel,
+        string TimestampLabel,
+        string FileLabel,
+        bool IsLatest);
 }
