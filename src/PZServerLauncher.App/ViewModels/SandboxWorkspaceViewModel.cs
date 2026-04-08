@@ -21,7 +21,7 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             "Branch-aware gameplay and world settings from SandboxVars.lua.",
             "Sandbox settings are in sync.",
             legacy,
-            ["World setup", "Utilities", "Loot and climate", "Survival systems", "Player experience"])
+            ["World setup", "Utilities", "Loot and climate", "Survival systems", "World events", "Survivor boosts", "Cleanup and wear", "Player experience"])
     {
         _hostApiClient = hostApiClient;
         SaveSettingsCommand = new AsyncRelayCommand(SaveSettingsAsync);
@@ -153,10 +153,55 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
     private string endRegen = string.Empty;
 
     [ObservableProperty]
+    private string helicopter = string.Empty;
+
+    [ObservableProperty]
+    private string metaEvent = string.Empty;
+
+    [ObservableProperty]
+    private string sleepingEvent = string.Empty;
+
+    [ObservableProperty]
+    private string generatorSpawning = string.Empty;
+
+    [ObservableProperty]
+    private string characterFreePoints = string.Empty;
+
+    [ObservableProperty]
+    private string constructionBonusPoints = string.Empty;
+
+    [ObservableProperty]
+    private bool multiHit;
+
+    [ObservableProperty]
+    private bool allowExteriorGenerator;
+
+    [ObservableProperty]
+    private bool fireSpread;
+
+    [ObservableProperty]
+    private string hoursForCorpseRemoval = string.Empty;
+
+    [ObservableProperty]
+    private string decayingCorpseHealthImpact = string.Empty;
+
+    [ObservableProperty]
+    private string bloodLevel = string.Empty;
+
+    [ObservableProperty]
+    private string clothingDegradation = string.Empty;
+
+    [ObservableProperty]
     private bool starterKit;
 
     [ObservableProperty]
     private bool nutrition;
+
+    [ObservableProperty]
+    private bool enableSnowOnGround;
+
+    [ObservableProperty]
+    private bool enableVehicles;
 
     protected override void OnSelectedProfileChangedCore(ProfileCardViewModel? profile)
     {
@@ -358,8 +403,23 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             PlantResilience = GetValue(values, ".sandbox.plant-resilience");
             PlantAbundance = GetValue(values, ".sandbox.plant-abundance");
             EndRegen = GetValue(values, ".sandbox.end-regen");
+            Helicopter = GetValue(values, ".sandbox.helicopter");
+            MetaEvent = GetValue(values, ".sandbox.meta-event");
+            SleepingEvent = GetValue(values, ".sandbox.sleeping-event");
+            GeneratorSpawning = GetValue(values, ".sandbox.generator-spawning");
+            CharacterFreePoints = GetValue(values, ".sandbox.character-free-points");
+            ConstructionBonusPoints = GetValue(values, ".sandbox.construction-bonus-points");
+            MultiHit = bool.TryParse(GetValue(values, ".sandbox.multi-hit"), out var multiHit) && multiHit;
+            AllowExteriorGenerator = bool.TryParse(GetValue(values, ".sandbox.allow-exterior-generator"), out var allowExteriorGenerator) && allowExteriorGenerator;
+            FireSpread = bool.TryParse(GetValue(values, ".sandbox.fire-spread"), out var fireSpread) && fireSpread;
+            HoursForCorpseRemoval = GetValue(values, ".sandbox.hours-for-corpse-removal");
+            DecayingCorpseHealthImpact = GetValue(values, ".sandbox.decaying-corpse-health-impact");
+            BloodLevel = GetValue(values, ".sandbox.blood-level");
+            ClothingDegradation = GetValue(values, ".sandbox.clothing-degradation");
             StarterKit = bool.TryParse(GetValue(values, ".sandbox.starter-kit"), out var starterKit) && starterKit;
             Nutrition = bool.TryParse(GetValue(values, ".sandbox.nutrition"), out var nutrition) && nutrition;
+            EnableSnowOnGround = bool.TryParse(GetValue(values, ".sandbox.enable-snow-on-ground"), out var enableSnowOnGround) && enableSnowOnGround;
+            EnableVehicles = bool.TryParse(GetValue(values, ".sandbox.enable-vehicles"), out var enableVehicles) && enableVehicles;
         }
         finally
         {
@@ -398,8 +458,23 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             [$"{prefix}.sandbox.plant-resilience"] = PlantResilience,
             [$"{prefix}.sandbox.plant-abundance"] = PlantAbundance,
             [$"{prefix}.sandbox.end-regen"] = EndRegen,
+            [$"{prefix}.sandbox.helicopter"] = Helicopter,
+            [$"{prefix}.sandbox.meta-event"] = MetaEvent,
+            [$"{prefix}.sandbox.sleeping-event"] = SleepingEvent,
+            [$"{prefix}.sandbox.generator-spawning"] = GeneratorSpawning,
+            [$"{prefix}.sandbox.character-free-points"] = CharacterFreePoints,
+            [$"{prefix}.sandbox.construction-bonus-points"] = ConstructionBonusPoints,
+            [$"{prefix}.sandbox.multi-hit"] = MultiHit.ToString(),
+            [$"{prefix}.sandbox.allow-exterior-generator"] = AllowExteriorGenerator.ToString(),
+            [$"{prefix}.sandbox.fire-spread"] = FireSpread.ToString(),
+            [$"{prefix}.sandbox.hours-for-corpse-removal"] = HoursForCorpseRemoval,
+            [$"{prefix}.sandbox.decaying-corpse-health-impact"] = DecayingCorpseHealthImpact,
+            [$"{prefix}.sandbox.blood-level"] = BloodLevel,
+            [$"{prefix}.sandbox.clothing-degradation"] = ClothingDegradation,
             [$"{prefix}.sandbox.starter-kit"] = StarterKit.ToString(),
             [$"{prefix}.sandbox.nutrition"] = Nutrition.ToString(),
+            [$"{prefix}.sandbox.enable-snow-on-ground"] = EnableSnowOnGround.ToString(),
+            [$"{prefix}.sandbox.enable-vehicles"] = EnableVehicles.ToString(),
         };
     }
 
@@ -468,8 +543,23 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             PlantResilience = string.Empty;
             PlantAbundance = string.Empty;
             EndRegen = string.Empty;
+            Helicopter = string.Empty;
+            MetaEvent = string.Empty;
+            SleepingEvent = string.Empty;
+            GeneratorSpawning = string.Empty;
+            CharacterFreePoints = string.Empty;
+            ConstructionBonusPoints = string.Empty;
+            MultiHit = false;
+            AllowExteriorGenerator = false;
+            FireSpread = false;
+            HoursForCorpseRemoval = string.Empty;
+            DecayingCorpseHealthImpact = string.Empty;
+            BloodLevel = string.Empty;
+            ClothingDegradation = string.Empty;
             StarterKit = false;
             Nutrition = false;
+            EnableSnowOnGround = false;
+            EnableVehicles = false;
         }
         finally
         {
@@ -506,8 +596,23 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
     partial void OnPlantResilienceChanged(string value) => NotifyFieldEdited();
     partial void OnPlantAbundanceChanged(string value) => NotifyFieldEdited();
     partial void OnEndRegenChanged(string value) => NotifyFieldEdited();
+    partial void OnHelicopterChanged(string value) => NotifyFieldEdited();
+    partial void OnMetaEventChanged(string value) => NotifyFieldEdited();
+    partial void OnSleepingEventChanged(string value) => NotifyFieldEdited();
+    partial void OnGeneratorSpawningChanged(string value) => NotifyFieldEdited();
+    partial void OnCharacterFreePointsChanged(string value) => NotifyFieldEdited();
+    partial void OnConstructionBonusPointsChanged(string value) => NotifyFieldEdited();
+    partial void OnMultiHitChanged(bool value) => NotifyFieldEdited();
+    partial void OnAllowExteriorGeneratorChanged(bool value) => NotifyFieldEdited();
+    partial void OnFireSpreadChanged(bool value) => NotifyFieldEdited();
+    partial void OnHoursForCorpseRemovalChanged(string value) => NotifyFieldEdited();
+    partial void OnDecayingCorpseHealthImpactChanged(string value) => NotifyFieldEdited();
+    partial void OnBloodLevelChanged(string value) => NotifyFieldEdited();
+    partial void OnClothingDegradationChanged(string value) => NotifyFieldEdited();
     partial void OnStarterKitChanged(bool value) => NotifyFieldEdited();
     partial void OnNutritionChanged(bool value) => NotifyFieldEdited();
+    partial void OnEnableSnowOnGroundChanged(bool value) => NotifyFieldEdited();
+    partial void OnEnableVehiclesChanged(bool value) => NotifyFieldEdited();
 
     private void NotifyFieldEdited()
     {

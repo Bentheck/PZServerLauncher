@@ -204,6 +204,88 @@
                     </StackPanel>
                 </Border>
 
+                <Grid ColumnDefinitions="1.05*,.95*" ColumnSpacing="16" IsEnabled="{Binding CanEdit}">
+                    <Border Classes="card" Padding="18">
+                        <StackPanel Spacing="12">
+                            <TextBlock Classes="kicker" Text="World Events" />
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto" RowSpacing="10">
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="body" Text="Helicopter Event" />
+                                    <TextBox Text="{Binding Helicopter}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Spacing="4">
+                                    <TextBlock Classes="body" Text="Meta Event Frequency" />
+                                    <TextBox Text="{Binding MetaEvent}" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="1" Spacing="4">
+                                    <TextBlock Classes="body" Text="Sleeping Event Frequency" />
+                                    <TextBox Text="{Binding SleepingEvent}" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="1" Grid.Column="1" Spacing="4">
+                                    <TextBlock Classes="body" Text="Generator Spawn Rate" />
+                                    <TextBox Text="{Binding GeneratorSpawning}" />
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="1" Classes="card" Padding="18">
+                        <StackPanel Spacing="12">
+                            <TextBlock Classes="kicker" Text="Survivor Boosts" />
+                            <StackPanel Spacing="8">
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="body" Text="Character Free Points" />
+                                    <TextBox Text="{Binding CharacterFreePoints}" />
+                                </StackPanel>
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="body" Text="Construction Bonus Points" />
+                                    <TextBox Text="{Binding ConstructionBonusPoints}" />
+                                </StackPanel>
+                                <CheckBox Content="Multi-Hit" IsChecked="{Binding MultiHit}" />
+                                <CheckBox Content="Allow Exterior Generator" IsChecked="{Binding AllowExteriorGenerator}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <Grid ColumnDefinitions="1.1*,.9*" ColumnSpacing="16" IsEnabled="{Binding CanEdit}">
+                    <Border Classes="card" Padding="18">
+                        <StackPanel Spacing="12">
+                            <TextBlock Classes="kicker" Text="Cleanup &amp; Wear" />
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto,Auto" RowSpacing="10">
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="body" Text="Hours For Corpse Removal" />
+                                    <TextBox Text="{Binding HoursForCorpseRemoval}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Spacing="4">
+                                    <TextBlock Classes="body" Text="Corpse Health Impact" />
+                                    <TextBox Text="{Binding DecayingCorpseHealthImpact}" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="1" Spacing="4">
+                                    <TextBlock Classes="body" Text="Blood Level" />
+                                    <TextBox Text="{Binding BloodLevel}" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="1" Grid.Column="1" Spacing="4">
+                                    <TextBlock Classes="body" Text="Clothing Degradation" />
+                                    <TextBox Text="{Binding ClothingDegradation}" />
+                                </StackPanel>
+                                <CheckBox Grid.Row="2" Content="Fire Spread" IsChecked="{Binding FireSpread}" />
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="1" Classes="card" Padding="18">
+                        <StackPanel Spacing="12">
+                            <TextBlock Classes="kicker" Text="World Presence" />
+                            <TextBlock Classes="body"
+                                       Text="Keep snow, vehicles, and the basic world simulation aligned with the kind of apocalypse you actually want to host."
+                                       TextWrapping="Wrap" />
+                            <CheckBox Content="Snow On Ground" IsChecked="{Binding EnableSnowOnGround}" />
+                            <CheckBox Content="Vehicles Enabled" IsChecked="{Binding EnableVehicles}" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
                 <WrapPanel Orientation="Horizontal" ItemWidth="152" ItemHeight="36">
                     <Button Command="{Binding SaveSettingsCommand}" Content="Apply Settings" IsEnabled="{Binding CanEdit}" />
                     <Button Command="{Binding SaveDraftCommand}" Content="Save Draft" IsEnabled="{Binding CanEdit}" />

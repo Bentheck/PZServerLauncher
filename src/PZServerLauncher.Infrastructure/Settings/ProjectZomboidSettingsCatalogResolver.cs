@@ -175,12 +175,45 @@ public sealed class ProjectZomboidSettingsCatalogResolver : ISettingsCatalogReso
                         Field($"{branchPrefix}.sandbox.end-regen", "Endurance Regen", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "EndRegen", defaultValue: "3", helpText: "1 is very fast, 5 is very slow."),
                     }),
                 new StructuredSectionDefinition(
+                    $"{branchPrefix}.sandbox.world-events",
+                    "World Events",
+                    new[]
+                    {
+                        Field($"{branchPrefix}.sandbox.helicopter", "Helicopter Event", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "Helicopter", defaultValue: "2", helpText: "Controls how often the helicopter story event appears."),
+                        Field($"{branchPrefix}.sandbox.meta-event", "Meta Event Frequency", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "MetaEvent", defaultValue: "1", helpText: "Ambient events like distant screams or gunshots."),
+                        Field($"{branchPrefix}.sandbox.sleeping-event", "Sleeping Event Frequency", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "SleepingEvent", defaultValue: "1", helpText: "How often sleeping survivors are interrupted by world events."),
+                        Field($"{branchPrefix}.sandbox.generator-spawning", "Generator Spawn Rate", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "GeneratorSpawning", defaultValue: "3", helpText: "How often generators appear in the world."),
+                    }),
+                new StructuredSectionDefinition(
+                    $"{branchPrefix}.sandbox.survivor-boosts",
+                    "Survivor Boosts",
+                    new[]
+                    {
+                        Field($"{branchPrefix}.sandbox.character-free-points", "Character Free Points", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "CharacterFreePoints", defaultValue: "0", helpText: "Free trait points granted during character creation."),
+                        Field($"{branchPrefix}.sandbox.construction-bonus-points", "Construction Bonus Points", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "ConstructionBonusPoints", defaultValue: "3", helpText: "Bonus points available in the construction menu."),
+                        Field($"{branchPrefix}.sandbox.multi-hit", "Multi-Hit", StructuredValueKind.Boolean, ConfigFileKind.SandboxVars, "MultiHit", defaultValue: "false", helpText: "Allow melee weapons to strike multiple zombies."),
+                        Field($"{branchPrefix}.sandbox.allow-exterior-generator", "Allow Exterior Generator", StructuredValueKind.Boolean, ConfigFileKind.SandboxVars, "AllowExteriorGenerator", defaultValue: "false", helpText: "Permit generators to run while placed outside."),
+                    }),
+                new StructuredSectionDefinition(
+                    $"{branchPrefix}.sandbox.cleanup-and-wear",
+                    "Cleanup & Wear",
+                    new[]
+                    {
+                        Field($"{branchPrefix}.sandbox.fire-spread", "Fire Spread", StructuredValueKind.Boolean, ConfigFileKind.SandboxVars, "FireSpread", defaultValue: "true", helpText: "Allow fires to spread through the world."),
+                        Field($"{branchPrefix}.sandbox.hours-for-corpse-removal", "Hours For Corpse Removal", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "HoursForCorpseRemoval", defaultValue: "216", helpText: "How long corpses remain before automatic cleanup."),
+                        Field($"{branchPrefix}.sandbox.decaying-corpse-health-impact", "Corpse Health Impact", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "DecayingCorpseHealthImpact", defaultValue: "2", helpText: "How much nearby corpses affect survivor health."),
+                        Field($"{branchPrefix}.sandbox.blood-level", "Blood Level", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "BloodLevel", defaultValue: "3", helpText: "How much blood remains in the world over time."),
+                        Field($"{branchPrefix}.sandbox.clothing-degradation", "Clothing Degradation", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "ClothingDegradation", defaultValue: "3", helpText: "How quickly clothing wears out during play."),
+                    }),
+                new StructuredSectionDefinition(
                     $"{branchPrefix}.sandbox.player-experience",
                     "Player Experience",
                     new[]
                     {
                         Field($"{branchPrefix}.sandbox.starter-kit", "Starter Kit", StructuredValueKind.Boolean, ConfigFileKind.SandboxVars, "StarterKit", defaultValue: "false", helpText: "Enable the beginner starter kit."),
                         Field($"{branchPrefix}.sandbox.nutrition", "Nutrition", StructuredValueKind.Boolean, ConfigFileKind.SandboxVars, "Nutrition", defaultValue: "false", helpText: "Track calories, weight, and nutrition in multiplayer."),
+                        Field($"{branchPrefix}.sandbox.enable-snow-on-ground", "Snow On Ground", StructuredValueKind.Boolean, ConfigFileKind.SandboxVars, "EnableSnowOnGround", defaultValue: "true", helpText: "Render persistent snow coverage when winter conditions allow."),
+                        Field($"{branchPrefix}.sandbox.enable-vehicles", "Vehicles Enabled", StructuredValueKind.Boolean, ConfigFileKind.SandboxVars, "EnableVehicles", defaultValue: "true", helpText: "Allow vehicles to exist and function in the world."),
                     }),
             });
     }

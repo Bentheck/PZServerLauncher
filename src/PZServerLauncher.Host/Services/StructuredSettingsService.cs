@@ -588,8 +588,23 @@ public sealed class StructuredSettingsService(
         ValidateRangedInteger(values, $"{branchPrefix}.sandbox.plant-resilience", 1, 5, "Plant resilience must be between 1 and 5.", fieldErrors);
         ValidateRangedInteger(values, $"{branchPrefix}.sandbox.plant-abundance", 1, 5, "Plant abundance must be between 1 and 5.", fieldErrors);
         ValidateRangedInteger(values, $"{branchPrefix}.sandbox.end-regen", 1, 5, "Endurance regeneration must be between 1 and 5.", fieldErrors);
+        ValidateMinimumInteger(values, $"{branchPrefix}.sandbox.helicopter", 1, "Helicopter event frequency must be 1 or greater.", fieldErrors);
+        ValidateMinimumInteger(values, $"{branchPrefix}.sandbox.meta-event", 1, "Meta event frequency must be 1 or greater.", fieldErrors);
+        ValidateMinimumInteger(values, $"{branchPrefix}.sandbox.sleeping-event", 1, "Sleeping event frequency must be 1 or greater.", fieldErrors);
+        ValidateMinimumInteger(values, $"{branchPrefix}.sandbox.generator-spawning", 1, "Generator spawn rate must be 1 or greater.", fieldErrors);
+        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.character-free-points", -100, 100, "Character free points must stay between -100 and 100.", fieldErrors);
+        ValidateMinimumInteger(values, $"{branchPrefix}.sandbox.construction-bonus-points", 0, "Construction bonus points must be zero or greater.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.sandbox.multi-hit", "Multi-hit must be true or false.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.sandbox.allow-exterior-generator", "Allow exterior generator must be true or false.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.sandbox.fire-spread", "Fire spread must be true or false.", fieldErrors);
+        ValidateMinimumInteger(values, $"{branchPrefix}.sandbox.hours-for-corpse-removal", -1, "Hours for corpse removal must be -1 or greater.", fieldErrors);
+        ValidateMinimumInteger(values, $"{branchPrefix}.sandbox.decaying-corpse-health-impact", 1, "Corpse health impact must be 1 or greater.", fieldErrors);
+        ValidateMinimumInteger(values, $"{branchPrefix}.sandbox.blood-level", 1, "Blood level must be 1 or greater.", fieldErrors);
+        ValidateMinimumInteger(values, $"{branchPrefix}.sandbox.clothing-degradation", 1, "Clothing degradation must be 1 or greater.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.sandbox.starter-kit", "Starter kit must be true or false.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.sandbox.nutrition", "Nutrition must be true or false.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.sandbox.enable-snow-on-ground", "Snow on ground must be true or false.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.sandbox.enable-vehicles", "Vehicles enabled must be true or false.", fieldErrors);
 
         return new SettingsValidationResultDto(
             pageId,

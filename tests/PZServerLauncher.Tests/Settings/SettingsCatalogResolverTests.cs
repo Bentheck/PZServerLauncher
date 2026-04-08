@@ -33,6 +33,10 @@ public sealed class SettingsCatalogResolverTests
         Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.erosion-speed");
         Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.food-rot-speed");
         Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.alarm");
+        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.helicopter");
+        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.multi-hit");
+        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.fire-spread");
+        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.enable-vehicles");
         Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.network.steam-vac");
         Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.network.kick-fast-players");
         Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.network.display-user-name");

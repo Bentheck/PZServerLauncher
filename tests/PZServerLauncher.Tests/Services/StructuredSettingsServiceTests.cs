@@ -547,8 +547,23 @@ public sealed class StructuredSettingsServiceTests : IDisposable
                 PlantResilience = 3,
                 PlantAbundance = 3,
                 EndRegen = 3,
+                Helicopter = 2,
+                MetaEvent = 1,
+                SleepingEvent = 1,
+                GeneratorSpawning = 3,
+                CharacterFreePoints = 0,
+                ConstructionBonusPoints = 3,
+                MultiHit = false,
+                AllowExteriorGenerator = false,
+                FireSpread = true,
+                HoursForCorpseRemoval = 216,
+                DecayingCorpseHealthImpact = 2,
+                BloodLevel = 3,
+                ClothingDegradation = 3,
                 StarterKit = false,
                 Nutrition = false,
+                EnableSnowOnGround = true,
+                EnableVehicles = true,
             }
             """);
 
@@ -566,6 +581,21 @@ public sealed class StructuredSettingsServiceTests : IDisposable
         Assert.Equal("1", valueSet.Values["b42.sandbox.farming"]);
         Assert.Equal("5", valueSet.Values["b42.sandbox.food-rot-speed"]);
         Assert.Equal("3", valueSet.Values["b42.sandbox.end-regen"]);
+        Assert.Equal("2", valueSet.Values["b42.sandbox.helicopter"]);
+        Assert.Equal("1", valueSet.Values["b42.sandbox.meta-event"]);
+        Assert.Equal("1", valueSet.Values["b42.sandbox.sleeping-event"]);
+        Assert.Equal("3", valueSet.Values["b42.sandbox.generator-spawning"]);
+        Assert.Equal("0", valueSet.Values["b42.sandbox.character-free-points"]);
+        Assert.Equal("3", valueSet.Values["b42.sandbox.construction-bonus-points"]);
+        Assert.Equal("false", valueSet.Values["b42.sandbox.multi-hit"]);
+        Assert.Equal("false", valueSet.Values["b42.sandbox.allow-exterior-generator"]);
+        Assert.Equal("true", valueSet.Values["b42.sandbox.fire-spread"]);
+        Assert.Equal("216", valueSet.Values["b42.sandbox.hours-for-corpse-removal"]);
+        Assert.Equal("2", valueSet.Values["b42.sandbox.decaying-corpse-health-impact"]);
+        Assert.Equal("3", valueSet.Values["b42.sandbox.blood-level"]);
+        Assert.Equal("3", valueSet.Values["b42.sandbox.clothing-degradation"]);
+        Assert.Equal("true", valueSet.Values["b42.sandbox.enable-snow-on-ground"]);
+        Assert.Equal("true", valueSet.Values["b42.sandbox.enable-vehicles"]);
 
         var saveResult = await service.SaveAsync(profile, ProfileWorkspacePageIds.Sandbox, new Dictionary<string, string?>(valueSet.Values, StringComparer.Ordinal)
         {
@@ -581,6 +611,21 @@ public sealed class StructuredSettingsServiceTests : IDisposable
             ["b42.sandbox.plant-resilience"] = "4",
             ["b42.sandbox.plant-abundance"] = "5",
             ["b42.sandbox.end-regen"] = "2",
+            ["b42.sandbox.helicopter"] = "4",
+            ["b42.sandbox.meta-event"] = "2",
+            ["b42.sandbox.sleeping-event"] = "3",
+            ["b42.sandbox.generator-spawning"] = "5",
+            ["b42.sandbox.character-free-points"] = "6",
+            ["b42.sandbox.construction-bonus-points"] = "4",
+            ["b42.sandbox.multi-hit"] = "true",
+            ["b42.sandbox.allow-exterior-generator"] = "true",
+            ["b42.sandbox.fire-spread"] = "false",
+            ["b42.sandbox.hours-for-corpse-removal"] = "120",
+            ["b42.sandbox.decaying-corpse-health-impact"] = "4",
+            ["b42.sandbox.blood-level"] = "2",
+            ["b42.sandbox.clothing-degradation"] = "2",
+            ["b42.sandbox.enable-snow-on-ground"] = "false",
+            ["b42.sandbox.enable-vehicles"] = "true",
         });
 
         var sandboxText = File.ReadAllText(paths.SandboxVarsFilePath);
@@ -598,6 +643,21 @@ public sealed class StructuredSettingsServiceTests : IDisposable
         Assert.Contains("PlantResilience = 4", sandboxText);
         Assert.Contains("PlantAbundance = 5", sandboxText);
         Assert.Contains("EndRegen = 2", sandboxText);
+        Assert.Contains("Helicopter = 4", sandboxText);
+        Assert.Contains("MetaEvent = 2", sandboxText);
+        Assert.Contains("SleepingEvent = 3", sandboxText);
+        Assert.Contains("GeneratorSpawning = 5", sandboxText);
+        Assert.Contains("CharacterFreePoints = 6", sandboxText);
+        Assert.Contains("ConstructionBonusPoints = 4", sandboxText);
+        Assert.Contains("MultiHit = true", sandboxText);
+        Assert.Contains("AllowExteriorGenerator = true", sandboxText);
+        Assert.Contains("FireSpread = false", sandboxText);
+        Assert.Contains("HoursForCorpseRemoval = 120", sandboxText);
+        Assert.Contains("DecayingCorpseHealthImpact = 4", sandboxText);
+        Assert.Contains("BloodLevel = 2", sandboxText);
+        Assert.Contains("ClothingDegradation = 2", sandboxText);
+        Assert.Contains("EnableSnowOnGround = false", sandboxText);
+        Assert.Contains("EnableVehicles = true", sandboxText);
     }
 
     private static StructuredSettingsService CreateService(ProfileStore profileStore, ProjectZomboidServerPlanner planner) =>
