@@ -34,7 +34,7 @@ else
                 <div class="workspace-panel__copy">
                     <p class="eyebrow">General</p>
                     <h1>@_profile.DisplayName</h1>
-                    <p class="muted-text">Structured server identity, ports, startup policy, and memory settings are edited here through the host catalog.</p>
+                    <p class="muted-text">This page now owns the Project Zomboid server browser identity, public listing behavior, player access rules, and the launcher runtime knobs that still belong to the host profile.</p>
                 </div>
 
                 <div class="workspace-actions">
@@ -47,79 +47,125 @@ else
 
             <section class="metric-grid metric-grid--host">
                 <article class="metric-card">
-                    <span class="metric-label">Runtime</span>
-                    <strong class="metric-value">@(_runtimeStatus?.State.ToString() ?? "Unknown")</strong>
-                    <span class="metric-note">Current server state</span>
+                    <span class="metric-label">Public Listing</span>
+                    <strong class="metric-value">@FormatBoolMetric(".server.public", "Public", "Private")</strong>
+                    <span class="metric-note">@GetFieldValue(".server.public-name", _profile.DisplayName)</span>
                 </article>
                 <article class="metric-card">
-                    <span class="metric-label">Install</span>
-                    <strong class="metric-value">@(_installDetected ? "Detected" : "Missing")</strong>
-                    <span class="metric-note">@_profile.InstallDirectory</span>
+                    <span class="metric-label">Player Slots</span>
+                    <strong class="metric-value">@GetFieldValue(".server.max-players", "16")</strong>
+                    <span class="metric-note">@FormatBoolMetric(".server.open", "Open signups", "Closed signups")</span>
                 </article>
                 <article class="metric-card">
-                    <span class="metric-label">Cache</span>
-                    <strong class="metric-value">@(_cacheDetected ? "Detected" : "Missing")</strong>
-                    <span class="metric-note">@_profile.CacheDirectory</span>
+                    <span class="metric-label">Runtime Memory</span>
+                    <strong class="metric-value">@GetFieldValue(".runtime.memory", _profile.PreferredMemoryInGigabytes.ToString()) GB</strong>
+                    <span class="metric-note">@FormatBoolMetric(".runtime.start-with-host", "Starts with host", "Manual host start")</span>
                 </article>
                 <article class="metric-card">
-                    <span class="metric-label">Profile</span>
-                    <strong class="metric-value">@_profile.ServerName</strong>
-                    <span class="metric-note">Server file namespace</span>
+                    <span class="metric-label">Ports</span>
+                    <strong class="metric-value">@GetFieldValue(".server.port", _profile.DefaultPort.ToString()) / @GetFieldValue(".server.rcon-port", _profile.RconPort.ToString())</strong>
+                    <span class="metric-note">@_profile.ServerName namespace</span>
                 </article>
             </section>
 
-            <div class="card">
-                <div class="card-heading">
-                    <div>
-                        <p class="eyebrow">Structured Editor</p>
-                        <h2>General Settings</h2>
+            <div class="cards cards--wide">
+                <section class="card">
+                    <div class="card-heading">
+                        <div>
+                            <p class="eyebrow">Structured Editor</p>
+                            <h2>Server Browser &amp; Access</h2>
+                        </div>
+                        <span class="pill">Host-backed round-trip editing</span>
                     </div>
-                    <span class="pill">Host-backed round-trip editing</span>
-                </div>
 
-                <p class="muted-text">This editor is backed by the host structured-settings service and only writes the fields it owns.</p>
+                    <p class="muted-text">These controls write actual Project Zomboid server INI values for public listing, player access, and world-facing behavior while leaving launcher-only runtime options in the profile.</p>
 
-                @if (_catalog is null || _page is null)
-                {
-                    <div class="empty-state">
-                        <p>Loading editor...</p>
-                    </div>
-                }
-                else
-                {
-                    @foreach (var sectionDef in _page.Sections)
+                    @if (_catalog is null || _page is null || _valueSet is null)
                     {
-                        <div class="profile-section">
-                            <div class="profile-section__header">
-                                <h3>@sectionDef.Title</h3>
-                                @if (!string.IsNullOrWhiteSpace(sectionDef.Description))
-                                {
-                                    <p class="muted-text">@sectionDef.Description</p>
-                                }
-                            </div>
-
-                            <div class="field-grid">
-                                @foreach (var field in sectionDef.Fields)
-                                {
-                                    <label class="field-card">
-                                        <span class="field-label">@field.Label</span>
-                                        @RenderField(field)
-                                        @if (!string.IsNullOrWhiteSpace(field.HelpText))
-                                        {
-                                            <small class="muted-text">@field.HelpText</small>
-                                        }
-                                        @if (_fieldErrors.TryGetValue(field.FieldId, out var errors))
-                                        {
-                                            @foreach (var error in errors)
-                                            {
-                                                <span class="validation-message">@error</span>
-                                            }
-                                        }
-                                    </label>
-                                }
-                            </div>
+                        <div class="empty-state">
+                            <p>Loading editor...</p>
                         </div>
                     }
+                    else
+                    {
+                        @if (_valueSet.RequiresAdvancedFilesFallback)
+                        {
+                            <div class="settings-banner settings-banner--warning">
+                                <strong>Structured editing is unavailable for this page.</strong>
+                                <p>@(_valueSet.FallbackReason ?? "Use Advanced Files for the raw general server file.")</p>
+                            </div>
+                        }
+
+                        @foreach (var sectionDef in _page.Sections)
+                        {
+                            <div class="profile-section">
+                                <div class="profile-section__header">
+                                    <h3>@sectionDef.Title</h3>
+                                    <p class="muted-text">@DescribeGeneralSection(sectionDef.SectionId)</p>
+                                </div>
+
+                                <div class="field-grid">
+                                    @foreach (var field in sectionDef.Fields)
+                                    {
+                                        <label class="field-card">
+                                            <span class="field-label">@field.Label</span>
+                                            @RenderField(field)
+                                            @if (field.RequiresRestart)
+                                            {
+                                                <div class="field-meta">
+                                                    <span class="field-pill">Restart required</span>
+                                                </div>
+                                            }
+                                            @if (!string.IsNullOrWhiteSpace(field.HelpText))
+                                            {
+                                                <small class="muted-text">@field.HelpText</small>
+                                            }
+                                            @if (_fieldErrors.TryGetValue(field.FieldId, out var errors))
+                                            {
+                                                @foreach (var error in errors)
+                                                {
+                                                    <span class="validation-message">@error</span>
+                                                }
+                                            }
+                                        </label>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    }
+                </section>
+
+                <section class="card">
+                    <div class="card-heading">
+                        <div>
+                            <p class="eyebrow">Workspace Snapshot</p>
+                            <h2>Operator Context</h2>
+                        </div>
+                    </div>
+
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">Server namespace</span>
+                            <span class="info-value">@_profile.ServerName</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Runtime</span>
+                            <span class="info-value">@(_runtimeStatus?.State.ToString() ?? "Unknown")</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Install</span>
+                            <span class="info-value">@(_installDetected ? "Detected" : "Missing")</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Cache</span>
+                            <span class="info-value">@(_cacheDetected ? "Ready" : "Missing")</span>
+                        </div>
+                    </div>
+
+                    <div class="status-banner status-banner--warm">
+                        <strong>What this page owns</strong>
+                        <p>Public name and description, server browser visibility, account openness, PvP/chat behavior, welcome message, and the primary gameplay-facing ports.</p>
+                    </div>
 
                     @if (_pageValidation is not null)
                     {
@@ -137,16 +183,32 @@ else
                             }
                             else
                             {
-                                <ul class="stack-list">
-                                    @foreach (var error in _pageValidation.PageErrors)
-                                    {
-                                        <li>@error</li>
-                                    }
-                                </ul>
+                                @if (_pageValidation.PageErrors.Count > 0)
+                                {
+                                    <ul class="stack-list">
+                                        @foreach (var error in _pageValidation.PageErrors)
+                                        {
+                                            <li>@error</li>
+                                        }
+                                    </ul>
+                                }
+
+                                @if (_pageValidation.FieldErrors.Count > 0)
+                                {
+                                    <ul class="stack-list">
+                                        @foreach (var entry in _pageValidation.FieldErrors)
+                                        {
+                                            @foreach (var error in entry.Value)
+                                            {
+                                                <li><strong>@entry.Key</strong> - @error</li>
+                                            }
+                                        }
+                                    </ul>
+                                }
                             }
                         </div>
                     }
-                }
+                </section>
             </div>
 
             <p class="status-line">@_statusMessage</p>
@@ -273,6 +335,33 @@ else
         _values[fieldId] = value;
         _statusMessage = null;
     }
+
+    private string GetFieldValue(string suffix, string? fallback = null)
+    {
+        var key = _values.Keys.FirstOrDefault(candidate => candidate.EndsWith(suffix, StringComparison.Ordinal));
+        if (key is null)
+        {
+            return fallback ?? string.Empty;
+        }
+
+        var value = _values[key];
+        return string.IsNullOrWhiteSpace(value) ? fallback ?? string.Empty : value;
+    }
+
+    private string FormatBoolMetric(string suffix, string trueLabel, string falseLabel)
+    {
+        var value = GetFieldValue(suffix);
+        return bool.TryParse(value, out var parsed) && parsed ? trueLabel : falseLabel;
+    }
+
+    private static string DescribeGeneralSection(string sectionId) =>
+        sectionId.EndsWith(".identity", StringComparison.Ordinal)
+            ? "Visible name, description, and browser-facing access rules."
+            : sectionId.EndsWith(".world-access", StringComparison.Ordinal)
+                ? "Core server-side behavior that shapes how the world feels when players connect."
+                : sectionId.EndsWith(".ports", StringComparison.Ordinal)
+                    ? "Gameplay-facing ports plus launcher-managed runtime options."
+                    : "Structured Project Zomboid general settings.";
 
     private string OverviewHref => $"/profiles/{Uri.EscapeDataString(ProfileId)}/overview";
 

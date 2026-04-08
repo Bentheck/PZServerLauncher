@@ -37,7 +37,7 @@ else
                 <div class="workspace-panel__copy">
                     <p class="eyebrow">Network &amp; Admin</p>
                     <h1>@_profile.DisplayName</h1>
-                    <p class="muted-text">This page owns the server's bind address and admin-facing connection settings. If the host marks it as fallback-only, use Advanced Files for the raw editor instead.</p>
+                    <p class="muted-text">This page owns join password, RCON password, auto whitelist, Lua checksum, UPnP, ping limit, bind IP, and launcher admin bootstrap settings. If the host marks it as fallback-only, use Advanced Files for the raw editor instead.</p>
                 </div>
 
                 <div class="workspace-actions">
@@ -45,24 +45,25 @@ else
                     <span class="pill">@(_installDetected ? "Install detected" : "Install missing")</span>
                     <span class="pill">@(_cacheDetected ? "Cache ready" : "Cache missing")</span>
                     <span class="pill">@(_canEdit ? "Structured editing enabled" : "Structured editing unavailable")</span>
+                    <span class="pill">@(_pageSupportsDrafts ? "Drafts enabled" : "Drafts disabled for password safety")</span>
                 </div>
             </section>
 
             <section class="metric-grid metric-grid--host">
                 <article class="metric-card">
-                    <span class="metric-label">Catalog</span>
-                    <strong class="metric-value">@(_catalogSummary ?? "Loading...")</strong>
-                    <span class="metric-note">Branch-aware structured catalog</span>
+                    <span class="metric-label">Security Controls</span>
+                    <strong class="metric-value">Join, RCON, whitelist, checksum</strong>
+                    <span class="metric-note">Structured access and integrity settings</span>
                 </article>
                 <article class="metric-card">
-                    <span class="metric-label">Runtime</span>
-                    <strong class="metric-value">@(_runtimeStatus?.State.ToString() ?? "Unknown")</strong>
-                    <span class="metric-note">Current server state</span>
+                    <span class="metric-label">Network Controls</span>
+                    <strong class="metric-value">Bind IP, UPnP, ping limit</strong>
+                    <span class="metric-note">Connection and discovery behavior</span>
                 </article>
                 <article class="metric-card">
-                    <span class="metric-label">Drafts</span>
-                    <strong class="metric-value">@(_pageSupportsDrafts ? "Available" : "Unavailable")</strong>
-                    <span class="metric-note">Local draft persistence</span>
+                    <span class="metric-label">Launcher Admin Bootstrap</span>
+                    <strong class="metric-value">Owner/admin profile fields</strong>
+                    <span class="metric-note">Write-only credentials are applied on save</span>
                 </article>
                 <article class="metric-card">
                     <span class="metric-label">Fallback</span>
@@ -81,7 +82,7 @@ else
                         <span class="pill">@(_canEdit ? "Editable" : "Read only")</span>
                     </div>
 
-                    <p class="muted-text">This page owns the server's bind address and admin-facing connection settings. If the host marks it as fallback-only, use Advanced Files for the raw editor instead.</p>
+                    <p class="muted-text">Use this page for the structured network and security controls. Join password and RCON password remain write-only fields, while launcher admin bootstrap keeps the local owner/admin flow aligned with the desktop workspace.</p>
 
                     @if (_catalog is null || _page is null || _valueSet is null)
                     {
@@ -97,6 +98,13 @@ else
                                 <strong>Structured editing is unavailable for this page.</strong>
                                 <p>@(_valueSet.FallbackReason ?? "Use Advanced Files for the raw network/admin file.")</p>
                                 <a class="nav-button secondary-button" href="@AdvancedFilesHref">Open Advanced Files</a>
+                            </div>
+                        }
+                        else if (!_pageSupportsDrafts)
+                        {
+                            <div class="settings-banner settings-banner--warning">
+                                <strong>Drafts are disabled here on purpose.</strong>
+                                <p>Join password, RCON password, and launcher admin bootstrap values are write-only and apply directly when you save, so this page does not persist a draft copy.</p>
                             </div>
                         }
 
@@ -212,6 +220,10 @@ else
                         <div class="info-item">
                             <span class="info-label">Branch</span>
                             <span class="info-value">@_profile.Branch</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Catalog</span>
+                            <span class="info-value">@(_catalogSummary ?? "Loading...")</span>
                         </div>
                         <div class="info-item">
                             <span class="info-label">Structured editing</span>
