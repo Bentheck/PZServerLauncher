@@ -55,11 +55,33 @@ public sealed class DashboardWorkspaceViewModel : WorkspacePageViewModelBase
 
     public int VoiceEnabledProfileCount => Legacy.Profiles.Count(profile => profile.IsVoiceEnabled);
 
+    public int ModdedProfileCount => Legacy.Profiles.Count(profile => !string.Equals(profile.WorkshopSummary, "0 workshop / 0 mods / 0 maps", StringComparison.Ordinal));
+
     public int BackupCoverageCount => Legacy.Profiles.Count(profile => profile.HasBackup);
 
+    public int ProfilesMissingBackupCount => Legacy.Profiles.Count(profile => !profile.HasBackup);
+
+    public int LaunchReadyProfileCount => Legacy.Profiles.Count(profile => profile.IsInstallDetected && profile.ConfigDirectoryDetected && profile.IniDetected && profile.SandboxDetected);
+
     public string FleetSummary => HasProfiles
-        ? $"{InstalledProfileCount}/{Legacy.Profiles.Count} installed | {PublicProfileCount} public | {PvpProfileCount} PvP on | {VoiceEnabledProfileCount} voice-enabled | {BackupCoverageCount} with backups"
+        ? $"{InstalledProfileCount}/{Legacy.Profiles.Count} installed | {LaunchReadyProfileCount} launch-ready | {ModdedProfileCount} modded | {PublicProfileCount} public | {VoiceEnabledProfileCount} voice-enabled | {BackupCoverageCount} with backups"
         : "No server fleet posture is available until the first profile exists.";
+
+    public string FleetRiskSummary => !HasProfiles
+        ? "No fleet risk posture is available yet."
+        : ProfilesMissingBackupCount > 0
+            ? $"{ProfilesMissingBackupCount} profile(s) still need a recovery archive before deeper update or mod work."
+            : LaunchReadyProfileCount < InstalledProfileCount
+                ? $"{InstalledProfileCount - LaunchReadyProfileCount} installed profile(s) still have partial config or cache footprints."
+                : "Backups and launch footprints look healthy across the current fleet.";
+
+    public string FleetNextStepSummary => !HasProfiles
+        ? "Create or import the first profile to start building a real server fleet."
+        : ProfilesMissingBackupCount > 0
+            ? "Capture backups for the profiles still missing recovery coverage, then move into config or mod work."
+            : ModdedProfileCount > 0
+                ? "Review the modded profiles next so Workshop, Mods, and Map order still match the local cache."
+                : "The fleet looks clean. The next useful move is tuning Sandbox or General settings on the profile you plan to launch next.";
 
     public bool HasImportCandidates => Legacy.ImportCandidates.Count > 0;
 
@@ -89,8 +111,13 @@ public sealed class DashboardWorkspaceViewModel : WorkspacePageViewModelBase
         OnPropertyChanged(nameof(PublicProfileCount));
         OnPropertyChanged(nameof(PvpProfileCount));
         OnPropertyChanged(nameof(VoiceEnabledProfileCount));
+        OnPropertyChanged(nameof(ModdedProfileCount));
         OnPropertyChanged(nameof(BackupCoverageCount));
+        OnPropertyChanged(nameof(ProfilesMissingBackupCount));
+        OnPropertyChanged(nameof(LaunchReadyProfileCount));
         OnPropertyChanged(nameof(FleetSummary));
+        OnPropertyChanged(nameof(FleetRiskSummary));
+        OnPropertyChanged(nameof(FleetNextStepSummary));
         OnPropertyChanged(nameof(ImportCandidateCount));
         OnPropertyChanged(nameof(RecentJobCount));
         OnPropertyChanged(nameof(HasImportCandidates));

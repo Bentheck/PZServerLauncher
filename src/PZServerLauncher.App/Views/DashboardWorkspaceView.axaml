@@ -49,49 +49,61 @@
                 <StackPanel Spacing="8">
                     <TextBlock Classes="kicker" Text="Workspace State" />
                     <TextBlock Classes="panel-title" FontSize="20" Text="{Binding NextActionSummary}" TextWrapping="Wrap" />
-                    <TextBlock Classes="body" Text="Desktop and web now share the same workspace structure. Use this dashboard for the fast path into imports, jobs, and host context." TextWrapping="Wrap" />
-                    <TextBlock Classes="body" Text="Remote admin stays optional, but the workspace is always ready to surface it once you enable HTTPS access." TextWrapping="Wrap" />
+                    <TextBlock Classes="body" Text="{Binding FleetRiskSummary}" TextWrapping="Wrap" />
+                    <TextBlock Classes="body" Text="{Binding FleetNextStepSummary}" TextWrapping="Wrap" />
                 </StackPanel>
             </Border>
         </Grid>
 
-        <Grid Grid.Row="2" ColumnDefinitions="*,*,*,*,*" ColumnSpacing="14">
-            <Border Classes="card" Padding="16">
-                <StackPanel Spacing="6">
-                    <TextBlock Classes="kicker" Text="Installed" />
-                    <TextBlock Classes="panel-title" FontSize="22" Text="{Binding InstalledProfileCount}" />
-                    <TextBlock Classes="body" Text="Profiles with a detected dedicated-server install." TextWrapping="Wrap" />
-                </StackPanel>
-            </Border>
-            <Border Grid.Column="1" Classes="card" Padding="16">
-                <StackPanel Spacing="6">
-                    <TextBlock Classes="kicker" Text="Public Listing" />
-                    <TextBlock Classes="panel-title" FontSize="22" Text="{Binding PublicProfileCount}" />
-                    <TextBlock Classes="body" Text="Servers advertising themselves publicly right now." TextWrapping="Wrap" />
-                </StackPanel>
-            </Border>
-            <Border Grid.Column="2" Classes="card" Padding="16">
-                <StackPanel Spacing="6">
-                    <TextBlock Classes="kicker" Text="PvP Enabled" />
-                    <TextBlock Classes="panel-title" FontSize="22" Text="{Binding PvpProfileCount}" />
-                    <TextBlock Classes="body" Text="Profiles currently configured for PvP combat." TextWrapping="Wrap" />
-                </StackPanel>
-            </Border>
-            <Border Grid.Column="3" Classes="card" Padding="16">
-                <StackPanel Spacing="6">
-                    <TextBlock Classes="kicker" Text="Voice Enabled" />
-                    <TextBlock Classes="panel-title" FontSize="22" Text="{Binding VoiceEnabledProfileCount}" />
-                    <TextBlock Classes="body" Text="Profiles using Project Zomboid voice chat." TextWrapping="Wrap" />
-                </StackPanel>
-            </Border>
-            <Border Grid.Column="4" Classes="card" Padding="16">
-                <StackPanel Spacing="6">
-                    <TextBlock Classes="kicker" Text="Backup Coverage" />
-                    <TextBlock Classes="panel-title" FontSize="22" Text="{Binding BackupCoverageCount}" />
-                    <TextBlock Classes="body" Text="Profiles with at least one recovery archive." TextWrapping="Wrap" />
-                </StackPanel>
-            </Border>
-        </Grid>
+        <StackPanel Grid.Row="2" Spacing="14">
+            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="14">
+                <Border Classes="card" Padding="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Installed" />
+                        <TextBlock Classes="panel-title" FontSize="22" Text="{Binding InstalledProfileCount}" />
+                        <TextBlock Classes="body" Text="Profiles with a detected dedicated-server install." TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="1" Classes="card" Padding="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Launch Ready" />
+                        <TextBlock Classes="panel-title" FontSize="22" Text="{Binding LaunchReadyProfileCount}" />
+                        <TextBlock Classes="body" Text="Installed profiles whose cache and config footprint look ready for launch." TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="2" Classes="card" Padding="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Modded" />
+                        <TextBlock Classes="panel-title" FontSize="22" Text="{Binding ModdedProfileCount}" />
+                        <TextBlock Classes="body" Text="Profiles currently carrying workshop, mod, or custom map content." TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="14">
+                <Border Classes="card" Padding="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Public Listing" />
+                        <TextBlock Classes="panel-title" FontSize="22" Text="{Binding PublicProfileCount}" />
+                        <TextBlock Classes="body" Text="Servers advertising themselves publicly right now." TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="1" Classes="card" Padding="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Voice Enabled" />
+                        <TextBlock Classes="panel-title" FontSize="22" Text="{Binding VoiceEnabledProfileCount}" />
+                        <TextBlock Classes="body" Text="Profiles using Project Zomboid voice chat." TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="2" Classes="card" Padding="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Backup Coverage" />
+                        <TextBlock Classes="panel-title" FontSize="22" Text="{Binding BackupCoverageCount}" />
+                        <TextBlock Classes="body" Text="{Binding ProfilesMissingBackupCount, StringFormat='Profiles still missing backups: {0}'}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </StackPanel>
 
         <Border Grid.Row="3" Classes="card" Padding="20">
             <StackPanel Spacing="12">
@@ -123,6 +135,7 @@
                                         <TextBlock Classes="body" Text="{Binding CommunitySummary}" TextWrapping="Wrap" />
                                         <TextBlock Classes="body" Text="{Binding NetworkSummary}" TextWrapping="Wrap" />
                                         <TextBlock Classes="body" Text="{Binding WorldSummary}" TextWrapping="Wrap" />
+                                        <TextBlock Classes="body" Text="{Binding InstallPreflightSummary}" TextWrapping="Wrap" />
                                     </StackPanel>
                                     <StackPanel Grid.Column="1" Spacing="6" VerticalAlignment="Top">
                                         <Border Background="#FFF8F1" CornerRadius="999" Padding="10,4">
@@ -131,6 +144,7 @@
                                         <Border Background="#FFF8F1" CornerRadius="999" Padding="10,4">
                                             <TextBlock Classes="body" FontSize="11" Text="{Binding LastBackup}" TextWrapping="Wrap" />
                                         </Border>
+                                        <TextBlock Classes="body" FontSize="11" Text="{Binding BackupSafetySummary}" TextWrapping="Wrap" />
                                     </StackPanel>
                                 </Grid>
                             </Border>
