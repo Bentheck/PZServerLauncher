@@ -21,6 +21,7 @@
                         <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Install &amp; Update Flow" />
                         <TextBlock FontSize="28" FontWeight="SemiBold" Foreground="#F7F0E7" Text="{Binding ProfileDisplayName}" />
                         <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding DeploymentPosture}" TextWrapping="Wrap" />
+                        <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding BranchInstallStatus}" TextWrapping="Wrap" />
                     </StackPanel>
                     <Border Grid.Column="1" Background="#2A2927" CornerRadius="999" Padding="14,8" VerticalAlignment="Top">
                         <TextBlock Foreground="#F7F0E7" FontWeight="SemiBold" Text="{Binding Branch}" />
@@ -38,13 +39,15 @@
                 </Border>
                 <Border Grid.Column="1" Background="#F6EFE6" CornerRadius="14" Padding="16">
                     <StackPanel Spacing="6">
-                        <TextBlock Classes="kicker" Text="Branch Channel" />
+                        <TextBlock Classes="kicker" Text="Branch And Install" />
+                        <TextBlock FontSize="20" FontWeight="SemiBold" Text="{Binding Branch}" />
                         <TextBlock Classes="body" Text="{Binding BranchChannelSummary}" TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
                 <Border Grid.Column="2" Background="#F6EFE6" CornerRadius="14" Padding="16">
                     <StackPanel Spacing="6">
-                        <TextBlock Classes="kicker" Text="Maintenance Window" />
+                        <TextBlock Classes="kicker" Text="Update Posture" />
+                        <TextBlock FontSize="20" FontWeight="SemiBold" Text="{Binding UpdatePostureSummary}" TextWrapping="Wrap" />
                         <TextBlock Classes="body" Text="{Binding MaintenanceWindowSummary}" TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
@@ -54,25 +57,46 @@
                 <Border Background="#FFF8F1" CornerRadius="14" Padding="16">
                     <StackPanel Spacing="6">
                         <TextBlock Classes="kicker" Text="Install Footprint" />
+                        <TextBlock FontSize="18" FontWeight="SemiBold" Text="{Binding InstallPostureSummary}" TextWrapping="Wrap" />
                         <TextBlock Classes="body" Text="{Binding InstallReadiness}" TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
                 <Border Grid.Column="1" Background="#FFF8F1" CornerRadius="14" Padding="16">
                     <StackPanel Spacing="6">
                         <TextBlock Classes="kicker" Text="Cache Footprint" />
-                        <TextBlock Classes="body" Text="{Binding CacheReadiness}" TextWrapping="Wrap" />
+                        <TextBlock FontSize="18" FontWeight="SemiBold" Text="{Binding CacheReadiness}" TextWrapping="Wrap" />
+                        <TextBlock Classes="body" Text="{Binding LaunchReadiness}" TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
                 <Border Grid.Column="2" Background="#FFF8F1" CornerRadius="14" Padding="16">
                     <StackPanel Spacing="6">
                         <TextBlock Classes="kicker" Text="Branch Isolation" />
-                        <TextBlock Classes="body" Text="{Binding BranchIsolationSummary}" TextWrapping="Wrap" />
+                        <TextBlock FontSize="18" FontWeight="SemiBold" Text="{Binding BranchIsolationSummary}" TextWrapping="Wrap" />
+                        <TextBlock Classes="body" Text="{Binding BranchChannelSummary}" TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
             </Grid>
 
             <Grid ColumnDefinitions="*,320" ColumnSpacing="16">
                 <StackPanel Spacing="14">
+                    <Border Background="#FFF8F1" CornerRadius="14" Padding="16">
+                        <StackPanel Spacing="6">
+                            <TextBlock Classes="kicker" Text="Install Posture" />
+                            <TextBlock Classes="body" Text="{Binding InstallPostureSummary}" TextWrapping="Wrap" />
+                            <TextBlock Classes="body" Text="{Binding InstallJobHistorySummary}" TextWrapping="Wrap" />
+                            <TextBlock Classes="body" Text="{Binding LastInstallJobSummary}" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Background="#FFF8F1" CornerRadius="14" Padding="16">
+                        <StackPanel Spacing="6">
+                            <TextBlock Classes="kicker" Text="Update Posture" />
+                            <TextBlock Classes="body" Text="{Binding UpdatePostureSummary}" TextWrapping="Wrap" />
+                            <TextBlock Classes="body" Text="{Binding UpdateJobHistorySummary}" TextWrapping="Wrap" />
+                            <TextBlock Classes="body" Text="{Binding LastUpdateJobSummary}" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+
                     <Border Background="#FFF8F1" CornerRadius="14" Padding="16">
                         <StackPanel Spacing="6">
                             <TextBlock Classes="kicker" Text="Install Directory" />
@@ -121,7 +145,7 @@
 
                     <Border Background="#F1E6D7" CornerRadius="14" Padding="16">
                         <StackPanel Spacing="8">
-                            <TextBlock Classes="kicker" Text="Preflight" />
+                            <TextBlock Classes="kicker" Text="Preflight Briefing" />
                             <TextBlock Classes="body" Text="{Binding BackupSafety}" TextWrapping="Wrap" />
                             <TextBlock Classes="body" Text="{Binding PreflightSummary}" TextWrapping="Wrap" />
                             <TextBlock Classes="body" Text="{Binding ConfigFootprintSummary}" TextWrapping="Wrap" />
@@ -137,37 +161,84 @@
                             </ItemsControl>
                         </StackPanel>
                     </Border>
+
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
+                        <Border Background="#FFF8F1" CornerRadius="14" Padding="16">
+                            <StackPanel Spacing="6">
+                                <TextBlock Classes="kicker" Text="Install History" />
+                                <TextBlock Classes="body" Text="{Binding InstallJobHistorySummary}" TextWrapping="Wrap" />
+                                <ItemsControl ItemsSource="{Binding RecentInstallJobs}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Background="#F1E6D7" CornerRadius="10" Padding="10" Margin="0,4,0,0">
+                                                <StackPanel Spacing="4">
+                                                    <TextBlock FontWeight="SemiBold" Text="{Binding Status}" />
+                                                    <TextBlock Classes="body" Text="{Binding Detail}" TextWrapping="Wrap" />
+                                                    <TextBlock Classes="body" Text="{Binding Summary}" TextWrapping="Wrap" />
+                                                </StackPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Grid.Column="1" Background="#FFF8F1" CornerRadius="14" Padding="16">
+                            <StackPanel Spacing="6">
+                                <TextBlock Classes="kicker" Text="Update History" />
+                                <TextBlock Classes="body" Text="{Binding UpdateJobHistorySummary}" TextWrapping="Wrap" />
+                                <ItemsControl ItemsSource="{Binding RecentUpdateJobs}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Background="#F1E6D7" CornerRadius="10" Padding="10" Margin="0,4,0,0">
+                                                <StackPanel Spacing="4">
+                                                    <TextBlock FontWeight="SemiBold" Text="{Binding Status}" />
+                                                    <TextBlock Classes="body" Text="{Binding Detail}" TextWrapping="Wrap" />
+                                                    <TextBlock Classes="body" Text="{Binding Summary}" TextWrapping="Wrap" />
+                                                </StackPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
                 </StackPanel>
 
                 <Border Grid.Column="1" Background="#FFF8F1" CornerRadius="14" Padding="16">
                     <StackPanel Spacing="10">
                         <TextBlock Classes="kicker" Text="Operator Actions" />
-                        <WrapPanel Orientation="Horizontal" ItemWidth="136" ItemHeight="36">
-                            <Button Command="{Binding InstallCommand}" Content="Install" />
-                            <Button Command="{Binding UpdateCommand}" Content="Update" />
-                            <Button Command="{Binding StartCommand}" Content="Start" />
-                            <Button Command="{Binding StopCommand}" Content="Stop" />
-                            <Button Command="{Binding RestartCommand}" Content="Restart" />
-                            <Button Command="{Binding RefreshCommand}" Content="Refresh" />
-                        </WrapPanel>
+                        <TextBlock Classes="body" Text="{Binding NextRecommendedAction}" TextWrapping="Wrap" />
+
+                        <StackPanel Spacing="8">
+                            <TextBlock FontWeight="SemiBold" Text="Deploy" />
+                            <WrapPanel Orientation="Horizontal" ItemWidth="136" ItemHeight="36">
+                                <Button Command="{Binding InstallCommand}" Content="Install" />
+                                <Button Command="{Binding UpdateCommand}" Content="Update" />
+                            </WrapPanel>
+                        </StackPanel>
+
+                        <StackPanel Spacing="8">
+                            <TextBlock FontWeight="SemiBold" Text="Runtime" />
+                            <WrapPanel Orientation="Horizontal" ItemWidth="136" ItemHeight="36">
+                                <Button Command="{Binding StartCommand}" Content="Start" />
+                                <Button Command="{Binding StopCommand}" Content="Stop" />
+                                <Button Command="{Binding RestartCommand}" Content="Restart" />
+                            </WrapPanel>
+                        </StackPanel>
+
+                        <StackPanel Spacing="8">
+                            <TextBlock FontWeight="SemiBold" Text="Refresh" />
+                            <WrapPanel Orientation="Horizontal" ItemWidth="136" ItemHeight="36">
+                                <Button Command="{Binding RefreshCommand}" Content="Refresh" />
+                            </WrapPanel>
+                        </StackPanel>
+
                         <TextBlock Classes="body" Text="{Binding OperatorSequenceSummary}" TextWrapping="Wrap" />
                         <TextBlock Classes="body" Text="{Binding JobHistorySummary}" TextWrapping="Wrap" />
                         <TextBlock Classes="body" Text="{Binding LastJobSummary}" TextWrapping="Wrap" />
-                        <ItemsControl ItemsSource="{Binding RecentProfileJobs}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Border Background="#F1E6D7" CornerRadius="10" Padding="10" Margin="0,4,0,0">
-                                        <StackPanel Spacing="4">
-                                            <TextBlock FontWeight="SemiBold" Text="{Binding Kind}" />
-                                            <TextBlock Classes="body" Text="{Binding Status}" />
-                                            <TextBlock Classes="body" Text="{Binding Detail}" TextWrapping="Wrap" />
-                                        </StackPanel>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                        <TextBlock Classes="body" Text="{Binding BranchInstallStatus}" TextWrapping="Wrap" />
                         <TextBlock Classes="body" Text="{Binding LaunchReadiness}" TextWrapping="Wrap" />
-                        <TextBlock Classes="body" Text="{Binding NextRecommendedAction}" TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
             </Grid>

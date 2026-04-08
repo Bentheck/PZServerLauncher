@@ -73,6 +73,54 @@ public sealed class InstallUpdateWorkspaceViewModel : ProfileWorkspacePageViewMo
 
     public string BranchChannelSummary => SelectedProfile?.BranchChannelSummary ?? "No branch channel summary available.";
 
+    public string BranchInstallStatus => SelectedProfile is null
+        ? "No profile selected."
+        : SelectedProfile.IsInstallDetected
+            ? $"Install detected for {SelectedProfile.Branch}."
+            : $"No install detected yet for {SelectedProfile.Branch}.";
+
+    public string InstallPostureSummary => SelectedProfile?.InstallPosture.DeploymentPostureSummary ?? "No install posture available.";
+
+    public string UpdatePostureSummary => SelectedProfile?.InstallPosture.MaintenanceWindowSummary ?? "No update posture available.";
+
+    public IReadOnlyList<OperationJob> RecentInstallJobs => SelectedProfile is null
+        ? []
+        : Legacy.RecentOperationJobs
+            .Where(job =>
+                string.Equals(job.ProfileId, SelectedProfile.ProfileId, StringComparison.OrdinalIgnoreCase) &&
+                job.Kind == OperationJobKind.Install)
+            .Take(5)
+            .ToArray();
+
+    public IReadOnlyList<OperationJob> RecentUpdateJobs => SelectedProfile is null
+        ? []
+        : Legacy.RecentOperationJobs
+            .Where(job =>
+                string.Equals(job.ProfileId, SelectedProfile.ProfileId, StringComparison.OrdinalIgnoreCase) &&
+                job.Kind == OperationJobKind.Update)
+            .Take(5)
+            .ToArray();
+
+    public string LastInstallJobSummary => !RecentInstallJobs.Any()
+        ? "No recent install job recorded for this profile."
+        : $"{RecentInstallJobs[0].Status} | {RecentInstallJobs[0].Detail ?? RecentInstallJobs[0].Summary}";
+
+    public string LastUpdateJobSummary => !RecentUpdateJobs.Any()
+        ? "No recent update job recorded for this profile."
+        : $"{RecentUpdateJobs[0].Status} | {RecentUpdateJobs[0].Detail ?? RecentUpdateJobs[0].Summary}";
+
+    public string InstallJobHistorySummary => SelectedProfile is null
+        ? "Select a profile to see install history."
+        : RecentInstallJobs.Any()
+            ? $"{RecentInstallJobs.Count} recent install job(s) recorded."
+            : "No install history recorded yet.";
+
+    public string UpdateJobHistorySummary => SelectedProfile is null
+        ? "Select a profile to see update history."
+        : RecentUpdateJobs.Any()
+            ? $"{RecentUpdateJobs.Count} recent update job(s) recorded."
+            : "No update history recorded yet.";
+
     public string SteamCmdCommandSummary => SelectedProfile?.SteamCmdCommandSummary ?? "SteamCMD command summary unavailable.";
 
     public string SteamCmdScriptPreview => SelectedProfile?.SteamCmdScriptPreview ?? "SteamCMD script preview unavailable.";
@@ -144,6 +192,9 @@ public sealed class InstallUpdateWorkspaceViewModel : ProfileWorkspacePageViewMo
         OnPropertyChanged(nameof(LastJobSummary));
         OnPropertyChanged(nameof(JobHistorySummary));
         OnPropertyChanged(nameof(BranchChannelSummary));
+        OnPropertyChanged(nameof(BranchInstallStatus));
+        OnPropertyChanged(nameof(InstallPostureSummary));
+        OnPropertyChanged(nameof(UpdatePostureSummary));
         OnPropertyChanged(nameof(SteamCmdCommandSummary));
         OnPropertyChanged(nameof(SteamCmdScriptPreview));
         OnPropertyChanged(nameof(LaunchCommandPreview));
@@ -161,6 +212,12 @@ public sealed class InstallUpdateWorkspaceViewModel : ProfileWorkspacePageViewMo
         OnPropertyChanged(nameof(PreflightSummary));
         OnPropertyChanged(nameof(ExpectedLauncherPath));
         OnPropertyChanged(nameof(ConfigFootprintSummary));
+        OnPropertyChanged(nameof(RecentInstallJobs));
+        OnPropertyChanged(nameof(RecentUpdateJobs));
+        OnPropertyChanged(nameof(LastInstallJobSummary));
+        OnPropertyChanged(nameof(LastUpdateJobSummary));
+        OnPropertyChanged(nameof(InstallJobHistorySummary));
+        OnPropertyChanged(nameof(UpdateJobHistorySummary));
     }
 
     private void OnRecentOperationJobsChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -169,5 +226,11 @@ public sealed class InstallUpdateWorkspaceViewModel : ProfileWorkspacePageViewMo
         OnPropertyChanged(nameof(HasRecentProfileJobs));
         OnPropertyChanged(nameof(LastJobSummary));
         OnPropertyChanged(nameof(JobHistorySummary));
+        OnPropertyChanged(nameof(RecentInstallJobs));
+        OnPropertyChanged(nameof(RecentUpdateJobs));
+        OnPropertyChanged(nameof(LastInstallJobSummary));
+        OnPropertyChanged(nameof(LastUpdateJobSummary));
+        OnPropertyChanged(nameof(InstallJobHistorySummary));
+        OnPropertyChanged(nameof(UpdateJobHistorySummary));
     }
 }

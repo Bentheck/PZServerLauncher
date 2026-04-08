@@ -40,6 +40,7 @@ else
                     <p class="eyebrow">Install &amp; Update</p>
                     <h2>@_profile.DisplayName</h2>
                     <p class="muted-text">@(_installPosture?.DeploymentPostureSummary ?? "Install first, then update with confidence. This page surfaces the branch channel, launcher footprint, cache/config readiness, and runtime posture before you queue a new deployment cycle.")</p>
+                    <p class="muted-text">@(_installPosture?.MaintenanceWindowSummary ?? "Maintenance window guidance unavailable.")</p>
                 </div>
 
                 <div class="workspace-actions">
@@ -57,18 +58,19 @@ else
                     <span class="metric-note">@(_runtimeStatus?.LatestLogLine ?? "No recent log line.")</span>
                 </article>
                 <article class="metric-card">
-                    <span class="metric-label">Branch Channel</span>
+                    <span class="metric-label">Branch And Install</span>
                     <strong class="metric-value">@_profile.Branch</strong>
                     <span class="metric-note">@(_installPosture?.BranchChannelSummary ?? "No branch channel summary.")</span>
+                    <span class="metric-note">@(_installPosture?.DeploymentPostureSummary ?? "No deployment posture.")</span>
                 </article>
                 <article class="metric-card">
-                    <span class="metric-label">Launch</span>
+                    <span class="metric-label">Launch Mode</span>
                     <strong class="metric-value">@(_installPosture?.UsesDirectJavaTemplate == true ? "Direct Java" : "Fallback")</strong>
                     <span class="metric-note">@(_installPosture?.LaunchReadinessSummary ?? "No launch summary.")</span>
                 </article>
                 <article class="metric-card">
                     <span class="metric-label">Maintenance Window</span>
-                    <strong class="metric-value">@(_runtimeStatus?.State.ToString() ?? "Unknown")</strong>
+                    <strong class="metric-value">@(_installPosture?.UsesDirectJavaTemplate == true ? "Ready" : "Needs attention")</strong>
                     <span class="metric-note">@(_installPosture?.MaintenanceWindowSummary ?? "No maintenance window summary.")</span>
                 </article>
             </section>
@@ -108,6 +110,10 @@ else
                             <span class="info-label">SteamCMD</span>
                             <span class="info-value">@(_installPosture?.SteamCmdCommandSummary ?? "Unavailable")</span>
                         </div>
+                        <div class="info-item">
+                            <span class="info-label">Deployment posture</span>
+                            <span class="info-value">@(_installPosture?.DeploymentPostureSummary ?? "Unavailable")</span>
+                        </div>
                     </div>
                 </section>
 
@@ -124,6 +130,7 @@ else
                         <p>@(_installPosture?.BackupSafetySummary ?? "Backup safety summary unavailable.")</p>
                         <p>@(_installPosture?.PreflightSummary ?? "Preflight summary unavailable.")</p>
                         <p>@(_installPosture?.BranchIsolationSummary ?? "Branch isolation summary unavailable.")</p>
+                        <p>@(_installPosture?.OperatorSequenceSummary ?? "Operator sequence summary unavailable.")</p>
                     </div>
 
                     <ul class="check-list">
@@ -166,21 +173,24 @@ else
                     <div class="card-heading">
                         <div>
                             <p class="eyebrow">Queue</p>
-                            <h2>Recent Jobs</h2>
+                            <h2>Install History</h2>
                         </div>
-                        <span class="pill">@(_jobs.Count == 0 ? "Empty" : "Active history")</span>
+                        <span class="pill">@(_jobs.Any(job => job.Kind == Core.Runtime.OperationJobKind.Install) ? "Active history" : "Empty")</span>
                     </div>
 
-                    @if (_jobs.Count == 0)
+                    <p class="muted-text">@(_installPosture?.InstallFootprintSummary ?? "Install footprint summary unavailable.")</p>
+                    <p class="muted-text">@(_installPosture?.RuntimePolicySummary ?? "Runtime policy summary unavailable.")</p>
+
+                    @if (_jobs.All(job => job.Kind != Core.Runtime.OperationJobKind.Install))
                     {
                         <div class="empty-state">
-                            <p class="muted-text">No recent install/update jobs. Queue an install or update to populate this history.</p>
+                            <p class="muted-text">No install jobs recorded for this profile yet.</p>
                         </div>
                     }
                     else
                     {
                         <ul class="job-list">
-                            @foreach (var job in _jobs.Take(5))
+                            @foreach (var job in _jobs.Where(job => job.Kind == Core.Runtime.OperationJobKind.Install).Take(5))
                             {
                                 <li class="job-list__item">
                                     <div class="job-list__title">
@@ -197,18 +207,80 @@ else
                 <section class="card">
                     <div class="card-heading">
                         <div>
+                            <p class="eyebrow">Queue</p>
+                            <h2>Update History</h2>
+                        </div>
+                        <span class="pill">@(_jobs.Any(job => job.Kind == Core.Runtime.OperationJobKind.Update) ? "Active history" : "Empty")</span>
+                    </div>
+
+                    <p class="muted-text">@(_installPosture?.CacheFootprintSummary ?? "Cache footprint summary unavailable.")</p>
+                    <p class="muted-text">@(_installPosture?.MaintenanceWindowSummary ?? "Maintenance window summary unavailable.")</p>
+
+                    @if (_jobs.All(job => job.Kind != Core.Runtime.OperationJobKind.Update))
+                    {
+                        <div class="empty-state">
+                            <p class="muted-text">No update jobs recorded for this profile yet.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <ul class="job-list">
+                            @foreach (var job in _jobs.Where(job => job.Kind == Core.Runtime.OperationJobKind.Update).Take(5))
+                            {
+                                <li class="job-list__item">
+                                    <div class="job-list__title">
+                                        <strong>@job.Kind</strong>
+                                        <span>@job.Status</span>
+                                    </div>
+                                    <div class="muted-text">@job.Detail ?? job.Summary</div>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </section>
+            </div>
+
+            <div class="cards cards--wide">
+                <section class="card">
+                    <div class="card-heading">
+                        <div>
                             <p class="eyebrow">Operator Flow</p>
                             <h2>Actions</h2>
                         </div>
                     </div>
 
-                    <p class="muted-text">@(_installPosture?.RuntimePolicySummary ?? "Runtime policy summary unavailable.")</p>
+                    <p class="muted-text">@(_installPosture?.DeploymentPostureSummary ?? "Runtime posture unavailable.")</p>
                     <p class="muted-text">@(_installPosture?.OperatorSequenceSummary ?? "Operator sequence summary unavailable.")</p>
+                    <p class="muted-text">@(_installPosture?.LaunchReadinessSummary ?? "Launch readiness summary unavailable.")</p>
 
                     <div class="workspace-actions">
                         <button class="nav-button" @onclick="InstallAsync" disabled="@_busy">Install</button>
                         <button class="nav-button secondary-button" @onclick="UpdateAsync" disabled="@_busy">Update</button>
                         <a class="nav-button secondary-button" href="@OverviewHref">Overview</a>
+                    </div>
+
+                    <div class="workspace-actions">
+                        <button class="nav-button secondary-button" @onclick="InstallAsync" disabled="@_busy">Queue Install</button>
+                        <button class="nav-button secondary-button" @onclick="UpdateAsync" disabled="@_busy">Queue Update</button>
+                    </div>
+                </section>
+
+                <section class="card">
+                    <div class="card-heading">
+                        <div>
+                            <p class="eyebrow">Branch Posture</p>
+                            <h2>Deployment Context</h2>
+                        </div>
+                    </div>
+
+                    <p class="muted-text">@(_installPosture?.BranchChannelSummary ?? "Branch channel summary unavailable.")</p>
+                    <p class="muted-text">@(_installPosture?.BranchIsolationSummary ?? "Branch isolation summary unavailable.")</p>
+                    <p class="muted-text">@(_installPosture?.BackupSafetySummary ?? "Backup safety summary unavailable.")</p>
+                    <p class="muted-text">@(_installPosture?.PreflightSummary ?? "Preflight summary unavailable.")</p>
+
+                    <div class="status-banner">
+                        <strong>Branch posture</strong>
+                        <p>@(_installPosture?.LaunchReadinessSummary ?? "Launch readiness summary unavailable.")</p>
                     </div>
                 </section>
             </div>
