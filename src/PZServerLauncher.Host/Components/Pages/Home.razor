@@ -10,41 +10,141 @@
 <PageTitle>PZ Server Launcher Host</PageTitle>
 
 <div class="home-shell">
-    <div class="hero">
-        <p class="eyebrow">Host Dashboard</p>
-        <h1>PZServerLauncher Host</h1>
-        <p>The orchestration host is running and ready to manage Project Zomboid server profiles.</p>
-    </div>
+    <section class="workspace-panel hero-panel">
+        <div class="workspace-panel__copy">
+            <p class="eyebrow">Host Dashboard</p>
+            <h1>PZServerLauncher Host</h1>
+            <p class="muted-text">The orchestration host is running and ready to manage Project Zomboid server profiles, web admin access, and shared operator tasks.</p>
+        </div>
+
+        @if (_settings is null)
+        {
+            <p class="muted-text">Loading host state...</p>
+        }
+        else
+        {
+            <div class="workspace-actions">
+                <span class="pill">Loopback @_settings.LoopbackPort</span>
+                <span class="pill">Profiles @_profiles.Count</span>
+                <span class="pill">Users @_users.Count</span>
+                <span class="pill">@(_settings.RemoteAccess.IsEnabled ? "Remote access enabled" : "Remote access disabled")</span>
+            </div>
+        }
+    </section>
 
     @if (_settings is null)
     {
-        <p>Loading host state...</p>
+        <section class="card">
+            <p class="muted-text">Loading host state...</p>
+        </section>
     }
     else
     {
-        <div class="cards">
+        <section class="metric-grid metric-grid--host">
+            <article class="metric-card">
+                <span class="metric-label">Host Port</span>
+                <strong class="metric-value">@_settings.LoopbackPort</strong>
+                <span class="metric-note">Local loopback control channel</span>
+            </article>
+            <article class="metric-card">
+                <span class="metric-label">Profiles</span>
+                <strong class="metric-value">@_profiles.Count</strong>
+                <span class="metric-note">Managed server workspaces</span>
+            </article>
+            <article class="metric-card">
+                <span class="metric-label">Users</span>
+                <strong class="metric-value">@_users.Count</strong>
+                <span class="metric-note">Local operator accounts</span>
+            </article>
+            <article class="metric-card">
+                <span class="metric-label">Remote Access</span>
+                <strong class="metric-value">@(_settings.RemoteAccess.IsEnabled ? "Enabled" : "Disabled")</strong>
+                <span class="metric-note">@(_settings.RemoteAccess.IsEnabled ? $"https://{(_settings.RemoteAccess.PublicHostname ?? _settings.RemoteAccess.BindAddress)}:{_settings.RemoteAccess.HttpsPort}" : "Not exposed yet")</span>
+            </article>
+        </section>
+
+        <div class="cards cards--wide">
             <section class="card">
-                <h2>Host</h2>
-                <p>Loopback port: @_settings.LoopbackPort</p>
-                <p>Start with Windows: @(_settings.StartHostWithWindows ? "On" : "Off")</p>
-                <p>Remote access: @(_settings.RemoteAccess.IsEnabled ? "Enabled" : "Disabled")</p>
-                <p>Remote endpoint: @(_settings.RemoteAccess.IsEnabled ? $"https://{(_settings.RemoteAccess.PublicHostname ?? _settings.RemoteAccess.BindAddress)}:{_settings.RemoteAccess.HttpsPort}" : "Not exposed")</p>
+                <div class="card-heading">
+                    <div>
+                        <p class="eyebrow">Host</p>
+                        <h2>Control Plane</h2>
+                    </div>
+                    <span class="pill">@(_settings.StartHostWithWindows ? "Starts with Windows" : "Manual start")</span>
+                </div>
+
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">Loopback port</span>
+                        <span class="info-value">@_settings.LoopbackPort</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Start with Windows</span>
+                        <span class="info-value">@(_settings.StartHostWithWindows ? "On" : "Off")</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Remote access</span>
+                        <span class="info-value">@(_settings.RemoteAccess.IsEnabled ? "Enabled" : "Disabled")</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Remote endpoint</span>
+                        <span class="info-value">@(_settings.RemoteAccess.IsEnabled ? $"https://{(_settings.RemoteAccess.PublicHostname ?? _settings.RemoteAccess.BindAddress)}:{_settings.RemoteAccess.HttpsPort}" : "Not exposed")</span>
+                    </div>
+                </div>
             </section>
+
             <section class="card">
-                <h2>Owner Bootstrap</h2>
-                <p>Status: @(_settings.OwnerBootstrap.IsConfigured ? "Configured" : "Pending")</p>
-                <p>Owner: @(_settings.OwnerBootstrap.OwnerUserName ?? "Not set")</p>
+                <div class="card-heading">
+                    <div>
+                        <p class="eyebrow">Owner Bootstrap</p>
+                        <h2>Security Setup</h2>
+                    </div>
+                    <span class="pill">@(_settings.OwnerBootstrap.IsConfigured ? "Configured" : "Pending")</span>
+                </div>
+
+                <div class="status-banner">
+                    <strong>Owner account</strong>
+                    <p>@(_settings.OwnerBootstrap.OwnerUserName ?? "Not set yet")</p>
+                </div>
+
+                <div class="info-grid info-grid--compact">
+                    <div class="info-item">
+                        <span class="info-label">Privileged accounts</span>
+                        <span class="info-value">@_users.Count(user => user.Roles.Any(role => role is PZServerLauncher.Core.Runtime.UserRole.Owner or PZServerLauncher.Core.Runtime.UserRole.Admin))</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">2FA protected owners/admins</span>
+                        <span class="info-value">@_users.Count(user => user.TwoFactorEnabled && user.Roles.Any(role => role is PZServerLauncher.Core.Runtime.UserRole.Owner or PZServerLauncher.Core.Runtime.UserRole.Admin))</span>
+                    </div>
+                </div>
             </section>
+
             <section class="card">
-                <h2>Web Admin Readiness</h2>
-                <p>Users: @_users.Count</p>
-                <p>Privileged accounts with 2FA: @_users.Count(user => user.TwoFactorEnabled && user.Roles.Any(role => role is PZServerLauncher.Core.Runtime.UserRole.Owner or PZServerLauncher.Core.Runtime.UserRole.Admin))</p>
-                <p>Use <a href="/remote">Remote Access</a> to configure HTTPS exposure and <a href="/users">Users</a> to manage roles.</p>
+                <div class="card-heading">
+                    <div>
+                        <p class="eyebrow">Web Admin Readiness</p>
+                        <h2>Remote Operator Surface</h2>
+                    </div>
+                </div>
+
+                <p class="muted-text">Use Remote Access to expose the HTTPS endpoint and Users to manage roles for operators, admins, and viewers.</p>
+
+                <div class="workspace-actions">
+                    <a class="nav-button secondary-button" href="/remote">Remote Access</a>
+                    <a class="nav-button secondary-button" href="/users">Users</a>
+                    <a class="nav-button secondary-button" href="/profiles">Profiles</a>
+                </div>
             </section>
         </div>
 
         <section class="card callout-card">
-            <h2>Recommended Next Steps</h2>
+            <div class="card-heading">
+                <div>
+                    <p class="eyebrow">Recommended Next Steps</p>
+                    <h2>Get To A Safe Remote Setup</h2>
+                </div>
+            </div>
+
             <ol>
                 <li>Configure an authenticator app for your owner account under <a href="/Account/Manage/TwoFactorAuthentication">2FA</a>.</li>
                 <li>Open <a href="/remote">Remote Access</a> and add your HTTPS certificate details.</li>
@@ -53,10 +153,19 @@
         </section>
 
         <section class="profiles card">
-            <h2>Profiles</h2>
+            <div class="card-heading">
+                <div>
+                    <p class="eyebrow">Profiles</p>
+                    <h2>Managed Servers</h2>
+                </div>
+                <span class="pill">@(_profiles.Count == 0 ? "No profiles yet" : $"{_profiles.Count} profiles")</span>
+            </div>
+
             @if (_profiles.Count == 0)
             {
-                <p>No profiles have been created yet. Use the desktop app to create the first server profile.</p>
+                <div class="empty-state">
+                    <p>No profiles have been created yet. Use the desktop app to create the first server profile, then return here for web-side operator access.</p>
+                </div>
             }
             else
             {
@@ -67,6 +176,7 @@
                             <th>Branch</th>
                             <th>Ports</th>
                             <th>Runtime</th>
+                            <th>Workspace</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -78,11 +188,25 @@
                                 <td>@profile.Branch</td>
                                 <td>@profile.DefaultPort / @profile.UdpPort / @profile.RconPort</td>
                                 <td>@runtime.State</td>
+                                <td>
+                                    <div class="actions-cell">
+                                        <a class="nav-button secondary-button" href="@BuildProfileHref(profile.ProfileId, "overview")">Overview</a>
+                                        <a class="nav-button secondary-button" href="@BuildProfileHref(profile.ProfileId, "install-update")">Install</a>
+                                        <a class="nav-button secondary-button" href="@BuildProfileHref(profile.ProfileId, "general")">General</a>
+                                        <a class="nav-button secondary-button" href="@BuildProfileHref(profile.ProfileId, "sandbox")">Sandbox</a>
+                                        <a class="nav-button secondary-button" href="@BuildProfileHref(profile.ProfileId, "mods-maps")">Mods &amp; Maps</a>
+                                    </div>
+                                </td>
                             </tr>
                         }
                     </tbody>
                 </table>
             }
+        </section>
+
+        <section class="card callout-card">
+            <h2>Workspace Map</h2>
+            <p>Desktop and web both converge on Overview, Install &amp; Update, General, Sandbox, Mods &amp; Maps, Network &amp; Admin, Backups, Logs, and Advanced Files. Pick a profile above to jump straight into that workspace.</p>
         </section>
     }
 </div>
