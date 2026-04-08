@@ -210,8 +210,8 @@
                                         <TextBlock Classes="kicker" Text="Workspace Pages Live" />
                                         <Border Background="#F1E6D7" CornerRadius="14" Padding="16">
                                             <StackPanel Spacing="8">
-                                                <TextBlock Classes="body" Text="Structured General and Sandbox settings now live in the workspace pages." TextWrapping="Wrap" />
-                                                <TextBlock Classes="body" Text="Use the new workspace for server identity, primary ports, memory, startup behavior, and first-pass sandbox gameplay/world settings. Classic remains focused on raw files and the still-migrating areas." TextWrapping="Wrap" />
+                                                <TextBlock Classes="body" Text="Structured General, Sandbox, and Mods &amp; Maps settings now live in the workspace pages." TextWrapping="Wrap" />
+                                                <TextBlock Classes="body" Text="Use the new workspace for server identity, primary ports, memory, startup behavior, first-pass sandbox gameplay/world settings, and workshop/mod/map management. Classic remains focused on raw files and the still-migrating areas." TextWrapping="Wrap" />
                                             </StackPanel>
                                         </Border>
                                     </StackPanel>
@@ -275,7 +275,6 @@
                                 </Grid>
 
                                 <WrapPanel Grid.Row="4" ItemHeight="36" ItemWidth="132" Orientation="Horizontal">
-                                    <Button Command="{Binding #ClassicRoot.DataContext.ScanWorkshopCommand}" CommandParameter="{Binding .}" Content="Scan Workshop" />
                                     <Button Command="{Binding #ClassicRoot.DataContext.InstallCommand}" CommandParameter="{Binding .}" Content="Install" />
                                     <Button Command="{Binding #ClassicRoot.DataContext.UpdateCommand}" CommandParameter="{Binding .}" Content="Update" />
                                     <Button Command="{Binding #ClassicRoot.DataContext.StartCommand}" CommandParameter="{Binding .}" Content="Start" />

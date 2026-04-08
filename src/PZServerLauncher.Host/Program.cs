@@ -523,6 +523,47 @@ public class Program
                 : Results.Ok(workshopScannerService.Scan(profile.InstallDirectory, profile.WorkshopPreset));
         }).RequireAuthorization("DesktopOrAdmin");
 
+        api.MapGet("/profiles/{profileId}/workshop-preset", async (
+            string profileId,
+            ProfileStore store,
+            CancellationToken cancellationToken) =>
+        {
+            var profile = await store.GetAsync(profileId, cancellationToken);
+            return profile is null
+                ? Results.NotFound()
+                : Results.Ok(profile.WorkshopPreset);
+        }).RequireAuthorization("DesktopOrViewer");
+
+        api.MapPut("/profiles/{profileId}/workshop-preset", async (
+            string profileId,
+            PZServerLauncher.Core.Profiles.WorkshopPreset preset,
+            ProfileStore store,
+            AuditStore auditStore,
+            CancellationToken cancellationToken) =>
+        {
+            var profile = await store.GetAsync(profileId, cancellationToken);
+            if (profile is null)
+            {
+                return Results.NotFound();
+            }
+
+            var normalizedPreset = new PZServerLauncher.Core.Profiles.WorkshopPreset
+            {
+                WorkshopItemIds = preset.WorkshopItemIds.Select(value => value.Trim()).Where(value => !string.IsNullOrWhiteSpace(value)).ToArray(),
+                EnabledModIds = preset.EnabledModIds.Select(value => value.Trim()).Where(value => !string.IsNullOrWhiteSpace(value)).ToArray(),
+                MapFolders = preset.MapFolders.Select(value => value.Trim()).Where(value => !string.IsNullOrWhiteSpace(value)).ToArray(),
+            };
+
+            var updated = await store.UpsertAsync(profile with { WorkshopPreset = normalizedPreset }, cancellationToken);
+            await auditStore.WriteAsync(
+                "profile.workshop-preset.updated",
+                profileId,
+                "local",
+                $"Updated workshop preset for {updated.DisplayName}.",
+                cancellationToken: cancellationToken);
+            return Results.Ok(updated.WorkshopPreset);
+        }).RequireAuthorization("DesktopOrAdmin");
+
         api.MapGet("/profiles/{profileId}/config/files/{kind}", async (
             string profileId,
             ConfigFileKind kind,

@@ -160,6 +160,17 @@ public sealed class LocalHostApiClient
     public Task<WorkshopScanResultDto?> ScanWorkshopAsync(string profileId, CancellationToken cancellationToken = default) =>
         PostAsync<WorkshopScanResultDto>($"/api/profiles/{profileId}/workshop/scan", null, cancellationToken);
 
+    public Task<PZServerLauncher.Core.Profiles.WorkshopPreset?> GetWorkshopPresetAsync(
+        string profileId,
+        CancellationToken cancellationToken = default) =>
+        GetAsync<PZServerLauncher.Core.Profiles.WorkshopPreset>($"/api/profiles/{profileId}/workshop-preset", cancellationToken);
+
+    public Task<PZServerLauncher.Core.Profiles.WorkshopPreset?> UpdateWorkshopPresetAsync(
+        string profileId,
+        PZServerLauncher.Core.Profiles.WorkshopPreset preset,
+        CancellationToken cancellationToken = default) =>
+        PutAsync<PZServerLauncher.Core.Profiles.WorkshopPreset>($"/api/profiles/{profileId}/workshop-preset", preset, cancellationToken);
+
     public Task<RawConfigFileDto?> GetRawConfigAsync(
         string profileId,
         PZServerLauncher.Core.Runtime.ConfigFileKind kind,

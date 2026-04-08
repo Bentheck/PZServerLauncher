@@ -18,11 +18,7 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
         InstallAndUpdate = new InstallUpdateWorkspaceViewModel(legacy);
         General = new GeneralWorkspaceViewModel(legacy, hostApiClient);
         Sandbox = new SandboxWorkspaceViewModel(legacy, hostApiClient);
-        ModsAndMaps = new WorkspaceSectionViewModel(
-            "Mods & Maps",
-            "Workshop items, local mod discovery, map ordering, presets, and validation.",
-            "Mods & Maps draft cleared.",
-            ["Workshop IDs", "Local scans", "Map ordering", "Named presets"]);
+        ModsAndMaps = new ModsAndMapsWorkspaceViewModel(legacy, hostApiClient);
         NetworkAndAdmin = new WorkspaceSectionViewModel(
             "Network & Admin",
             "Bind address, admin/RCON settings, and access/security-related server knobs.",
@@ -100,7 +96,7 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
 
     public SandboxWorkspaceViewModel Sandbox { get; }
 
-    public WorkspaceSectionViewModel ModsAndMaps { get; }
+    public ModsAndMapsWorkspaceViewModel ModsAndMaps { get; }
 
     public WorkspaceSectionViewModel NetworkAndAdmin { get; }
 
