@@ -37,11 +37,12 @@ else
                     <div class="hero-copy">
                         <p class="eyebrow">Live Console</p>
                         <h1>@_profile.DisplayName</h1>
-                        <p class="muted-text">Watch the recent runtime feed, latest signal, and server posture here while you validate startup, mod loading, and live admin changes.</p>
+                        <p class="muted-text">Watch the recent runtime feed, inferred roster, and operator posture here while you validate startup, mod loading, and live admin changes.</p>
                     </div>
                     <div class="hero-pills">
                         <span class="pill">@_profile.Branch</span>
                         <span class="pill">@(_logSummary?.BufferSummary ?? "Buffer unavailable")</span>
+                        <span class="pill">@(_logSummary?.PlayerActivitySummary ?? "Roster posture unavailable")</span>
                         <span class="pill pill--strong">@(_logSummary?.LatestSignalSummary ?? "Latest signal unavailable")</span>
                     </div>
                 </div>
@@ -51,18 +52,22 @@ else
                 <section class="card">
                     <h2>Buffer</h2>
                     <p class="muted-text">@(_logSummary?.BufferSummary ?? "Buffer posture is unavailable.")</p>
+                    <p class="muted-text">@(_logSummary?.RuntimeWindowSummary ?? "Runtime window is unavailable.")</p>
                 </section>
                 <section class="card">
                     <h2>Signals</h2>
                     <p class="muted-text">@(_logSummary?.SignalPostureSummary ?? "Signal posture is unavailable.")</p>
+                    <p class="muted-text">@(_logSummary?.OperatorCommandSummary ?? "Operator command posture is unavailable.")</p>
                 </section>
                 <section class="card">
                     <h2>Players</h2>
                     <p class="muted-text">@PlayerSummary</p>
+                    <p class="muted-text">@(_logSummary?.PlayerActivitySummary ?? "Player activity posture is unavailable.")</p>
                 </section>
                 <section class="card">
                     <h2>Operator Commands</h2>
                     <p class="muted-text">@OperatorActionSummary</p>
+                    <p class="muted-text">@(_logSummary?.LatestSignalSummary ?? "Latest signal is unavailable.")</p>
                 </section>
             </div>
 
@@ -71,7 +76,7 @@ else
                     <Authorized>
                         <section class="card">
                             <h2>Players &amp; Ops</h2>
-                            <p class="muted-text">Use the live console to request the current player list, broadcast a server message, save the world, reload options, or issue a raw Project Zomboid console command.</p>
+                            <p class="muted-text">Use the live console to request the current player list, broadcast a server message, save the world, reload options, or issue a raw Project Zomboid console command while the server is live.</p>
 
                             <div class="profile-section">
                                 <h3>Broadcast</h3>
@@ -96,7 +101,7 @@ else
                     <NotAuthorized>
                         <section class="card">
                             <h2>Players &amp; Ops</h2>
-                            <p class="muted-text">Live operator commands are restricted to Owner, Admin, and Operator roles. Viewers can still monitor the inferred roster, player signals, and runtime feed from this page.</p>
+                            <p class="muted-text">Live operator commands are restricted to Owner, Admin, and Operator roles. Viewers can still monitor the inferred roster, player signals, runtime feed, and command history from this page.</p>
                         </section>
                     </NotAuthorized>
                 </AuthorizeView>
@@ -114,7 +119,7 @@ else
                     }
                     else
                     {
-                        <p class="muted-text">No active roster could be inferred from the current buffer yet. Request Player List while the server is live to pull fresh activity into the console.</p>
+                        <p class="muted-text">No active roster could be inferred from the current buffer yet. Keep this page open during joins or request Player List while the server is live to pull fresh activity into the console.</p>
                     }
 
                     <h3>Recent Player Signals</h3>
@@ -144,7 +149,7 @@ else
                     }
                     else
                     {
-                        <p class="muted-text">Broadcasts and raw console commands sent from the launcher will appear here.</p>
+                        <p class="muted-text">Broadcasts and raw console commands sent from the launcher will appear here as soon as the runtime accepts them.</p>
                     }
                 </section>
             </div>

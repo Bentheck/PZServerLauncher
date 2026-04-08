@@ -61,7 +61,7 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
     }
 
     public override string PageSummary => SelectedProfile is null
-        ? "Select a profile to view runtime output and live operations."
+        ? "Select a profile to inspect runtime output, roster posture, and live operator controls."
         : $"Recent runtime output, inferred player activity, and live operator controls for {SelectedProfile.DisplayName}.";
 
     public string ProfileDisplayName => SelectedProfile?.DisplayName ?? "No profile selected";
@@ -73,8 +73,8 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
         : $"{SelectedProfile.DisplayName} Live Console";
 
     public string ConsoleHeroCopy => SelectedProfile is null
-        ? "Select a profile to inspect buffered runtime output and the live operations posture."
-        : $"Buffered runtime output, inferred player presence, and operator controls for {SelectedProfile.DisplayName}.";
+        ? "Select a profile to inspect buffered runtime output, roster posture, and the live operator controls."
+        : $"Keep this console open to watch buffered runtime output, roster posture, and launcher-issued commands for {SelectedProfile.DisplayName}.";
 
     public ObservableCollection<string> LogLines { get; } = [];
 
@@ -104,9 +104,21 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
         ? "Choose a profile to inspect server output."
         : CurrentSummary.BufferSummary;
 
+    public string BufferCountSummary => SelectedProfile is null
+        ? "No buffer count available."
+        : CurrentSummary.BufferedLineCount == 0
+            ? "No buffered lines yet"
+            : $"{CurrentSummary.BufferedLineCount} buffered line(s)";
+
     public string FeedPostureSummary => SelectedProfile is null
         ? "No live feed is available yet."
         : CurrentSummary.SignalPostureSummary;
+
+    public string SignalCountSummary => SelectedProfile is null
+        ? "No signal count available."
+        : CurrentSummary.WarningSignalCount + CurrentSummary.ErrorSignalCount == 0
+            ? "No warnings or errors buffered"
+            : $"{CurrentSummary.ErrorSignalCount} error(s) | {CurrentSummary.WarningSignalCount} warning(s)";
 
     public string RuntimeGuidance => SelectedProfile is null
         ? "No runtime guidance available."
@@ -114,23 +126,35 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
 
     public string LatestLineSummary => CurrentSummary.LatestSignalSummary;
 
+    public string LatestSignalLabel => SelectedProfile is null
+        ? "Latest signal unavailable"
+        : CurrentSummary.LatestSignalSummary;
+
     public string OperatorNextStep => SelectedProfile is null
         ? "Pick a profile, then start or reload to watch runtime output."
         : CurrentSummary.OperatorFocusSummary;
 
     public string ConsoleStatusSummary => SelectedProfile is null
         ? "No console context loaded."
-        : $"{LatestRuntimeState} | {CurrentSummary.BufferedLineCount} buffered line(s) | {ActivePlayerCountSummary}";
+        : $"{LatestRuntimeState} | {BufferCountSummary} | {ActivePlayerCountSummary}";
 
     public string RuntimeWindowSummary => SelectedProfile is null
         ? "Runtime window: no status is available yet."
         : CurrentSummary.RuntimeWindowSummary;
 
     public string ActivePlayerCountSummary => _liveOperations is null
-        ? "No live roster"
+        ? "No live roster sampled"
         : _liveOperations.ConnectedPlayers.Count == 0
-            ? "No players inferred online"
+            ? _liveOperations.IsRosterInferredFromLogs
+                ? "Roster inferred, but nobody is online"
+                : "No players inferred online"
             : $"{_liveOperations.ConnectedPlayers.Count} player(s) inferred online";
+
+    public string RosterPostureSummary => _liveOperations is null
+        ? "No live roster signal has been captured yet."
+        : _liveOperations.IsRosterInferredFromLogs
+            ? "The current roster is inferred from recent runtime signals."
+            : "The current roster has not been inferred from the buffered runtime feed yet.";
 
     public string PlayerSignalSummary => _liveOperations is null
         ? "No player activity inferred yet."
@@ -138,15 +162,39 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
             ? "No player join or leave signals have been inferred from the recent live buffer yet."
             : $"Recent player activity is inferred from {_liveOperations.RecentPlayerSignals.Count} live signal(s).";
 
+    public string PlayerSignalCountSummary => _liveOperations is null
+        ? "No player signals yet."
+        : _liveOperations.RecentPlayerSignals.Count == 0
+            ? "0 player signals"
+            : $"{_liveOperations.RecentPlayerSignals.Count} player signal(s)";
+
     public string OperatorActionSummary => _liveOperations is null
         ? "No operator actions recorded yet."
         : _liveOperations.RecentOperatorActions.Count == 0
             ? "Broadcasts and raw console commands will appear here after they are sent."
             : _liveOperations.RecentOperatorActions[0].Summary;
 
+    public string OperatorActionCountSummary => _liveOperations is null
+        ? "No operator commands yet."
+        : _liveOperations.RecentOperatorActions.Count == 0
+            ? "0 operator commands"
+            : $"{_liveOperations.RecentOperatorActions.Count} command(s) logged";
+
     public string OperatorCommandPosture => string.IsNullOrWhiteSpace(_runtimeStatus?.LastOperatorCommandSummary)
         ? "No recent launcher-driven broadcast or console command has been recorded."
         : _runtimeStatus.LastOperatorCommandSummary!;
+
+    public string RosterSignalSummary => _liveOperations is null
+        ? "No roster signal available."
+        : _liveOperations.ConnectedPlayers.Count == 0
+            ? "No connected players inferred"
+            : string.Join(", ", _liveOperations.ConnectedPlayers.Select(player => $"{player.UserName}"));
+
+    public string ConsoleModeSummary => SelectedProfile is null
+        ? "No console mode loaded."
+        : CanSendCommands
+            ? "Live command mode unlocked"
+            : "Monitor-only mode until the server is running";
 
     public string BroadcastGuidance => SelectedProfile is null
         ? "Select a profile to unlock live broadcast and console controls."
@@ -386,16 +434,24 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
         OnPropertyChanged(nameof(FeedPostureSummary));
         OnPropertyChanged(nameof(RuntimeGuidance));
         OnPropertyChanged(nameof(LatestLineSummary));
+        OnPropertyChanged(nameof(LatestSignalLabel));
         OnPropertyChanged(nameof(OperatorNextStep));
         OnPropertyChanged(nameof(ConsoleStatusSummary));
         OnPropertyChanged(nameof(RuntimeWindowSummary));
         OnPropertyChanged(nameof(ConsoleHeroTitle));
         OnPropertyChanged(nameof(ConsoleHeroCopy));
         OnPropertyChanged(nameof(ActivePlayerCountSummary));
+        OnPropertyChanged(nameof(BufferCountSummary));
+        OnPropertyChanged(nameof(SignalCountSummary));
+        OnPropertyChanged(nameof(RosterPostureSummary));
         OnPropertyChanged(nameof(PlayerSignalSummary));
+        OnPropertyChanged(nameof(PlayerSignalCountSummary));
         OnPropertyChanged(nameof(OperatorActionSummary));
+        OnPropertyChanged(nameof(OperatorActionCountSummary));
         OnPropertyChanged(nameof(OperatorCommandPosture));
         OnPropertyChanged(nameof(BroadcastGuidance));
+        OnPropertyChanged(nameof(RosterSignalSummary));
+        OnPropertyChanged(nameof(ConsoleModeSummary));
         OnPropertyChanged(nameof(CanSendCommands));
     }
 
