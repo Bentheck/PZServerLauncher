@@ -11,27 +11,69 @@
     <Border Classes="card" Padding="24">
         <StackPanel Spacing="18">
             <StackPanel Spacing="4">
-                <TextBlock Classes="panel-title" FontSize="24" Text="{Binding PageTitle}" />
+                <TextBlock Classes="kicker" Text="Global Host Control" />
+                <TextBlock Classes="panel-title" FontSize="28" Text="{Binding PageTitle}" />
                 <TextBlock Classes="body" Text="{Binding PageSummary}" TextWrapping="Wrap" />
             </StackPanel>
 
-            <Border Background="#F1E6D7" CornerRadius="14" Padding="16">
-                <StackPanel Spacing="6">
-                    <TextBlock Classes="kicker" Text="Host Status" />
-                    <TextBlock Classes="body" Text="{Binding Legacy.HostSummary}" TextWrapping="Wrap" />
-                    <TextBlock Classes="body" Text="{Binding Legacy.StatusMessage}" TextWrapping="Wrap" />
-                </StackPanel>
+            <Border Background="#1F1D1B" CornerRadius="16" Padding="18">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Host Lifecycle" />
+                        <TextBlock FontSize="22" FontWeight="SemiBold" Foreground="#F7F0E7" Text="{Binding HostStatusSummary}" TextWrapping="Wrap" />
+                        <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding HostLifecycleSummary}" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <Border Grid.Column="1" Background="#2A2927" CornerRadius="999" Padding="14,8" VerticalAlignment="Top">
+                        <TextBlock Foreground="#F7F0E7" FontWeight="SemiBold" Text="{Binding HostStartupLabel}" />
+                    </Border>
+                </Grid>
             </Border>
 
-            <CheckBox Content="Start Host With Windows"
-                      IsChecked="{Binding Legacy.HostStartWithWindows}" />
+            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="14">
+                <Border Background="#F6EFE6" CornerRadius="14" Padding="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Startup Policy" />
+                        <TextBlock Classes="body" Text="{Binding HostStartupSummary}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="1" Background="#F6EFE6" CornerRadius="14" Padding="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Shutdown Policy" />
+                        <TextBlock Classes="body" Text="{Binding HostShutdownSummary}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="2" Background="#F6EFE6" CornerRadius="14" Padding="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Operator Guidance" />
+                        <TextBlock Classes="body" Text="{Binding HostOperatorSummary}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+            </Grid>
 
-            <WrapPanel Orientation="Horizontal" ItemWidth="156" ItemHeight="36">
-                <Button Command="{Binding Legacy.SaveHostSettingsCommand}" Content="Save Host Settings" />
-                <Button Command="{Binding Legacy.StopHostCommand}" Content="Stop Host" />
-                <Button Command="{Binding Legacy.StopAllAndHostCommand}" Content="Stop All + Host" />
-                <Button Command="{Binding Legacy.ExitDesktopCommand}" Content="Exit Desktop" />
-            </WrapPanel>
+            <Grid ColumnDefinitions="*,320" ColumnSpacing="16">
+                <Border Background="#FFF8F1" CornerRadius="14" Padding="16">
+                    <StackPanel Spacing="8">
+                        <TextBlock Classes="kicker" Text="Host Status" />
+                        <TextBlock Classes="panel-title" FontSize="20" Text="{Binding Legacy.HostSummary}" TextWrapping="Wrap" />
+                        <TextBlock Classes="body" Text="{Binding Legacy.StatusMessage}" TextWrapping="Wrap" />
+                        <TextBlock Classes="body" Text="{Binding HostActionSummary}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="1" Background="#F1E6D7" CornerRadius="14" Padding="16">
+                    <StackPanel Spacing="10">
+                        <TextBlock Classes="kicker" Text="Actions" />
+                        <CheckBox Content="Start Host With Windows"
+                                  IsChecked="{Binding Legacy.HostStartWithWindows}" />
+                        <WrapPanel Orientation="Horizontal" ItemWidth="156" ItemHeight="36">
+                            <Button Command="{Binding Legacy.SaveHostSettingsCommand}" Content="Save Host Settings" />
+                            <Button Command="{Binding Legacy.StopHostCommand}" Content="Stop Host" />
+                            <Button Command="{Binding Legacy.StopAllAndHostCommand}" Content="Stop All + Host" />
+                            <Button Command="{Binding Legacy.ExitDesktopCommand}" Content="Exit Desktop" />
+                        </WrapPanel>
+                    </StackPanel>
+                </Border>
+            </Grid>
 
             <TextBlock Classes="body" Text="Closing the window still minimizes to tray. Exit Desktop closes only the UI and leaves the local host running until you explicitly stop it." TextWrapping="Wrap" />
         </StackPanel>

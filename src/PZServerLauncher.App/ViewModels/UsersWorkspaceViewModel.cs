@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -23,6 +24,7 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
         Legacy = legacy;
         _hostApiClient = hostApiClient;
         Legacy.PropertyChanged += OnLegacyPropertyChanged;
+        Users.CollectionChanged += OnUsersCollectionChanged;
 
         RoleOptions = Enum.GetValues<UserRole>()
             .Where(role => role != UserRole.LocalSystem)
@@ -40,6 +42,28 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
     public MainWindowViewModel Legacy { get; }
 
     public bool OwnerBootstrapConfigured => !Legacy.OwnerBootstrapRequired;
+
+    public string OwnerSummary => Legacy.OwnerSummary;
+
+    public string UsersPageSummary => OwnerBootstrapConfigured
+        ? "Desktop account management is now active. Create operators, viewers, or admins before you expose the optional web admin."
+        : "Create the initial owner account first, then return here to manage local web-admin users.";
+
+    public string UserCountSummary => OwnerBootstrapConfigured
+        ? $"{Users.Count} managed user account(s)."
+        : "No managed user accounts yet.";
+
+    public string TwoFactorSummary => OwnerBootstrapConfigured
+        ? $"{Users.Count(user => user.RequiresTwoFactor)} account(s) require TOTP for web sign-in."
+        : "TOTP enforcement applies after the owner account is created.";
+
+    public string ActionSummary => OwnerBootstrapConfigured
+        ? "Use Create User to add new accounts, then Save or Delete from each row as you refine roles."
+        : "Use Owner Bootstrap first so the account manager can become active.";
+
+    public string OwnerBootstrapLabel => OwnerBootstrapConfigured
+        ? "Configured: On"
+        : "Configured: Off";
 
     public IReadOnlyList<string> RoleOptions { get; }
 
@@ -331,6 +355,11 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
         }
 
         MarkClean("User settings are in sync.");
+        OnPropertyChanged(nameof(UserCountSummary));
+        OnPropertyChanged(nameof(TwoFactorSummary));
+        OnPropertyChanged(nameof(ActionSummary));
+        OnPropertyChanged(nameof(OwnerSummary));
+        OnPropertyChanged(nameof(UsersPageSummary));
     }
 
     private void RefreshCommandStates()
@@ -346,6 +375,8 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
         if (string.IsNullOrEmpty(e.PropertyName) || e.PropertyName == nameof(MainWindowViewModel.OwnerBootstrapRequired))
         {
             OnPropertyChanged(nameof(OwnerBootstrapConfigured));
+            OnPropertyChanged(nameof(UsersPageSummary));
+            OnPropertyChanged(nameof(OwnerSummary));
             RefreshCommandStates();
             RefreshDirtyState();
 
@@ -359,7 +390,8 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
             e.PropertyName == nameof(MainWindowViewModel.OwnerSummary) ||
             e.PropertyName == nameof(MainWindowViewModel.OwnerBootstrapRequired))
         {
-            OnPropertyChanged(nameof(Legacy.OwnerSummary));
+            OnPropertyChanged(nameof(OwnerSummary));
+            OnPropertyChanged(nameof(UsersPageSummary));
         }
     }
 
@@ -392,7 +424,20 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
         if (string.IsNullOrEmpty(e.PropertyName) || e.PropertyName == nameof(EditableUserRowViewModel.IsDirty))
         {
             RefreshDirtyState();
+            OnPropertyChanged(nameof(UserCountSummary));
+            OnPropertyChanged(nameof(TwoFactorSummary));
+            OnPropertyChanged(nameof(ActionSummary));
         }
+    }
+
+    private void OnUsersCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        OnPropertyChanged(nameof(HasUsers));
+        OnPropertyChanged(nameof(HasNoUsers));
+        OnPropertyChanged(nameof(UserCountSummary));
+        OnPropertyChanged(nameof(TwoFactorSummary));
+        OnPropertyChanged(nameof(ActionSummary));
+        RefreshDirtyState();
     }
 
     private void AddOrReplaceUserRow(EditableUserRowViewModel row)

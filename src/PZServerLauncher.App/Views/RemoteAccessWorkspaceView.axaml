@@ -11,48 +11,100 @@
     <Border Classes="card" Padding="24">
         <StackPanel Spacing="18">
             <StackPanel Spacing="4">
-                <TextBlock Classes="panel-title" FontSize="24" Text="{Binding PageTitle}" />
+                <TextBlock Classes="kicker" Text="Optional Remote Admin" />
+                <TextBlock Classes="panel-title" FontSize="28" Text="{Binding PageTitle}" />
                 <TextBlock Classes="body" Text="{Binding PageSummary}" TextWrapping="Wrap" />
             </StackPanel>
 
-            <Grid ColumnDefinitions="Auto,*,Auto,*" ColumnSpacing="12" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="10">
-                <CheckBox Grid.ColumnSpan="4"
-                          Content="Enable Remote Access"
-                          IsChecked="{Binding Legacy.RemoteAccessEnabled}" />
+            <Border Background="#1F1D1B" CornerRadius="16" Padding="18">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Remote Readiness" />
+                        <TextBlock FontSize="22" FontWeight="SemiBold" Foreground="#F7F0E7" Text="{Binding RemoteStatusSummary}" TextWrapping="Wrap" />
+                        <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding RemoteReadinessSummary}" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <Border Grid.Column="1" Background="#2A2927" CornerRadius="999" Padding="14,8" VerticalAlignment="Top">
+                        <TextBlock Foreground="#F7F0E7" FontWeight="SemiBold" Text="{Binding RemoteEnabledLabel}" />
+                    </Border>
+                </Grid>
+            </Border>
 
-                <TextBlock Grid.Row="1" Classes="body" Text="Bind Address" VerticalAlignment="Center" />
-                <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Legacy.RemoteBindAddress}" />
-                <TextBlock Grid.Row="1" Grid.Column="2" Classes="body" Text="HTTPS Port" VerticalAlignment="Center" />
-                <TextBox Grid.Row="1" Grid.Column="3" Text="{Binding Legacy.RemoteHttpsPort}" />
-
-                <TextBlock Grid.Row="2" Classes="body" Text="Public Hostname" VerticalAlignment="Center" />
-                <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Legacy.RemotePublicHostname}" />
-                <TextBlock Grid.Row="2" Grid.Column="2" Classes="body" Text="PFX Password" VerticalAlignment="Center" />
-                <TextBox Grid.Row="2" Grid.Column="3" PasswordChar="*" Text="{Binding Legacy.RemoteCertificatePassword}" />
-
-                <TextBlock Grid.Row="3" Classes="body" Text="PFX Certificate Path" VerticalAlignment="Center" />
-                <TextBox Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="3" Text="{Binding Legacy.RemoteCertificatePath}" />
+            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="14">
+                <Border Background="#F6EFE6" CornerRadius="14" Padding="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Binding" />
+                        <TextBlock Classes="body" Text="{Binding RemoteBindingSummary}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="1" Background="#F6EFE6" CornerRadius="14" Padding="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Certificate" />
+                        <TextBlock Classes="body" Text="{Binding RemoteCertificateSummary}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="2" Background="#F6EFE6" CornerRadius="14" Padding="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Firewall" />
+                        <TextBlock Classes="body" Text="{Binding RemoteFirewallSummary}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
             </Grid>
 
-            <CheckBox Content="Create Or Update The Windows Firewall Rule"
-                      IsChecked="{Binding Legacy.RemoteCreateFirewallRule}" />
+            <Grid ColumnDefinitions="*,340" ColumnSpacing="16">
+                <Border Background="#FFF8F1" CornerRadius="14" Padding="16">
+                    <StackPanel Spacing="12">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                            <StackPanel Spacing="4">
+                                <TextBlock Classes="kicker" Text="Remote Setup" />
+                                <TextBlock Classes="panel-title" FontSize="20" Text="{Binding RemoteHostSummary}" TextWrapping="Wrap" />
+                            </StackPanel>
+                            <Border Background="#2A2927" CornerRadius="999" Padding="10,6" VerticalAlignment="Top">
+                                <TextBlock Foreground="#F7F0E7" FontSize="12" Text="Desktop-managed" />
+                            </Border>
+                        </Grid>
 
-            <WrapPanel Orientation="Horizontal" ItemWidth="176" ItemHeight="36">
-                <Button Command="{Binding Legacy.SaveRemoteAccessCommand}" Content="Save Remote Settings" />
-                <Button Command="{Binding Legacy.RemoteSelfTestCommand}" Content="Run Local Self-Test" />
-                <Button Command="{Binding Legacy.ApplyFirewallRuleCommand}" Content="Apply Firewall Rule" />
-            </WrapPanel>
+                        <Grid ColumnDefinitions="Auto,*,Auto,*" ColumnSpacing="12" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="10">
+                            <CheckBox Grid.ColumnSpan="4"
+                                      Content="Enable Remote Access"
+                                      IsChecked="{Binding Legacy.RemoteAccessEnabled}" />
 
-            <Border Background="#FFF8F1" CornerRadius="14" Padding="16">
-                <StackPanel Spacing="8">
-                    <TextBlock Classes="kicker" Text="Setup Status" />
-                    <TextBlock Classes="body" Text="{Binding Legacy.RemoteWizardStatus}" TextWrapping="Wrap" />
-                    <TextBlock Classes="body"
-                               FontFamily="Cascadia Code,Consolas,monospace"
-                               Text="{Binding Legacy.RemoteSelfTestChecks}"
-                               TextWrapping="Wrap" />
-                </StackPanel>
-            </Border>
+                            <TextBlock Grid.Row="1" Classes="body" Text="Bind Address" VerticalAlignment="Center" />
+                            <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Legacy.RemoteBindAddress}" />
+                            <TextBlock Grid.Row="1" Grid.Column="2" Classes="body" Text="HTTPS Port" VerticalAlignment="Center" />
+                            <TextBox Grid.Row="1" Grid.Column="3" Text="{Binding Legacy.RemoteHttpsPort}" />
+
+                            <TextBlock Grid.Row="2" Classes="body" Text="Public Hostname" VerticalAlignment="Center" />
+                            <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Legacy.RemotePublicHostname}" />
+                            <TextBlock Grid.Row="2" Grid.Column="2" Classes="body" Text="PFX Password" VerticalAlignment="Center" />
+                            <TextBox Grid.Row="2" Grid.Column="3" PasswordChar="*" Text="{Binding Legacy.RemoteCertificatePassword}" />
+
+                            <TextBlock Grid.Row="3" Classes="body" Text="PFX Certificate Path" VerticalAlignment="Center" />
+                            <TextBox Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="3" Text="{Binding Legacy.RemoteCertificatePath}" />
+                        </Grid>
+
+                        <CheckBox Content="Create Or Update The Windows Firewall Rule"
+                                  IsChecked="{Binding Legacy.RemoteCreateFirewallRule}" />
+
+                        <WrapPanel Orientation="Horizontal" ItemWidth="176" ItemHeight="36">
+                            <Button Command="{Binding Legacy.SaveRemoteAccessCommand}" Content="Save Remote Settings" />
+                            <Button Command="{Binding Legacy.RemoteSelfTestCommand}" Content="Run Local Self-Test" />
+                            <Button Command="{Binding Legacy.ApplyFirewallRuleCommand}" Content="Apply Firewall Rule" />
+                        </WrapPanel>
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="1" Background="#F1E6D7" CornerRadius="14" Padding="16">
+                    <StackPanel Spacing="8">
+                        <TextBlock Classes="kicker" Text="Operator Checklist" />
+                        <TextBlock Classes="body" Text="{Binding RemoteActionSummary}" TextWrapping="Wrap" />
+                        <TextBlock Classes="body" Text="{Binding RemoteReadinessSummary}" TextWrapping="Wrap" />
+                        <TextBlock Classes="body"
+                                   FontFamily="Cascadia Code,Consolas,monospace"
+                                   Text="{Binding Legacy.RemoteSelfTestChecks}"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+            </Grid>
         </StackPanel>
     </Border>
 </UserControl>
