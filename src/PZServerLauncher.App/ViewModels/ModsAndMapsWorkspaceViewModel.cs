@@ -21,12 +21,18 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
             "Workshop items, mod IDs, and map folders from the real Project Zomboid server INI.",
             "Mods & Maps settings are in sync.",
             legacy,
-            ["Workshop IDs or URLs", "Enabled mod IDs", "Map folders", "Scan diagnostics"])
+            ["Ordered workshop queue", "Mod load order", "Map load order", "Bulk paste and scanner diagnostics"])
     {
         _hostApiClient = hostApiClient;
         SaveSettingsCommand = new AsyncRelayCommand(SaveSettingsAsync);
         ReloadCommand = new AsyncRelayCommand(ReloadAsync);
         ScanCommand = new AsyncRelayCommand(RunScanAsync);
+        AddWorkshopEntryCommand = new RelayCommand(AddWorkshopEntry, () => CanAddWorkshopEntry);
+        AddEnabledModEntryCommand = new RelayCommand(AddEnabledModEntry, () => CanAddEnabledModEntry);
+        AddMapEntryCommand = new RelayCommand(AddMapEntry, () => CanAddMapEntry);
+        MoveEntryUpCommand = new RelayCommand<PresetEntryViewModel>(MoveEntryUp);
+        MoveEntryDownCommand = new RelayCommand<PresetEntryViewModel>(MoveEntryDown);
+        RemoveEntryCommand = new RelayCommand<PresetEntryViewModel>(RemoveEntry);
     }
 
     public override string PageSummary => SelectedProfile is null
@@ -39,19 +45,82 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
 
     public string WorkspaceSummary => SelectedProfile is null
         ? "Choose a profile to unlock workshop and map management."
-        : $"{SelectedProfile.DisplayName} is ready for ordered workshop, mod, and map control backed by the server INI.";
+        : $"{SelectedProfile.DisplayName} now manages the actual WorkshopItems, Mods, and Map keys through an ordered preset editor instead of raw text alone.";
 
     public string ActionSummary => HasUnsavedChanges
-        ? "Save or discard changes before scanning so diagnostics match the active preset."
+        ? "Apply or discard changes before scanning so diagnostics reflect the saved preset."
         : CanScan
-            ? "Run a scan to validate local workshop content and normalize the saved preset."
+            ? "The ordered preset is in sync. Scan local workshop content to validate what is actually installed."
             : "Load a profile to inspect workshop, mod, and map settings.";
 
+    public string WorkshopSummary => WorkshopEntries.Count == 0
+        ? "No workshop items queued yet."
+        : $"{WorkshopEntries.Count} workshop item(s) in install order.";
+
+    public string EnabledModsSummary => EnabledModEntries.Count == 0
+        ? "No enabled mod IDs saved yet."
+        : $"{EnabledModEntries.Count} mod ID(s) in load order.";
+
+    public string MapOrderSummary => MapEntries.Count == 0
+        ? "No custom map folders listed."
+        : $"{MapEntries.Count} map folder(s) in load order.";
+
+    public string ScanReadinessSummary => SelectedProfile is null
+        ? "Choose a profile first."
+        : HasUnsavedChanges
+            ? "Apply or discard local edits before scanning so diagnostics match the live preset."
+            : HasDiagnostics
+                ? $"{Diagnostics.Count} diagnostic(s) from the last local scan."
+                : "Ready to scan the local workshop cache.";
+
+    public string ModsNextStepSummary
+    {
+        get
+        {
+            if (SelectedProfile is null)
+            {
+                return "Select a profile to start building a real preset.";
+            }
+
+            if (WorkshopEntries.Count == 0 && EnabledModEntries.Count == 0 && MapEntries.Count == 0)
+            {
+                return "Start by pasting a workshop URL or ID, then shape the mod and map order from there.";
+            }
+
+            if (HasUnsavedChanges)
+            {
+                return "Apply the current order first, then run a scan so diagnostics match the saved server preset.";
+            }
+
+            return Diagnostics.Count > 0
+                ? "Resolve the scanner diagnostics or accept them, then keep the saved order aligned with your map stack."
+                : "Scan again after any install change so the saved preset stays aligned with local workshop content.";
+        }
+    }
+
     public ObservableCollection<string> Diagnostics { get; } = [];
+
+    public ObservableCollection<PresetEntryViewModel> WorkshopEntries { get; } = [];
+
+    public ObservableCollection<PresetEntryViewModel> EnabledModEntries { get; } = [];
+
+    public ObservableCollection<PresetEntryViewModel> MapEntries { get; } = [];
 
     public bool HasDiagnostics => Diagnostics.Count > 0;
 
     public bool HasNoDiagnostics => Diagnostics.Count == 0;
+
+    public bool HasWorkshopEntries => WorkshopEntries.Count > 0;
+
+    public bool HasNoWorkshopEntries => WorkshopEntries.Count == 0;
+
+    public bool HasEnabledModEntries => EnabledModEntries.Count > 0;
+
+    public bool HasNoEnabledModEntries => EnabledModEntries.Count == 0;
+
+    public bool HasMapEntries => MapEntries.Count > 0;
+
+    public bool HasNoMapEntries => MapEntries.Count == 0;
 
     public IAsyncRelayCommand SaveSettingsCommand { get; }
 
@@ -59,7 +128,25 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
 
     public IAsyncRelayCommand ScanCommand { get; }
 
+    public IRelayCommand AddWorkshopEntryCommand { get; }
+
+    public IRelayCommand AddEnabledModEntryCommand { get; }
+
+    public IRelayCommand AddMapEntryCommand { get; }
+
+    public IRelayCommand<PresetEntryViewModel> MoveEntryUpCommand { get; }
+
+    public IRelayCommand<PresetEntryViewModel> MoveEntryDownCommand { get; }
+
+    public IRelayCommand<PresetEntryViewModel> RemoveEntryCommand { get; }
+
     public bool CanScan => SelectedProfile is not null && !HasUnsavedChanges;
+
+    public bool CanAddWorkshopEntry => !string.IsNullOrWhiteSpace(NewWorkshopEntry);
+
+    public bool CanAddEnabledModEntry => !string.IsNullOrWhiteSpace(NewEnabledModEntry);
+
+    public bool CanAddMapEntry => !string.IsNullOrWhiteSpace(NewMapEntry);
 
     [ObservableProperty]
     private string loadStatus = "Select a profile to load workshop, mod, and map settings.";
@@ -75,6 +162,15 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
 
     [ObservableProperty]
     private string mapFoldersText = string.Empty;
+
+    [ObservableProperty]
+    private string newWorkshopEntry = string.Empty;
+
+    [ObservableProperty]
+    private string newEnabledModEntry = string.Empty;
+
+    [ObservableProperty]
+    private string newMapEntry = string.Empty;
 
     [ObservableProperty]
     private bool isLoading;
@@ -260,11 +356,16 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
             WorkshopItemIdsText = string.Join(Environment.NewLine, preset.WorkshopItemIds);
             EnabledModIdsText = string.Join(Environment.NewLine, preset.EnabledModIds);
             MapFoldersText = string.Join(Environment.NewLine, preset.MapFolders);
+            NewWorkshopEntry = string.Empty;
+            NewEnabledModEntry = string.Empty;
+            NewMapEntry = string.Empty;
         }
         finally
         {
             _isApplyingState = false;
         }
+
+        RebuildEntryCollections();
     }
 
     private void ApplyDraft(SettingsDraftDto draft)
@@ -275,11 +376,16 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
             WorkshopItemIdsText = GetDraftValue(draft.Values, ".mods.workshop-items");
             EnabledModIdsText = GetDraftValue(draft.Values, ".mods.enabled-mods");
             MapFoldersText = GetDraftValue(draft.Values, ".mods.map-folders");
+            NewWorkshopEntry = string.Empty;
+            NewEnabledModEntry = string.Empty;
+            NewMapEntry = string.Empty;
         }
         finally
         {
             _isApplyingState = false;
         }
+
+        RebuildEntryCollections();
 
         if (draft.IsDirty)
         {
@@ -314,6 +420,7 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
     private static IReadOnlyList<string> SplitLines(string text) =>
         text.ReplaceLineEndings("\n")
             .Split('\n', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+            .SelectMany(line => line.Split(';', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
             .ToArray();
 
     private static string GetDraftValue(IReadOnlyDictionary<string, string?> values, string suffix)
@@ -322,11 +429,169 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
         return key is null ? string.Empty : values[key] ?? string.Empty;
     }
 
+    private void AddWorkshopEntry()
+    {
+        AddEntry(PresetEntryKind.Workshop, NewWorkshopEntry);
+        NewWorkshopEntry = string.Empty;
+        AddWorkshopEntryCommand.NotifyCanExecuteChanged();
+    }
+
+    private void AddEnabledModEntry()
+    {
+        AddEntry(PresetEntryKind.EnabledMod, NewEnabledModEntry);
+        NewEnabledModEntry = string.Empty;
+        AddEnabledModEntryCommand.NotifyCanExecuteChanged();
+    }
+
+    private void AddMapEntry()
+    {
+        AddEntry(PresetEntryKind.MapFolder, NewMapEntry);
+        NewMapEntry = string.Empty;
+        AddMapEntryCommand.NotifyCanExecuteChanged();
+    }
+
+    private void AddEntry(PresetEntryKind kind, string rawValue)
+    {
+        var value = rawValue.Trim();
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return;
+        }
+
+        var values = GetValues(kind).ToList();
+        values.Add(value);
+        ReplaceEntries(kind, values);
+        NotifyEdited($"Added a new {GetKindLabel(kind).ToLowerInvariant()} entry.");
+    }
+
+    private void MoveEntryUp(PresetEntryViewModel? entry)
+    {
+        if (entry is null || entry.Position <= 0)
+        {
+            return;
+        }
+
+        var values = GetValues(entry.Kind).ToList();
+        (values[entry.Position - 1], values[entry.Position]) = (values[entry.Position], values[entry.Position - 1]);
+        ReplaceEntries(entry.Kind, values);
+        NotifyEdited($"Moved {GetKindLabel(entry.Kind).ToLowerInvariant()} entry up.");
+    }
+
+    private void MoveEntryDown(PresetEntryViewModel? entry)
+    {
+        if (entry is null)
+        {
+            return;
+        }
+
+        var values = GetValues(entry.Kind).ToList();
+        if (entry.Position < 0 || entry.Position >= values.Count - 1)
+        {
+            return;
+        }
+
+        (values[entry.Position + 1], values[entry.Position]) = (values[entry.Position], values[entry.Position + 1]);
+        ReplaceEntries(entry.Kind, values);
+        NotifyEdited($"Moved {GetKindLabel(entry.Kind).ToLowerInvariant()} entry down.");
+    }
+
+    private void RemoveEntry(PresetEntryViewModel? entry)
+    {
+        if (entry is null)
+        {
+            return;
+        }
+
+        var values = GetValues(entry.Kind).ToList();
+        if (entry.Position < 0 || entry.Position >= values.Count)
+        {
+            return;
+        }
+
+        values.RemoveAt(entry.Position);
+        ReplaceEntries(entry.Kind, values);
+        NotifyEdited($"Removed a {GetKindLabel(entry.Kind).ToLowerInvariant()} entry.");
+    }
+
+    private void ReplaceEntries(PresetEntryKind kind, IReadOnlyList<string> values)
+    {
+        _isApplyingState = true;
+        try
+        {
+            SetText(kind, string.Join(Environment.NewLine, values));
+        }
+        finally
+        {
+            _isApplyingState = false;
+        }
+
+        RebuildEntryCollections();
+    }
+
+    private IReadOnlyList<string> GetValues(PresetEntryKind kind) =>
+        kind switch
+        {
+            PresetEntryKind.Workshop => SplitLines(WorkshopItemIdsText),
+            PresetEntryKind.EnabledMod => SplitLines(EnabledModIdsText),
+            PresetEntryKind.MapFolder => SplitLines(MapFoldersText),
+            _ => [],
+        };
+
+    private void SetText(PresetEntryKind kind, string text)
+    {
+        switch (kind)
+        {
+            case PresetEntryKind.Workshop:
+                WorkshopItemIdsText = text;
+                break;
+            case PresetEntryKind.EnabledMod:
+                EnabledModIdsText = text;
+                break;
+            case PresetEntryKind.MapFolder:
+                MapFoldersText = text;
+                break;
+        }
+    }
+
+    private void RebuildEntryCollections()
+    {
+        ReplaceCollection(WorkshopEntries, SplitLines(WorkshopItemIdsText), PresetEntryKind.Workshop);
+        ReplaceCollection(EnabledModEntries, SplitLines(EnabledModIdsText), PresetEntryKind.EnabledMod);
+        ReplaceCollection(MapEntries, SplitLines(MapFoldersText), PresetEntryKind.MapFolder);
+
+        OnPropertyChanged(nameof(HasWorkshopEntries));
+        OnPropertyChanged(nameof(HasNoWorkshopEntries));
+        OnPropertyChanged(nameof(HasEnabledModEntries));
+        OnPropertyChanged(nameof(HasNoEnabledModEntries));
+        OnPropertyChanged(nameof(HasMapEntries));
+        OnPropertyChanged(nameof(HasNoMapEntries));
+        OnPropertyChanged(nameof(WorkshopSummary));
+        OnPropertyChanged(nameof(EnabledModsSummary));
+        OnPropertyChanged(nameof(MapOrderSummary));
+        OnPropertyChanged(nameof(ScanReadinessSummary));
+        OnPropertyChanged(nameof(ModsNextStepSummary));
+    }
+
+    private static void ReplaceCollection(
+        ObservableCollection<PresetEntryViewModel> target,
+        IReadOnlyList<string> values,
+        PresetEntryKind kind)
+    {
+        target.Clear();
+        for (var index = 0; index < values.Count; index++)
+        {
+            target.Add(new PresetEntryViewModel(kind, index, values[index]));
+        }
+    }
+
     private void Reset()
     {
         _catalog = null;
         CatalogSummary = "No structured catalog loaded.";
         Diagnostics.Clear();
+        WorkshopEntries.Clear();
+        EnabledModEntries.Clear();
+        MapEntries.Clear();
         OnPropertyChanged(nameof(HasDiagnostics));
         OnPropertyChanged(nameof(HasNoDiagnostics));
 
@@ -336,6 +601,9 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
             WorkshopItemIdsText = string.Empty;
             EnabledModIdsText = string.Empty;
             MapFoldersText = string.Empty;
+            NewWorkshopEntry = string.Empty;
+            NewEnabledModEntry = string.Empty;
+            NewMapEntry = string.Empty;
         }
         finally
         {
@@ -346,19 +614,43 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
         NotifyComputedState();
     }
 
-    partial void OnWorkshopItemIdsTextChanged(string value) => NotifyEdited();
-    partial void OnEnabledModIdsTextChanged(string value) => NotifyEdited();
-    partial void OnMapFoldersTextChanged(string value) => NotifyEdited();
+    partial void OnWorkshopItemIdsTextChanged(string value) => NotifyTextEdited();
+    partial void OnEnabledModIdsTextChanged(string value) => NotifyTextEdited();
+    partial void OnMapFoldersTextChanged(string value) => NotifyTextEdited();
 
-    private void NotifyEdited()
+    partial void OnNewWorkshopEntryChanged(string value)
+    {
+        AddWorkshopEntryCommand.NotifyCanExecuteChanged();
+        OnPropertyChanged(nameof(CanAddWorkshopEntry));
+    }
+
+    partial void OnNewEnabledModEntryChanged(string value)
+    {
+        AddEnabledModEntryCommand.NotifyCanExecuteChanged();
+        OnPropertyChanged(nameof(CanAddEnabledModEntry));
+    }
+
+    partial void OnNewMapEntryChanged(string value)
+    {
+        AddMapEntryCommand.NotifyCanExecuteChanged();
+        OnPropertyChanged(nameof(CanAddMapEntry));
+    }
+
+    private void NotifyTextEdited()
     {
         if (_isApplyingState)
         {
             return;
         }
 
+        RebuildEntryCollections();
+        NotifyEdited("Mods & Maps changed locally. Save a draft or apply the new preset before scanning.");
+    }
+
+    private void NotifyEdited(string statusMessage)
+    {
         MarkDirty("Unsaved changes in Mods & Maps.");
-        LoadStatus = "Mods & Maps changed locally. Save a draft or apply the new preset before scanning.";
+        LoadStatus = statusMessage;
         NotifyComputedState();
     }
 
@@ -369,6 +661,47 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
         OnPropertyChanged(nameof(Branch));
         OnPropertyChanged(nameof(WorkspaceSummary));
         OnPropertyChanged(nameof(ActionSummary));
+        OnPropertyChanged(nameof(WorkshopSummary));
+        OnPropertyChanged(nameof(EnabledModsSummary));
+        OnPropertyChanged(nameof(MapOrderSummary));
+        OnPropertyChanged(nameof(ScanReadinessSummary));
+        OnPropertyChanged(nameof(ModsNextStepSummary));
         OnPropertyChanged(nameof(CanScan));
+        OnPropertyChanged(nameof(CanAddWorkshopEntry));
+        OnPropertyChanged(nameof(CanAddEnabledModEntry));
+        OnPropertyChanged(nameof(CanAddMapEntry));
+        OnPropertyChanged(nameof(HasWorkshopEntries));
+        OnPropertyChanged(nameof(HasNoWorkshopEntries));
+        OnPropertyChanged(nameof(HasEnabledModEntries));
+        OnPropertyChanged(nameof(HasNoEnabledModEntries));
+        OnPropertyChanged(nameof(HasMapEntries));
+        OnPropertyChanged(nameof(HasNoMapEntries));
+    }
+
+    private static string GetKindLabel(PresetEntryKind kind) =>
+        kind switch
+        {
+            PresetEntryKind.Workshop => "Workshop",
+            PresetEntryKind.EnabledMod => "Mod",
+            PresetEntryKind.MapFolder => "Map",
+            _ => "Preset",
+        };
+
+    public sealed class PresetEntryViewModel(PresetEntryKind kind, int position, string value)
+    {
+        public PresetEntryKind Kind { get; } = kind;
+
+        public int Position { get; } = position;
+
+        public string OrderLabel => $"{position + 1:00}";
+
+        public string Value { get; } = value;
+    }
+
+    public enum PresetEntryKind
+    {
+        Workshop,
+        EnabledMod,
+        MapFolder,
     }
 }
