@@ -49,11 +49,7 @@ public sealed class DashboardWorkspaceViewModel : WorkspacePageViewModelBase
 
     public int InstalledProfileCount => Legacy.Profiles.Count(profile => profile.IsInstallDetected);
 
-    public int PublicProfileCount => Legacy.Profiles.Count(profile => profile.IsPubliclyListed);
-
-    public int PvpProfileCount => Legacy.Profiles.Count(profile => profile.IsPvpEnabled);
-
-    public int VoiceEnabledProfileCount => Legacy.Profiles.Count(profile => profile.IsVoiceEnabled);
+    public int ProfilesMissingInstallCount => Legacy.Profiles.Count(profile => !profile.IsInstallDetected);
 
     public int ModdedProfileCount => Legacy.Profiles.Count(profile => !string.Equals(profile.WorkshopSummary, "0 workshop / 0 mods / 0 maps", StringComparison.Ordinal));
 
@@ -61,16 +57,24 @@ public sealed class DashboardWorkspaceViewModel : WorkspacePageViewModelBase
 
     public int ProfilesMissingBackupCount => Legacy.Profiles.Count(profile => !profile.HasBackup);
 
+    public int DirectJavaReadyProfileCount => Legacy.Profiles.Count(profile => profile.UsesDirectJavaTemplate);
+
+    public int FallbackLaunchProfileCount => Legacy.Profiles.Count(profile => profile.LauncherDetected && !profile.UsesDirectJavaTemplate);
+
     public int LaunchReadyProfileCount => Legacy.Profiles.Count(profile => profile.IsInstallDetected && profile.ConfigDirectoryDetected && profile.IniDetected && profile.SandboxDetected);
 
     public string FleetSummary => HasProfiles
-        ? $"{InstalledProfileCount}/{Legacy.Profiles.Count} installed | {LaunchReadyProfileCount} launch-ready | {ModdedProfileCount} modded | {PublicProfileCount} public | {VoiceEnabledProfileCount} voice-enabled | {BackupCoverageCount} with backups"
+        ? $"{InstalledProfileCount}/{Legacy.Profiles.Count} installed | {LaunchReadyProfileCount} launch-ready | {BackupCoverageCount} recovery-ready | {DirectJavaReadyProfileCount} direct-Java | {FallbackLaunchProfileCount} fallback launch | {ModdedProfileCount} modded"
         : "No server fleet posture is available until the first profile exists.";
 
     public string FleetRiskSummary => !HasProfiles
         ? "No fleet risk posture is available yet."
         : ProfilesMissingBackupCount > 0
             ? $"{ProfilesMissingBackupCount} profile(s) still need a recovery archive before deeper update or mod work."
+            : ProfilesMissingInstallCount > 0
+                ? $"{ProfilesMissingInstallCount} profile(s) still do not have a detected install footprint."
+            : FallbackLaunchProfileCount > 0
+                ? $"{FallbackLaunchProfileCount} installed profile(s) are still falling back to the vendor batch launcher."
             : LaunchReadyProfileCount < InstalledProfileCount
                 ? $"{InstalledProfileCount - LaunchReadyProfileCount} installed profile(s) still have partial config or cache footprints."
                 : "Backups and launch footprints look healthy across the current fleet.";
@@ -79,6 +83,10 @@ public sealed class DashboardWorkspaceViewModel : WorkspacePageViewModelBase
         ? "Create or import the first profile to start building a real server fleet."
         : ProfilesMissingBackupCount > 0
             ? "Capture backups for the profiles still missing recovery coverage, then move into config or mod work."
+            : ProfilesMissingInstallCount > 0
+                ? "Finish installing the remaining profiles so every branch has a real server footprint before deeper tuning."
+            : FallbackLaunchProfileCount > 0
+                ? "Open Install & Update on the fallback profiles next so the launch path and maintenance posture can be tightened."
             : ModdedProfileCount > 0
                 ? "Review the modded profiles next so Workshop, Mods, and Map order still match the local cache."
                 : "The fleet looks clean. The next useful move is tuning Sandbox or General settings on the profile you plan to launch next.";
@@ -108,12 +116,12 @@ public sealed class DashboardWorkspaceViewModel : WorkspacePageViewModelBase
         OnPropertyChanged(nameof(HasNoProfiles));
         OnPropertyChanged(nameof(ProfileCount));
         OnPropertyChanged(nameof(InstalledProfileCount));
-        OnPropertyChanged(nameof(PublicProfileCount));
-        OnPropertyChanged(nameof(PvpProfileCount));
-        OnPropertyChanged(nameof(VoiceEnabledProfileCount));
+        OnPropertyChanged(nameof(ProfilesMissingInstallCount));
         OnPropertyChanged(nameof(ModdedProfileCount));
         OnPropertyChanged(nameof(BackupCoverageCount));
         OnPropertyChanged(nameof(ProfilesMissingBackupCount));
+        OnPropertyChanged(nameof(DirectJavaReadyProfileCount));
+        OnPropertyChanged(nameof(FallbackLaunchProfileCount));
         OnPropertyChanged(nameof(LaunchReadyProfileCount));
         OnPropertyChanged(nameof(FleetSummary));
         OnPropertyChanged(nameof(FleetRiskSummary));
