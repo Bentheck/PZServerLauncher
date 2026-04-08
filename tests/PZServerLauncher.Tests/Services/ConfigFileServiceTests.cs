@@ -30,6 +30,27 @@ public sealed class ConfigFileServiceTests : IDisposable
         Assert.NotEqual(initial.Sha256, saved.Sha256);
     }
 
+    [Fact]
+    public void ReadRawFile_ReturnsDiagnosticsForMalformedIni()
+    {
+        Directory.CreateDirectory(_tempRoot);
+        var profile = ServerProfileFactory.CreateStarterProfile() with
+        {
+            CacheDirectory = Path.Combine(_tempRoot, "cache"),
+            ServerName = "diagnostics-test",
+        };
+
+        var planner = new ProjectZomboidServerPlanner();
+        var paths = planner.ResolvePaths(profile);
+        Directory.CreateDirectory(Path.GetDirectoryName(paths.IniFilePath)!);
+        File.WriteAllText(paths.IniFilePath, "Public=true\nMalformedLine\nMaxPlayers=32");
+
+        var service = new ConfigFileService(planner);
+        var result = service.ReadRawFile(profile, ConfigFileKind.Ini);
+
+        Assert.Contains(result.Diagnostics, message => message.Contains("Line 2", StringComparison.OrdinalIgnoreCase));
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_tempRoot))

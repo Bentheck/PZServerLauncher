@@ -41,7 +41,7 @@ public sealed class ConfigFileService(ProjectZomboidServerPlanner planner)
     {
         var path = ResolveFilePath(profile, kind);
         var content = File.Exists(path) ? File.ReadAllText(path) : string.Empty;
-        return new RawConfigFileDto(kind, content, ComputeSha256(content), []);
+        return new RawConfigFileDto(kind, content, ComputeSha256(content), BuildDiagnostics(kind, content));
     }
 
     public RawConfigFileDto WriteRawFile(
@@ -59,7 +59,7 @@ public sealed class ConfigFileService(ProjectZomboidServerPlanner planner)
         }
 
         File.WriteAllText(path, content);
-        return new RawConfigFileDto(kind, content, ComputeSha256(content), []);
+        return new RawConfigFileDto(kind, content, ComputeSha256(content), BuildDiagnostics(kind, content));
     }
 
     private string ResolveFilePath(PZServerLauncher.Core.Profiles.ServerProfile profile, ConfigFileKind kind)
@@ -79,5 +79,103 @@ public sealed class ConfigFileService(ProjectZomboidServerPlanner planner)
     {
         var hash = SHA256.HashData(Encoding.UTF8.GetBytes(content));
         return Convert.ToHexString(hash);
+    }
+
+    private static IReadOnlyList<string> BuildDiagnostics(ConfigFileKind kind, string content)
+    {
+        var diagnostics = new List<string>();
+        switch (kind)
+        {
+            case ConfigFileKind.Ini:
+                ValidateIni(content, diagnostics);
+                break;
+            case ConfigFileKind.SandboxVars:
+                if (!content.Contains("SandboxVars", StringComparison.OrdinalIgnoreCase))
+                {
+                    diagnostics.Add("SandboxVars.lua should define a SandboxVars table.");
+                }
+
+                ValidateLuaLike(kind, content, diagnostics);
+                break;
+            case ConfigFileKind.SpawnRegions:
+            case ConfigFileKind.SpawnPoints:
+                ValidateLuaLike(kind, content, diagnostics);
+                break;
+            default:
+                diagnostics.Add($"Unknown config kind '{kind}'.");
+                break;
+        }
+
+        return diagnostics;
+    }
+
+    private static void ValidateIni(string content, ICollection<string> diagnostics)
+    {
+        var lines = content.ReplaceLineEndings("\n").Split('\n');
+        for (var index = 0; index < lines.Length; index++)
+        {
+            var line = lines[index].Trim();
+            if (string.IsNullOrWhiteSpace(line) || line.StartsWith(';') || line.StartsWith('#'))
+            {
+                continue;
+            }
+
+            var separatorIndex = line.IndexOf('=');
+            if (separatorIndex <= 0)
+            {
+                diagnostics.Add($"Line {index + 1} is not a valid key=value entry.");
+            }
+        }
+    }
+
+    private static void ValidateLuaLike(ConfigFileKind kind, string content, ICollection<string> diagnostics)
+    {
+        var braceBalance = 0;
+        var parenthesisBalance = 0;
+        var lineNumber = 1;
+
+        foreach (var character in content)
+        {
+            switch (character)
+            {
+                case '{':
+                    braceBalance++;
+                    break;
+                case '}':
+                    braceBalance--;
+                    if (braceBalance < 0)
+                    {
+                        diagnostics.Add($"{kind} has an unmatched closing brace near line {lineNumber}.");
+                        braceBalance = 0;
+                    }
+
+                    break;
+                case '(':
+                    parenthesisBalance++;
+                    break;
+                case ')':
+                    parenthesisBalance--;
+                    if (parenthesisBalance < 0)
+                    {
+                        diagnostics.Add($"{kind} has an unmatched closing parenthesis near line {lineNumber}.");
+                        parenthesisBalance = 0;
+                    }
+
+                    break;
+                case '\n':
+                    lineNumber++;
+                    break;
+            }
+        }
+
+        if (braceBalance != 0)
+        {
+            diagnostics.Add($"{kind} has unbalanced curly braces.");
+        }
+
+        if (parenthesisBalance != 0)
+        {
+            diagnostics.Add($"{kind} has unbalanced parentheses.");
+        }
     }
 }

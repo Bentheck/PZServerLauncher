@@ -50,6 +50,7 @@ public class Program
         builder.Services.AddSingleton<SteamCmdToolService>();
         builder.Services.AddSingleton<ServerProcessSupervisor>();
         builder.Services.AddSingleton<BackgroundJobDispatcher>();
+        builder.Services.AddSingleton<WorkshopPresetScannerService>();
         builder.Services.AddHostedService<ProfileAutoStartService>();
         builder.Services.AddSingleton<DatabaseInitializer>();
         builder.Services.AddSingleton<HostStartupRegistrationService>();
@@ -60,6 +61,7 @@ public class Program
         builder.Services.AddScoped<ConfigFileService>();
         builder.Services.AddScoped<ServerInstallService>();
         builder.Services.AddScoped<ServerBackupService>();
+        builder.Services.AddScoped<LocalServerImportService>();
 
         builder.Services.AddRazorComponents()
             .AddInteractiveServerComponents();
@@ -171,6 +173,23 @@ public class Program
             return Results.Ok(profiles.Select(x => x.ToDto()));
         }).RequireAuthorization("DesktopOrViewer");
 
+        api.MapGet("/import/local", async (
+            LocalServerImportService importService,
+            CancellationToken cancellationToken) =>
+            Results.Ok(await importService.DiscoverAsync(cancellationToken)))
+            .RequireAuthorization("DesktopOrAdmin");
+
+        api.MapPost("/import/local/{candidateId}", async (
+            string candidateId,
+            LocalServerImportService importService,
+            AuditStore auditStore,
+            CancellationToken cancellationToken) =>
+        {
+            var profile = await importService.ImportAsync(candidateId, cancellationToken);
+            await auditStore.WriteAsync("profile.imported", profile.ProfileId, "local", $"Imported local server '{profile.ServerName}'.", cancellationToken: cancellationToken);
+            return Results.Ok(profile.ToDto());
+        }).RequireAuthorization("DesktopOrAdmin");
+
         api.MapGet("/profiles/{profileId}", async (string profileId, ProfileStore store, CancellationToken cancellationToken) =>
         {
             var profile = await store.GetAsync(profileId, cancellationToken);
@@ -252,6 +271,18 @@ public class Program
             var updated = await store.UpsertAsync(configFileService.ApplyCommonConfig(profile, common), cancellationToken);
             await auditStore.WriteAsync("config.common.updated", profileId, "local", "Updated common profile config.", cancellationToken: cancellationToken);
             return Results.Ok(configFileService.GetCommonConfig(updated));
+        }).RequireAuthorization("DesktopOrAdmin");
+
+        api.MapPost("/profiles/{profileId}/workshop/scan", async (
+            string profileId,
+            ProfileStore store,
+            WorkshopPresetScannerService workshopScannerService,
+            CancellationToken cancellationToken) =>
+        {
+            var profile = await store.GetAsync(profileId, cancellationToken);
+            return profile is null
+                ? Results.NotFound()
+                : Results.Ok(workshopScannerService.Scan(profile.InstallDirectory, profile.WorkshopPreset));
         }).RequireAuthorization("DesktopOrAdmin");
 
         api.MapGet("/profiles/{profileId}/config/files/{kind}", async (

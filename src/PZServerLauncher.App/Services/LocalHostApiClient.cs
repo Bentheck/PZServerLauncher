@@ -95,6 +95,21 @@ public sealed class LocalHostApiClient
     public Task<OperationResultDto?> BackupAsync(string profileId, CancellationToken cancellationToken = default) =>
         PostAsync<OperationResultDto>($"/api/profiles/{profileId}/backup", null, cancellationToken);
 
+    public Task<List<ProfileImportCandidateDto>?> DiscoverLocalImportsAsync(CancellationToken cancellationToken = default) =>
+        GetAsync<List<ProfileImportCandidateDto>>("/api/import/local", cancellationToken);
+
+    public Task<ProfileDto?> ImportLocalCandidateAsync(string candidateId, CancellationToken cancellationToken = default) =>
+        PostAsync<ProfileDto>($"/api/import/local/{candidateId}", null, cancellationToken);
+
+    public Task<CommonConfigDto?> UpdateCommonConfigAsync(
+        string profileId,
+        CommonConfigDto config,
+        CancellationToken cancellationToken = default) =>
+        PutAsync<CommonConfigDto>($"/api/profiles/{profileId}/config/common", config, cancellationToken);
+
+    public Task<WorkshopScanResultDto?> ScanWorkshopAsync(string profileId, CancellationToken cancellationToken = default) =>
+        PostAsync<WorkshopScanResultDto>($"/api/profiles/{profileId}/workshop/scan", null, cancellationToken);
+
     public Task<OperationResultDto?> RestoreAsync(
         string profileId,
         string backupFileName,
@@ -197,6 +212,15 @@ public sealed class LocalHostApiClient
             ? await client.PostAsync(path, content: null, cancellationToken)
             : await client.PostAsJsonAsync(path, payload, JsonOptions, cancellationToken);
 
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadFromJsonAsync<T>(JsonOptions, cancellationToken);
+    }
+
+    private async Task<T?> PutAsync<T>(string path, object payload, CancellationToken cancellationToken)
+    {
+        var state = await LoadStateAsync(cancellationToken);
+        using var client = CreateHttpClient(state);
+        using var response = await client.PutAsJsonAsync(path, payload, JsonOptions, cancellationToken);
         response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<T>(JsonOptions, cancellationToken);
     }

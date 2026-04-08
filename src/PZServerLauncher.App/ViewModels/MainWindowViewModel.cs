@@ -3,6 +3,8 @@ using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PZServerLauncher.App.Services;
+using PZServerLauncher.Contracts.Profiles;
+using PZServerLauncher.Core.Profiles;
 using PZServerLauncher.Core.Runtime;
 
 namespace PZServerLauncher.App.ViewModels;
@@ -30,7 +32,9 @@ public partial class MainWindowViewModel : ViewModelBase
 
         RefreshCommand = new AsyncRelayCommand(RefreshAsync);
         CreateStarterProfileCommand = new AsyncRelayCommand(CreateStarterProfileAsync);
+        DiscoverImportsCommand = new AsyncRelayCommand(DiscoverImportsAsync);
         BootstrapOwnerCommand = new AsyncRelayCommand(BootstrapOwnerAsync);
+        ImportCandidateCommand = new AsyncRelayCommand<ImportCandidateViewModel>(ImportCandidateAsync);
         InstallCommand = new AsyncRelayCommand<ProfileCardViewModel>(profile => RunProfileActionAsync(profile, _hostApiClient.InstallAsync, "Install"));
         UpdateCommand = new AsyncRelayCommand<ProfileCardViewModel>(profile => RunProfileActionAsync(profile, _hostApiClient.UpdateAsync, "Update"));
         StartCommand = new AsyncRelayCommand<ProfileCardViewModel>(profile => RunProfileActionAsync(profile, _hostApiClient.StartAsync, "Start"));
@@ -38,6 +42,8 @@ public partial class MainWindowViewModel : ViewModelBase
         RestartCommand = new AsyncRelayCommand<ProfileCardViewModel>(profile => RunProfileActionAsync(profile, _hostApiClient.RestartAsync, "Restart"));
         BackupCommand = new AsyncRelayCommand<ProfileCardViewModel>(profile => RunProfileActionAsync(profile, _hostApiClient.BackupAsync, "Backup"));
         RestoreCommand = new AsyncRelayCommand<ProfileCardViewModel>(RestoreLatestBackupAsync);
+        SaveCommonConfigCommand = new AsyncRelayCommand<ProfileCardViewModel>(SaveCommonConfigAsync);
+        ScanWorkshopCommand = new AsyncRelayCommand<ProfileCardViewModel>(ScanWorkshopAsync);
 
         _runtimeEventStream.StatusChanged += OnStatusChangedAsync;
         _runtimeEventStream.JobChanged += OnJobChangedAsync;
@@ -79,13 +85,19 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public ObservableCollection<ProfileCardViewModel> Profiles { get; } = [];
 
+    public ObservableCollection<ImportCandidateViewModel> ImportCandidates { get; } = [];
+
     public ObservableCollection<ShellItemViewModel> RecentJobs { get; } = [];
 
     public IAsyncRelayCommand RefreshCommand { get; }
 
     public IAsyncRelayCommand CreateStarterProfileCommand { get; }
 
+    public IAsyncRelayCommand DiscoverImportsCommand { get; }
+
     public IAsyncRelayCommand BootstrapOwnerCommand { get; }
+
+    public IAsyncRelayCommand<ImportCandidateViewModel> ImportCandidateCommand { get; }
 
     public IAsyncRelayCommand<ProfileCardViewModel> InstallCommand { get; }
 
@@ -100,6 +112,10 @@ public partial class MainWindowViewModel : ViewModelBase
     public IAsyncRelayCommand<ProfileCardViewModel> BackupCommand { get; }
 
     public IAsyncRelayCommand<ProfileCardViewModel> RestoreCommand { get; }
+
+    public IAsyncRelayCommand<ProfileCardViewModel> SaveCommonConfigCommand { get; }
+
+    public IAsyncRelayCommand<ProfileCardViewModel> ScanWorkshopCommand { get; }
 
     private async Task InitializeAsync()
     {
@@ -135,6 +151,7 @@ public partial class MainWindowViewModel : ViewModelBase
                 snapshot.Statuses.TryGetValue(profile.ProfileId, out var status);
                 snapshot.Backups.TryGetValue(profile.ProfileId, out var backups);
                 var latestBackup = backups?.FirstOrDefault() ?? "No backups";
+
                 Profiles.Add(new ProfileCardViewModel(
                     profile.ProfileId,
                     profile.DisplayName,
@@ -145,7 +162,18 @@ public partial class MainWindowViewModel : ViewModelBase
                     profile.CacheDirectory,
                     latestBackup,
                     status?.LatestLogLine ?? "No recent log lines yet.",
-                    backups is { Count: > 0 }));
+                    backups is { Count: > 0 },
+                    profile.ServerName,
+                    profile.DefaultPort.ToString(),
+                    profile.UdpPort.ToString(),
+                    profile.RconPort.ToString(),
+                    profile.BindIp ?? string.Empty,
+                    profile.AdminUsername ?? string.Empty,
+                    profile.PreferredMemoryInGigabytes.ToString(),
+                    profile.StartWithHost,
+                    profile.AutoRestartOnCrash,
+                    FormatWorkshopSummary(profile.WorkshopPreset),
+                    "Workshop validation has not been run yet."));
             }
 
             RecentJobs.Clear();
@@ -153,12 +181,12 @@ public partial class MainWindowViewModel : ViewModelBase
             {
                 RecentJobs.Add(new ShellItemViewModel(
                     job.JobId.ToString("N"),
-                    $"{job.Kind} · {job.Status}",
+                    $"{job.Kind} - {job.Status}",
                     job.Detail ?? job.Summary));
             }
 
             StatusMessage = Profiles.Count == 0
-                ? "Host is online. Create the starter profile to begin."
+                ? "Host is online. Create or import a profile to begin."
                 : $"Loaded {Profiles.Count} profile(s).";
         }, "Refreshing host state...");
     }
@@ -171,6 +199,32 @@ public partial class MainWindowViewModel : ViewModelBase
             await RefreshAsync();
             StatusMessage = "Starter profile created.";
         }, "Creating starter profile...");
+    }
+
+    private async Task DiscoverImportsAsync()
+    {
+        await RunBusyAsync(async () =>
+        {
+            var candidates = await _hostApiClient.DiscoverLocalImportsAsync(CancellationToken.None) ?? [];
+            ImportCandidates.Clear();
+
+            foreach (var candidate in candidates)
+            {
+                ImportCandidates.Add(new ImportCandidateViewModel(
+                    candidate.CandidateId,
+                    candidate.DisplayName,
+                    candidate.ServerName,
+                    candidate.CacheDirectory,
+                    candidate.InstallDirectory ?? "No install detected",
+                    candidate.Branch.ToString(),
+                    candidate.Diagnostics.Count == 0 ? "Ready to import." : string.Join(" ", candidate.Diagnostics),
+                    candidate.IsAlreadyImported));
+            }
+
+            StatusMessage = ImportCandidates.Count == 0
+                ? "No existing local Zomboid server configs were found."
+                : $"Found {ImportCandidates.Count} import candidate(s).";
+        }, "Scanning for existing local servers...");
     }
 
     private async Task BootstrapOwnerAsync()
@@ -190,6 +244,22 @@ public partial class MainWindowViewModel : ViewModelBase
             StatusMessage = result?.Message ?? "Owner account created.";
             await RefreshAsync();
         }, "Bootstrapping owner account...");
+    }
+
+    private async Task ImportCandidateAsync(ImportCandidateViewModel? candidate)
+    {
+        if (candidate is null || candidate.IsAlreadyImported)
+        {
+            return;
+        }
+
+        await RunBusyAsync(async () =>
+        {
+            await _hostApiClient.ImportLocalCandidateAsync(candidate.CandidateId, CancellationToken.None);
+            await RefreshAsync();
+            await DiscoverImportsAsync();
+            StatusMessage = $"Imported {candidate.DisplayName}.";
+        }, $"Importing {candidate.DisplayName}...");
     }
 
     private async Task RunProfileActionAsync(
@@ -226,6 +296,51 @@ public partial class MainWindowViewModel : ViewModelBase
         }, $"Restoring {profile.DisplayName} from {profile.LastBackup}...");
     }
 
+    private async Task SaveCommonConfigAsync(ProfileCardViewModel? profile)
+    {
+        if (profile is null)
+        {
+            return;
+        }
+
+        if (!TryBuildCommonConfig(profile, out var commonConfig, out var errorMessage))
+        {
+            StatusMessage = errorMessage ?? "Common config is invalid.";
+            return;
+        }
+
+        await RunBusyAsync(async () =>
+        {
+            await _hostApiClient.UpdateCommonConfigAsync(profile.ProfileId, commonConfig!, CancellationToken.None);
+            await RefreshAsync();
+            StatusMessage = $"Saved common settings for {profile.DisplayName}.";
+        }, $"Saving settings for {profile.DisplayName}...");
+    }
+
+    private async Task ScanWorkshopAsync(ProfileCardViewModel? profile)
+    {
+        if (profile is null)
+        {
+            return;
+        }
+
+        await RunBusyAsync(async () =>
+        {
+            var result = await _hostApiClient.ScanWorkshopAsync(profile.ProfileId, CancellationToken.None);
+            if (result is null)
+            {
+                StatusMessage = "Workshop scan did not return a result.";
+                return;
+            }
+
+            profile.WorkshopSummary = FormatWorkshopSummary(result.Preset);
+            profile.WorkshopDiagnostics = result.Diagnostics.Count == 0
+                ? "Workshop validation passed."
+                : string.Join(" ", result.Diagnostics);
+            StatusMessage = $"Workshop scan completed for {profile.DisplayName}.";
+        }, $"Scanning workshop content for {profile.DisplayName}...");
+    }
+
     private Task OnStatusChangedAsync(ServerRuntimeStatus status)
     {
         Dispatcher.UIThread.Post(() =>
@@ -256,7 +371,7 @@ public partial class MainWindowViewModel : ViewModelBase
             {
                 RecentJobs.Insert(0, new ShellItemViewModel(
                     key,
-                    $"{job.Kind} · {job.Status}",
+                    $"{job.Kind} - {job.Status}",
                     job.Detail ?? job.Summary));
 
                 while (RecentJobs.Count > 10)
@@ -266,7 +381,7 @@ public partial class MainWindowViewModel : ViewModelBase
             }
             else
             {
-                existing.Title = $"{job.Kind} · {job.Status}";
+                existing.Title = $"{job.Kind} - {job.Status}";
                 existing.Detail = job.Detail ?? job.Summary;
             }
 
@@ -311,5 +426,41 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             IsBusy = false;
         }
+    }
+
+    private static string FormatWorkshopSummary(WorkshopPreset preset) =>
+        $"{preset.WorkshopItemIds.Count} workshop / {preset.EnabledModIds.Count} mods / {preset.MapFolders.Count} maps";
+
+    private static bool TryBuildCommonConfig(ProfileCardViewModel profile, out CommonConfigDto? config, out string? errorMessage)
+    {
+        config = null;
+        errorMessage = null;
+
+        if (string.IsNullOrWhiteSpace(profile.EditableServerName))
+        {
+            errorMessage = "Server name is required.";
+            return false;
+        }
+
+        if (!int.TryParse(profile.EditableDefaultPort, out var defaultPort) ||
+            !int.TryParse(profile.EditableUdpPort, out var udpPort) ||
+            !int.TryParse(profile.EditableRconPort, out var rconPort) ||
+            !int.TryParse(profile.EditableMemoryInGigabytes, out var memoryInGigabytes))
+        {
+            errorMessage = "Ports and memory must be valid whole numbers.";
+            return false;
+        }
+
+        config = new CommonConfigDto(
+            profile.EditableServerName.Trim(),
+            defaultPort,
+            udpPort,
+            rconPort,
+            string.IsNullOrWhiteSpace(profile.EditableBindIp) ? null : profile.EditableBindIp.Trim(),
+            string.IsNullOrWhiteSpace(profile.EditableAdminUsername) ? null : profile.EditableAdminUsername.Trim(),
+            memoryInGigabytes,
+            profile.EditableStartWithHost,
+            profile.EditableAutoRestartOnCrash);
+        return true;
     }
 }
