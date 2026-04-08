@@ -56,26 +56,89 @@
             <Grid ColumnDefinitions="*,*,*" ColumnSpacing="14">
                 <Border Background="#FFF8F1" CornerRadius="14" Padding="16">
                     <StackPanel Spacing="6">
-                        <TextBlock Classes="kicker" Text="Install Footprint" />
-                        <TextBlock FontSize="18" FontWeight="SemiBold" Text="{Binding InstallPostureSummary}" TextWrapping="Wrap" />
-                        <TextBlock Classes="body" Text="{Binding InstallReadiness}" TextWrapping="Wrap" />
+                        <TextBlock Classes="kicker" Text="Install Root" />
+                        <TextBlock FontSize="18" FontWeight="SemiBold" Text="{Binding InstallSignal}" />
+                        <TextBlock Classes="body" Text="{Binding InstallSignalSummary}" TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
                 <Border Grid.Column="1" Background="#FFF8F1" CornerRadius="14" Padding="16">
                     <StackPanel Spacing="6">
-                        <TextBlock Classes="kicker" Text="Cache Footprint" />
-                        <TextBlock FontSize="18" FontWeight="SemiBold" Text="{Binding CacheReadiness}" TextWrapping="Wrap" />
-                        <TextBlock Classes="body" Text="{Binding LaunchReadiness}" TextWrapping="Wrap" />
+                        <TextBlock Classes="kicker" Text="Cache Layer" />
+                        <TextBlock FontSize="18" FontWeight="SemiBold" Text="{Binding CacheSignal}" />
+                        <TextBlock Classes="body" Text="{Binding CacheSignalSummary}" TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
                 <Border Grid.Column="2" Background="#FFF8F1" CornerRadius="14" Padding="16">
                     <StackPanel Spacing="6">
-                        <TextBlock Classes="kicker" Text="Branch Isolation" />
-                        <TextBlock FontSize="18" FontWeight="SemiBold" Text="{Binding BranchIsolationSummary}" TextWrapping="Wrap" />
-                        <TextBlock Classes="body" Text="{Binding BranchChannelSummary}" TextWrapping="Wrap" />
+                        <TextBlock Classes="kicker" Text="Config Layer" />
+                        <TextBlock FontSize="18" FontWeight="SemiBold" Text="{Binding ConfigSignal}" />
+                        <TextBlock Classes="body" Text="{Binding ConfigSignalSummary}" TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
             </Grid>
+
+            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="14">
+                <Border Background="#FFF8F1" CornerRadius="14" Padding="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Backup Posture" />
+                        <TextBlock FontSize="18" FontWeight="SemiBold" Text="{Binding BackupSignal}" />
+                        <TextBlock Classes="body" Text="{Binding BackupSignalSummary}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="1" Background="#FFF8F1" CornerRadius="14" Padding="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Launch Mode" />
+                        <TextBlock FontSize="18" FontWeight="SemiBold" Text="{Binding LaunchModeSignal}" />
+                        <TextBlock Classes="body" Text="{Binding LaunchModeSignalSummary}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="2" Background="#FFF8F1" CornerRadius="14" Padding="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Maintenance Window" />
+                        <TextBlock FontSize="18" FontWeight="SemiBold" Text="{Binding MaintenanceSignal}" />
+                        <TextBlock Classes="body" Text="{Binding MaintenanceSignalSummary}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <Border Background="#FBF7F1" CornerRadius="14" Padding="16">
+                <StackPanel Spacing="12">
+                    <StackPanel Spacing="4">
+                        <TextBlock Classes="kicker" Text="Deployment Readiness" />
+                        <TextBlock Classes="body"
+                                   Text="These checkpoints condense the install, cache, launcher, config, and recovery posture into one maintenance pass before you queue work."
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+
+                    <ItemsControl ItemsSource="{Binding FootprintCheckpoints}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:InstallReadinessCheckpointViewModel">
+                                <Border Background="#F1E6D7"
+                                        CornerRadius="12"
+                                        Padding="14"
+                                        Width="208"
+                                        Margin="0,0,12,12">
+                                    <StackPanel Spacing="6">
+                                        <TextBlock Classes="kicker" Text="{Binding Title}" />
+                                        <TextBlock FontSize="18"
+                                                   FontWeight="SemiBold"
+                                                   Text="{Binding Status}"
+                                                   TextWrapping="Wrap" />
+                                        <TextBlock Classes="body"
+                                                   Text="{Binding Summary}"
+                                                   TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
 
             <Grid ColumnDefinitions="*,320" ColumnSpacing="16">
                 <StackPanel Spacing="14">
@@ -208,7 +271,12 @@
                 <Border Grid.Column="1" Background="#FFF8F1" CornerRadius="14" Padding="16">
                     <StackPanel Spacing="10">
                         <TextBlock Classes="kicker" Text="Operator Actions" />
+                        <TextBlock FontSize="18"
+                                   FontWeight="SemiBold"
+                                   Text="{Binding RuntimeActionHeadline}"
+                                   TextWrapping="Wrap" />
                         <TextBlock Classes="body" Text="{Binding NextRecommendedAction}" TextWrapping="Wrap" />
+                        <TextBlock Classes="body" Text="{Binding RuntimeActionSummary}" TextWrapping="Wrap" />
 
                         <StackPanel Spacing="8">
                             <TextBlock FontWeight="SemiBold" Text="Deploy" />
@@ -216,6 +284,15 @@
                                 <Button Command="{Binding InstallCommand}" Content="Install" />
                                 <Button Command="{Binding UpdateCommand}" Content="Update" />
                             </WrapPanel>
+                        </StackPanel>
+
+                        <StackPanel Spacing="8">
+                            <TextBlock FontWeight="SemiBold" Text="Safeguards" />
+                            <WrapPanel Orientation="Horizontal" ItemWidth="136" ItemHeight="36">
+                                <Button Command="{Binding BackupCommand}" Content="Manual Backup" />
+                            </WrapPanel>
+                            <TextBlock Classes="body" Text="{Binding LatestBackupLabel}" TextWrapping="Wrap" />
+                            <TextBlock Classes="body" Text="{Binding BackupSignalSummary}" TextWrapping="Wrap" />
                         </StackPanel>
 
                         <StackPanel Spacing="8">
@@ -234,11 +311,25 @@
                             </WrapPanel>
                         </StackPanel>
 
-                        <TextBlock Classes="body" Text="{Binding OperatorSequenceSummary}" TextWrapping="Wrap" />
-                        <TextBlock Classes="body" Text="{Binding JobHistorySummary}" TextWrapping="Wrap" />
-                        <TextBlock Classes="body" Text="{Binding LastJobSummary}" TextWrapping="Wrap" />
-                        <TextBlock Classes="body" Text="{Binding BranchInstallStatus}" TextWrapping="Wrap" />
-                        <TextBlock Classes="body" Text="{Binding LaunchReadiness}" TextWrapping="Wrap" />
+                        <Border Background="#F1E6D7" CornerRadius="12" Padding="12">
+                            <StackPanel Spacing="6">
+                                <TextBlock Classes="kicker" Text="Maintenance Gate" />
+                                <TextBlock Classes="body" Text="{Binding LaunchModeSummary}" TextWrapping="Wrap" />
+                                <TextBlock Classes="body" Text="{Binding OperatorSequenceSummary}" TextWrapping="Wrap" />
+                                <TextBlock Classes="body" Text="{Binding JobHistorySummary}" TextWrapping="Wrap" />
+                                <TextBlock Classes="body" Text="{Binding LastJobSummary}" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Background="#F1E6D7" CornerRadius="12" Padding="12">
+                            <StackPanel Spacing="6">
+                                <TextBlock Classes="kicker" Text="Current Signals" />
+                                <TextBlock Classes="body" Text="{Binding BranchInstallStatus}" TextWrapping="Wrap" />
+                                <TextBlock Classes="body" Text="{Binding ConfigStateHeadline}" TextWrapping="Wrap" />
+                                <TextBlock Classes="body" Text="{Binding RecoveryStateHeadline}" TextWrapping="Wrap" />
+                                <TextBlock Classes="body" Text="{Binding LaunchReadiness}" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
                 </Border>
             </Grid>

@@ -18,6 +18,7 @@ public sealed class InstallUpdateWorkspaceViewModel : ProfileWorkspacePageViewMo
         Legacy.RecentOperationJobs.CollectionChanged += OnRecentOperationJobsChanged;
         InstallCommand = new AsyncRelayCommand(() => ExecuteProfileCommandAsync(Legacy.InstallCommand));
         UpdateCommand = new AsyncRelayCommand(() => ExecuteProfileCommandAsync(Legacy.UpdateCommand));
+        BackupCommand = new AsyncRelayCommand(() => ExecuteProfileCommandAsync(Legacy.BackupCommand));
         StartCommand = new AsyncRelayCommand(() => ExecuteProfileCommandAsync(Legacy.StartCommand));
         StopCommand = new AsyncRelayCommand(() => ExecuteProfileCommandAsync(Legacy.StopCommand));
         RestartCommand = new AsyncRelayCommand(() => ExecuteProfileCommandAsync(Legacy.RestartCommand));
@@ -27,6 +28,8 @@ public sealed class InstallUpdateWorkspaceViewModel : ProfileWorkspacePageViewMo
     public IAsyncRelayCommand InstallCommand { get; }
 
     public IAsyncRelayCommand UpdateCommand { get; }
+
+    public IAsyncRelayCommand BackupCommand { get; }
 
     public IAsyncRelayCommand StartCommand { get; }
 
@@ -78,6 +81,60 @@ public sealed class InstallUpdateWorkspaceViewModel : ProfileWorkspacePageViewMo
         : SelectedProfile.IsInstallDetected
             ? $"Install detected for {SelectedProfile.Branch}."
             : $"No install detected yet for {SelectedProfile.Branch}.";
+
+    public string InstallSignal => SelectedProfile is null
+        ? "No install root selected."
+        : SelectedProfile.IsInstallDetected
+            ? "Install root detected."
+            : "Install root missing.";
+
+    public string CacheSignal => SelectedProfile is null
+        ? "No cache root selected."
+        : SelectedProfile.CacheDetected
+            ? "Cache root ready."
+            : "Cache root missing.";
+
+    public string LaunchModeLabel => SelectedProfile is null
+        ? "Unknown"
+        : SelectedProfile.UsesDirectJavaTemplate
+            ? "Direct Java"
+            : SelectedProfile.LauncherDetected
+                ? "Batch fallback"
+                : "Launcher missing";
+
+    public string LaunchModeSummary => SelectedProfile is null
+        ? "No launch mode available."
+        : SelectedProfile.UsesDirectJavaTemplate
+            ? "The host can launch through extracted JVM arguments and keep memory management under launcher control."
+            : SelectedProfile.LauncherDetected
+                ? "The host has a launcher, but template extraction is not safe yet, so it will fall back to the vendor batch flow."
+                : "No launcher entrypoint was detected in the install footprint yet.";
+
+    public string ConfigStateHeadline => SelectedProfile is null
+        ? "Unknown"
+        : SelectedProfile.ConfigDirectoryDetected
+            ? SelectedProfile.IniDetected && SelectedProfile.SandboxDetected
+                ? "Config set detected"
+                : "Config root incomplete"
+            : "Config root missing";
+
+    public string RecoveryStateHeadline => SelectedProfile is null
+        ? "Unknown"
+        : SelectedProfile.HasBackup
+            ? "Recovery point ready"
+            : "No recovery point";
+
+    public string RuntimeActionHeadline => SelectedProfile is null
+        ? "No runtime window"
+        : string.Equals(SelectedProfile.RuntimeState, "Running", StringComparison.OrdinalIgnoreCase)
+            ? "Live maintenance window"
+            : "Idle deployment window";
+
+    public string RuntimeActionSummary => SelectedProfile is null
+        ? "Choose a profile to see runtime and maintenance guidance."
+        : string.Equals(SelectedProfile.RuntimeState, "Running", StringComparison.OrdinalIgnoreCase)
+            ? $"{SelectedProfile.RuntimePolicySummary} {SelectedProfile.BackupSafetySummary}"
+            : $"{SelectedProfile.LaunchReadinessSummary} {SelectedProfile.BackupSafetySummary}";
 
     public string InstallPostureSummary => SelectedProfile?.InstallPosture.DeploymentPostureSummary ?? "No install posture available.";
 
@@ -133,6 +190,66 @@ public sealed class InstallUpdateWorkspaceViewModel : ProfileWorkspacePageViewMo
 
     public string BackupSafety => SelectedProfile?.BackupSafetySummary ?? "No backup context available.";
 
+    public string LatestBackupLabel => SelectedProfile is null
+        ? "No backup archive available."
+        : SelectedProfile.HasBackup
+            ? SelectedProfile.LastBackup
+            : "No backup archive yet.";
+
+    public string InstallSignal => SelectedProfile is null
+        ? "No profile"
+        : SelectedProfile.IsInstallDetected
+            ? "Ready"
+            : "Missing";
+
+    public string InstallSignalSummary => InstallReadiness;
+
+    public string CacheSignal => SelectedProfile is null
+        ? "No profile"
+        : SelectedProfile.CacheDetected
+            ? "Ready"
+            : "Missing";
+
+    public string CacheSignalSummary => CacheReadiness;
+
+    public string ConfigSignal => SelectedProfile is null
+        ? "No profile"
+        : !SelectedProfile.ConfigDirectoryDetected
+            ? "Missing"
+            : SelectedProfile.IniDetected && SelectedProfile.SandboxDetected
+                ? "Ready"
+                : "Partial";
+
+    public string ConfigSignalSummary => ConfigFootprintSummary;
+
+    public string BackupSignal => SelectedProfile is null
+        ? "No profile"
+        : SelectedProfile.HasBackup
+            ? "Protected"
+            : "Needs snapshot";
+
+    public string BackupSignalSummary => BackupSafety;
+
+    public string LaunchModeSignal => SelectedProfile is null
+        ? "No profile"
+        : !SelectedProfile.LauncherDetected
+            ? "Blocked"
+            : SelectedProfile.UsesDirectJavaTemplate
+                ? "Direct Java"
+                : "Batch fallback";
+
+    public string LaunchModeSignalSummary => LaunchReadiness;
+
+    public string MaintenanceSignal => SelectedProfile is null
+        ? "No profile"
+        : !SelectedProfile.IsInstallDetected
+            ? "Install first"
+            : string.Equals(SelectedProfile.RuntimeState, "Running", StringComparison.OrdinalIgnoreCase)
+                ? "Live window"
+                : "Idle window";
+
+    public string MaintenanceSignalSummary => MaintenanceWindowSummary;
+
     public string DeploymentPosture => SelectedProfile?.InstallPosture.DeploymentPostureSummary ?? "No deployment posture available.";
 
     public string MaintenanceWindowSummary => SelectedProfile?.InstallPosture.MaintenanceWindowSummary ?? "No maintenance window summary available.";
@@ -162,6 +279,17 @@ public sealed class InstallUpdateWorkspaceViewModel : ProfileWorkspacePageViewMo
     public string ConfigFootprintSummary => SelectedProfile is null
         ? "No config footprint available."
         : $"{(SelectedProfile.ConfigDirectoryDetected ? "Config root detected" : "Config root missing")} | {(SelectedProfile.IniDetected ? "INI present" : "INI missing")} | {(SelectedProfile.SandboxDetected ? "Sandbox present" : "Sandbox missing")} | {(SelectedProfile.WorldDetected ? "World save detected" : "World save not created yet")}";
+
+    public IReadOnlyList<InstallReadinessCheckpointViewModel> FootprintCheckpoints => SelectedProfile is null
+        ? []
+        :
+        [
+            new("Install Root", InstallSignal, InstallReadiness),
+            new("Cache Root", CacheSignal, CacheReadiness),
+            new("Launch Mode", LaunchModeLabel, LaunchModeSummary),
+            new("Config Files", ConfigStateHeadline, ConfigFootprintSummary),
+            new("Recovery", RecoveryStateHeadline, BackupSafety)
+        ];
 
     protected override void OnSelectedProfileChangedCore(ProfileCardViewModel? profile)
     {
@@ -193,6 +321,14 @@ public sealed class InstallUpdateWorkspaceViewModel : ProfileWorkspacePageViewMo
         OnPropertyChanged(nameof(JobHistorySummary));
         OnPropertyChanged(nameof(BranchChannelSummary));
         OnPropertyChanged(nameof(BranchInstallStatus));
+        OnPropertyChanged(nameof(InstallSignal));
+        OnPropertyChanged(nameof(CacheSignal));
+        OnPropertyChanged(nameof(LaunchModeLabel));
+        OnPropertyChanged(nameof(LaunchModeSummary));
+        OnPropertyChanged(nameof(ConfigStateHeadline));
+        OnPropertyChanged(nameof(RecoveryStateHeadline));
+        OnPropertyChanged(nameof(RuntimeActionHeadline));
+        OnPropertyChanged(nameof(RuntimeActionSummary));
         OnPropertyChanged(nameof(InstallPostureSummary));
         OnPropertyChanged(nameof(UpdatePostureSummary));
         OnPropertyChanged(nameof(SteamCmdCommandSummary));
@@ -201,6 +337,19 @@ public sealed class InstallUpdateWorkspaceViewModel : ProfileWorkspacePageViewMo
         OnPropertyChanged(nameof(InstallReadiness));
         OnPropertyChanged(nameof(CacheReadiness));
         OnPropertyChanged(nameof(BackupSafety));
+        OnPropertyChanged(nameof(LatestBackupLabel));
+        OnPropertyChanged(nameof(InstallSignal));
+        OnPropertyChanged(nameof(InstallSignalSummary));
+        OnPropertyChanged(nameof(CacheSignal));
+        OnPropertyChanged(nameof(CacheSignalSummary));
+        OnPropertyChanged(nameof(ConfigSignal));
+        OnPropertyChanged(nameof(ConfigSignalSummary));
+        OnPropertyChanged(nameof(BackupSignal));
+        OnPropertyChanged(nameof(BackupSignalSummary));
+        OnPropertyChanged(nameof(LaunchModeSignal));
+        OnPropertyChanged(nameof(LaunchModeSignalSummary));
+        OnPropertyChanged(nameof(MaintenanceSignal));
+        OnPropertyChanged(nameof(MaintenanceSignalSummary));
         OnPropertyChanged(nameof(DeploymentPosture));
         OnPropertyChanged(nameof(MaintenanceWindowSummary));
         OnPropertyChanged(nameof(BranchIsolationSummary));
@@ -212,6 +361,7 @@ public sealed class InstallUpdateWorkspaceViewModel : ProfileWorkspacePageViewMo
         OnPropertyChanged(nameof(PreflightSummary));
         OnPropertyChanged(nameof(ExpectedLauncherPath));
         OnPropertyChanged(nameof(ConfigFootprintSummary));
+        OnPropertyChanged(nameof(FootprintCheckpoints));
         OnPropertyChanged(nameof(RecentInstallJobs));
         OnPropertyChanged(nameof(RecentUpdateJobs));
         OnPropertyChanged(nameof(LastInstallJobSummary));
@@ -234,3 +384,8 @@ public sealed class InstallUpdateWorkspaceViewModel : ProfileWorkspacePageViewMo
         OnPropertyChanged(nameof(UpdateJobHistorySummary));
     }
 }
+
+public sealed record InstallReadinessCheckpointViewModel(
+    string Title,
+    string Status,
+    string Summary);
