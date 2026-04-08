@@ -1,0 +1,53 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:PZServerLauncher.App.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignWidth="1120"
+             d:DesignHeight="900"
+             x:Class="PZServerLauncher.App.Views.LogsWorkspaceView"
+             x:DataType="vm:LogsWorkspaceViewModel">
+    <Border Classes="card" Padding="24">
+        <StackPanel Spacing="18">
+            <StackPanel Spacing="4">
+                <TextBlock Classes="panel-title" FontSize="24" Text="{Binding PageTitle}" />
+                <TextBlock Classes="body" Text="{Binding PageSummary}" TextWrapping="Wrap" />
+            </StackPanel>
+
+            <Border Background="#1F1D1B" CornerRadius="14" Padding="16">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Runtime" />
+                        <TextBlock Foreground="#F7F0E7" FontSize="20" Text="{Binding LatestRuntimeState}" />
+                        <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding LoadStatus}" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <Button Grid.Column="1" Command="{Binding ReloadCommand}" Content="Reload" />
+                </Grid>
+            </Border>
+
+            <Border Classes="card" Padding="0">
+                <Grid RowDefinitions="Auto,*">
+                    <TextBlock Margin="16,16,16,0" Classes="kicker" Text="Recent Output" />
+                    <ScrollViewer Grid.Row="1" Margin="16" VerticalScrollBarVisibility="Auto">
+                        <ItemsControl ItemsSource="{Binding LogLines}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Classes="body"
+                                               FontFamily="Cascadia Code,Consolas,monospace"
+                                               Text="{Binding .}"
+                                               TextWrapping="Wrap"
+                                               Margin="0,0,0,6" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+
+            <Border Background="#F6EFE6" CornerRadius="14" Padding="16" IsVisible="{Binding HasNoLogs}">
+                <TextBlock Classes="body" Text="No buffered logs are available yet. Start the profile, then come back here or reload to inspect output." TextWrapping="Wrap" />
+            </Border>
+        </StackPanel>
+    </Border>
+</UserControl>

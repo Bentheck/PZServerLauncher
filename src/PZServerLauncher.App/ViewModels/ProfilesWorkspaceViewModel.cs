@@ -10,7 +10,7 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
 {
     private readonly IReadOnlyDictionary<string, ViewModelBase> _sections;
 
-    public ProfilesWorkspaceViewModel(MainWindowViewModel legacy, LocalHostApiClient hostApiClient, Action openClassicAction)
+    public ProfilesWorkspaceViewModel(MainWindowViewModel legacy, LocalHostApiClient hostApiClient, RuntimeEventStream runtimeEventStream, Action openClassicAction)
     {
         Legacy = legacy;
 
@@ -21,11 +21,7 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
         ModsAndMaps = new ModsAndMapsWorkspaceViewModel(legacy, hostApiClient);
         NetworkAndAdmin = new NetworkAndAdminWorkspaceViewModel(legacy, hostApiClient);
         Backups = new BackupsWorkspaceViewModel(legacy, hostApiClient);
-        Logs = new WorkspaceSectionViewModel(
-            "Logs",
-            "Live runtime output and recent server messages for the selected profile.",
-            "Logs draft cleared.",
-            ["Live stream", "Recent logs", "Runtime messages", "Host messages"]);
+        Logs = new LogsWorkspaceViewModel(legacy, hostApiClient, runtimeEventStream);
         AdvancedFiles = new WorkspaceSectionViewModel(
             "Advanced Files",
             "Raw ini, SandboxVars, spawnregions, and spawnpoints editing for unsupported or advanced cases.",
@@ -94,7 +90,7 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
 
     public BackupsWorkspaceViewModel Backups { get; }
 
-    public WorkspaceSectionViewModel Logs { get; }
+    public LogsWorkspaceViewModel Logs { get; }
 
     public WorkspaceSectionViewModel AdvancedFiles { get; }
 

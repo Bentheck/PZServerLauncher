@@ -12,13 +12,14 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
     private readonly LocalHostApiClient _hostApiClient;
 
     public WorkspaceShellViewModel()
-        : this(new MainWindowViewModel(), new LocalHostApiClient(), new DesktopShellService())
+        : this(new MainWindowViewModel(), new LocalHostApiClient(), new RuntimeEventStream(new LocalHostApiClient()), new DesktopShellService())
     {
     }
 
     public WorkspaceShellViewModel(
         MainWindowViewModel legacy,
         LocalHostApiClient hostApiClient,
+        RuntimeEventStream runtimeEventStream,
         DesktopShellService desktopShellService)
     {
         Legacy = legacy;
@@ -45,7 +46,7 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
             "Owner bootstrap and the future web-role surface will land here.",
             "Users draft cleared.",
             ["Owner bootstrap", "Admin roles", "Operator roles", "Viewer roles"]);
-        Profiles = new ProfilesWorkspaceViewModel(legacy, hostApiClient, () => SelectGlobalPageByKey("classic"));
+        Profiles = new ProfilesWorkspaceViewModel(legacy, hostApiClient, runtimeEventStream, () => SelectGlobalPageByKey("classic"));
         Classic = new ClassicWorkspaceViewModel(legacy);
 
         _pages = new Dictionary<string, ViewModelBase>(StringComparer.Ordinal)

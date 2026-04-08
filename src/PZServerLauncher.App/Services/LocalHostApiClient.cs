@@ -174,6 +174,9 @@ public sealed class LocalHostApiClient
         CancellationToken cancellationToken = default) =>
         PutAsync<PZServerLauncher.Core.Profiles.WorkshopPreset>($"/api/profiles/{profileId}/workshop-preset", preset, cancellationToken);
 
+    public Task<List<string>?> GetRecentLogsAsync(string profileId, CancellationToken cancellationToken = default) =>
+        GetAsync<List<string>>($"/api/profiles/{profileId}/logs/recent", cancellationToken);
+
     public Task<RawConfigFileDto?> GetRawConfigAsync(
         string profileId,
         PZServerLauncher.Core.Runtime.ConfigFileKind kind,

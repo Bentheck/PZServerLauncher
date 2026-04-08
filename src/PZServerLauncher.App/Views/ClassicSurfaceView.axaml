@@ -210,8 +210,8 @@
                                         <TextBlock Classes="kicker" Text="Workspace Pages Live" />
                                         <Border Background="#F1E6D7" CornerRadius="14" Padding="16">
                                             <StackPanel Spacing="8">
-                                                <TextBlock Classes="body" Text="Structured General, Sandbox, Mods &amp; Maps, Network &amp; Admin, and Backups are now live in the workspace pages." TextWrapping="Wrap" />
-                                                <TextBlock Classes="body" Text="Use the new workspace for server identity, primary ports, memory, startup behavior, first-pass sandbox gameplay/world settings, workshop/mod/map management, bind/admin settings, and backup/restore workflows. Classic remains focused on raw files and the still-migrating areas." TextWrapping="Wrap" />
+                                                <TextBlock Classes="body" Text="Structured General, Sandbox, Mods &amp; Maps, Network &amp; Admin, Backups, and Logs are now live in the workspace pages." TextWrapping="Wrap" />
+                                                <TextBlock Classes="body" Text="Use the new workspace for server identity, primary ports, memory, startup behavior, first-pass sandbox gameplay/world settings, workshop/mod/map management, bind/admin settings, backup/restore workflows, and recent runtime logs. Classic remains focused on raw files and the still-migrating areas." TextWrapping="Wrap" />
                                             </StackPanel>
                                         </Border>
                                     </StackPanel>
@@ -219,8 +219,6 @@
                                     <StackPanel Grid.Column="1" Spacing="8">
                                         <TextBlock Classes="kicker" Text="Validation" />
                                         <TextBlock Classes="body" Text="{Binding WorkshopDiagnostics}" TextWrapping="Wrap" />
-                                        <TextBlock Classes="kicker" Text="Latest Log" />
-                                        <TextBlock Classes="body" Text="{Binding LatestLogLine}" TextWrapping="Wrap" />
                                     </StackPanel>
                                 </Grid>
 
