@@ -1,22 +1,26 @@
 using System.Collections.ObjectModel;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PZServerLauncher.App.Services;
+using PZServerLauncher.Core.Runtime;
 
 namespace PZServerLauncher.App.ViewModels;
 
 public partial class MainWindowViewModel : ViewModelBase
 {
     private readonly LocalHostApiClient _hostApiClient;
+    private readonly RuntimeEventStream _runtimeEventStream;
 
     public MainWindowViewModel()
-        : this(new LocalHostApiClient())
+        : this(new LocalHostApiClient(), new RuntimeEventStream(new LocalHostApiClient()))
     {
     }
 
-    public MainWindowViewModel(LocalHostApiClient hostApiClient)
+    public MainWindowViewModel(LocalHostApiClient hostApiClient, RuntimeEventStream runtimeEventStream)
     {
         _hostApiClient = hostApiClient;
+        _runtimeEventStream = runtimeEventStream;
         Title = "Project Zomboid Server Launcher";
         Subtitle = "Desktop control for the local PZServerLauncher host.";
         HostSummary = "Waiting for local host...";
@@ -35,7 +39,11 @@ public partial class MainWindowViewModel : ViewModelBase
         BackupCommand = new AsyncRelayCommand<ProfileCardViewModel>(profile => RunProfileActionAsync(profile, _hostApiClient.BackupAsync, "Backup"));
         RestoreCommand = new AsyncRelayCommand<ProfileCardViewModel>(RestoreLatestBackupAsync);
 
-        _ = RefreshAsync();
+        _runtimeEventStream.StatusChanged += OnStatusChangedAsync;
+        _runtimeEventStream.JobChanged += OnJobChangedAsync;
+        _runtimeEventStream.LogLineReceived += OnLogLineReceivedAsync;
+
+        _ = InitializeAsync();
     }
 
     public string Title { get; }
@@ -71,6 +79,8 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public ObservableCollection<ProfileCardViewModel> Profiles { get; } = [];
 
+    public ObservableCollection<ShellItemViewModel> RecentJobs { get; } = [];
+
     public IAsyncRelayCommand RefreshCommand { get; }
 
     public IAsyncRelayCommand CreateStarterProfileCommand { get; }
@@ -90,6 +100,20 @@ public partial class MainWindowViewModel : ViewModelBase
     public IAsyncRelayCommand<ProfileCardViewModel> BackupCommand { get; }
 
     public IAsyncRelayCommand<ProfileCardViewModel> RestoreCommand { get; }
+
+    private async Task InitializeAsync()
+    {
+        await RefreshAsync();
+
+        try
+        {
+            await _runtimeEventStream.EnsureConnectedAsync();
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Live runtime stream unavailable: {ex.Message}";
+        }
+    }
 
     private async Task RefreshAsync()
     {
@@ -122,6 +146,15 @@ public partial class MainWindowViewModel : ViewModelBase
                     latestBackup,
                     status?.LatestLogLine ?? "No recent log lines yet.",
                     backups is { Count: > 0 }));
+            }
+
+            RecentJobs.Clear();
+            foreach (var job in snapshot.Jobs)
+            {
+                RecentJobs.Add(new ShellItemViewModel(
+                    job.JobId.ToString("N"),
+                    $"{job.Kind} · {job.Status}",
+                    job.Detail ?? job.Summary));
             }
 
             StatusMessage = Profiles.Count == 0
@@ -191,6 +224,70 @@ public partial class MainWindowViewModel : ViewModelBase
             StatusMessage = result?.Message ?? "Restore queued.";
             await RefreshAsync();
         }, $"Restoring {profile.DisplayName} from {profile.LastBackup}...");
+    }
+
+    private Task OnStatusChangedAsync(ServerRuntimeStatus status)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            var profile = Profiles.FirstOrDefault(x => x.ProfileId == status.ProfileId);
+            if (profile is null)
+            {
+                return;
+            }
+
+            profile.RuntimeState = status.State.ToString();
+            if (!string.IsNullOrWhiteSpace(status.LatestLogLine))
+            {
+                profile.LatestLogLine = status.LatestLogLine;
+            }
+        });
+
+        return Task.CompletedTask;
+    }
+
+    private Task OnJobChangedAsync(OperationJob job)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            var key = job.JobId.ToString("N");
+            var existing = RecentJobs.FirstOrDefault(x => x.Key == key);
+            if (existing is null)
+            {
+                RecentJobs.Insert(0, new ShellItemViewModel(
+                    key,
+                    $"{job.Kind} · {job.Status}",
+                    job.Detail ?? job.Summary));
+
+                while (RecentJobs.Count > 10)
+                {
+                    RecentJobs.RemoveAt(RecentJobs.Count - 1);
+                }
+            }
+            else
+            {
+                existing.Title = $"{job.Kind} · {job.Status}";
+                existing.Detail = job.Detail ?? job.Summary;
+            }
+
+            StatusMessage = job.Detail ?? job.Summary;
+        });
+
+        return Task.CompletedTask;
+    }
+
+    private Task OnLogLineReceivedAsync(string profileId, string line)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            var profile = Profiles.FirstOrDefault(x => x.ProfileId == profileId);
+            if (profile is not null)
+            {
+                profile.LatestLogLine = line;
+            }
+        });
+
+        return Task.CompletedTask;
     }
 
     private async Task RunBusyAsync(Func<Task> work, string busyMessage)

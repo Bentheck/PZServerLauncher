@@ -35,6 +35,14 @@ public sealed class JobStore(ApplicationDbContext dbContext)
         return entity?.ToModel();
     }
 
+    public async Task<IReadOnlyList<OperationJob>> ListRecentAsync(int take = 20, CancellationToken cancellationToken = default) =>
+        await dbContext.OperationJobs
+            .AsNoTracking()
+            .OrderByDescending(x => x.CreatedAtUtc)
+            .Take(take)
+            .Select(x => x.ToModel())
+            .ToListAsync(cancellationToken);
+
     public async Task<OperationJob> UpdateAsync(OperationJob job, CancellationToken cancellationToken = default)
     {
         var entity = await dbContext.OperationJobs.SingleAsync(x => x.JobId == job.JobId, cancellationToken);

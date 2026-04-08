@@ -50,6 +50,7 @@ public class Program
         builder.Services.AddSingleton<SteamCmdToolService>();
         builder.Services.AddSingleton<ServerProcessSupervisor>();
         builder.Services.AddSingleton<BackgroundJobDispatcher>();
+        builder.Services.AddHostedService<ProfileAutoStartService>();
         builder.Services.AddSingleton<DatabaseInitializer>();
         builder.Services.AddSingleton<HostStartupRegistrationService>();
         builder.Services.AddScoped<ProfileStore>();
@@ -83,7 +84,11 @@ public class Program
                 policy.ForwardDefaultSelector = context =>
                 {
                     var header = context.Request.Headers.Authorization.ToString();
-                    return header.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)
+                    var hasLoopbackToken = header.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase) ||
+                        (context.Request.Path.StartsWithSegments("/hubs/runtime") &&
+                         context.Request.Query.ContainsKey("access_token"));
+
+                    return hasLoopbackToken
                         ? LoopbackTokenAuthenticationHandler.SchemeName
                         : IdentityConstants.ApplicationScheme;
                 };
@@ -336,6 +341,13 @@ public class Program
             var job = await store.GetAsync(jobId, cancellationToken);
             return job is null ? Results.NotFound() : Results.Ok(job);
         }).RequireAuthorization("DesktopOrViewer");
+
+        api.MapGet("/jobs", async (
+            int? take,
+            JobStore store,
+            CancellationToken cancellationToken) =>
+            Results.Ok(await store.ListRecentAsync(Math.Clamp(take ?? 20, 1, 50), cancellationToken)))
+            .RequireAuthorization("DesktopOrViewer");
 
         api.MapPost("/profiles/{profileId}/install", async (
             string profileId,

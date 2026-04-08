@@ -24,6 +24,7 @@ public partial class App : Application
     {
         _serviceProvider = new ServiceCollection()
             .AddSingleton<LocalHostApiClient>()
+            .AddSingleton<RuntimeEventStream>()
             .AddTransient<MainWindowViewModel>()
             .BuildServiceProvider();
 

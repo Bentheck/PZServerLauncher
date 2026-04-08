@@ -18,7 +18,8 @@ public sealed class LoopbackTokenAuthenticationHandler(
 
     protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
     {
-        if (!Request.Headers.Authorization.ToString().StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        var token = ResolveToken();
+        if (string.IsNullOrWhiteSpace(token))
         {
             return AuthenticateResult.NoResult();
         }
@@ -28,7 +29,6 @@ public sealed class LoopbackTokenAuthenticationHandler(
             return AuthenticateResult.Fail("Loopback token authentication is only allowed from loopback addresses.");
         }
 
-        var token = Request.Headers.Authorization.ToString()["Bearer ".Length..].Trim();
         var expected = await stateStore.GetLocalApiTokenAsync(Context.RequestAborted);
         if (!CryptographicOperations.FixedTimeEquals(
                 System.Text.Encoding.UTF8.GetBytes(token),
@@ -48,5 +48,22 @@ public sealed class LoopbackTokenAuthenticationHandler(
         var identity = new ClaimsIdentity(claims, SchemeName);
         var principal = new ClaimsPrincipal(identity);
         return AuthenticateResult.Success(new AuthenticationTicket(principal, SchemeName));
+    }
+
+    private string? ResolveToken()
+    {
+        var authorizationHeader = Request.Headers.Authorization.ToString();
+        if (authorizationHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        {
+            return authorizationHeader["Bearer ".Length..].Trim();
+        }
+
+        if (Request.Path.StartsWithSegments("/hubs/runtime") &&
+            Request.Query.TryGetValue("access_token", out var accessTokenValues))
+        {
+            return accessTokenValues.ToString();
+        }
+
+        return null;
     }
 }

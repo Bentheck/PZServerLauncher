@@ -32,6 +32,7 @@ public sealed class LocalHostApiClient
         var hostInfo = await GetAsync<HostInfoDto>("/api/host/info", cancellationToken)
             ?? throw new InvalidOperationException("Failed to load host information.");
         var profiles = await GetAsync<List<ProfileDto>>("/api/profiles", cancellationToken) ?? [];
+        var jobs = await GetAsync<List<OperationJob>>("/api/jobs?take=20", cancellationToken) ?? [];
 
         var statuses = new Dictionary<string, ServerRuntimeStatus>(StringComparer.OrdinalIgnoreCase);
         var backups = new Dictionary<string, IReadOnlyList<string>>(StringComparer.OrdinalIgnoreCase);
@@ -47,7 +48,7 @@ public sealed class LocalHostApiClient
             backups[profile.ProfileId] = backupList;
         }
 
-        return new HostSnapshot(hostInfo, profiles, statuses, backups);
+        return new HostSnapshot(hostInfo, profiles, statuses, backups, jobs);
     }
 
     public async Task CreateStarterProfileAsync(CancellationToken cancellationToken = default)
@@ -114,7 +115,7 @@ public sealed class LocalHostApiClient
             new BootstrapOwnerRequestDto(userName, email, password),
             cancellationToken);
 
-    private async Task EnsureHostRunningAsync(CancellationToken cancellationToken)
+    public async Task EnsureHostRunningAsync(CancellationToken cancellationToken = default)
     {
         if (await TryPingAsync(cancellationToken))
         {
@@ -146,6 +147,16 @@ public sealed class LocalHostApiClient
         }
 
         throw new TimeoutException("The local host did not start within the expected time.");
+    }
+
+    public async Task<LoopbackConnectionInfo> GetLoopbackConnectionInfoAsync(CancellationToken cancellationToken = default)
+    {
+        await EnsureHostRunningAsync(cancellationToken);
+        var state = await LoadStateAsync(cancellationToken);
+        var protector = DataProtectionProvider.Create(_stateDirectory)
+            .CreateProtector("PZServerLauncher.HostBootstrapState");
+        var token = protector.Unprotect(state.ProtectedLocalApiToken);
+        return new LoopbackConnectionInfo(new Uri($"http://127.0.0.1:{state.LoopbackPort}"), token);
     }
 
     private async Task<bool> TryPingAsync(CancellationToken cancellationToken)

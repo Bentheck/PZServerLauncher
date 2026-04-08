@@ -8,4 +8,5 @@ public sealed record HostSnapshot(
     HostInfoDto HostInfo,
     IReadOnlyList<ProfileDto> Profiles,
     IReadOnlyDictionary<string, ServerRuntimeStatus> Statuses,
-    IReadOnlyDictionary<string, IReadOnlyList<string>> Backups);
+    IReadOnlyDictionary<string, IReadOnlyList<string>> Backups,
+    IReadOnlyList<OperationJob> Jobs);

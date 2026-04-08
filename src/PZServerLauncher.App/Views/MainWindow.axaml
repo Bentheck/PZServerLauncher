@@ -21,7 +21,7 @@
     </Design.DataContext>
 
     <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-        <Grid RowDefinitions="Auto,Auto,Auto,Auto,*" Margin="28" RowSpacing="20">
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,*" Margin="28" RowSpacing="20">
             <Border Classes="card" Padding="28">
                 <Grid ColumnDefinitions="*,360" ColumnSpacing="20">
                     <StackPanel Spacing="10">
@@ -78,7 +78,25 @@
                 </StackPanel>
             </Border>
 
-            <ItemsControl Grid.Row="4" ItemsSource="{Binding Profiles}">
+            <Border Grid.Row="4" Classes="card">
+                <StackPanel Spacing="10">
+                    <TextBlock Classes="panel-title" FontSize="22" Text="Recent Jobs" />
+                    <ItemsControl ItemsSource="{Binding RecentJobs}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:ShellItemViewModel">
+                                <Border Background="#F6EFE6" CornerRadius="14" Padding="14" Margin="0,0,0,8">
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Classes="kicker" Text="{Binding Title}" />
+                                        <TextBlock Classes="body" Text="{Binding Detail}" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <ItemsControl Grid.Row="5" ItemsSource="{Binding Profiles}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:ProfileCardViewModel">
                         <Border Classes="card" Margin="0,0,0,16">
