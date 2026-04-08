@@ -13,13 +13,14 @@
         <div class="workspace-panel__copy">
             <p class="eyebrow">Web Admin</p>
             <h1>User Management</h1>
-            <p class="muted-text">Create local accounts, change roles, and verify which privileged users still need an authenticator app.</p>
+            <p class="muted-text">Create local accounts, shape role coverage, and verify which privileged users still need an authenticator app before the optional remote surface is trusted.</p>
         </div>
 
         <div class="workspace-actions">
             <span class="pill">Users @_users.Count</span>
             <span class="pill">Owners @_users.Count(user => string.Equals(user.RoleName, nameof(UserRole.Owner), StringComparison.Ordinal))</span>
             <span class="pill">Admins @_users.Count(user => string.Equals(user.RoleName, nameof(UserRole.Admin), StringComparison.Ordinal))</span>
+            <span class="pill">@BuildPendingTwoFactorSummary()</span>
         </div>
     </section>
 
@@ -52,6 +53,41 @@
             <span class="metric-note">Accounts that must finish setup before sign-in</span>
         </article>
     </section>
+
+    <div class="cards cards--wide">
+        <section class="card">
+            <div class="card-heading">
+                <div>
+                    <p class="eyebrow">Security Posture</p>
+                    <h2>Privileged Access</h2>
+                </div>
+            </div>
+
+            <p class="muted-text">@BuildSecurityPostureSummary()</p>
+        </section>
+
+        <section class="card">
+            <div class="card-heading">
+                <div>
+                    <p class="eyebrow">Role Coverage</p>
+                    <h2>Account Mix</h2>
+                </div>
+            </div>
+
+            <p class="muted-text">@BuildRoleCoverageSummary()</p>
+        </section>
+
+        <section class="card">
+            <div class="card-heading">
+                <div>
+                    <p class="eyebrow">Recommended Next Step</p>
+                    <h2>Operator Guidance</h2>
+                </div>
+            </div>
+
+            <p class="muted-text">@BuildUsersNextStepSummary()</p>
+        </section>
+    </div>
 
     <section class="card">
         <div class="card-heading">
@@ -251,6 +287,42 @@
 
     private string? CurrentUserId =>
         HttpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+    private string BuildPendingTwoFactorSummary()
+    {
+        var pending = _users.Count(user => user.RequiresTwoFactor && !user.TwoFactorEnabled);
+        return pending == 0
+            ? "Privileged 2FA ready"
+            : $"{pending} privileged user(s) need 2FA";
+    }
+
+    private string BuildSecurityPostureSummary()
+    {
+        if (_users.Count == 0)
+        {
+            return "No shared web-admin accounts exist yet. Keep the surface owner-only until you really need more operators.";
+        }
+
+        var pending = _users.Count(user => user.RequiresTwoFactor && !user.TwoFactorEnabled);
+        return pending == 0
+            ? "Every privileged account shown here has 2FA enabled."
+            : $"{pending} privileged account(s) still need TOTP before web sign-in is safe.";
+    }
+
+    private string BuildRoleCoverageSummary() =>
+        $"{_users.Count(user => string.Equals(user.RoleName, nameof(UserRole.Owner), StringComparison.Ordinal))} owner | {_users.Count(user => string.Equals(user.RoleName, nameof(UserRole.Admin), StringComparison.Ordinal))} admin | {_users.Count(user => string.Equals(user.RoleName, nameof(UserRole.Operator), StringComparison.Ordinal))} operator | {_users.Count(user => string.Equals(user.RoleName, nameof(UserRole.Viewer), StringComparison.Ordinal))} viewer.";
+
+    private string BuildUsersNextStepSummary()
+    {
+        if (_users.Count == 0)
+        {
+            return "Create the first operator or viewer account only if you truly need shared administration.";
+        }
+
+        return _users.Any(user => user.RequiresTwoFactor && !user.TwoFactorEnabled)
+            ? "Finish TOTP enrollment for privileged users before you rely on remote web administration."
+            : "Review whether every admin and operator still needs their current role, and keep elevated access as small as possible.";
+    }
 
     private sealed class CreateUserInput
     {

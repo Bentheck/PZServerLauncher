@@ -65,6 +65,52 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
         ? "Configured: On"
         : "Configured: Off";
 
+    public string RoleCoverageSummary => OwnerBootstrapConfigured
+        ? $"{Users.Count(user => string.Equals(user.RoleName, nameof(UserRole.Owner), StringComparison.Ordinal))} owner | {Users.Count(user => string.Equals(user.RoleName, nameof(UserRole.Admin), StringComparison.Ordinal))} admin | {Users.Count(user => string.Equals(user.RoleName, nameof(UserRole.Operator), StringComparison.Ordinal))} operator | {Users.Count(user => string.Equals(user.RoleName, nameof(UserRole.Viewer), StringComparison.Ordinal))} viewer."
+        : "Role coverage appears after the owner account is created.";
+
+    public string SecurityPostureSummary
+    {
+        get
+        {
+            if (!OwnerBootstrapConfigured)
+            {
+                return "Owner bootstrap must finish before the desktop can evaluate user security posture.";
+            }
+
+            var privilegedUsers = Users.Where(user => user.RequiresTwoFactor).ToArray();
+            if (privilegedUsers.Length == 0)
+            {
+                return "No privileged users exist yet. Keep elevated access limited until you really need it.";
+            }
+
+            var pending = privilegedUsers.Count(user => !user.TwoFactorEnabled);
+            return pending == 0
+                ? "Every privileged account currently shown has 2FA enabled."
+                : $"{pending} privileged account(s) still need TOTP before web sign-in is safe.";
+        }
+    }
+
+    public string UserNextStepSummary
+    {
+        get
+        {
+            if (!OwnerBootstrapConfigured)
+            {
+                return "Create the owner account first, then come back here to invite operators or admins.";
+            }
+
+            if (Users.Count == 0)
+            {
+                return "Create the first operator or viewer account if you want shared administration.";
+            }
+
+            return Users.Any(user => user.RequiresTwoFactor && !user.TwoFactorEnabled)
+                ? "Finish 2FA enrollment for privileged users before you rely on the optional web admin."
+                : "Review roles and keep elevated access limited to the smallest set of accounts you actually need.";
+        }
+    }
+
     public IReadOnlyList<string> RoleOptions { get; }
 
     public ObservableCollection<EditableUserRowViewModel> Users { get; } = [];
@@ -360,6 +406,9 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
         OnPropertyChanged(nameof(ActionSummary));
         OnPropertyChanged(nameof(OwnerSummary));
         OnPropertyChanged(nameof(UsersPageSummary));
+        OnPropertyChanged(nameof(RoleCoverageSummary));
+        OnPropertyChanged(nameof(SecurityPostureSummary));
+        OnPropertyChanged(nameof(UserNextStepSummary));
     }
 
     private void RefreshCommandStates()
@@ -377,6 +426,9 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
             OnPropertyChanged(nameof(OwnerBootstrapConfigured));
             OnPropertyChanged(nameof(UsersPageSummary));
             OnPropertyChanged(nameof(OwnerSummary));
+            OnPropertyChanged(nameof(RoleCoverageSummary));
+            OnPropertyChanged(nameof(SecurityPostureSummary));
+            OnPropertyChanged(nameof(UserNextStepSummary));
             RefreshCommandStates();
             RefreshDirtyState();
 
@@ -392,6 +444,9 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
         {
             OnPropertyChanged(nameof(OwnerSummary));
             OnPropertyChanged(nameof(UsersPageSummary));
+            OnPropertyChanged(nameof(RoleCoverageSummary));
+            OnPropertyChanged(nameof(SecurityPostureSummary));
+            OnPropertyChanged(nameof(UserNextStepSummary));
         }
     }
 
@@ -427,6 +482,9 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
             OnPropertyChanged(nameof(UserCountSummary));
             OnPropertyChanged(nameof(TwoFactorSummary));
             OnPropertyChanged(nameof(ActionSummary));
+            OnPropertyChanged(nameof(RoleCoverageSummary));
+            OnPropertyChanged(nameof(SecurityPostureSummary));
+            OnPropertyChanged(nameof(UserNextStepSummary));
         }
     }
 
@@ -437,6 +495,9 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
         OnPropertyChanged(nameof(UserCountSummary));
         OnPropertyChanged(nameof(TwoFactorSummary));
         OnPropertyChanged(nameof(ActionSummary));
+        OnPropertyChanged(nameof(RoleCoverageSummary));
+        OnPropertyChanged(nameof(SecurityPostureSummary));
+        OnPropertyChanged(nameof(UserNextStepSummary));
         RefreshDirtyState();
     }
 
