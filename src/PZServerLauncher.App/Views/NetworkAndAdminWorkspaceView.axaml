@@ -127,6 +127,9 @@
                                 <TextBlock Classes="kicker" Text="Identity &amp; PvP Safety" />
                                 <CheckBox Content="Display Username" IsChecked="{Binding DisplayUserName}" />
                                 <CheckBox Content="Show First &amp; Last Name" IsChecked="{Binding ShowFirstAndLastName}" />
+                                <CheckBox Content="Mouse Over To See Display Name" IsChecked="{Binding MouseOverDisplayName}" />
+                                <CheckBox Content="Hide Players Behind You" IsChecked="{Binding HidePlayersBehindYou}" />
+                                <CheckBox Content="Player Bump Player" IsChecked="{Binding PlayerBumpPlayer}" />
                                 <CheckBox Content="Enable Safety System" IsChecked="{Binding SafetySystem}" />
                                 <CheckBox Content="Show Safety Icon" IsChecked="{Binding ShowSafety}" />
                                 <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
@@ -149,7 +152,7 @@
                                 </Grid>
                                 <TextBlock Classes="body"
                                            FontSize="12"
-                                           Text="These identity and safety rules shape nameplates, PvP signaling, and grief-prevention on public communities."
+                                           Text="These identity, visibility, collision, and safety rules shape nameplates, close-quarters readability, PvP signaling, and grief-prevention on public communities."
                                            TextWrapping="Wrap" />
                             </StackPanel>
                         </Border>

@@ -21,7 +21,7 @@ public partial class NetworkAndAdminWorkspaceViewModel : ProfileWorkspacePageVie
             "Join passwords, compatibility toggles, bind address, and launcher admin bootstrap settings.",
             "Network & Admin settings are in sync.",
             legacy,
-            ["Access passwords", "Compatibility and trust", "Identity and PvP safety", "Account policy", "Voice chat", "Launcher admin bootstrap"])
+            ["Access passwords", "Compatibility and trust", "Identity and PvP safety", "Visibility and collision", "Account policy", "Voice chat", "Launcher admin bootstrap"])
     {
         _hostApiClient = hostApiClient;
         SaveSettingsCommand = new AsyncRelayCommand(SaveSettingsAsync);
@@ -117,6 +117,15 @@ public partial class NetworkAndAdminWorkspaceViewModel : ProfileWorkspacePageVie
 
     [ObservableProperty]
     private bool showFirstAndLastName;
+
+    [ObservableProperty]
+    private bool mouseOverDisplayName;
+
+    [ObservableProperty]
+    private bool hidePlayersBehindYou;
+
+    [ObservableProperty]
+    private bool playerBumpPlayer;
 
     [ObservableProperty]
     private bool safetySystem;
@@ -287,6 +296,9 @@ public partial class NetworkAndAdminWorkspaceViewModel : ProfileWorkspacePageVie
             PlayerSaveOnDamage = bool.TryParse(GetValue(values, ".network.player-save-on-damage"), out var playerSaveOnDamage) && playerSaveOnDamage;
             DisplayUserName = bool.TryParse(GetValue(values, ".network.display-user-name"), out var displayUserName) && displayUserName;
             ShowFirstAndLastName = bool.TryParse(GetValue(values, ".network.show-first-last-name"), out var showFirstAndLastName) && showFirstAndLastName;
+            MouseOverDisplayName = bool.TryParse(GetValue(values, ".network.mouse-over-display-name"), out var mouseOverDisplayName) && mouseOverDisplayName;
+            HidePlayersBehindYou = bool.TryParse(GetValue(values, ".network.hide-players-behind-you"), out var hidePlayersBehindYou) && hidePlayersBehindYou;
+            PlayerBumpPlayer = bool.TryParse(GetValue(values, ".network.player-bump-player"), out var playerBumpPlayer) && playerBumpPlayer;
             SafetySystem = bool.TryParse(GetValue(values, ".network.safety-system"), out var safetySystem) && safetySystem;
             ShowSafety = bool.TryParse(GetValue(values, ".network.show-safety"), out var showSafety) && showSafety;
             SafetyToggleTimer = GetValue(values, ".network.safety-toggle-timer");
@@ -324,6 +336,9 @@ public partial class NetworkAndAdminWorkspaceViewModel : ProfileWorkspacePageVie
             [$"{prefix}.network.player-save-on-damage"] = PlayerSaveOnDamage.ToString(),
             [$"{prefix}.network.display-user-name"] = DisplayUserName.ToString(),
             [$"{prefix}.network.show-first-last-name"] = ShowFirstAndLastName.ToString(),
+            [$"{prefix}.network.mouse-over-display-name"] = MouseOverDisplayName.ToString(),
+            [$"{prefix}.network.hide-players-behind-you"] = HidePlayersBehindYou.ToString(),
+            [$"{prefix}.network.player-bump-player"] = PlayerBumpPlayer.ToString(),
             [$"{prefix}.network.safety-system"] = SafetySystem.ToString(),
             [$"{prefix}.network.show-safety"] = ShowSafety.ToString(),
             [$"{prefix}.network.safety-toggle-timer"] = SafetyToggleTimer,
@@ -393,6 +408,9 @@ public partial class NetworkAndAdminWorkspaceViewModel : ProfileWorkspacePageVie
             PlayerSaveOnDamage = false;
             DisplayUserName = false;
             ShowFirstAndLastName = false;
+            MouseOverDisplayName = false;
+            HidePlayersBehindYou = false;
+            PlayerBumpPlayer = false;
             SafetySystem = false;
             ShowSafety = false;
             SafetyToggleTimer = string.Empty;
@@ -428,6 +446,9 @@ public partial class NetworkAndAdminWorkspaceViewModel : ProfileWorkspacePageVie
     partial void OnPlayerSaveOnDamageChanged(bool value) => NotifyFieldEdited();
     partial void OnDisplayUserNameChanged(bool value) => NotifyFieldEdited();
     partial void OnShowFirstAndLastNameChanged(bool value) => NotifyFieldEdited();
+    partial void OnMouseOverDisplayNameChanged(bool value) => NotifyFieldEdited();
+    partial void OnHidePlayersBehindYouChanged(bool value) => NotifyFieldEdited();
+    partial void OnPlayerBumpPlayerChanged(bool value) => NotifyFieldEdited();
     partial void OnSafetySystemChanged(bool value) => NotifyFieldEdited();
     partial void OnShowSafetyChanged(bool value) => NotifyFieldEdited();
     partial void OnSafetyToggleTimerChanged(string value) => NotifyFieldEdited();

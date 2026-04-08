@@ -98,6 +98,9 @@ public sealed class StructuredSettingsServiceTests : IDisposable
             PlayerSaveOnDamage=false
             DisplayUserName=true
             ShowFirstAndLastName=false
+            MouseOverToSeeDisplayName=true
+            HidePlayersBehindYou=true
+            PlayerBumpPlayer=false
             SafetySystem=true
             ShowSafety=false
             SafetyToggleTimer=3
@@ -182,6 +185,9 @@ public sealed class StructuredSettingsServiceTests : IDisposable
         Assert.Equal("false", networkValues.Values[$"{branchPrefix}.network.player-save-on-damage"]);
         Assert.Equal("true", networkValues.Values[$"{branchPrefix}.network.display-user-name"]);
         Assert.Equal("false", networkValues.Values[$"{branchPrefix}.network.show-first-last-name"]);
+        Assert.Equal("true", networkValues.Values[$"{branchPrefix}.network.mouse-over-display-name"]);
+        Assert.Equal("true", networkValues.Values[$"{branchPrefix}.network.hide-players-behind-you"]);
+        Assert.Equal("false", networkValues.Values[$"{branchPrefix}.network.player-bump-player"]);
         Assert.Equal("true", networkValues.Values[$"{branchPrefix}.network.safety-system"]);
         Assert.Equal("false", networkValues.Values[$"{branchPrefix}.network.show-safety"]);
         Assert.Equal("3", networkValues.Values[$"{branchPrefix}.network.safety-toggle-timer"]);
@@ -272,6 +278,9 @@ public sealed class StructuredSettingsServiceTests : IDisposable
             PlayerSaveOnDamage=true
             DisplayUserName=true
             ShowFirstAndLastName=false
+            MouseOverToSeeDisplayName=false
+            HidePlayersBehindYou=false
+            PlayerBumpPlayer=true
             SafetySystem=true
             ShowSafety=true
             SafetyToggleTimer=2
@@ -353,6 +362,9 @@ public sealed class StructuredSettingsServiceTests : IDisposable
             ["b42.network.player-save-on-damage"] = "false",
             ["b42.network.display-user-name"] = "false",
             ["b42.network.show-first-last-name"] = "true",
+            ["b42.network.mouse-over-display-name"] = "true",
+            ["b42.network.hide-players-behind-you"] = "true",
+            ["b42.network.player-bump-player"] = "false",
             ["b42.network.safety-system"] = "false",
             ["b42.network.show-safety"] = "true",
             ["b42.network.safety-toggle-timer"] = "6",
@@ -424,6 +436,9 @@ public sealed class StructuredSettingsServiceTests : IDisposable
         Assert.Contains("PlayerSaveOnDamage=false", iniText);
         Assert.Contains("DisplayUserName=false", iniText);
         Assert.Contains("ShowFirstAndLastName=true", iniText);
+        Assert.Contains("MouseOverToSeeDisplayName=true", iniText);
+        Assert.Contains("HidePlayersBehindYou=true", iniText);
+        Assert.Contains("PlayerBumpPlayer=false", iniText);
         Assert.Contains("SafetySystem=false", iniText);
         Assert.Contains("ShowSafety=true", iniText);
         Assert.Contains("SafetyToggleTimer=6", iniText);

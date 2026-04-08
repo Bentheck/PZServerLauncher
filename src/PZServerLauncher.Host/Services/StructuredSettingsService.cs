@@ -300,6 +300,9 @@ public sealed class StructuredSettingsService(
                         ["PlayerSaveOnDamage"] = ParseBool(values, $"{branchPrefix}.network.player-save-on-damage").ToString().ToLowerInvariant(),
                         ["DisplayUserName"] = ParseBool(values, $"{branchPrefix}.network.display-user-name").ToString().ToLowerInvariant(),
                         ["ShowFirstAndLastName"] = ParseBool(values, $"{branchPrefix}.network.show-first-last-name").ToString().ToLowerInvariant(),
+                        ["MouseOverToSeeDisplayName"] = ParseBool(values, $"{branchPrefix}.network.mouse-over-display-name").ToString().ToLowerInvariant(),
+                        ["HidePlayersBehindYou"] = ParseBool(values, $"{branchPrefix}.network.hide-players-behind-you").ToString().ToLowerInvariant(),
+                        ["PlayerBumpPlayer"] = ParseBool(values, $"{branchPrefix}.network.player-bump-player").ToString().ToLowerInvariant(),
                         ["SafetySystem"] = ParseBool(values, $"{branchPrefix}.network.safety-system").ToString().ToLowerInvariant(),
                         ["ShowSafety"] = ParseBool(values, $"{branchPrefix}.network.show-safety").ToString().ToLowerInvariant(),
                         ["SafetyToggleTimer"] = ParseInt(values, $"{branchPrefix}.network.safety-toggle-timer").ToString(),
@@ -704,6 +707,9 @@ public sealed class StructuredSettingsService(
         ValidateBoolean(values, $"{branchPrefix}.network.player-save-on-damage", "Player save on damage must be true or false.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.network.display-user-name", "Display username must be true or false.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.network.show-first-last-name", "Show first and last name must be true or false.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.network.mouse-over-display-name", "Mouse-over display names must be true or false.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.network.hide-players-behind-you", "Hide players behind you must be true or false.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.network.player-bump-player", "Player bump player must be true or false.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.network.safety-system", "Safety system must be true or false.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.network.show-safety", "Show safety icon must be true or false.", fieldErrors);
         ValidateMinimumInteger(values, $"{branchPrefix}.network.safety-toggle-timer", 0, "Safety toggle timer must be zero or greater.", fieldErrors);
