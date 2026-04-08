@@ -15,15 +15,34 @@
                 <TextBlock Classes="body" Text="{Binding PageSummary}" TextWrapping="Wrap" />
             </StackPanel>
 
-            <Grid ColumnDefinitions="*,*" ColumnSpacing="14">
+            <Border Background="#1F1D1B" CornerRadius="16" Padding="18">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Install &amp; Update Flow" />
+                        <TextBlock FontSize="28" FontWeight="SemiBold" Foreground="#F7F0E7" Text="{Binding ProfileDisplayName}" />
+                        <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding NextRecommendedAction}" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <Border Grid.Column="1" Background="#2A2927" CornerRadius="999" Padding="14,8" VerticalAlignment="Top">
+                        <TextBlock Foreground="#F7F0E7" FontWeight="SemiBold" Text="{Binding Branch}" />
+                    </Border>
+                </Grid>
+            </Border>
+
+            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="14">
                 <Border Background="#F6EFE6" CornerRadius="14" Padding="16">
                     <StackPanel Spacing="6">
-                        <TextBlock Classes="kicker" Text="Branch" />
-                        <TextBlock FontSize="20" FontWeight="SemiBold" Text="{Binding Branch}" />
-                        <TextBlock Classes="body" Text="{Binding RuntimeState}" />
+                        <TextBlock Classes="kicker" Text="Runtime" />
+                        <TextBlock FontSize="20" FontWeight="SemiBold" Text="{Binding RuntimeState}" />
+                        <TextBlock Classes="body" Text="{Binding LifecycleGuidance}" TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
                 <Border Grid.Column="1" Background="#F6EFE6" CornerRadius="14" Padding="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Install Readiness" />
+                        <TextBlock Classes="body" Text="{Binding InstallReadiness}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="2" Background="#F6EFE6" CornerRadius="14" Padding="16">
                     <StackPanel Spacing="6">
                         <TextBlock Classes="kicker" Text="Recent Job" />
                         <TextBlock Classes="body" Text="{Binding LastJobSummary}" TextWrapping="Wrap" />
@@ -31,35 +50,48 @@
                 </Border>
             </Grid>
 
-            <Grid ColumnDefinitions="*,*" ColumnSpacing="14">
-                <Border Background="#FFF8F1" CornerRadius="14" Padding="16">
-                    <StackPanel Spacing="6">
-                        <TextBlock Classes="kicker" Text="Install Directory" />
-                        <TextBlock Classes="body" FontFamily="Cascadia Code,Consolas,monospace" Text="{Binding InstallDirectory}" TextWrapping="Wrap" />
-                    </StackPanel>
-                </Border>
+            <Grid ColumnDefinitions="*,320" ColumnSpacing="16">
+                <StackPanel Spacing="14">
+                    <Border Background="#FFF8F1" CornerRadius="14" Padding="16">
+                        <StackPanel Spacing="6">
+                            <TextBlock Classes="kicker" Text="Install Directory" />
+                            <TextBlock Classes="body" FontFamily="Cascadia Code,Consolas,monospace" Text="{Binding InstallDirectory}" TextWrapping="Wrap" />
+                            <TextBlock Classes="body" Text="{Binding InstallReadiness}" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Background="#FFF8F1" CornerRadius="14" Padding="16">
+                        <StackPanel Spacing="6">
+                            <TextBlock Classes="kicker" Text="Cache Directory" />
+                            <TextBlock Classes="body" FontFamily="Cascadia Code,Consolas,monospace" Text="{Binding CacheDirectory}" TextWrapping="Wrap" />
+                            <TextBlock Classes="body" Text="{Binding CacheReadiness}" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Background="#F1E6D7" CornerRadius="14" Padding="16">
+                        <StackPanel Spacing="8">
+                            <TextBlock Classes="kicker" Text="Preflight" />
+                            <TextBlock Classes="body" Text="{Binding BackupSafety}" TextWrapping="Wrap" />
+                            <TextBlock Classes="body" Text="Install creates the dedicated server footprint. Update refreshes binaries and automatically triggers a pre-update backup through the host pipeline." TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
                 <Border Grid.Column="1" Background="#FFF8F1" CornerRadius="14" Padding="16">
                     <StackPanel Spacing="6">
-                        <TextBlock Classes="kicker" Text="Cache Directory" />
-                        <TextBlock Classes="body" FontFamily="Cascadia Code,Consolas,monospace" Text="{Binding CacheDirectory}" TextWrapping="Wrap" />
+                        <TextBlock Classes="kicker" Text="Operator Actions" />
+                        <WrapPanel Orientation="Horizontal" ItemWidth="136" ItemHeight="36">
+                            <Button Command="{Binding InstallCommand}" Content="Install" />
+                            <Button Command="{Binding UpdateCommand}" Content="Update" />
+                            <Button Command="{Binding StartCommand}" Content="Start" />
+                            <Button Command="{Binding StopCommand}" Content="Stop" />
+                            <Button Command="{Binding RestartCommand}" Content="Restart" />
+                            <Button Command="{Binding RefreshCommand}" Content="Refresh" />
+                        </WrapPanel>
+                        <TextBlock Classes="body" Text="{Binding NextRecommendedAction}" TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
             </Grid>
-
-            <Border Background="#F1E6D7" CornerRadius="14" Padding="16">
-                <StackPanel Spacing="8">
-                    <TextBlock Classes="kicker" Text="Operator Flow" />
-                    <TextBlock Classes="body" Text="Use Install for first-time setup, Update to refresh the server binaries, then control runtime from the same page while we finish the deeper preflight UX." TextWrapping="Wrap" />
-                    <WrapPanel Orientation="Horizontal" ItemWidth="140" ItemHeight="36">
-                        <Button Command="{Binding InstallCommand}" Content="Install" />
-                        <Button Command="{Binding UpdateCommand}" Content="Update" />
-                        <Button Command="{Binding StartCommand}" Content="Start" />
-                        <Button Command="{Binding StopCommand}" Content="Stop" />
-                        <Button Command="{Binding RestartCommand}" Content="Restart" />
-                        <Button Command="{Binding RefreshCommand}" Content="Refresh Host State" />
-                    </WrapPanel>
-                </StackPanel>
-            </Border>
         </StackPanel>
     </Border>
 </UserControl>

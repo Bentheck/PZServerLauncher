@@ -36,71 +36,163 @@ else
             <button class="nav-button secondary-button" @onclick="RestoreLatestAsync" disabled="@(_busy || string.IsNullOrWhiteSpace(_latestBackup))">Restore Latest</button>
         </Actions>
         <ChildContent>
-            <div class="cards">
+            <section class="workspace-panel hero-panel">
+                <div class="workspace-panel__copy">
+                    <p class="eyebrow">Overview</p>
+                    <h2>@_profile.DisplayName</h2>
+                    <p class="muted-text">A live control room for the selected server. Runtime, backups, and recent activity are summarized here so you can act quickly without jumping to the deeper pages.</p>
+                </div>
+
+                <div class="workspace-actions">
+                    <span class="pill">@_profile.Branch</span>
+                    <span class="pill">@_profile.DefaultPort / @_profile.UdpPort / @_profile.RconPort</span>
+                    <span class="pill">@(_backups.Count == 0 ? "No backups yet" : $"{_backups.Count} backups")</span>
+                    <span class="pill">@(_recentJobs.Count == 0 ? "No recent jobs" : $"{_recentJobs.Count} recent jobs")</span>
+                </div>
+            </section>
+
+            <section class="metric-grid">
+                <article class="metric-card">
+                    <span class="metric-label">Runtime</span>
+                    <strong class="metric-value">@(_runtimeStatus?.State.ToString() ?? "Unknown")</strong>
+                    <span class="metric-note">Process @(_runtimeStatus?.ProcessId?.ToString() ?? "not running")</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Install</span>
+                    <strong class="metric-value">@(_installDetected ? "Detected" : "Missing")</strong>
+                    <span class="metric-note">@_profile.InstallDirectory</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Cache</span>
+                    <strong class="metric-value">@(_cacheDetected ? "Detected" : "Missing")</strong>
+                    <span class="metric-note">@_profile.CacheDirectory</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Backups</span>
+                    <strong class="metric-value">@(_backups.Count == 0 ? "None" : _backups.Count.ToString())</strong>
+                    <span class="metric-note">@(_latestBackup ?? "Create the first archive from this page.")</span>
+                </article>
+            </section>
+
+            <div class="cards cards--wide">
                 <section class="card">
-                    <h2>Runtime</h2>
-                    <p>State: <strong>@_runtimeStatus?.State.ToString()</strong></p>
-                    <p>Process: @(_runtimeStatus?.ProcessId?.ToString() ?? "Not running")</p>
-                    <p>Last log line: @(_runtimeStatus?.LatestLogLine ?? "No logs yet.")</p>
+                    <div class="card-heading">
+                        <div>
+                            <p class="eyebrow">Server Snapshot</p>
+                            <h2>Runtime And Paths</h2>
+                        </div>
+                        <span class="pill pill--strong">@(_runtimeStatus?.LatestLogLine ?? "No recent log line.")</span>
+                    </div>
+
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">State</span>
+                            <span class="info-value">@(_runtimeStatus?.State.ToString() ?? "Unknown")</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Install directory</span>
+                            <span class="info-value">@_profile.InstallDirectory</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Cache directory</span>
+                            <span class="info-value">@_profile.CacheDirectory</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Workshop items</span>
+                            <span class="info-value">@_profile.WorkshopPreset.WorkshopItemIds.Count</span>
+                        </div>
+                    </div>
+
+                    <div class="status-banner status-banner--warm">
+                        <strong>Operational note</strong>
+                        <p>The Overview page is the fast path for starting, stopping, backing up, and restoring the selected server before you drill into the per-setting pages.</p>
+                    </div>
                 </section>
 
                 <section class="card">
-                    <h2>Install</h2>
-                    <p>Install directory: @_profile.InstallDirectory</p>
-                    <p>Cache directory: @_profile.CacheDirectory</p>
-                    <p>Server config folder: @(_installDetected ? "Detected" : "Missing")</p>
-                    <p>Backups: @(_backups.Count == 0 ? "No backups yet" : $"{_backups.Count} archive(s)")</p>
-                </section>
+                    <div class="card-heading">
+                        <div>
+                            <p class="eyebrow">Activity</p>
+                            <h2>Recent Jobs</h2>
+                        </div>
+                        <span class="pill">@(_recentJobs.Count == 0 ? "Idle" : "Active")</span>
+                    </div>
 
-                <section class="card">
-                    <h2>Summary</h2>
-                    <p>Branch: @_profile.Branch</p>
-                    <p>Ports: @_profile.DefaultPort / @_profile.UdpPort / @_profile.RconPort</p>
-                    <p>Workshop items: @_profile.WorkshopPreset.WorkshopItemIds.Count</p>
-                    <p>Latest backup: @(_latestBackup ?? "None")</p>
-                </section>
-            </div>
-
-            <div class="cards">
-                <section class="card">
-                    <h2>Recent Jobs</h2>
                     @if (_recentJobs.Count == 0)
                     {
                         <p class="muted-text">No jobs have been queued yet.</p>
                     }
                     else
                     {
-                        <ul class="stack-list">
-                            @foreach (var job in _recentJobs)
+                        <ul class="job-list">
+                            @foreach (var job in _recentJobs.Take(5))
                             {
-                                <li>
-                                    <strong>@job.Kind</strong> - @job.Status
+                                <li class="job-list__item">
+                                    <div class="job-list__title">
+                                        <strong>@job.Kind</strong>
+                                        <span>@job.Status</span>
+                                    </div>
                                     <div class="muted-text">@job.Detail ?? job.Summary</div>
                                 </li>
                             }
                         </ul>
                     }
                 </section>
+            </div>
 
+            <div class="cards cards--wide">
                 <section class="card">
-                    <h2>Latest Backups</h2>
+                    <div class="card-heading">
+                        <div>
+                            <p class="eyebrow">Recovery</p>
+                            <h2>Latest Backups</h2>
+                        </div>
+                        <span class="pill">@(_latestBackup ?? "No archive")</span>
+                    </div>
+
                     @if (_backups.Count == 0)
                     {
-                        <p class="muted-text">No backups are available yet.</p>
+                        <div class="empty-state">
+                            <p class="muted-text">No backups are available yet. Use the Backup action to create the first archive.</p>
+                        </div>
                     }
                     else
                     {
-                        <ul class="stack-list">
+                        <ul class="backup-list">
                             @foreach (var backup in _backups.Take(5))
                             {
-                                <li>@backup</li>
+                                <li class="backup-list__item">@backup</li>
                             }
                         </ul>
                     }
                 </section>
+
+                <section class="card">
+                    <div class="card-heading">
+                        <div>
+                            <p class="eyebrow">At A Glance</p>
+                            <h2>Summary</h2>
+                        </div>
+                    </div>
+
+                    <div class="info-grid info-grid--compact">
+                        <div class="info-item">
+                            <span class="info-label">Branch</span>
+                            <span class="info-value">@_profile.Branch</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Ports</span>
+                            <span class="info-value">@_profile.DefaultPort / @_profile.UdpPort / @_profile.RconPort</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Latest backup</span>
+                            <span class="info-value">@(_latestBackup ?? "None")</span>
+                        </div>
+                    </div>
+                </section>
             </div>
 
-            <p class="muted-text">@_statusMessage</p>
+            <p class="status-line">@_statusMessage</p>
         </ChildContent>
     </ProfileWorkspaceShell>
 }

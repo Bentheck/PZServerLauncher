@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PZServerLauncher.App.Services;
@@ -25,6 +26,8 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
         Legacy = legacy;
         _hostApiClient = hostApiClient;
         _desktopShellService = desktopShellService;
+        Legacy.Profiles.CollectionChanged += OnLegacyCollectionChanged;
+        Legacy.RecentJobs.CollectionChanged += OnLegacyCollectionChanged;
 
         Dashboard = new DashboardWorkspaceViewModel(legacy);
         Host = new HostWorkspaceViewModel(legacy);
@@ -76,6 +79,26 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
     public string CurrentPageTitle => CurrentPage is IWorkspacePageHeader header ? header.PageTitle : PageTitle;
 
     public string CurrentPageSummary => CurrentPage is IWorkspacePageHeader header ? header.PageSummary : PageSummary;
+
+    public string WorkspaceGuidance => CurrentPage switch
+    {
+        ProfilesWorkspaceViewModel => "Pick a server profile, then move through install, sandbox, mods, backups, logs, and advanced files without leaving the workspace.",
+        DashboardWorkspaceViewModel => "Use the dashboard as your local control room for imports, host posture, and recent activity.",
+        HostWorkspaceViewModel => "Host controls stay global so you can manage startup, runtime, and process posture without opening a specific server.",
+        RemoteAccessWorkspaceViewModel => "Remote access stays optional. Configure HTTPS exposure only when you are ready to operate the server from another device.",
+        UsersWorkspaceViewModel => "Use Users for owner bootstrap, operator creation, and role management when web administration is enabled.",
+        _ => CurrentPageSummary,
+    };
+
+    public string ProfileCountSummary => Legacy.Profiles.Count == 0
+        ? "No profiles loaded yet."
+        : $"{Legacy.Profiles.Count} profile{(Legacy.Profiles.Count == 1 ? string.Empty : "s")} loaded in the launcher.";
+
+    public string RecentActivitySummary => Legacy.RecentJobs.Count == 0
+        ? "No recent jobs have been recorded yet."
+        : $"{Legacy.RecentJobs.Count} recent host job{(Legacy.RecentJobs.Count == 1 ? string.Empty : "s")} available for quick review.";
+
+    public string RemotePostureSummary => Legacy.RemoteSummary;
 
     public ObservableCollection<WorkspaceNavigationItemViewModel> GlobalNavigation { get; }
 
@@ -160,6 +183,9 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
     private async Task RefreshAsync()
     {
         await Legacy.RefreshCommand.ExecuteAsync(null);
+        OnPropertyChanged(nameof(ProfileCountSummary));
+        OnPropertyChanged(nameof(RecentActivitySummary));
+        OnPropertyChanged(nameof(RemotePostureSummary));
 
         try
         {
@@ -266,7 +292,14 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
     {
         OnPropertyChanged(nameof(CurrentPageTitle));
         OnPropertyChanged(nameof(CurrentPageSummary));
+        OnPropertyChanged(nameof(WorkspaceGuidance));
         PageStatus = CurrentPageSummary;
+    }
+
+    private void OnLegacyCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        OnPropertyChanged(nameof(ProfileCountSummary));
+        OnPropertyChanged(nameof(RecentActivitySummary));
     }
 
     private void ClearPendingNavigation()

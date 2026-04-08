@@ -15,7 +15,20 @@
                 <TextBlock Classes="body" Text="{Binding PageSummary}" TextWrapping="Wrap" />
             </StackPanel>
 
-            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="14">
+            <Border Background="#1F1D1B" CornerRadius="16" Padding="18">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Profile Overview" />
+                        <TextBlock FontSize="28" FontWeight="SemiBold" Foreground="#F7F0E7" Text="{Binding ProfileDisplayName}" />
+                        <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding OperatorGuidance}" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <Border Grid.Column="1" Background="#2A2927" CornerRadius="999" Padding="14,8" VerticalAlignment="Top">
+                        <TextBlock Foreground="#F7F0E7" FontWeight="SemiBold" Text="{Binding Branch}" />
+                    </Border>
+                </Grid>
+            </Border>
+
+            <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="14">
                 <Border Background="#F6EFE6" CornerRadius="14" Padding="16">
                     <StackPanel Spacing="6">
                         <TextBlock Classes="kicker" Text="Runtime" />
@@ -25,38 +38,50 @@
                 </Border>
                 <Border Grid.Column="1" Background="#F6EFE6" CornerRadius="14" Padding="16">
                     <StackPanel Spacing="6">
-                        <TextBlock Classes="kicker" Text="Paths" />
-                        <TextBlock Classes="body" FontFamily="Cascadia Code,Consolas,monospace" Text="{Binding InstallDirectory}" TextWrapping="Wrap" />
-                        <TextBlock Classes="body" FontFamily="Cascadia Code,Consolas,monospace" Text="{Binding CacheDirectory}" TextWrapping="Wrap" />
+                        <TextBlock Classes="kicker" Text="Install Health" />
+                        <TextBlock Classes="body" Text="{Binding InstallHealth}" TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
                 <Border Grid.Column="2" Background="#F6EFE6" CornerRadius="14" Padding="16">
                     <StackPanel Spacing="6">
-                        <TextBlock Classes="kicker" Text="Backup" />
-                        <TextBlock Classes="body" Text="{Binding LatestBackup}" TextWrapping="Wrap" />
+                        <TextBlock Classes="kicker" Text="Backup Posture" />
+                        <TextBlock Classes="body" Text="{Binding BackupHealth}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="3" Background="#F6EFE6" CornerRadius="14" Padding="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Mods & Memory" />
+                        <TextBlock Classes="body" Text="{Binding WorkshopSummary}" TextWrapping="Wrap" />
+                        <TextBlock Classes="body" Text="{Binding MemorySummary}" TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
             </Grid>
 
-            <Border Background="#1F1D1B" CornerRadius="14" Padding="16">
-                <StackPanel Spacing="6">
-                    <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Latest Log" />
-                    <TextBlock Classes="body" Foreground="#E7DED4" Text="{Binding LatestLogLine}" TextWrapping="Wrap" />
-                </StackPanel>
-            </Border>
+            <Grid ColumnDefinitions="*,340" ColumnSpacing="16">
+                <Border Background="#1F1D1B" CornerRadius="14" Padding="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Latest Log" />
+                        <TextBlock Classes="body" Foreground="#E7DED4" Text="{Binding LatestLogLine}" TextWrapping="Wrap" />
+                        <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding CacheHealth}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
 
-            <StackPanel Spacing="8">
-                <TextBlock Classes="kicker" Text="Quick Actions" />
-                <WrapPanel Orientation="Horizontal" ItemWidth="132" ItemHeight="36">
-                    <Button Command="{Binding InstallCommand}" Content="Install" />
-                    <Button Command="{Binding UpdateCommand}" Content="Update" />
-                    <Button Command="{Binding StartCommand}" Content="Start" />
-                    <Button Command="{Binding StopCommand}" Content="Stop" />
-                    <Button Command="{Binding RestartCommand}" Content="Restart" />
-                    <Button Command="{Binding BackupCommand}" Content="Backup" />
-                    <Button Command="{Binding RestoreCommand}" Content="Restore Latest" IsEnabled="{Binding CanRestore}" />
-                </WrapPanel>
-            </StackPanel>
+                <Border Grid.Column="1" Background="#FFF8F1" CornerRadius="14" Padding="16">
+                    <StackPanel Spacing="10">
+                        <TextBlock Classes="kicker" Text="Quick Actions" />
+                        <WrapPanel Orientation="Horizontal" ItemWidth="148" ItemHeight="36">
+                            <Button Command="{Binding InstallCommand}" Content="Install" />
+                            <Button Command="{Binding UpdateCommand}" Content="Update" />
+                            <Button Command="{Binding StartCommand}" Content="Start" />
+                            <Button Command="{Binding StopCommand}" Content="Stop" />
+                            <Button Command="{Binding RestartCommand}" Content="Restart" />
+                            <Button Command="{Binding BackupCommand}" Content="Backup" />
+                            <Button Command="{Binding RestoreCommand}" Content="Restore Latest" IsEnabled="{Binding CanRestore}" />
+                        </WrapPanel>
+                        <TextBlock Classes="body" Text="{Binding LatestBackup}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+            </Grid>
         </StackPanel>
     </Border>
 </UserControl>

@@ -38,7 +38,11 @@ public sealed class OverviewWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
     public override string PageSummary => SelectedProfile is null
         ? "Select a profile to view runtime state, backup health, and quick actions."
-        : $"Live runtime summary for {SelectedProfile.DisplayName}.";
+        : $"Live runtime summary for {SelectedProfile.DisplayName}, including install health, backup posture, and the latest server activity.";
+
+    public string ProfileDisplayName => SelectedProfile?.DisplayName ?? "No profile selected";
+
+    public string Branch => SelectedProfile?.Branch ?? "Unknown";
 
     public string RuntimeState => SelectedProfile?.RuntimeState ?? "No profile selected";
 
@@ -53,6 +57,38 @@ public sealed class OverviewWorkspaceViewModel : ProfileWorkspacePageViewModelBa
     public string LatestBackup => SelectedProfile?.LastBackup ?? "No backups yet.";
 
     public bool CanRestore => SelectedProfile?.HasBackup == true;
+
+    public string InstallHealth => SelectedProfile is null
+        ? "Install path unavailable."
+        : Directory.Exists(SelectedProfile.InstallDirectory)
+            ? "Install directory detected and ready for host actions."
+            : "Install directory has not been detected yet. Run Install before first launch.";
+
+    public string CacheHealth => SelectedProfile is null
+        ? "Cache path unavailable."
+        : Directory.Exists(SelectedProfile.CacheDirectory)
+            ? "Cache directory is present."
+            : "Cache directory does not exist yet. Starting or importing the profile will create it.";
+
+    public string BackupHealth => SelectedProfile is null
+        ? "No backup information is available."
+        : SelectedProfile.HasBackup
+            ? $"Latest backup is {SelectedProfile.LastBackup}."
+            : "No backup archive has been captured yet. Create one before major config or update work.";
+
+    public string MemorySummary => SelectedProfile is null
+        ? "No memory profile selected."
+        : $"{SelectedProfile.EditableMemoryInGigabytes} GB preferred memory, {(SelectedProfile.EditableStartWithHost ? "starts with host" : "manual start")}, {(SelectedProfile.EditableAutoRestartOnCrash ? "auto-restart on crash enabled" : "auto-restart on crash disabled")}.";
+
+    public string WorkshopSummary => SelectedProfile?.WorkshopSummary ?? "No workshop profile loaded.";
+
+    public string OperatorGuidance => SelectedProfile is null
+        ? "Pick or import a profile to start managing a server."
+        : !Directory.Exists(SelectedProfile.InstallDirectory)
+            ? "Install this branch first, then return here to launch or configure the server."
+            : string.Equals(SelectedProfile.RuntimeState, "Running", StringComparison.OrdinalIgnoreCase)
+                ? "The server is currently live. Use Logs, Backups, and Mods & Maps for the most common active-admin tasks."
+                : "The server is installed and idle. Review settings, capture a backup, then start it from this page or Install & Update.";
 
     protected override void OnSelectedProfileChangedCore(ProfileCardViewModel? profile)
     {
@@ -73,6 +109,8 @@ public sealed class OverviewWorkspaceViewModel : ProfileWorkspacePageViewModelBa
     private void Notify()
     {
         OnPropertyChanged(nameof(PageSummary));
+        OnPropertyChanged(nameof(ProfileDisplayName));
+        OnPropertyChanged(nameof(Branch));
         OnPropertyChanged(nameof(RuntimeState));
         OnPropertyChanged(nameof(Ports));
         OnPropertyChanged(nameof(InstallDirectory));
@@ -80,5 +118,11 @@ public sealed class OverviewWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         OnPropertyChanged(nameof(LatestLogLine));
         OnPropertyChanged(nameof(LatestBackup));
         OnPropertyChanged(nameof(CanRestore));
+        OnPropertyChanged(nameof(InstallHealth));
+        OnPropertyChanged(nameof(CacheHealth));
+        OnPropertyChanged(nameof(BackupHealth));
+        OnPropertyChanged(nameof(MemorySummary));
+        OnPropertyChanged(nameof(WorkshopSummary));
+        OnPropertyChanged(nameof(OperatorGuidance));
     }
 }

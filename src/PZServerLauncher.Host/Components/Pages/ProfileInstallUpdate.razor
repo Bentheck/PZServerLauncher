@@ -33,49 +33,147 @@ else
             <button class="nav-button secondary-button" @onclick="UpdateAsync" disabled="@_busy">Update</button>
         </Actions>
         <ChildContent>
-            <div class="cards">
+            <section class="workspace-panel hero-panel">
+                <div class="workspace-panel__copy">
+                    <p class="eyebrow">Install &amp; Update</p>
+                    <h2>@_profile.DisplayName</h2>
+                    <p class="muted-text">Install first, then update with confidence. This page surfaces the branch, job queue, and runtime readiness before you queue a new deployment cycle.</p>
+                </div>
+
+                <div class="workspace-actions">
+                    <span class="pill">@_profile.Branch</span>
+                    <span class="pill">@(_installDetected ? "Install detected" : "Install missing")</span>
+                    <span class="pill">@(_cacheDetected ? "Cache ready" : "Cache missing")</span>
+                    <span class="pill">@(_profile.AutoRestartOnCrash ? "Auto-restart enabled" : "Auto-restart disabled")</span>
+                </div>
+            </section>
+
+            <section class="metric-grid">
+                <article class="metric-card">
+                    <span class="metric-label">Runtime</span>
+                    <strong class="metric-value">@(_runtimeStatus?.State.ToString() ?? "Unknown")</strong>
+                    <span class="metric-note">@(_runtimeStatus?.LatestLogLine ?? "No recent log line.")</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Install</span>
+                    <strong class="metric-value">@(_installDetected ? "Ready" : "Missing")</strong>
+                    <span class="metric-note">@_profile.InstallDirectory</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Cache</span>
+                    <strong class="metric-value">@(_cacheDetected ? "Ready" : "Missing")</strong>
+                    <span class="metric-note">@_profile.CacheDirectory</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Queued Jobs</span>
+                    <strong class="metric-value">@(_jobs.Count == 0 ? "0" : _jobs.Count.ToString())</strong>
+                    <span class="metric-note">Recent install and update activity</span>
+                </article>
+            </section>
+
+            <div class="cards cards--wide">
                 <section class="card">
-                    <h2>Install State</h2>
-                    <p>Install directory: @_profile.InstallDirectory</p>
-                    <p>Cache directory: @_profile.CacheDirectory</p>
-                    <p>Detected: @(_installDetected ? "Yes" : "No")</p>
-                    <p>Branch: @_profile.Branch</p>
+                    <div class="card-heading">
+                        <div>
+                            <p class="eyebrow">Install State</p>
+                            <h2>Directories And Branch</h2>
+                        </div>
+                        <span class="pill">@(_installDetected ? "Detected" : "Pending")</span>
+                    </div>
+
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">Install directory</span>
+                            <span class="info-value">@_profile.InstallDirectory</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Cache directory</span>
+                            <span class="info-value">@_profile.CacheDirectory</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Branch</span>
+                            <span class="info-value">@_profile.Branch</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Auto restart</span>
+                            <span class="info-value">@(_profile.AutoRestartOnCrash ? "On" : "Off")</span>
+                        </div>
+                    </div>
                 </section>
 
                 <section class="card">
-                    <h2>Runtime</h2>
-                    <p>State: <strong>@_runtimeStatus?.State.ToString()</strong></p>
-                    <p>Latest log line: @(_runtimeStatus?.LatestLogLine ?? "No logs yet.")</p>
-                    <p>Auto restart on crash: @(_profile.AutoRestartOnCrash ? "On" : "Off")</p>
-                </section>
+                    <div class="card-heading">
+                        <div>
+                            <p class="eyebrow">Preflight</p>
+                            <h2>Update Flow</h2>
+                        </div>
+                    </div>
 
+                    <div class="status-banner">
+                        <strong>Before you update</strong>
+                        <p>The host automatically performs a pre-update backup, then hands the job to the shared background pipeline. Use this page to verify the install root and runtime state before you queue a refresh.</p>
+                    </div>
+
+                    <ul class="check-list">
+                        <li>Install directory exists: <strong>@(_installDetected ? "Yes" : "No")</strong></li>
+                        <li>Cache directory exists: <strong>@(_cacheDetected ? "Yes" : "No")</strong></li>
+                        <li>Runtime state: <strong>@(_runtimeStatus?.State.ToString() ?? "Unknown")</strong></li>
+                    </ul>
+                </section>
+            </div>
+
+            <div class="cards cards--wide">
                 <section class="card">
-                    <h2>Job Queue</h2>
+                    <div class="card-heading">
+                        <div>
+                            <p class="eyebrow">Queue</p>
+                            <h2>Recent Jobs</h2>
+                        </div>
+                        <span class="pill">@(_jobs.Count == 0 ? "Empty" : "Active history")</span>
+                    </div>
+
                     @if (_jobs.Count == 0)
                     {
-                        <p class="muted-text">No recent install/update jobs.</p>
+                        <div class="empty-state">
+                            <p class="muted-text">No recent install/update jobs. Queue an install or update to populate this history.</p>
+                        </div>
                     }
                     else
                     {
-                        <ul class="stack-list">
-                            @foreach (var job in _jobs)
+                        <ul class="job-list">
+                            @foreach (var job in _jobs.Take(5))
                             {
-                                <li>
-                                    <strong>@job.Kind</strong> - @job.Status
+                                <li class="job-list__item">
+                                    <div class="job-list__title">
+                                        <strong>@job.Kind</strong>
+                                        <span>@job.Status</span>
+                                    </div>
                                     <div class="muted-text">@job.Detail ?? job.Summary</div>
                                 </li>
                             }
                         </ul>
                     }
                 </section>
+
+                <section class="card">
+                    <div class="card-heading">
+                        <div>
+                            <p class="eyebrow">Operator Flow</p>
+                            <h2>Actions</h2>
+                        </div>
+                    </div>
+
+                    <p class="muted-text">Use Install for a fresh bootstrap, Update for a branch refresh, and the runtime controls when you need to bounce the server after checking the install health.</p>
+
+                    <div class="workspace-actions">
+                        <button class="nav-button" @onclick="InstallAsync" disabled="@_busy">Install</button>
+                        <button class="nav-button secondary-button" @onclick="UpdateAsync" disabled="@_busy">Update</button>
+                        <a class="nav-button secondary-button" href="@OverviewHref">Overview</a>
+                    </div>
+                </section>
             </div>
 
-            <div class="card">
-                <h2>Preflight</h2>
-                <p class="muted-text">Install and update actions use the host background job pipeline. Pre-update backup is performed automatically by the host service.</p>
-            </div>
-
-            <p class="muted-text">@_statusMessage</p>
+            <p class="status-line">@_statusMessage</p>
         </ChildContent>
     </ProfileWorkspaceShell>
 }
