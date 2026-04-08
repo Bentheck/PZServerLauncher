@@ -35,4 +35,36 @@ public sealed class StructuredDocumentServiceTests
         Assert.Contains(document.Issues, issue => issue.Message.Contains("SandboxVars table", StringComparison.OrdinalIgnoreCase));
         Assert.Contains("ZombieCount", _sandboxService.Format(document));
     }
+
+    [Fact]
+    public void SandboxVarsDocumentService_ReadsAndUpdatesStructuredValues()
+    {
+        const string source = """
+            SandboxVars = {
+                VERSION = 4,
+                Zombies = 4, -- Spawn rate
+                StarterKit = false,
+                ZombieLore = {
+                    Speed = 3,
+                }
+            }
+            """;
+
+        var values = _sandboxService.ReadValues(source, ["Zombies", "StarterKit", "ZombieLore.Speed"]);
+        Assert.Equal("4", values["Zombies"]);
+        Assert.Equal("false", values["StarterKit"]);
+        Assert.Equal("3", values["ZombieLore.Speed"]);
+
+        var updated = _sandboxService.ApplyValues(source, new Dictionary<string, string?>
+        {
+            ["Zombies"] = "2",
+            ["StarterKit"] = "true",
+            ["WaterShutModifier"] = "500",
+        });
+
+        Assert.Contains("Zombies = 2, -- Spawn rate", updated);
+        Assert.Contains("StarterKit = true,", updated);
+        Assert.Contains("WaterShutModifier = 500,", updated);
+        Assert.Contains("ZombieLore = {", updated);
+    }
 }

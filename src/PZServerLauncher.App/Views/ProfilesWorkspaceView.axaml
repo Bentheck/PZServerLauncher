@@ -53,7 +53,7 @@
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                     <StackPanel Spacing="4">
                         <TextBlock Classes="panel-title" FontSize="24" Text="Per-Profile Workspace" />
-                        <TextBlock Classes="body" Text="Choose a profile section below. Overview, Install &amp; Update, and General are live now, while the remaining sections still use migration scaffolds." TextWrapping="Wrap" />
+                        <TextBlock Classes="body" Text="Choose a profile section below. Overview, Install &amp; Update, General, and Sandbox are live now, while the remaining sections still use migration scaffolds." TextWrapping="Wrap" />
                     </StackPanel>
                     <Button Grid.Column="1" Command="{Binding OpenClassicCommand}" Content="Open Classic" />
                 </Grid>

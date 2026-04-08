@@ -207,11 +207,11 @@
 
                                 <Grid Grid.Row="2" ColumnDefinitions="*,*" ColumnSpacing="18">
                                     <StackPanel Spacing="8">
-                                        <TextBlock Classes="kicker" Text="General Moved" />
+                                        <TextBlock Classes="kicker" Text="Workspace Pages Live" />
                                         <Border Background="#F1E6D7" CornerRadius="14" Padding="16">
                                             <StackPanel Spacing="8">
-                                                <TextBlock Classes="body" Text="Structured General settings now live in the workspace General page." TextWrapping="Wrap" />
-                                                <TextBlock Classes="body" Text="Use the new workspace for server name, primary ports, memory, and startup behavior. Classic remains focused on raw files and the still-migrating areas." TextWrapping="Wrap" />
+                                                <TextBlock Classes="body" Text="Structured General and Sandbox settings now live in the workspace pages." TextWrapping="Wrap" />
+                                                <TextBlock Classes="body" Text="Use the new workspace for server identity, primary ports, memory, startup behavior, and first-pass sandbox gameplay/world settings. Classic remains focused on raw files and the still-migrating areas." TextWrapping="Wrap" />
                                             </StackPanel>
                                         </Border>
                                     </StackPanel>

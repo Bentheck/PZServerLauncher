@@ -17,11 +17,7 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
         Overview = new OverviewWorkspaceViewModel(legacy);
         InstallAndUpdate = new InstallUpdateWorkspaceViewModel(legacy);
         General = new GeneralWorkspaceViewModel(legacy, hostApiClient);
-        Sandbox = new WorkspaceSectionViewModel(
-            "Sandbox",
-            "Near-full structured gameplay and world settings for the selected branch.",
-            "Sandbox draft cleared.",
-            ["Branch-specific catalogs", "Gameplay settings", "World settings", "Fallback to raw files"]);
+        Sandbox = new SandboxWorkspaceViewModel(legacy, hostApiClient);
         ModsAndMaps = new WorkspaceSectionViewModel(
             "Mods & Maps",
             "Workshop items, local mod discovery, map ordering, presets, and validation.",
@@ -102,7 +98,7 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
 
     public GeneralWorkspaceViewModel General { get; }
 
-    public WorkspaceSectionViewModel Sandbox { get; }
+    public SandboxWorkspaceViewModel Sandbox { get; }
 
     public WorkspaceSectionViewModel ModsAndMaps { get; }
 
