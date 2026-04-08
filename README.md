@@ -19,6 +19,10 @@ Starter scaffold for a Project Zomboid server installer, configurator, and launc
   Concrete planning and process-oriented services.
 - `tests/PZServerLauncher.Tests`
   Tests for planners and future config/parser logic.
+- `installer`
+  WiX-based Windows packaging assets and MSI authoring.
+- `scripts/build-installer.ps1`
+  Publishes the desktop app and host, then builds the MSI installer.
 
 ## First Milestones
 
@@ -27,3 +31,19 @@ Starter scaffold for a Project Zomboid server installer, configurator, and launc
 3. Parse and save `*.ini` and `*_SandboxVars.lua`.
 4. Launch the server with live log streaming.
 5. Add backups and restore before destructive actions.
+
+## Packaging
+
+Build the Windows installer with:
+
+```powershell
+./scripts/build-installer.ps1
+```
+
+Optional parameters:
+
+```powershell
+./scripts/build-installer.ps1 -Configuration Release -RuntimeIdentifier win-x64 -InstallerVersion 0.1.0
+```
+
+The script stages published outputs under `artifacts/publish` and then builds the WiX MSI from those staged folders.
