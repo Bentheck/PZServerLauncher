@@ -51,35 +51,35 @@ public sealed class InstallUpdateWorkspaceViewModel : ProfileWorkspacePageViewMo
         ? "No recent jobs recorded."
         : Legacy.RecentJobs[0].Title + " | " + Legacy.RecentJobs[0].Detail;
 
-    public string InstallReadiness => SelectedProfile is null
-        ? "No install profile selected."
-        : Directory.Exists(SelectedProfile.InstallDirectory)
-            ? "The install directory already exists. Update can refresh binaries in place."
-            : "The install directory is missing. Install will create the local dedicated server footprint.";
+    public string BranchChannelSummary => SelectedProfile?.BranchChannelSummary ?? "No branch channel summary available.";
 
-    public string CacheReadiness => SelectedProfile is null
-        ? "No cache profile selected."
-        : Directory.Exists(SelectedProfile.CacheDirectory)
-            ? "The cache directory is present and ready for server config, saves, and backups."
-            : "The cache directory is not present yet. It will be created when the server profile is initialized.";
+    public string SteamCmdCommandSummary => SelectedProfile?.SteamCmdCommandSummary ?? "SteamCMD command summary unavailable.";
 
-    public string BackupSafety => SelectedProfile is null
-        ? "No backup context available."
-        : SelectedProfile.HasBackup
-            ? $"Latest backup: {SelectedProfile.LastBackup}. Updates will also trigger a pre-update safety backup."
-            : "No backup archive exists yet. Updates still create a pre-update backup automatically, but taking a manual one now is safer.";
+    public string InstallReadiness => SelectedProfile?.InstallFootprintSummary ?? "No install profile selected.";
+
+    public string CacheReadiness => SelectedProfile?.CacheFootprintSummary ?? "No cache profile selected.";
+
+    public string BackupSafety => SelectedProfile?.BackupSafetySummary ?? "No backup context available.";
 
     public string NextRecommendedAction => SelectedProfile is null
         ? "Pick a profile to continue."
-        : !Directory.Exists(SelectedProfile.InstallDirectory)
+        : !SelectedProfile.IsInstallDetected
             ? "Run Install first for this branch."
             : string.Equals(SelectedProfile.RuntimeState, "Running", StringComparison.OrdinalIgnoreCase)
                 ? "Use Update only when you are ready for a maintenance window, or stop/restart from this page."
                 : "The install looks ready. Start the server, or update it if you want to refresh the binaries before launch.";
 
-    public string LifecycleGuidance => SelectedProfile is null
-        ? "No runtime state available."
-        : $"{SelectedProfile.RuntimeState} | Start with host: {(SelectedProfile.EditableStartWithHost ? "On" : "Off")} | Auto restart on crash: {(SelectedProfile.EditableAutoRestartOnCrash ? "On" : "Off")}";
+    public string LifecycleGuidance => SelectedProfile?.RuntimePolicySummary ?? "No runtime state available.";
+
+    public string LaunchReadiness => SelectedProfile?.LaunchReadinessSummary ?? "Launch readiness is unavailable.";
+
+    public string PreflightSummary => SelectedProfile?.InstallPreflightSummary ?? "No preflight summary available.";
+
+    public string ExpectedLauncherPath => SelectedProfile?.ExpectedLauncherPath ?? "No launcher path available.";
+
+    public string ConfigFootprintSummary => SelectedProfile is null
+        ? "No config footprint available."
+        : $"{(SelectedProfile.ConfigDirectoryDetected ? "Config root detected" : "Config root missing")} | {(SelectedProfile.IniDetected ? "INI present" : "INI missing")} | {(SelectedProfile.SandboxDetected ? "Sandbox present" : "Sandbox missing")} | {(SelectedProfile.WorldDetected ? "World save detected" : "World save not created yet")}";
 
     protected override void OnSelectedProfileChangedCore(ProfileCardViewModel? profile)
     {
@@ -106,10 +106,16 @@ public sealed class InstallUpdateWorkspaceViewModel : ProfileWorkspacePageViewMo
         OnPropertyChanged(nameof(InstallDirectory));
         OnPropertyChanged(nameof(CacheDirectory));
         OnPropertyChanged(nameof(LastJobSummary));
+        OnPropertyChanged(nameof(BranchChannelSummary));
+        OnPropertyChanged(nameof(SteamCmdCommandSummary));
         OnPropertyChanged(nameof(InstallReadiness));
         OnPropertyChanged(nameof(CacheReadiness));
         OnPropertyChanged(nameof(BackupSafety));
         OnPropertyChanged(nameof(NextRecommendedAction));
         OnPropertyChanged(nameof(LifecycleGuidance));
+        OnPropertyChanged(nameof(LaunchReadiness));
+        OnPropertyChanged(nameof(PreflightSummary));
+        OnPropertyChanged(nameof(ExpectedLauncherPath));
+        OnPropertyChanged(nameof(ConfigFootprintSummary));
     }
 }

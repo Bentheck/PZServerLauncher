@@ -1,5 +1,7 @@
 @page "/profiles/{ProfileId}/install-update"
 @attribute [Authorize(Roles="Owner,Admin,Operator")]
+@using PZServerLauncher.Core.Planning
+@using PZServerLauncher.Infrastructure.Planning
 @inject ProfileStore ProfileStore
 @inject RuntimeStateStore RuntimeStateStore
 @inject ServerInstallService InstallService
@@ -37,14 +39,14 @@ else
                 <div class="workspace-panel__copy">
                     <p class="eyebrow">Install &amp; Update</p>
                     <h2>@_profile.DisplayName</h2>
-                    <p class="muted-text">Install first, then update with confidence. This page surfaces the branch, job queue, and runtime readiness before you queue a new deployment cycle.</p>
+                    <p class="muted-text">Install first, then update with confidence. This page surfaces the branch channel, launcher footprint, cache/config readiness, and runtime posture before you queue a new deployment cycle.</p>
                 </div>
 
                 <div class="workspace-actions">
                     <span class="pill">@_profile.Branch</span>
                     <span class="pill">@(_installDetected ? "Install detected" : "Install missing")</span>
                     <span class="pill">@(_cacheDetected ? "Cache ready" : "Cache missing")</span>
-                    <span class="pill">@(_profile.AutoRestartOnCrash ? "Auto-restart enabled" : "Auto-restart disabled")</span>
+                    <span class="pill">@(_installPosture?.UsesDirectJavaTemplate == true ? "Direct Java ready" : "Batch fallback")</span>
                 </div>
             </section>
 
@@ -55,14 +57,14 @@ else
                     <span class="metric-note">@(_runtimeStatus?.LatestLogLine ?? "No recent log line.")</span>
                 </article>
                 <article class="metric-card">
-                    <span class="metric-label">Install</span>
-                    <strong class="metric-value">@(_installDetected ? "Ready" : "Missing")</strong>
-                    <span class="metric-note">@_profile.InstallDirectory</span>
+                    <span class="metric-label">Branch Channel</span>
+                    <strong class="metric-value">@_profile.Branch</strong>
+                    <span class="metric-note">@(_installPosture?.BranchChannelSummary ?? "No branch channel summary.")</span>
                 </article>
                 <article class="metric-card">
-                    <span class="metric-label">Cache</span>
-                    <strong class="metric-value">@(_cacheDetected ? "Ready" : "Missing")</strong>
-                    <span class="metric-note">@_profile.CacheDirectory</span>
+                    <span class="metric-label">Launch</span>
+                    <strong class="metric-value">@(_installPosture?.UsesDirectJavaTemplate == true ? "Direct Java" : "Fallback")</strong>
+                    <span class="metric-note">@(_installPosture?.LaunchReadinessSummary ?? "No launch summary.")</span>
                 </article>
                 <article class="metric-card">
                     <span class="metric-label">Queued Jobs</span>
@@ -78,7 +80,7 @@ else
                             <p class="eyebrow">Install State</p>
                             <h2>Directories And Branch</h2>
                         </div>
-                        <span class="pill">@(_installDetected ? "Detected" : "Pending")</span>
+                        <span class="pill">@(_installPosture?.InstallDetected == true ? "Detected" : "Pending")</span>
                     </div>
 
                     <div class="info-grid">
@@ -98,6 +100,14 @@ else
                             <span class="info-label">Auto restart</span>
                             <span class="info-value">@(_profile.AutoRestartOnCrash ? "On" : "Off")</span>
                         </div>
+                        <div class="info-item">
+                            <span class="info-label">Launcher path</span>
+                            <span class="info-value">@(_installPosture?.ExpectedLauncherPath ?? "Unavailable")</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">SteamCMD</span>
+                            <span class="info-value">@(_installPosture?.SteamCmdCommandSummary ?? "Unavailable")</span>
+                        </div>
                     </div>
                 </section>
 
@@ -111,12 +121,17 @@ else
 
                     <div class="status-banner">
                         <strong>Before you update</strong>
-                        <p>The host automatically performs a pre-update backup, then hands the job to the shared background pipeline. Use this page to verify the install root and runtime state before you queue a refresh.</p>
+                        <p>@(_installPosture?.BackupSafetySummary ?? "Backup safety summary unavailable.")</p>
+                        <p>@(_installPosture?.PreflightSummary ?? "Preflight summary unavailable.")</p>
                     </div>
 
                     <ul class="check-list">
-                        <li>Install directory exists: <strong>@(_installDetected ? "Yes" : "No")</strong></li>
-                        <li>Cache directory exists: <strong>@(_cacheDetected ? "Yes" : "No")</strong></li>
+                        <li>Install directory exists: <strong>@(_installPosture?.InstallDetected == true ? "Yes" : "No")</strong></li>
+                        <li>Cache directory exists: <strong>@(_installPosture?.CacheDetected == true ? "Yes" : "No")</strong></li>
+                        <li>Launcher script exists: <strong>@(_installPosture?.LauncherDetected == true ? "Yes" : "No")</strong></li>
+                        <li>Config directory exists: <strong>@(_installPosture?.ConfigDirectoryDetected == true ? "Yes" : "No")</strong></li>
+                        <li>INI and sandbox files exist: <strong>@(_installPosture?.IniDetected == true && _installPosture?.SandboxDetected == true ? "Yes" : "No")</strong></li>
+                        <li>World save exists: <strong>@(_installPosture?.WorldDetected == true ? "Yes" : "No")</strong></li>
                         <li>Runtime state: <strong>@(_runtimeStatus?.State.ToString() ?? "Unknown")</strong></li>
                     </ul>
                 </section>
@@ -163,7 +178,7 @@ else
                         </div>
                     </div>
 
-                    <p class="muted-text">Use Install for a fresh bootstrap, Update for a branch refresh, and the runtime controls when you need to bounce the server after checking the install health.</p>
+                    <p class="muted-text">@(_installPosture?.RuntimePolicySummary ?? "Runtime policy summary unavailable.")</p>
 
                     <div class="workspace-actions">
                         <button class="nav-button" @onclick="InstallAsync" disabled="@_busy">Install</button>
@@ -185,6 +200,7 @@ else
     private ServerProfile? _profile;
     private ServerRuntimeStatus? _runtimeStatus;
     private IReadOnlyList<OperationJob> _jobs = [];
+    private ProjectZomboidInstallPostureSummary? _installPosture;
     private bool _busy;
     private string? _statusMessage;
     private bool _installDetected;
@@ -205,8 +221,14 @@ else
 
         _runtimeStatus = RuntimeStateStore.GetOrDefault(ProfileId);
         _jobs = (await JobStore.ListRecentAsync(20)).Where(job => string.Equals(job.ProfileId, ProfileId, StringComparison.OrdinalIgnoreCase) && (job.Kind is Core.Runtime.OperationJobKind.Install or Core.Runtime.OperationJobKind.Update)).ToList();
-        _installDetected = Directory.Exists(_profile.InstallDirectory);
-        _cacheDetected = Directory.Exists(_profile.CacheDirectory);
+        var backups = BackupService.ListBackups(ProfileId);
+        _installPosture = ProjectZomboidInstallPostureSummaryBuilder.Build(
+            _profile,
+            _runtimeStatus?.State.ToString() ?? "Unknown",
+            backups.Count > 0,
+            backups.FirstOrDefault() ?? "No backups");
+        _installDetected = _installPosture.InstallDetected;
+        _cacheDetected = _installPosture.CacheDetected;
     }
 
     private async Task InstallAsync() => await QueueInstallAsync(Core.Runtime.OperationJobKind.Install, "Install");

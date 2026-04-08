@@ -9,6 +9,7 @@ using PZServerLauncher.Core.Planning;
 using PZServerLauncher.Core.Profiles;
 using PZServerLauncher.Core.Runtime;
 using PZServerLauncher.Core.Settings;
+using PZServerLauncher.Infrastructure.Planning;
 
 namespace PZServerLauncher.App.ViewModels;
 
@@ -221,8 +222,12 @@ public partial class MainWindowViewModel : ViewModelBase
                 snapshot.Statuses.TryGetValue(profile.ProfileId, out var status);
                 snapshot.Backups.TryGetValue(profile.ProfileId, out var backups);
                 var latestBackup = backups?.FirstOrDefault() ?? "No backups";
-                var installDetected = Directory.Exists(profile.InstallDirectory) || Directory.Exists(Path.Combine(profile.InstallDirectory, "server"));
                 var posture = postureLookup.GetValueOrDefault(profile.ProfileId) ?? ProjectZomboidProfilePostureSummaryBuilder.Unavailable(profile.DisplayName);
+                var installPosture = ProjectZomboidInstallPostureSummaryBuilder.Build(
+                    ToServerProfile(profile),
+                    status?.State.ToString() ?? "Stopped",
+                    backups is { Count: > 0 },
+                    latestBackup);
 
                 Profiles.Add(new ProfileCardViewModel(
                     profile.ProfileId,
@@ -246,8 +251,8 @@ public partial class MainWindowViewModel : ViewModelBase
                     profile.AutoRestartOnCrash,
                     FormatWorkshopSummary(profile.WorkshopPreset),
                     "Workshop validation has not been run yet.",
-                    installDetected,
-                    posture));
+                    posture,
+                    installPosture));
             }
 
             RecentJobs.Clear();
@@ -679,6 +684,28 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private static string FormatWorkshopSummary(WorkshopPreset preset) =>
         $"{preset.WorkshopItemIds.Count} workshop / {preset.EnabledModIds.Count} mods / {preset.MapFolders.Count} maps";
+
+    private static ServerProfile ToServerProfile(ProfileDto profile) =>
+        new()
+        {
+            ProfileId = profile.ProfileId,
+            DisplayName = profile.DisplayName,
+            ServerName = profile.ServerName,
+            InstallDirectory = profile.InstallDirectory,
+            CacheDirectory = profile.CacheDirectory,
+            Branch = profile.Branch,
+            DefaultPort = profile.DefaultPort,
+            UdpPort = profile.UdpPort,
+            RconPort = profile.RconPort,
+            UseSteam = true,
+            AdminUsername = profile.AdminUsername,
+            BindIp = profile.BindIp,
+            PreferredMemoryInGigabytes = profile.PreferredMemoryInGigabytes,
+            StartWithHost = profile.StartWithHost,
+            AutoRestartOnCrash = profile.AutoRestartOnCrash,
+            WorkshopPreset = profile.WorkshopPreset,
+            BackupPolicy = profile.BackupPolicy,
+        };
 
     private async Task<(string ProfileId, ProjectZomboidProfilePostureSummary Summary)> LoadProfilePostureSummaryAsync(string profileId, string displayName)
     {

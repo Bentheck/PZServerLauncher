@@ -38,14 +38,35 @@
                 </Border>
                 <Border Grid.Column="1" Background="#F6EFE6" CornerRadius="14" Padding="16">
                     <StackPanel Spacing="6">
-                        <TextBlock Classes="kicker" Text="Install Readiness" />
-                        <TextBlock Classes="body" Text="{Binding InstallReadiness}" TextWrapping="Wrap" />
+                        <TextBlock Classes="kicker" Text="Branch Channel" />
+                        <TextBlock Classes="body" Text="{Binding BranchChannelSummary}" TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
                 <Border Grid.Column="2" Background="#F6EFE6" CornerRadius="14" Padding="16">
                     <StackPanel Spacing="6">
                         <TextBlock Classes="kicker" Text="Recent Job" />
                         <TextBlock Classes="body" Text="{Binding LastJobSummary}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="14">
+                <Border Background="#FFF8F1" CornerRadius="14" Padding="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Install Footprint" />
+                        <TextBlock Classes="body" Text="{Binding InstallReadiness}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="1" Background="#FFF8F1" CornerRadius="14" Padding="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Cache Footprint" />
+                        <TextBlock Classes="body" Text="{Binding CacheReadiness}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="2" Background="#FFF8F1" CornerRadius="14" Padding="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Launch Readiness" />
+                        <TextBlock Classes="body" Text="{Binding LaunchReadiness}" TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
             </Grid>
@@ -68,11 +89,20 @@
                         </StackPanel>
                     </Border>
 
+                    <Border Background="#FFF8F1" CornerRadius="14" Padding="16">
+                        <StackPanel Spacing="6">
+                            <TextBlock Classes="kicker" Text="Launcher Path" />
+                            <TextBlock Classes="body" FontFamily="Cascadia Code,Consolas,monospace" Text="{Binding ExpectedLauncherPath}" TextWrapping="Wrap" />
+                            <TextBlock Classes="body" Text="{Binding SteamCmdCommandSummary}" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+
                     <Border Background="#F1E6D7" CornerRadius="14" Padding="16">
                         <StackPanel Spacing="8">
                             <TextBlock Classes="kicker" Text="Preflight" />
                             <TextBlock Classes="body" Text="{Binding BackupSafety}" TextWrapping="Wrap" />
-                            <TextBlock Classes="body" Text="Install creates the dedicated server footprint. Update refreshes binaries and automatically triggers a pre-update backup through the host pipeline." TextWrapping="Wrap" />
+                            <TextBlock Classes="body" Text="{Binding PreflightSummary}" TextWrapping="Wrap" />
+                            <TextBlock Classes="body" Text="{Binding ConfigFootprintSummary}" TextWrapping="Wrap" />
                         </StackPanel>
                     </Border>
                 </StackPanel>

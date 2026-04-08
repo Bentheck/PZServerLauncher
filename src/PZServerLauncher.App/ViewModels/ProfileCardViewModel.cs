@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using PZServerLauncher.Core.Planning;
 using PZServerLauncher.Core.Runtime;
 using PZServerLauncher.Core.Settings;
 
@@ -28,8 +29,8 @@ public partial class ProfileCardViewModel : ViewModelBase
         bool editableAutoRestartOnCrash,
         string workshopSummary,
         string workshopDiagnostics,
-        bool isInstallDetected,
-        ProjectZomboidProfilePostureSummary posture)
+        ProjectZomboidProfilePostureSummary posture,
+        ProjectZomboidInstallPostureSummary installPosture)
     {
         ProfileId = profileId;
         DisplayName = displayName;
@@ -52,8 +53,8 @@ public partial class ProfileCardViewModel : ViewModelBase
         EditableAutoRestartOnCrash = editableAutoRestartOnCrash;
         WorkshopSummary = workshopSummary;
         WorkshopDiagnostics = workshopDiagnostics;
-        IsInstallDetected = isInstallDetected;
         Posture = posture;
+        InstallPosture = installPosture;
         SelectedRawConfigKind = ConfigFileOptionViewModel.All[0];
         RawConfigDiagnostics = "Load a raw config file to run validation.";
         RawConfigStatus = "No raw config file loaded yet.";
@@ -71,9 +72,9 @@ public partial class ProfileCardViewModel : ViewModelBase
 
     public string CacheDirectory { get; }
 
-    public bool IsInstallDetected { get; }
-
     public ProjectZomboidProfilePostureSummary Posture { get; }
+
+    public ProjectZomboidInstallPostureSummary InstallPosture { get; }
 
     public string CommunitySummary => Posture.CommunitySummary;
 
@@ -94,6 +95,40 @@ public partial class ProfileCardViewModel : ViewModelBase
     public bool IsVoiceEnabled => Posture.IsVoiceEnabled;
 
     public bool IsSafetyEnabled => Posture.IsSafetyEnabled;
+
+    public bool IsInstallDetected => InstallPosture.InstallDetected;
+
+    public string BranchChannelSummary => InstallPosture.BranchChannelSummary;
+
+    public string SteamCmdCommandSummary => InstallPosture.SteamCmdCommandSummary;
+
+    public string ExpectedLauncherPath => InstallPosture.ExpectedLauncherPath;
+
+    public string InstallFootprintSummary => InstallPosture.InstallFootprintSummary;
+
+    public string CacheFootprintSummary => InstallPosture.CacheFootprintSummary;
+
+    public string LaunchReadinessSummary => InstallPosture.LaunchReadinessSummary;
+
+    public string RuntimePolicySummary => InstallPosture.RuntimePolicySummary;
+
+    public string BackupSafetySummary => InstallPosture.BackupSafetySummary;
+
+    public string InstallPreflightSummary => InstallPosture.PreflightSummary;
+
+    public bool CacheDetected => InstallPosture.CacheDetected;
+
+    public bool LauncherDetected => InstallPosture.LauncherDetected;
+
+    public bool ConfigDirectoryDetected => InstallPosture.ConfigDirectoryDetected;
+
+    public bool IniDetected => InstallPosture.IniDetected;
+
+    public bool SandboxDetected => InstallPosture.SandboxDetected;
+
+    public bool WorldDetected => InstallPosture.WorldDetected;
+
+    public bool UsesDirectJavaTemplate => InstallPosture.UsesDirectJavaTemplate;
 
     public IReadOnlyList<ConfigFileOptionViewModel> RawConfigKinds { get; } = ConfigFileOptionViewModel.All;
 
