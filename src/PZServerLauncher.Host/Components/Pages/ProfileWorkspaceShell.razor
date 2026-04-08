@@ -37,9 +37,10 @@
             <NavLink class="profile-nav__link" href="@SandboxHref">Sandbox</NavLink>
             <NavLink class="profile-nav__link" href="@ModsAndMapsHref">Mods &amp; Maps</NavLink>
             <NavLink class="profile-nav__link" href="@NetworkAndAdminHref">Network &amp; Admin</NavLink>
+            <NavLink class="profile-nav__link" href="@LogsHref">Logs</NavLink>
             <NavLink class="profile-nav__link" href="@AdvancedFilesHref">Advanced Files</NavLink>
 
-            <div class="profile-nav__coming-soon">Backups and Logs will return in the next milestone.</div>
+            <div class="profile-nav__coming-soon">Logs is live now. Backups will return in a later milestone.</div>
 
             @if (Actions is not null)
             {
@@ -98,6 +99,8 @@
     private string ModsAndMapsHref => BuildHref("mods-maps");
 
     private string NetworkAndAdminHref => BuildHref("network-admin");
+
+    private string LogsHref => BuildHref("logs");
 
     private string AdvancedFilesHref => BuildHref("advanced-files");
 

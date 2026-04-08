@@ -407,6 +407,73 @@ code {
     margin-top: 12px;
 }
 
+.log-toolbar {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin: 16px 0;
+}
+
+.log-toolbar .field-pill {
+    margin-right: 0;
+}
+
+.log-stream {
+    display: grid;
+    gap: 8px;
+    border: 1px solid #d8cfc2;
+    border-radius: 16px;
+    padding: 14px;
+    max-height: 560px;
+    overflow: auto;
+    background: rgba(255, 255, 255, 0.88);
+}
+
+.log-line {
+    display: grid;
+    grid-template-columns: 2.5rem minmax(0, 1fr);
+    gap: 12px;
+    align-items: start;
+    padding: 0.45rem 0.2rem;
+    border-bottom: 1px solid rgba(216, 207, 194, 0.65);
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 0.95rem;
+    line-height: 1.45;
+}
+
+.log-line:last-child {
+    border-bottom: none;
+}
+
+.log-line--latest {
+    background: rgba(143, 74, 42, 0.08);
+    border-radius: 10px;
+    color: #5d301b;
+}
+
+.log-line__index {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2rem;
+    padding: 0.14rem 0.4rem;
+    border-radius: 999px;
+    background: rgba(143, 74, 42, 0.14);
+    color: #7a3d21;
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.log-line__text {
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.log-empty {
+    padding: 1rem 0.25rem;
+}
+
 .raw-editor {
     width: 100%;
     min-height: 420px;

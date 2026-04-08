@@ -1,0 +1,110 @@
+@page "/profiles/{ProfileId}/logs"
+@attribute [Authorize]
+@inject ProfileStore ProfileStore
+@inject RuntimeStateStore RuntimeStateStore
+
+<PageTitle>Logs</PageTitle>
+
+@if (_profile is null)
+{
+    <div class="home-shell">
+        <div class="card">
+            <p class="eyebrow">Profile Workspace</p>
+            <h1>Profile not found</h1>
+            <p class="muted-text">The selected profile could not be loaded.</p>
+            <a class="nav-button" href="/profiles">Back to profiles</a>
+        </div>
+    </div>
+}
+else
+{
+    <ProfileWorkspaceShell Profile="@_profile"
+                           ActivePage="logs"
+                           RuntimeStatus="@_runtimeStatus"
+                           InstallDetected="@_installDetected"
+                           CacheDetected="@_cacheDetected">
+        <Actions>
+            <a class="nav-button secondary-button" href="@OverviewHref">Overview</a>
+            <button class="nav-button" @onclick="ReloadAsync">Reload Logs</button>
+        </Actions>
+        <ChildContent>
+            <div class="card">
+                <h2>Recent Runtime Output</h2>
+                <p class="muted-text">This page shows the host's recent in-memory log buffer for the selected profile.</p>
+
+                <div class="profile-section">
+                    <h3>Runtime Summary</h3>
+                    <div class="field-grid">
+                        <div class="field-card">
+                            <span class="field-label">Runtime State</span>
+                            <span>@(_runtimeStatus?.State.ToString() ?? "Unknown")</span>
+                        </div>
+                        <div class="field-card">
+                            <span class="field-label">Latest Line</span>
+                            <span>@(_runtimeStatus?.LatestLogLine ?? "No recent log line.")</span>
+                        </div>
+                        <div class="field-card">
+                            <span class="field-label">Buffered Lines</span>
+                            <span>@_logLines.Count</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="profile-section">
+                    <h3>Recent Buffer</h3>
+                    @if (_logLines.Count == 0)
+                    {
+                        <p class="muted-text">No buffered logs yet. Start the profile or reload after new runtime activity.</p>
+                    }
+                    else
+                    {
+                        <div class="card inner-card">
+                            @foreach (var line in _logLines)
+                            {
+                                <div class="log-line">@line</div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <p class="muted-text">@_statusMessage</p>
+        </ChildContent>
+    </ProfileWorkspaceShell>
+}
+
+@code {
+    [Parameter]
+    public string ProfileId { get; set; } = string.Empty;
+
+    private ServerProfile? _profile;
+    private ServerRuntimeStatus? _runtimeStatus;
+    private List<string> _logLines = [];
+    private string _statusMessage = "Loading logs...";
+    private bool _installDetected;
+    private bool _cacheDetected;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        _profile = await ProfileStore.GetAsync(ProfileId);
+        if (_profile is null)
+        {
+            return;
+        }
+
+        _runtimeStatus = RuntimeStateStore.GetOrDefault(ProfileId);
+        _logLines = RuntimeStateStore.GetRecentLogs(ProfileId).ToList();
+        _installDetected = Directory.Exists(_profile.InstallDirectory);
+        _cacheDetected = Directory.Exists(_profile.CacheDirectory);
+        _statusMessage = _logLines.Count == 0
+            ? "No buffered logs are available yet."
+            : $"Loaded {_logLines.Count} recent log line(s).";
+    }
+
+    private string OverviewHref => $"/profiles/{Uri.EscapeDataString(ProfileId)}/overview";
+}
