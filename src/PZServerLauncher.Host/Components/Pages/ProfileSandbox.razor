@@ -33,14 +33,61 @@ else
             <button class="nav-button secondary-button" @onclick="ApplyAsync" disabled="@(!_canEdit || _busy)">Apply Changes</button>
         </Actions>
         <ChildContent>
-            <div class="cards">
+            <section class="workspace-panel hero-panel">
+                <div class="workspace-panel__copy">
+                    <p class="eyebrow">Sandbox</p>
+                    <h1>@_profile.DisplayName</h1>
+                    <p class="muted-text">Branch-aware structured sandbox settings are ready for the fields this host can safely round-trip. When the host marks the page as unsupported, use Advanced Files for the raw editor.</p>
+                </div>
+
+                <div class="workspace-actions">
+                    <span class="pill">@_profile.Branch</span>
+                    <span class="pill">@(_installDetected ? "Install detected" : "Install missing")</span>
+                    <span class="pill">@(_cacheDetected ? "Cache ready" : "Cache missing")</span>
+                    <span class="pill">@(_canEdit ? "Structured editing enabled" : "Structured editing unavailable")</span>
+                </div>
+            </section>
+
+            <section class="metric-grid metric-grid--host">
+                <article class="metric-card">
+                    <span class="metric-label">Catalog</span>
+                    <strong class="metric-value">@(_catalogSummary ?? "Loading...")</strong>
+                    <span class="metric-note">Branch-aware structured catalog</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Runtime</span>
+                    <strong class="metric-value">@(_runtimeStatus?.State.ToString() ?? "Unknown")</strong>
+                    <span class="metric-note">Current server state</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Drafts</span>
+                    <strong class="metric-value">@(_pageSupportsDrafts ? "Available" : "Unavailable")</strong>
+                    <span class="metric-note">Local draft persistence</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Fallback</span>
+                    <strong class="metric-value">@(_valueSet?.RequiresAdvancedFilesFallback == true ? "Required" : "Not needed")</strong>
+                    <span class="metric-note">@(_valueSet?.FallbackReason ?? "Structured editing is ready")</span>
+                </article>
+            </section>
+
+            <div class="cards cards--wide">
                 <section class="card">
-                    <h2>Sandbox</h2>
+                    <div class="card-heading">
+                        <div>
+                            <p class="eyebrow">Sandbox</p>
+                            <h2>Structured Editor</h2>
+                        </div>
+                        <span class="pill">@(_canEdit ? "Editable" : "Read only")</span>
+                    </div>
+
                     <p class="muted-text">Branch-aware structured sandbox settings are ready for the fields this host can safely round-trip. When the host marks the page as unsupported, use Advanced Files for the raw editor.</p>
 
                     @if (_catalog is null || _page is null || _valueSet is null)
                     {
-                        <p>Loading sandbox editor...</p>
+                        <div class="empty-state">
+                            <p>Loading sandbox editor...</p>
+                        </div>
                     }
                     else
                     {
@@ -112,7 +159,13 @@ else
                         if (_pageValidation is not null)
                         {
                             <div class="card inner-card">
-                                <h3>Validation</h3>
+                                <div class="card-heading">
+                                    <div>
+                                        <p class="eyebrow">Validation</p>
+                                        <h3>Editor Feedback</h3>
+                                    </div>
+                                </div>
+
                                 @if (_pageValidation.PageErrors.Count == 0 && _pageValidation.FieldErrors.Count == 0)
                                 {
                                     <p class="muted-text">No validation errors.</p>
@@ -148,18 +201,42 @@ else
                 </section>
 
                 <section class="card">
-                    <h2>Sandbox Status</h2>
-                    <p>Catalog: @(_catalogSummary ?? "Loading...")</p>
-                    <p>Branch: @_profile.Branch</p>
-                    <p>Structured editing: @(_canEdit ? "Enabled" : "Unavailable")</p>
-                    <p>Drafts: @(_pageSupportsDrafts ? "Available" : "Unavailable")</p>
-                    <p>Fallback: @(_valueSet?.RequiresAdvancedFilesFallback == true ? "Yes" : "No")</p>
-                    <p>Runtime: @(_runtimeStatus?.State.ToString() ?? "Unknown")</p>
-                    <p>Install: @(_installDetected ? "Detected" : "Missing")</p>
+                    <div class="card-heading">
+                        <div>
+                            <p class="eyebrow">Sandbox Status</p>
+                            <h2>Workspace Snapshot</h2>
+                        </div>
+                    </div>
+
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">Branch</span>
+                            <span class="info-value">@_profile.Branch</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Structured editing</span>
+                            <span class="info-value">@(_canEdit ? "Enabled" : "Unavailable")</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Drafts</span>
+                            <span class="info-value">@(_pageSupportsDrafts ? "Available" : "Unavailable")</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Fallback</span>
+                            <span class="info-value">@(_valueSet?.RequiresAdvancedFilesFallback == true ? "Yes" : "No")</span>
+                        </div>
+                    </div>
+
+                    <div class="status-banner status-banner--warm">
+                        <strong>Runtime and install state</strong>
+                        <p>Runtime: @(_runtimeStatus?.State.ToString() ?? "Unknown")</p>
+                        <p>Install: @(_installDetected ? "Detected" : "Missing")</p>
+                        <p>Cache: @(_cacheDetected ? "Detected" : "Missing")</p>
+                    </div>
                 </section>
             </div>
 
-            <p class="muted-text">@_statusMessage</p>
+            <p class="status-line">@_statusMessage</p>
         </ChildContent>
     </ProfileWorkspaceShell>
 }

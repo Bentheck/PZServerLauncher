@@ -30,71 +30,126 @@ else
             <button class="nav-button" @onclick="SaveAsync" disabled="@_busy">Save General</button>
         </Actions>
         <ChildContent>
+            <section class="workspace-panel hero-panel">
+                <div class="workspace-panel__copy">
+                    <p class="eyebrow">General</p>
+                    <h1>@_profile.DisplayName</h1>
+                    <p class="muted-text">Structured server identity, ports, startup policy, and memory settings are edited here through the host catalog.</p>
+                </div>
+
+                <div class="workspace-actions">
+                    <span class="pill">@_profile.Branch</span>
+                    <span class="pill">@(_installDetected ? "Install detected" : "Install missing")</span>
+                    <span class="pill">@(_cacheDetected ? "Cache ready" : "Cache missing")</span>
+                    <span class="pill">@(_runtimeStatus?.State.ToString() ?? "Unknown runtime")</span>
+                </div>
+            </section>
+
+            <section class="metric-grid metric-grid--host">
+                <article class="metric-card">
+                    <span class="metric-label">Runtime</span>
+                    <strong class="metric-value">@(_runtimeStatus?.State.ToString() ?? "Unknown")</strong>
+                    <span class="metric-note">Current server state</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Install</span>
+                    <strong class="metric-value">@(_installDetected ? "Detected" : "Missing")</strong>
+                    <span class="metric-note">@_profile.InstallDirectory</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Cache</span>
+                    <strong class="metric-value">@(_cacheDetected ? "Detected" : "Missing")</strong>
+                    <span class="metric-note">@_profile.CacheDirectory</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Profile</span>
+                    <strong class="metric-value">@_profile.ServerName</strong>
+                    <span class="metric-note">Server file namespace</span>
+                </article>
+            </section>
+
             <div class="card">
-                <h2>Structured Editor</h2>
+                <div class="card-heading">
+                    <div>
+                        <p class="eyebrow">Structured Editor</p>
+                        <h2>General Settings</h2>
+                    </div>
+                    <span class="pill">Host-backed round-trip editing</span>
+                </div>
+
                 <p class="muted-text">This editor is backed by the host structured-settings service and only writes the fields it owns.</p>
 
                 @if (_catalog is null || _page is null)
                 {
-                    <p>Loading editor...</p>
+                    <div class="empty-state">
+                        <p>Loading editor...</p>
+                    </div>
                 }
                 else
                 {
-                @foreach (var sectionDef in _page.Sections)
-                {
-                    <div class="profile-section">
-                        <h3>@sectionDef.Title</h3>
-                        @if (!string.IsNullOrWhiteSpace(sectionDef.Description))
-                        {
-                            <p class="muted-text">@sectionDef.Description</p>
-                        }
+                    @foreach (var sectionDef in _page.Sections)
+                    {
+                        <div class="profile-section">
+                            <div class="profile-section__header">
+                                <h3>@sectionDef.Title</h3>
+                                @if (!string.IsNullOrWhiteSpace(sectionDef.Description))
+                                {
+                                    <p class="muted-text">@sectionDef.Description</p>
+                                }
+                            </div>
 
-                        <div class="field-grid">
-                            @foreach (var field in sectionDef.Fields)
-                            {
-                                <label class="field-card">
-                                    <span class="field-label">@field.Label</span>
-                                    @RenderField(field)
-                                    @if (!string.IsNullOrWhiteSpace(field.HelpText))
-                                    {
-                                        <small class="muted-text">@field.HelpText</small>
-                                    }
-                                    @if (_fieldErrors.TryGetValue(field.FieldId, out var errors))
-                                    {
-                                        @foreach (var error in errors)
+                            <div class="field-grid">
+                                @foreach (var field in sectionDef.Fields)
+                                {
+                                    <label class="field-card">
+                                        <span class="field-label">@field.Label</span>
+                                        @RenderField(field)
+                                        @if (!string.IsNullOrWhiteSpace(field.HelpText))
                                         {
-                                            <span class="validation-message">@error</span>
+                                            <small class="muted-text">@field.HelpText</small>
                                         }
+                                        @if (_fieldErrors.TryGetValue(field.FieldId, out var errors))
+                                        {
+                                            @foreach (var error in errors)
+                                            {
+                                                <span class="validation-message">@error</span>
+                                            }
+                                        }
+                                    </label>
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    @if (_pageValidation is not null)
+                    {
+                        <div class="card inner-card">
+                            <div class="card-heading">
+                                <div>
+                                    <p class="eyebrow">Validation</p>
+                                    <h3>Editor Feedback</h3>
+                                </div>
+                            </div>
+
+                            @if (_pageValidation.PageErrors.Count == 0 && _pageValidation.FieldErrors.Count == 0)
+                            {
+                                <p class="muted-text">No validation errors.</p>
+                            }
+                            else
+                            {
+                                <ul class="stack-list">
+                                    @foreach (var error in _pageValidation.PageErrors)
+                                    {
+                                        <li>@error</li>
                                     }
-                                </label>
+                                </ul>
                             }
                         </div>
-                    </div>
-                }
-                }
-
-                @if (_pageValidation is not null)
-                {
-                    <div class="card inner-card">
-                        <h3>Validation</h3>
-                        @if (_pageValidation.PageErrors.Count == 0 && _pageValidation.FieldErrors.Count == 0)
-                        {
-                            <p class="muted-text">No validation errors.</p>
-                        }
-                        else
-                        {
-                            <ul class="stack-list">
-                                @foreach (var error in _pageValidation.PageErrors)
-                                {
-                                    <li>@error</li>
-                                }
-                            </ul>
-                        }
-                    </div>
+                    }
                 }
             </div>
 
-            <p class="muted-text">@_statusMessage</p>
+            <p class="status-line">@_statusMessage</p>
         </ChildContent>
     </ProfileWorkspaceShell>
 }

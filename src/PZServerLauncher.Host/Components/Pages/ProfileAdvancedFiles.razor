@@ -31,9 +31,54 @@ else
             <button class="nav-button secondary-button" @onclick="SaveAsync" disabled="@_busy">Save Raw File</button>
         </Actions>
         <ChildContent>
-            <div class="cards">
+            <section class="workspace-panel hero-panel">
+                <div class="workspace-panel__copy">
+                    <p class="eyebrow">Advanced Files</p>
+                    <h1>@_profile.DisplayName</h1>
+                    <p class="muted-text">This is the raw-file escape hatch for unsupported or advanced edits. Structured pages route here when the host cannot safely round-trip a file.</p>
+                </div>
+
+                <div class="workspace-actions">
+                    <span class="pill">@_selectedKind</span>
+                    <span class="pill">@(_installDetected ? "Install detected" : "Install missing")</span>
+                    <span class="pill">@(_cacheDetected ? "Cache ready" : "Cache missing")</span>
+                    <span class="pill">@(_diagnostics.Count == 0 ? "No diagnostics" : $"{_diagnostics.Count} diagnostics")</span>
+                </div>
+            </section>
+
+            <section class="metric-grid metric-grid--host">
+                <article class="metric-card">
+                    <span class="metric-label">File Kind</span>
+                    <strong class="metric-value">@_selectedKind</strong>
+                    <span class="metric-note">Raw file being edited</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Runtime</span>
+                    <strong class="metric-value">@(_runtimeStatus?.State.ToString() ?? "Unknown")</strong>
+                    <span class="metric-note">Current server state</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Install</span>
+                    <strong class="metric-value">@(_installDetected ? "Detected" : "Missing")</strong>
+                    <span class="metric-note">@_currentPath</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Diagnostics</span>
+                    <strong class="metric-value">@_diagnostics.Count</strong>
+                    <span class="metric-note">Parser and save feedback</span>
+                </article>
+            </section>
+
+            <div class="cards cards--wide">
                 <section class="card">
-                    <h2>Raw Files</h2>
+                    <div class="card-heading">
+                        <div>
+                            <p class="eyebrow">Raw Files</p>
+                            <h2>Direct Editor</h2>
+                        </div>
+                        <span class="pill">Advanced fallback</span>
+                    </div>
+
                     <p class="muted-text">When a structured editor is unavailable, this page exposes the raw Project Zomboid files so nothing is blocked.</p>
 
                     <div class="admin-grid">
@@ -53,7 +98,7 @@ else
                     </div>
 
                     <div class="settings-banner settings-banner--warning">
-                        <strong>Structured sandbox editing is unavailable.</strong>
+                        <strong>Structured editing is unavailable.</strong>
                         <p>This is the escape hatch for advanced or unsupported file edits. Sandbox, spawn regions, and spawn points all live here when the structured editor is not ready.</p>
                     </div>
 
@@ -67,7 +112,12 @@ else
                     @if (_diagnostics.Count > 0)
                     {
                         <div class="inner-card card">
-                            <h3>Diagnostics</h3>
+                            <div class="card-heading">
+                                <div>
+                                    <p class="eyebrow">Diagnostics</p>
+                                    <h3>File Feedback</h3>
+                                </div>
+                            </div>
                             <ul class="stack-list">
                                 @foreach (var diagnostic in _diagnostics)
                                 {
@@ -79,16 +129,40 @@ else
                 </section>
 
                 <section class="card">
-                    <h2>Status</h2>
-                    <p>File kind: @_selectedKind</p>
-                    <p>Runtime: @(_runtimeStatus?.State.ToString() ?? "Unknown")</p>
-                    <p>Install: @(_installDetected ? "Detected" : "Missing")</p>
-                    <p>Cache: @(_cacheDetected ? "Detected" : "Missing")</p>
-                    <p>Current path: @(_currentPath ?? "Loading...")</p>
+                    <div class="card-heading">
+                        <div>
+                            <p class="eyebrow">Status</p>
+                            <h2>Workspace Snapshot</h2>
+                        </div>
+                    </div>
+
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">File kind</span>
+                            <span class="info-value">@_selectedKind</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Runtime</span>
+                            <span class="info-value">@(_runtimeStatus?.State.ToString() ?? "Unknown")</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Install</span>
+                            <span class="info-value">@(_installDetected ? "Detected" : "Missing")</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Cache</span>
+                            <span class="info-value">@(_cacheDetected ? "Detected" : "Missing")</span>
+                        </div>
+                    </div>
+
+                    <div class="status-banner status-banner--warm">
+                        <strong>Current path</strong>
+                        <p>@(_currentPath ?? "Loading...")</p>
+                    </div>
                 </section>
             </div>
 
-            <p class="muted-text">@_statusMessage</p>
+            <p class="status-line">@_statusMessage</p>
         </ChildContent>
     </ProfileWorkspaceShell>
 }

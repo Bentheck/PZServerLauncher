@@ -33,12 +33,57 @@ else
             <button class="nav-button secondary-button" @onclick="ApplyScanResultAsync" disabled="@(_busy || _scanResult is null)">Apply Scan Result</button>
         </Actions>
         <ChildContent>
-            <div class="cards">
+            <section class="workspace-panel hero-panel">
+                <div class="workspace-panel__copy">
+                    <p class="eyebrow">Mods &amp; Maps</p>
+                    <h1>@_profile.DisplayName</h1>
+                    <p class="muted-text">Edit ordered workshop items, enabled mods, and map folders. Scan Workshop normalizes the lists against what is installed locally.</p>
+                </div>
+
+                <div class="workspace-actions">
+                    <span class="pill">@_profile.Branch</span>
+                    <span class="pill">@(_installDetected ? "Install detected" : "Install missing")</span>
+                    <span class="pill">@(_cacheDetected ? "Cache ready" : "Cache missing")</span>
+                    <span class="pill">@(_hasChanges ? "Unsaved changes" : "In sync")</span>
+                </div>
+            </section>
+
+            <section class="metric-grid metric-grid--host">
+                <article class="metric-card">
+                    <span class="metric-label">Workshop Items</span>
+                    <strong class="metric-value">@_profile.WorkshopPreset.WorkshopItemIds.Count</strong>
+                    <span class="metric-note">Ordered workshop IDs</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Enabled Mods</span>
+                    <strong class="metric-value">@_profile.WorkshopPreset.EnabledModIds.Count</strong>
+                    <span class="metric-note">Enabled mod IDs in load order</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Map Folders</span>
+                    <strong class="metric-value">@_profile.WorkshopPreset.MapFolders.Count</strong>
+                    <span class="metric-note">Map load order</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Scan Diagnostics</span>
+                    <strong class="metric-value">@_scanDiagnostics.Count</strong>
+                    <span class="metric-note">Local workshop validation messages</span>
+                </article>
+            </section>
+
+            <div class="cards cards--wide">
                 <section class="card">
-                    <h2>Mods &amp; Maps</h2>
+                    <div class="card-heading">
+                        <div>
+                            <p class="eyebrow">Mods &amp; Maps</p>
+                            <h2>Preset Editor</h2>
+                        </div>
+                        <span class="pill">@(_scanResult is null ? "No scan result" : "Scan ready")</span>
+                    </div>
+
                     <p class="muted-text">Edit the ordered workshop item IDs, enabled mod IDs, and map folders directly. Use Scan Workshop to normalize the lists against the local install cache.</p>
 
-                    <div class="settings-banner">
+                    <div class="status-banner">
                         <strong>Current preset</strong>
                         <p>Workshop items: @_profile.WorkshopPreset.WorkshopItemIds.Count</p>
                         <p>Enabled mods: @_profile.WorkshopPreset.EnabledModIds.Count</p>
@@ -77,17 +122,46 @@ else
                 </section>
 
                 <section class="card">
-                    <h2>Status</h2>
-                    <p>Runtime: @(_runtimeStatus?.State.ToString() ?? "Unknown")</p>
-                    <p>Install: @(_installDetected ? "Detected" : "Missing")</p>
-                    <p>Cache: @(_cacheDetected ? "Detected" : "Missing")</p>
-                    <p>Scan result: @(_scanResult is null ? "Not run yet" : "Ready")</p>
-                    <p class="muted-text">Use Advanced Files only for raw file editing fallback. Workshop and map lists are managed here.</p>
+                    <div class="card-heading">
+                        <div>
+                            <p class="eyebrow">Status</p>
+                            <h2>Workspace Snapshot</h2>
+                        </div>
+                    </div>
+
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">Runtime</span>
+                            <span class="info-value">@(_runtimeStatus?.State.ToString() ?? "Unknown")</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Install</span>
+                            <span class="info-value">@(_installDetected ? "Detected" : "Missing")</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Cache</span>
+                            <span class="info-value">@(_cacheDetected ? "Detected" : "Missing")</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Scan result</span>
+                            <span class="info-value">@(_scanResult is null ? "Not run yet" : "Ready")</span>
+                        </div>
+                    </div>
+
+                    <div class="status-banner status-banner--warm">
+                        <strong>Workflow guidance</strong>
+                        <p>Use Advanced Files only for raw file editing fallback. Workshop and map lists are managed here.</p>
+                    </div>
 
                     @if (_scanResult is not null)
                     {
                         <div class="inner-card card">
-                            <h3>Scan Result</h3>
+                            <div class="card-heading">
+                                <div>
+                                    <p class="eyebrow">Scan Result</p>
+                                    <h3>Normalized Preset</h3>
+                                </div>
+                            </div>
                             <p>Workshop items: @_scanResult.Preset.WorkshopItemIds.Count</p>
                             <p>Enabled mods: @_scanResult.Preset.EnabledModIds.Count</p>
                             <p>Map folders: @_scanResult.Preset.MapFolders.Count</p>
@@ -99,7 +173,12 @@ else
             @if (_scanDiagnostics.Count > 0)
             {
                 <section class="card">
-                    <h2>Diagnostics</h2>
+                    <div class="card-heading">
+                        <div>
+                            <p class="eyebrow">Diagnostics</p>
+                            <h2>Scanner Feedback</h2>
+                        </div>
+                    </div>
                     <ul class="stack-list">
                         @foreach (var diagnostic in _scanDiagnostics)
                         {
@@ -109,7 +188,7 @@ else
                 </section>
             }
 
-            <p class="muted-text">@_statusMessage</p>
+            <p class="status-line">@_statusMessage</p>
         </ChildContent>
     </ProfileWorkspaceShell>
 }
