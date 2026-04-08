@@ -1,4 +1,6 @@
-<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui"
+     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
   <Package
     Name="PZServerLauncher"
     Manufacturer="Bentheck"
@@ -12,6 +14,21 @@
     <MajorUpgrade DowngradeErrorMessage="A newer version of PZServerLauncher is already installed." />
     <Icon Id="AppIcon" SourceFile="..\src\PZServerLauncher.App\Assets\avalonia-logo.ico" />
     <Property Id="ARPPRODUCTICON" Value="AppIcon" />
+    <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="INSTALLFOLDER" />
+    <util:CloseApplication
+      Id="CloseDesktopApp"
+      Target="PZServerLauncher.App.exe"
+      Description="PZ Server Launcher desktop app"
+      CloseMessage="yes"
+      ElevatedCloseMessage="yes"
+      PromptToContinue="yes" />
+    <util:CloseApplication
+      Id="CloseHost"
+      Target="PZServerLauncher.Host.exe"
+      Description="PZ Server Launcher host"
+      CloseMessage="yes"
+      ElevatedCloseMessage="yes"
+      PromptToContinue="yes" />
 
     <StandardDirectory Id="ProgramFiles64Folder">
       <Directory Id="INSTALLFOLDER" Name="PZServerLauncher">
