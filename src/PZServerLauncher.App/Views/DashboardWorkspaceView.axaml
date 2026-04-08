@@ -12,8 +12,9 @@
     <Grid RowDefinitions="Auto,Auto,*" RowSpacing="18">
         <Border Classes="card" Padding="24">
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
-                <StackPanel Spacing="4">
-                    <TextBlock Classes="panel-title" FontSize="24" Text="{Binding PageTitle}" />
+                <StackPanel Spacing="6">
+                    <TextBlock Classes="kicker" Text="Host Dashboard" />
+                    <TextBlock Classes="panel-title" FontSize="28" Text="{Binding PageTitle}" />
                     <TextBlock Classes="body" Text="{Binding PageSummary}" TextWrapping="Wrap" />
                 </StackPanel>
 
@@ -25,22 +26,31 @@
             </Grid>
         </Border>
 
-        <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="18">
+        <Grid Grid.Row="1" ColumnDefinitions="2*,*" ColumnSpacing="18">
             <Border Classes="card" Padding="20">
-                <StackPanel Spacing="8">
-                    <TextBlock Classes="kicker" Text="Local Host" />
-                    <TextBlock Classes="panel-title" FontSize="20" Text="{Binding Legacy.HostSummary}" />
-                    <TextBlock Classes="body" Text="{Binding Legacy.RemoteSummary}" TextWrapping="Wrap" />
-                    <TextBlock Classes="body" Text="{Binding Legacy.OwnerSummary}" TextWrapping="Wrap" />
-                    <TextBlock Classes="body" Text="{Binding Legacy.StatusMessage}" TextWrapping="Wrap" />
+                <StackPanel Spacing="10">
+                    <TextBlock Classes="kicker" Text="Operator Snapshot" />
+                    <TextBlock Classes="panel-title" FontSize="22" Text="{Binding HostStateSummary}" />
+                    <TextBlock Classes="body" Text="{Binding RemoteAccessSummary}" TextWrapping="Wrap" />
+                    <TextBlock Classes="body" Text="{Binding OwnerSummary}" TextWrapping="Wrap" />
+                    <TextBlock Classes="body" Text="{Binding StatusSummary}" TextWrapping="Wrap" />
+                    <WrapPanel Orientation="Horizontal" ItemWidth="148" ItemHeight="32">
+                        <Border Background="#F1E6D7" CornerRadius="999" Padding="10,6">
+                            <TextBlock Classes="body" Text="{Binding ImportSummary}" TextWrapping="Wrap" />
+                        </Border>
+                        <Border Background="#F1E6D7" CornerRadius="999" Padding="10,6">
+                            <TextBlock Classes="body" Text="{Binding RecentJobSummary}" TextWrapping="Wrap" />
+                        </Border>
+                    </WrapPanel>
                 </StackPanel>
             </Border>
 
             <Border Grid.Column="1" Classes="card" Padding="20">
                 <StackPanel Spacing="8">
                     <TextBlock Classes="kicker" Text="Workspace State" />
-                    <TextBlock Classes="body" Text="Per-profile pages are fully live. Use this dashboard for imports, recent jobs, and global host context while the final Classic retirement wraps up." TextWrapping="Wrap" />
-                    <TextBlock Classes="body" Text="The optional web admin mirrors the same structure once remote access is enabled." TextWrapping="Wrap" />
+                    <TextBlock Classes="panel-title" FontSize="20" Text="{Binding NextActionSummary}" TextWrapping="Wrap" />
+                    <TextBlock Classes="body" Text="Desktop and web now share the same workspace structure. Use this dashboard for the fast path into imports, jobs, and host context." TextWrapping="Wrap" />
+                    <TextBlock Classes="body" Text="Remote admin stays optional, but the workspace is always ready to surface it once you enable HTTPS access." TextWrapping="Wrap" />
                 </StackPanel>
             </Border>
         </Grid>
@@ -48,7 +58,16 @@
         <Grid Grid.Row="2" ColumnDefinitions="*,*" ColumnSpacing="18">
             <Border Classes="card" Padding="20">
                 <StackPanel Spacing="10">
-                    <TextBlock Classes="panel-title" FontSize="22" Text="Import Candidates" />
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                        <StackPanel Spacing="4">
+                            <TextBlock Classes="panel-title" FontSize="22" Text="Import Candidates" />
+                            <TextBlock Classes="body" Text="Scan local Zomboid directories and turn existing installs into managed profiles." TextWrapping="Wrap" />
+                        </StackPanel>
+                        <Border Background="#2A2927" CornerRadius="999" Padding="10,6" VerticalAlignment="Top">
+                            <TextBlock Foreground="#F7F0E7" FontSize="12" Text="{Binding ImportCandidateCount}" />
+                        </Border>
+                    </Grid>
+
                     <ItemsControl ItemsSource="{Binding Legacy.ImportCandidates}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="vm:ImportCandidateViewModel">
@@ -79,7 +98,16 @@
 
             <Border Grid.Column="1" Classes="card" Padding="20">
                 <StackPanel Spacing="10">
-                    <TextBlock Classes="panel-title" FontSize="22" Text="Recent Jobs" />
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                        <StackPanel Spacing="4">
+                            <TextBlock Classes="panel-title" FontSize="22" Text="Recent Jobs" />
+                            <TextBlock Classes="body" Text="Deployments, backups, and import work appear here so the operator can see what happened most recently." TextWrapping="Wrap" />
+                        </StackPanel>
+                        <Border Background="#2A2927" CornerRadius="999" Padding="10,6" VerticalAlignment="Top">
+                            <TextBlock Foreground="#F7F0E7" FontSize="12" Text="{Binding RecentJobCount}" />
+                        </Border>
+                    </Grid>
+
                     <ItemsControl ItemsSource="{Binding Legacy.RecentJobs}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="vm:ShellItemViewModel">

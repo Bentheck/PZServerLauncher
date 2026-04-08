@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PZServerLauncher.App.Services;
@@ -13,6 +14,10 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
     public ProfilesWorkspaceViewModel(MainWindowViewModel legacy, LocalHostApiClient hostApiClient, RuntimeEventStream runtimeEventStream)
     {
         Legacy = legacy;
+        if (Legacy.Profiles is INotifyCollectionChanged profiles)
+        {
+            profiles.CollectionChanged += OnProfilesChanged;
+        }
 
         Overview = new OverviewWorkspaceViewModel(legacy);
         InstallAndUpdate = new InstallUpdateWorkspaceViewModel(legacy);
@@ -67,6 +72,18 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
 
     public string PageSummary => "Choose a profile, then move through the full per-profile workspace. Every per-profile surface now lives here.";
 
+    public string WorkspaceHeadline => SelectedProfile is null
+        ? "No profile selected"
+        : $"{SelectedProfile.DisplayName} is ready for operator work.";
+
+    public string WorkspaceGuidance => SelectedProfile is null
+        ? "Pick a profile on the left to reveal the workspace sections, install state, and runtime context."
+        : $"Use the section rail to jump between Overview, install/update, structured settings, backups, logs, and raw files for {SelectedProfile.DisplayName}.";
+
+    public string ProfileCountSummary => Legacy.Profiles.Count == 0
+        ? "No profiles"
+        : $"{Legacy.Profiles.Count} profile(s) available";
+
     public IReadOnlyList<WorkspaceNavigationItemViewModel> SectionItems { get; }
 
     public IReadOnlyList<ProfileCardViewModel> Profiles => Legacy.Profiles;
@@ -92,6 +109,28 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
     public string SelectedProfileSummary => SelectedProfile is null
         ? "No profile selected yet."
         : $"{SelectedProfile.DisplayName} | {SelectedProfile.Branch} | {SelectedProfile.RuntimeState}";
+
+    public string SelectedProfileBranchSummary => SelectedProfile?.Branch ?? "No branch selected";
+
+    public string SelectedProfileRuntimeSummary => SelectedProfile?.RuntimeState ?? "No runtime state";
+
+    public string SelectedProfilePathSummary => SelectedProfile is null
+        ? "No install or cache path selected."
+        : $"{SelectedProfile.InstallDirectory} | {SelectedProfile.CacheDirectory}";
+
+    public string SelectedProfilePortsSummary => SelectedProfile is null
+        ? "Ports unavailable."
+        : $"TCP {SelectedProfile.DefaultPort} | UDP {SelectedProfile.UdpPort} | RCON {SelectedProfile.RconPort}";
+
+    public string SelectedWorkspaceSummary => SelectedProfile is null
+        ? "Select a profile to unlock the workspace rail."
+        : $"This workspace is centered on {SelectedProfile.DisplayName}. The section rail below keeps all profile-specific tasks in one place.";
+
+    public string SelectedWorkspaceAction => SelectedProfile is null
+        ? "Import or create a profile, then use the section rail to continue."
+        : Directory.Exists(SelectedProfile.InstallDirectory)
+            ? "The profile appears installed. Start in Overview, then move to Install & Update or General depending on what needs attention."
+            : "The profile is not installed yet. Use Install & Update first, then return here to continue configuration.";
 
     public bool HasUnsavedChanges => CurrentSection is IWorkspaceDirtyState dirtyState && dirtyState.HasUnsavedChanges;
 
@@ -256,15 +295,32 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
     {
         OnPropertyChanged(nameof(HasUnsavedChanges));
         OnPropertyChanged(nameof(DirtyStateMessage));
+        OnPropertyChanged(nameof(SelectedWorkspaceSummary));
+        OnPropertyChanged(nameof(SelectedWorkspaceAction));
     }
 
     partial void OnSelectedProfileChanged(ProfileCardViewModel? value)
     {
         OnPropertyChanged(nameof(SelectedProfileSummary));
+        OnPropertyChanged(nameof(SelectedProfileBranchSummary));
+        OnPropertyChanged(nameof(SelectedProfileRuntimeSummary));
+        OnPropertyChanged(nameof(SelectedProfilePathSummary));
+        OnPropertyChanged(nameof(SelectedProfilePortsSummary));
+        OnPropertyChanged(nameof(SelectedWorkspaceSummary));
+        OnPropertyChanged(nameof(SelectedWorkspaceAction));
+        OnPropertyChanged(nameof(WorkspaceHeadline));
+        OnPropertyChanged(nameof(WorkspaceGuidance));
 
         foreach (var page in _sections.Values.OfType<IProfileWorkspacePage>())
         {
             page.SetSelectedProfile(value);
         }
+    }
+
+    private void OnProfilesChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        OnPropertyChanged(nameof(ProfileCountSummary));
+        OnPropertyChanged(nameof(WorkspaceHeadline));
+        OnPropertyChanged(nameof(WorkspaceGuidance));
     }
 }
