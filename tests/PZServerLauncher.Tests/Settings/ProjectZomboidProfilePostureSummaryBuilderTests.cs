@@ -87,6 +87,10 @@ public sealed class ProjectZomboidProfilePostureSummaryBuilderTests
             ["b42.sandbox.fire-spread"] = "false",
             ["b42.sandbox.hours-for-corpse-removal"] = "120",
             ["b42.sandbox.multi-hit"] = "true",
+            ["b42.sandbox.bone-fracture"] = "false",
+            ["b42.sandbox.attack-block-movements"] = "false",
+            ["b42.sandbox.vehicle-easy-use"] = "true",
+            ["b42.sandbox.player-damage-from-crash"] = "false",
             ["b42.sandbox.starter-kit"] = "true",
             ["b42.sandbox.nutrition"] = "false",
         };
@@ -97,7 +101,7 @@ public sealed class ProjectZomboidProfilePostureSummaryBuilderTests
             new Dictionary<string, string?>(StringComparer.Ordinal),
             sandboxValues);
 
-        Assert.Equal("Zombies 5 | day length 9 | helicopter 4 | loot respawn 2 | vehicles on | fire spread off | corpse cleanup 120h | multi-hit on | starter kit on | nutrition off.", summary.WorldSummary);
+        Assert.Equal("Zombies 5 | day length 9 | helicopter 4 | loot respawn 2 | vehicles on | fire spread off | corpse cleanup 120h | multi-hit on | fractures off | attack lock off | easy vehicles on | crash damage off | starter kit on | nutrition off.", summary.WorldSummary);
     }
 
     [Fact]
@@ -112,10 +116,15 @@ public sealed class ProjectZomboidProfilePostureSummaryBuilderTests
             ["b42.sandbox.zombie-lore-reanimate"] = "2",
             ["b42.sandbox.zombie-lore-cognition"] = "5",
             ["b42.sandbox.zombie-lore-memory"] = "1",
+            ["b42.sandbox.zombie-lore-decomp"] = "4",
             ["b42.sandbox.zombie-lore-sight"] = "4",
             ["b42.sandbox.zombie-lore-hearing"] = "2",
+            ["b42.sandbox.zombie-lore-smell"] = "3",
             ["b42.sandbox.zombie-lore-trigger-house-alarm"] = "true",
             ["b42.sandbox.zombie-lore-thump-no-chasing"] = "false",
+            ["b42.sandbox.zombie-lore-thump-on-construction"] = "true",
+            ["b42.sandbox.zombie-lore-drag-down"] = "false",
+            ["b42.sandbox.zombie-lore-fence-lunge"] = "true",
         };
 
         var summary = ProjectZomboidProfilePostureSummaryBuilder.Build(
@@ -124,7 +133,7 @@ public sealed class ProjectZomboidProfilePostureSummaryBuilderTests
             new Dictionary<string, string?>(StringComparer.Ordinal),
             sandboxValues);
 
-        Assert.Equal("Zombie lore speed 1 | strength 4 | transmission 3 | mortality 6 | reanimate 2 | cognition 5 | memory 1 | sight 4 | hearing 2 | alarm on | thump off.", summary.SandboxTuningSummary);
+        Assert.Equal("Zombie lore speed 1 | strength 4 | transmission 3 | mortality 6 | reanimate 2 | cognition 5 | memory 1 | decomp 4 | sight 4 | hearing 2 | smell 3 | alarm on | thump off | build thump on | drag off | fence on.", summary.SandboxTuningSummary);
     }
 
     [Fact]
