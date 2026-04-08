@@ -19,7 +19,7 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
             profiles.CollectionChanged += OnProfilesChanged;
         }
 
-        Overview = new OverviewWorkspaceViewModel(legacy);
+        Overview = new OverviewWorkspaceViewModel(legacy, hostApiClient);
         InstallAndUpdate = new InstallUpdateWorkspaceViewModel(legacy);
         General = new GeneralWorkspaceViewModel(legacy, hostApiClient);
         Sandbox = new SandboxWorkspaceViewModel(legacy, hostApiClient);
