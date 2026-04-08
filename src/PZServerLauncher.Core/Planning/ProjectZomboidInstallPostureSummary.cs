@@ -19,4 +19,9 @@ public sealed record ProjectZomboidInstallPostureSummary(
     bool IniDetected,
     bool SandboxDetected,
     bool WorldDetected,
-    bool UsesDirectJavaTemplate);
+    bool UsesDirectJavaTemplate,
+    string DeploymentPostureSummary,
+    string MaintenanceWindowSummary,
+    string BranchIsolationSummary,
+    string OperatorSequenceSummary,
+    IReadOnlyList<string> PreflightChecks);

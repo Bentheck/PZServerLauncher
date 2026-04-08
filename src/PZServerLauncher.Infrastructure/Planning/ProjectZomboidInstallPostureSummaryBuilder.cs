@@ -81,6 +81,45 @@ public static class ProjectZomboidInstallPostureSummaryBuilder
                             ? "Install, config, and launch template look ready for a clean update cycle."
                             : "Install and config look ready, but launch will currently use vendor batch fallback.";
 
+        var deploymentPostureSummary = !installDetected
+            ? "This profile still needs its first dedicated-server install. SteamCMD will create the branch footprint, then the cache/config layer can be initialized on first launch."
+            : string.Equals(runtimeState, "Running", StringComparison.OrdinalIgnoreCase)
+                ? "The branch footprint is present and the server is live. Treat update work as a maintenance operation so the runtime can stop cleanly and pre-update safety backup can complete."
+                : usesDirectJava
+                    ? "The branch footprint, cache layer, and launcher-managed Java template are aligned for a predictable deployment cycle."
+                    : "The branch footprint is present, but launch still falls back to the vendor batch script. Deployment remains viable, but runtime tuning is less deterministic.";
+
+        var maintenanceWindowSummary = string.Equals(runtimeState, "Running", StringComparison.OrdinalIgnoreCase)
+            ? "Maintenance window required: stop or restart traffic before queueing update work so SteamCMD and the pre-update backup can run against a quiet server."
+            : hasBackup
+                ? $"Maintenance window ready: the server is idle and the latest backup is {latestBackup}."
+                : "Maintenance window ready: the server is idle, but capture a manual backup if you want a human-reviewed recovery point before update.";
+
+        var branchIsolationSummary = profile.Branch switch
+        {
+            ProjectZomboidBranch.Stable41 => "Stable 41 should keep its own install root and cache root so it does not trample unstable 42 config, saves, or Java launch assumptions.",
+            ProjectZomboidBranch.Unstable42 => "Unstable 42 should stay isolated from stable 41 so beta binaries, cache content, and structured settings do not bleed across branches.",
+            _ => "Each Project Zomboid branch should keep isolated install and cache roots to avoid mixed binaries and config drift.",
+        };
+
+        var operatorSequenceSummary = !installDetected
+            ? "Recommended sequence: 1. Install this branch. 2. Start once to initialize cache/config. 3. Review General and Sandbox. 4. Capture a manual backup. 5. Start the live server."
+            : string.Equals(runtimeState, "Running", StringComparison.OrdinalIgnoreCase)
+                ? "Recommended sequence: 1. Announce maintenance. 2. Capture or confirm backup posture. 3. Stop or restart the live runtime. 4. Queue update. 5. Review logs after restart."
+                : "Recommended sequence: 1. Review preflight and branch isolation. 2. Confirm backup posture. 3. Queue install/update. 4. Review launch preview. 5. Start and watch live logs.";
+
+        var preflightChecks = new List<string>
+        {
+            $"Install root: {(installDetected ? "ready" : "missing")} | {profile.InstallDirectory}",
+            $"Cache root: {(cacheDetected ? "ready" : "missing")} | {profile.CacheDirectory}",
+            $"Launcher script: {(launcherDetected ? "present" : "missing")} | {Path.GetFileName(expectedLauncherPath)}",
+            $"Config footprint: {(configDirectoryDetected ? "config root ready" : "config root missing")} | {(iniDetected ? "INI present" : "INI missing")} | {(sandboxDetected ? "Sandbox present" : "Sandbox missing")}",
+            $"World state: {(worldDetected ? "world save detected" : "world save not created yet")}",
+            $"Backup posture: {(hasBackup ? $"latest backup {latestBackup}" : "no backup archive yet")}",
+            $"Runtime window: {runtimeState}",
+            $"Launch mode: {(usesDirectJava ? "direct Java template" : "vendor batch fallback")}",
+        };
+
         return new ProjectZomboidInstallPostureSummary(
             branchChannelSummary,
             steamCmdCommandSummary,
@@ -100,6 +139,11 @@ public static class ProjectZomboidInstallPostureSummaryBuilder
             iniDetected,
             sandboxDetected,
             worldDetected,
-            usesDirectJava);
+            usesDirectJava,
+            deploymentPostureSummary,
+            maintenanceWindowSummary,
+            branchIsolationSummary,
+            operatorSequenceSummary,
+            preflightChecks);
     }
 }
