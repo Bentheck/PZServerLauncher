@@ -104,6 +104,8 @@
                                 <CheckBox Content="Enforce Lua Checksum" IsChecked="{Binding DoLuaChecksum}" />
                                 <CheckBox Content="Steam VAC" IsChecked="{Binding SteamVacEnabled}" />
                                 <CheckBox Content="Kick Fast Players" IsChecked="{Binding KickFastPlayers}" />
+                                <CheckBox Content="Deny Login When Overloaded" IsChecked="{Binding DenyLoginWhenOverloaded}" />
+                                <CheckBox Content="Save Player State On Damage" IsChecked="{Binding PlayerSaveOnDamage}" />
                                 <CheckBox Content="Enable UPnP" IsChecked="{Binding UpnpEnabled}" />
                                 <StackPanel Spacing="4">
                                     <TextBlock Classes="body" Text="Ping Limit" />
@@ -126,6 +128,7 @@
                                 <CheckBox Content="Display Username" IsChecked="{Binding DisplayUserName}" />
                                 <CheckBox Content="Show First &amp; Last Name" IsChecked="{Binding ShowFirstAndLastName}" />
                                 <CheckBox Content="Enable Safety System" IsChecked="{Binding SafetySystem}" />
+                                <CheckBox Content="Show Safety Icon" IsChecked="{Binding ShowSafety}" />
                                 <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
                                     <StackPanel Spacing="4">
                                         <TextBlock Classes="body" Text="Safety Toggle Timer" />
@@ -153,6 +156,25 @@
                     </StackPanel>
 
                     <StackPanel Grid.Column="1" Spacing="16">
+                        <Border Classes="card" Padding="18">
+                            <StackPanel Spacing="14">
+                                <TextBlock Classes="kicker" Text="Account Policy" />
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="body" Text="Max Accounts Per User" />
+                                    <TextBox Text="{Binding MaxAccountsPerUser}" />
+                                    <TextBlock Classes="body"
+                                               FontSize="12"
+                                               Text="Use 0 for unlimited. Higher values allow multiple server accounts per Steam user."
+                                               TextWrapping="Wrap" />
+                                </StackPanel>
+                                <CheckBox Content="Allow Non-ASCII Usernames" IsChecked="{Binding AllowNonAsciiUsername}" />
+                                <TextBlock Classes="body"
+                                           FontSize="12"
+                                           Text="Enable this when your community needs non-Latin usernames. Leave it off for stricter naming rules."
+                                           TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+
                         <Border Classes="card" Padding="18">
                             <StackPanel Spacing="14">
                                 <TextBlock Classes="kicker" Text="Voice Chat" />

@@ -46,10 +46,16 @@ public sealed class StructuredSettingsServiceTests : IDisposable
             PauseEmpty=true
             GlobalChat=true
             ServerWelcomeMessage=Welcome survivor! <LINE> Stay alive.
+            SpawnItems=Base.BaseballBat,Base.WaterBottleFull
+            HoursForLootRespawn=6
+            MaxItemsForLootRespawn=3
+            ConstructionPreventsLootRespawn=false
             SleepAllowed=true
             SleepNeeded=false
             NoFire=true
             AnnounceDeath=false
+            DropOffWhiteListAfterDeath=true
+            AllowDestructionBySledgehammer=false
             PlayerSafehouse=true
             AdminSafehouse=false
             SafehouseAllowTrepass=true
@@ -84,11 +90,16 @@ public sealed class StructuredSettingsServiceTests : IDisposable
             PingLimit=200
             SteamVAC=true
             KickFastPlayers=false
+            DenyLoginOnOverloadedServer=false
+            PlayerSaveOnDamage=false
             DisplayUserName=true
             ShowFirstAndLastName=false
             SafetySystem=true
+            ShowSafety=false
             SafetyToggleTimer=3
             SafetyCooldownTimer=15
+            MaxAccountsPerUser=2
+            AllowNonAsciiUsername=true
             VoiceEnable=true
             Voice3D=true
             VoiceMinDistance=10
@@ -121,10 +132,16 @@ public sealed class StructuredSettingsServiceTests : IDisposable
         Assert.Equal("true", generalValues.Values[$"{branchPrefix}.server.pause-empty"]);
         Assert.Equal("true", generalValues.Values[$"{branchPrefix}.server.global-chat"]);
         Assert.Contains(Environment.NewLine, generalValues.Values[$"{branchPrefix}.server.welcome-message"]);
+        Assert.Equal($"Base.BaseballBat{Environment.NewLine}Base.WaterBottleFull", generalValues.Values[$"{branchPrefix}.server.spawn-items"]);
+        Assert.Equal("6", generalValues.Values[$"{branchPrefix}.server.loot-respawn-hours"]);
+        Assert.Equal("3", generalValues.Values[$"{branchPrefix}.server.loot-respawn-max-items"]);
+        Assert.Equal("false", generalValues.Values[$"{branchPrefix}.server.construction-prevents-loot-respawn"]);
         Assert.Equal("true", generalValues.Values[$"{branchPrefix}.server.sleep-allowed"]);
         Assert.Equal("false", generalValues.Values[$"{branchPrefix}.server.sleep-needed"]);
         Assert.Equal("true", generalValues.Values[$"{branchPrefix}.server.no-fire"]);
         Assert.Equal("false", generalValues.Values[$"{branchPrefix}.server.announce-death"]);
+        Assert.Equal("true", generalValues.Values[$"{branchPrefix}.server.drop-whitelist-on-death"]);
+        Assert.Equal("false", generalValues.Values[$"{branchPrefix}.server.allow-sledgehammer-destruction"]);
         Assert.Equal("true", generalValues.Values[$"{branchPrefix}.server.player-safehouse"]);
         Assert.Equal("false", generalValues.Values[$"{branchPrefix}.server.admin-safehouse"]);
         Assert.Equal("true", generalValues.Values[$"{branchPrefix}.server.safehouse-allow-trespass"]);
@@ -153,11 +170,16 @@ public sealed class StructuredSettingsServiceTests : IDisposable
         Assert.Equal("200", networkValues.Values[$"{branchPrefix}.network.ping-limit"]);
         Assert.Equal("true", networkValues.Values[$"{branchPrefix}.network.steam-vac"]);
         Assert.Equal("false", networkValues.Values[$"{branchPrefix}.network.kick-fast-players"]);
+        Assert.Equal("false", networkValues.Values[$"{branchPrefix}.network.deny-login-overloaded"]);
+        Assert.Equal("false", networkValues.Values[$"{branchPrefix}.network.player-save-on-damage"]);
         Assert.Equal("true", networkValues.Values[$"{branchPrefix}.network.display-user-name"]);
         Assert.Equal("false", networkValues.Values[$"{branchPrefix}.network.show-first-last-name"]);
         Assert.Equal("true", networkValues.Values[$"{branchPrefix}.network.safety-system"]);
+        Assert.Equal("false", networkValues.Values[$"{branchPrefix}.network.show-safety"]);
         Assert.Equal("3", networkValues.Values[$"{branchPrefix}.network.safety-toggle-timer"]);
         Assert.Equal("15", networkValues.Values[$"{branchPrefix}.network.safety-cooldown-timer"]);
+        Assert.Equal("2", networkValues.Values[$"{branchPrefix}.network.max-accounts-per-user"]);
+        Assert.Equal("true", networkValues.Values[$"{branchPrefix}.network.allow-non-ascii-username"]);
         Assert.Equal("true", networkValues.Values[$"{branchPrefix}.network.voice-enabled"]);
         Assert.Equal("true", networkValues.Values[$"{branchPrefix}.network.voice-3d"]);
         Assert.Equal("10", networkValues.Values[$"{branchPrefix}.network.voice-min-distance"]);
@@ -201,10 +223,16 @@ public sealed class StructuredSettingsServiceTests : IDisposable
             PauseEmpty=false
             GlobalChat=true
             ServerWelcomeMessage=Old welcome
+            SpawnItems=Base.Bag_Schoolbag
+            HoursForLootRespawn=0
+            MaxItemsForLootRespawn=4
+            ConstructionPreventsLootRespawn=true
             SleepAllowed=false
             SleepNeeded=false
             NoFire=false
             AnnounceDeath=true
+            DropOffWhiteListAfterDeath=false
+            AllowDestructionBySledgehammer=true
             PlayerSafehouse=true
             AdminSafehouse=false
             SafehouseAllowTrepass=true
@@ -228,11 +256,16 @@ public sealed class StructuredSettingsServiceTests : IDisposable
             PingLimit=250
             SteamVAC=true
             KickFastPlayers=false
+            DenyLoginOnOverloadedServer=true
+            PlayerSaveOnDamage=true
             DisplayUserName=true
             ShowFirstAndLastName=false
             SafetySystem=true
+            ShowSafety=true
             SafetyToggleTimer=2
             SafetyCooldownTimer=10
+            MaxAccountsPerUser=0
+            AllowNonAsciiUsername=false
             VoiceEnable=true
             Voice3D=true
             VoiceMinDistance=8
@@ -256,10 +289,16 @@ public sealed class StructuredSettingsServiceTests : IDisposable
             ["b42.server.pause-empty"] = "true",
             ["b42.server.global-chat"] = "false",
             ["b42.server.welcome-message"] = "Welcome survivor!\nBring a can opener.",
+            ["b42.server.spawn-items"] = "Base.BaseballBat\nBase.WaterBottleFull",
+            ["b42.server.loot-respawn-hours"] = "12",
+            ["b42.server.loot-respawn-max-items"] = "2",
+            ["b42.server.construction-prevents-loot-respawn"] = "false",
             ["b42.server.sleep-allowed"] = "true",
             ["b42.server.sleep-needed"] = "true",
             ["b42.server.no-fire"] = "true",
             ["b42.server.announce-death"] = "false",
+            ["b42.server.drop-whitelist-on-death"] = "true",
+            ["b42.server.allow-sledgehammer-destruction"] = "false",
             ["b42.server.player-safehouse"] = "true",
             ["b42.server.admin-safehouse"] = "true",
             ["b42.server.safehouse-allow-trespass"] = "false",
@@ -294,11 +333,16 @@ public sealed class StructuredSettingsServiceTests : IDisposable
             ["b42.network.ping-limit"] = "180",
             ["b42.network.steam-vac"] = "false",
             ["b42.network.kick-fast-players"] = "true",
+            ["b42.network.deny-login-overloaded"] = "false",
+            ["b42.network.player-save-on-damage"] = "false",
             ["b42.network.display-user-name"] = "false",
             ["b42.network.show-first-last-name"] = "true",
             ["b42.network.safety-system"] = "false",
+            ["b42.network.show-safety"] = "true",
             ["b42.network.safety-toggle-timer"] = "6",
             ["b42.network.safety-cooldown-timer"] = "30",
+            ["b42.network.max-accounts-per-user"] = "3",
+            ["b42.network.allow-non-ascii-username"] = "true",
             ["b42.network.voice-enabled"] = "true",
             ["b42.network.voice-3d"] = "false",
             ["b42.network.voice-min-distance"] = "12",
@@ -323,10 +367,16 @@ public sealed class StructuredSettingsServiceTests : IDisposable
         Assert.Contains("PauseEmpty=true", iniText);
         Assert.Contains("GlobalChat=false", iniText);
         Assert.Contains("ServerWelcomeMessage=Welcome survivor! <LINE> Bring a can opener.", iniText);
+        Assert.Contains("SpawnItems=Base.BaseballBat,Base.WaterBottleFull", iniText);
+        Assert.Contains("HoursForLootRespawn=12", iniText);
+        Assert.Contains("MaxItemsForLootRespawn=2", iniText);
+        Assert.Contains("ConstructionPreventsLootRespawn=false", iniText);
         Assert.Contains("SleepAllowed=true", iniText);
         Assert.Contains("SleepNeeded=true", iniText);
         Assert.Contains("NoFire=true", iniText);
         Assert.Contains("AnnounceDeath=false", iniText);
+        Assert.Contains("DropOffWhiteListAfterDeath=true", iniText);
+        Assert.Contains("AllowDestructionBySledgehammer=false", iniText);
         Assert.Contains("PlayerSafehouse=true", iniText);
         Assert.Contains("AdminSafehouse=true", iniText);
         Assert.Contains("SafehouseAllowTrepass=false", iniText);
@@ -350,11 +400,16 @@ public sealed class StructuredSettingsServiceTests : IDisposable
         Assert.Contains("PingLimit=180", iniText);
         Assert.Contains("SteamVAC=false", iniText);
         Assert.Contains("KickFastPlayers=true", iniText);
+        Assert.Contains("DenyLoginOnOverloadedServer=false", iniText);
+        Assert.Contains("PlayerSaveOnDamage=false", iniText);
         Assert.Contains("DisplayUserName=false", iniText);
         Assert.Contains("ShowFirstAndLastName=true", iniText);
         Assert.Contains("SafetySystem=false", iniText);
+        Assert.Contains("ShowSafety=true", iniText);
         Assert.Contains("SafetyToggleTimer=6", iniText);
         Assert.Contains("SafetyCooldownTimer=30", iniText);
+        Assert.Contains("MaxAccountsPerUser=3", iniText);
+        Assert.Contains("AllowNonAsciiUsername=true", iniText);
         Assert.Contains("VoiceEnable=true", iniText);
         Assert.Contains("Voice3D=false", iniText);
         Assert.Contains("VoiceMinDistance=12", iniText);
@@ -458,11 +513,16 @@ public sealed class StructuredSettingsServiceTests : IDisposable
             PingLimit=100
             SteamVAC=true
             KickFastPlayers=false
+            DenyLoginOnOverloadedServer=true
+            PlayerSaveOnDamage=true
             DisplayUserName=true
             ShowFirstAndLastName=false
             SafetySystem=true
+            ShowSafety=true
             SafetyToggleTimer=2
             SafetyCooldownTimer=10
+            MaxAccountsPerUser=0
+            AllowNonAsciiUsername=false
             VoiceEnable=true
             Voice3D=true
             VoiceMinDistance=10
@@ -485,11 +545,16 @@ public sealed class StructuredSettingsServiceTests : IDisposable
             ["b42.network.ping-limit"] = "100",
             ["b42.network.steam-vac"] = "true",
             ["b42.network.kick-fast-players"] = "false",
+            ["b42.network.deny-login-overloaded"] = "true",
+            ["b42.network.player-save-on-damage"] = "true",
             ["b42.network.display-user-name"] = "true",
             ["b42.network.show-first-last-name"] = "false",
             ["b42.network.safety-system"] = "true",
+            ["b42.network.show-safety"] = "true",
             ["b42.network.safety-toggle-timer"] = "2",
             ["b42.network.safety-cooldown-timer"] = "10",
+            ["b42.network.max-accounts-per-user"] = "0",
+            ["b42.network.allow-non-ascii-username"] = "false",
             ["b42.network.voice-enabled"] = "true",
             ["b42.network.voice-3d"] = "true",
             ["b42.network.voice-min-distance"] = "30",

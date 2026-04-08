@@ -166,10 +166,16 @@ public sealed class StructuredSettingsService(
                         ["PauseEmpty"] = ParseBool(values, $"{branchPrefix}.server.pause-empty").ToString().ToLowerInvariant(),
                         ["GlobalChat"] = ParseBool(values, $"{branchPrefix}.server.global-chat").ToString().ToLowerInvariant(),
                         ["ServerWelcomeMessage"] = NormalizeWelcomeMessage(values, $"{branchPrefix}.server.welcome-message"),
+                        ["SpawnItems"] = JoinCommaSeparatedList(ParseCommaSeparatedEditorList(values, $"{branchPrefix}.server.spawn-items")),
+                        ["HoursForLootRespawn"] = ParseInt(values, $"{branchPrefix}.server.loot-respawn-hours").ToString(),
+                        ["MaxItemsForLootRespawn"] = ParseInt(values, $"{branchPrefix}.server.loot-respawn-max-items").ToString(),
+                        ["ConstructionPreventsLootRespawn"] = ParseBool(values, $"{branchPrefix}.server.construction-prevents-loot-respawn").ToString().ToLowerInvariant(),
                         ["SleepAllowed"] = ParseBool(values, $"{branchPrefix}.server.sleep-allowed").ToString().ToLowerInvariant(),
                         ["SleepNeeded"] = ParseBool(values, $"{branchPrefix}.server.sleep-needed").ToString().ToLowerInvariant(),
                         ["NoFire"] = ParseBool(values, $"{branchPrefix}.server.no-fire").ToString().ToLowerInvariant(),
                         ["AnnounceDeath"] = ParseBool(values, $"{branchPrefix}.server.announce-death").ToString().ToLowerInvariant(),
+                        ["DropOffWhiteListAfterDeath"] = ParseBool(values, $"{branchPrefix}.server.drop-whitelist-on-death").ToString().ToLowerInvariant(),
+                        ["AllowDestructionBySledgehammer"] = ParseBool(values, $"{branchPrefix}.server.allow-sledgehammer-destruction").ToString().ToLowerInvariant(),
                         ["PlayerSafehouse"] = ParseBool(values, $"{branchPrefix}.server.player-safehouse").ToString().ToLowerInvariant(),
                         ["AdminSafehouse"] = ParseBool(values, $"{branchPrefix}.server.admin-safehouse").ToString().ToLowerInvariant(),
                         ["SafehouseAllowTrepass"] = ParseBool(values, $"{branchPrefix}.server.safehouse-allow-trespass").ToString().ToLowerInvariant(),
@@ -286,11 +292,16 @@ public sealed class StructuredSettingsService(
                         ["PingLimit"] = ParseInt(values, $"{branchPrefix}.network.ping-limit").ToString(),
                         ["SteamVAC"] = ParseBool(values, $"{branchPrefix}.network.steam-vac").ToString().ToLowerInvariant(),
                         ["KickFastPlayers"] = ParseBool(values, $"{branchPrefix}.network.kick-fast-players").ToString().ToLowerInvariant(),
+                        ["DenyLoginOnOverloadedServer"] = ParseBool(values, $"{branchPrefix}.network.deny-login-overloaded").ToString().ToLowerInvariant(),
+                        ["PlayerSaveOnDamage"] = ParseBool(values, $"{branchPrefix}.network.player-save-on-damage").ToString().ToLowerInvariant(),
                         ["DisplayUserName"] = ParseBool(values, $"{branchPrefix}.network.display-user-name").ToString().ToLowerInvariant(),
                         ["ShowFirstAndLastName"] = ParseBool(values, $"{branchPrefix}.network.show-first-last-name").ToString().ToLowerInvariant(),
                         ["SafetySystem"] = ParseBool(values, $"{branchPrefix}.network.safety-system").ToString().ToLowerInvariant(),
+                        ["ShowSafety"] = ParseBool(values, $"{branchPrefix}.network.show-safety").ToString().ToLowerInvariant(),
                         ["SafetyToggleTimer"] = ParseInt(values, $"{branchPrefix}.network.safety-toggle-timer").ToString(),
                         ["SafetyCooldownTimer"] = ParseInt(values, $"{branchPrefix}.network.safety-cooldown-timer").ToString(),
+                        ["MaxAccountsPerUser"] = ParseInt(values, $"{branchPrefix}.network.max-accounts-per-user").ToString(),
+                        ["AllowNonAsciiUsername"] = ParseBool(values, $"{branchPrefix}.network.allow-non-ascii-username").ToString().ToLowerInvariant(),
                         ["VoiceEnable"] = ParseBool(values, $"{branchPrefix}.network.voice-enabled").ToString().ToLowerInvariant(),
                         ["Voice3D"] = ParseBool(values, $"{branchPrefix}.network.voice-3d").ToString().ToLowerInvariant(),
                         ["VoiceMinDistance"] = ParseInt(values, $"{branchPrefix}.network.voice-min-distance").ToString(),
@@ -351,6 +362,8 @@ public sealed class StructuredSettingsService(
                 var id when id.EndsWith(".runtime.memory", StringComparison.Ordinal) => profile.PreferredMemoryInGigabytes.ToString(),
                 var id when id.EndsWith(".runtime.start-with-host", StringComparison.Ordinal) => profile.StartWithHost.ToString(),
                 var id when id.EndsWith(".runtime.auto-restart", StringComparison.Ordinal) => profile.AutoRestartOnCrash.ToString(),
+                var id when id.EndsWith(".server.spawn-items", StringComparison.Ordinal) => ExpandCommaSeparatedList(
+                    GetIniValueOrDefault(sourceValues, field.Target.KeyPath, field.DefaultValue)),
                 var id when id.EndsWith(".server.welcome-message", StringComparison.Ordinal) => ExpandWelcomeMessage(
                     GetIniValueOrDefault(sourceValues, field.Target.KeyPath, field.DefaultValue)),
                 _ => GetIniValueOrDefault(sourceValues, field.Target.KeyPath, field.DefaultValue),
@@ -527,10 +540,15 @@ public sealed class StructuredSettingsService(
         ValidateBoolean(values, $"{branchPrefix}.server.pvp", "PvP must be true or false.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.server.pause-empty", "Pause when empty must be true or false.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.server.global-chat", "Global chat must be true or false.", fieldErrors);
+        ValidateMinimumInteger(values, $"{branchPrefix}.server.loot-respawn-hours", 0, "Loot respawn hours must be zero or greater.", fieldErrors);
+        ValidateMinimumInteger(values, $"{branchPrefix}.server.loot-respawn-max-items", 0, "Loot respawn max items must be zero or greater.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.server.construction-prevents-loot-respawn", "Construction loot-respawn protection must be true or false.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.server.sleep-allowed", "Sleep allowed must be true or false.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.server.sleep-needed", "Sleep needed must be true or false.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.server.no-fire", "Disable fire must be true or false.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.server.announce-death", "Announce death must be true or false.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.server.drop-whitelist-on-death", "Drop whitelist on death must be true or false.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.server.allow-sledgehammer-destruction", "Allow sledgehammer destruction must be true or false.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.server.player-safehouse", "Player safehouses must be true or false.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.server.admin-safehouse", "Admin safehouses must be true or false.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.server.safehouse-allow-trespass", "Allow trespass must be true or false.", fieldErrors);
@@ -663,11 +681,16 @@ public sealed class StructuredSettingsService(
         ValidateMinimumInteger(values, $"{branchPrefix}.network.ping-limit", 0, "Ping limit must be zero or greater.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.network.steam-vac", "Steam VAC must be true or false.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.network.kick-fast-players", "Kick fast players must be true or false.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.network.deny-login-overloaded", "Deny login when overloaded must be true or false.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.network.player-save-on-damage", "Player save on damage must be true or false.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.network.display-user-name", "Display username must be true or false.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.network.show-first-last-name", "Show first and last name must be true or false.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.network.safety-system", "Safety system must be true or false.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.network.show-safety", "Show safety icon must be true or false.", fieldErrors);
         ValidateMinimumInteger(values, $"{branchPrefix}.network.safety-toggle-timer", 0, "Safety toggle timer must be zero or greater.", fieldErrors);
         ValidateMinimumInteger(values, $"{branchPrefix}.network.safety-cooldown-timer", 0, "Safety cooldown timer must be zero or greater.", fieldErrors);
+        ValidateMinimumInteger(values, $"{branchPrefix}.network.max-accounts-per-user", 0, "Max accounts per user must be zero or greater.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.network.allow-non-ascii-username", "Allow non-ASCII usernames must be true or false.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.network.voice-enabled", "Voice chat enabled must be true or false.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.network.voice-3d", "3D voice must be true or false.", fieldErrors);
         ValidateMinimumInteger(values, $"{branchPrefix}.network.voice-min-distance", 0, "Voice minimum distance must be zero or greater.", fieldErrors);
@@ -1042,9 +1065,17 @@ public sealed class StructuredSettingsService(
     private static string JoinIniList(IReadOnlyList<string> values) =>
         string.Join(';', values);
 
+    private static string JoinCommaSeparatedList(IReadOnlyList<string> values) =>
+        string.Join(',', values);
+
     private static IReadOnlyList<string> ParseEditorList(IReadOnlyDictionary<string, string?> values, string key) =>
         values.TryGetValue(key, out var value)
             ? ParseEditorList(value)
+            : [];
+
+    private static IReadOnlyList<string> ParseCommaSeparatedEditorList(IReadOnlyDictionary<string, string?> values, string key) =>
+        values.TryGetValue(key, out var value)
+            ? ParseCommaSeparatedEditorList(value)
             : [];
 
     private static IReadOnlyList<string> ParseEditorList(string? value)
@@ -1063,10 +1094,30 @@ public sealed class StructuredSettingsService(
             .ToArray();
     }
 
+    private static IReadOnlyList<string> ParseCommaSeparatedEditorList(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return [];
+        }
+
+        return value
+            .ReplaceLineEndings("\n")
+            .Split(['\n', ','], StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+            .Select(item => item.Trim())
+            .Where(item => !string.IsNullOrWhiteSpace(item))
+            .ToArray();
+    }
+
     private static string ExpandWelcomeMessage(string? value) =>
         string.IsNullOrWhiteSpace(value)
             ? string.Empty
             : value.Replace("<LINE>", Environment.NewLine, StringComparison.OrdinalIgnoreCase).Trim();
+
+    private static string ExpandCommaSeparatedList(string? value) =>
+        string.IsNullOrWhiteSpace(value)
+            ? string.Empty
+            : string.Join(Environment.NewLine, SplitIniList(value, allowCommaFallback: true));
 
     private static string? GetIniValueOrDefault(
         IReadOnlyDictionary<string, string?> values,

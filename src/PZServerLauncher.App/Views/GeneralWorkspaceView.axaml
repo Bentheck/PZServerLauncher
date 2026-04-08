@@ -119,12 +119,48 @@
 
                         <Border Classes="card" Padding="18">
                             <StackPanel Spacing="12">
+                                <TextBlock Classes="kicker" Text="Spawn &amp; Loot Lifecycle" />
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="body" Text="Spawn Items" />
+                                    <TextBox Text="{Binding SpawnItems}" AcceptsReturn="True" Height="108" TextWrapping="Wrap" />
+                                    <TextBlock Classes="body"
+                                               FontSize="12"
+                                               Text="Use one item per line. The launcher writes them back to SpawnItems as a comma-separated list."
+                                               TextWrapping="Wrap" />
+                                </StackPanel>
+                                <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Classes="body" Text="Loot Respawn Hours" />
+                                        <TextBox Text="{Binding LootRespawnHours}" />
+                                        <TextBlock Classes="body"
+                                                   FontSize="12"
+                                                   Text="In-game hours before loot can respawn. Use 0 to disable respawn."
+                                                   TextWrapping="Wrap" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Spacing="4">
+                                        <TextBlock Classes="body" Text="Loot Respawn Max Items" />
+                                        <TextBox Text="{Binding LootRespawnMaxItems}" />
+                                        <TextBlock Classes="body"
+                                                   FontSize="12"
+                                                   Text="Containers only respawn if they have this many items or fewer."
+                                                   TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </Grid>
+                                <CheckBox Content="Construction Blocks Loot Respawn"
+                                          IsChecked="{Binding ConstructionPreventsLootRespawn}" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Classes="card" Padding="18">
+                            <StackPanel Spacing="12">
                                 <TextBlock Classes="kicker" Text="Survival Rules" />
-                                <Grid ColumnDefinitions="*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto" RowSpacing="10">
+                                <Grid ColumnDefinitions="*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto,Auto" RowSpacing="10">
                                     <CheckBox Content="Sleep Allowed" IsChecked="{Binding SleepAllowed}" />
                                     <CheckBox Grid.Column="1" Content="Sleep Needed" IsChecked="{Binding SleepNeeded}" />
                                     <CheckBox Grid.Row="1" Content="Disable Fire" IsChecked="{Binding NoFire}" />
                                     <CheckBox Grid.Row="1" Grid.Column="1" Content="Announce Death" IsChecked="{Binding AnnounceDeath}" />
+                                    <CheckBox Grid.Row="2" Content="Drop Whitelist On Death" IsChecked="{Binding DropWhitelistOnDeath}" />
+                                    <CheckBox Grid.Row="2" Grid.Column="1" Content="Allow Sledgehammer Destruction" IsChecked="{Binding AllowSledgehammerDestruction}" />
                                 </Grid>
                             </StackPanel>
                         </Border>

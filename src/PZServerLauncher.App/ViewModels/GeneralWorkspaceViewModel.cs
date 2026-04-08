@@ -21,7 +21,7 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             "Public listing, core world access, server browser identity, and launcher runtime controls.",
             "General settings are in sync.",
             legacy,
-            ["Public identity", "World access", "Survival rules", "Safehouses", "Factions and trade", "Ports", "Runtime controls"])
+            ["Public identity", "World access", "Spawn and loot", "Survival rules", "Safehouses", "Factions and trade", "Ports", "Runtime controls"])
     {
         _hostApiClient = hostApiClient;
         SaveSettingsCommand = new AsyncRelayCommand(SaveSettingsAsync);
@@ -40,7 +40,7 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
     public string WorkspaceSummary => SelectedProfile is null
         ? "Choose a profile to unlock server browser, ports, and world access controls."
-        : $"{SelectedProfile.DisplayName} now edits actual Project Zomboid .ini values for public listing, world rules, safehouses, factions, and core ports.";
+        : $"{SelectedProfile.DisplayName} now edits actual Project Zomboid .ini values for public listing, loot lifecycle, survival rules, safehouses, factions, and core ports.";
 
     public string ActionSummary => RequiresAdvancedFilesFallback
         ? "Structured editing is temporarily unavailable for this file. Use Advanced Files for raw recovery."
@@ -89,6 +89,18 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
     private string welcomeMessage = string.Empty;
 
     [ObservableProperty]
+    private string spawnItems = string.Empty;
+
+    [ObservableProperty]
+    private string lootRespawnHours = string.Empty;
+
+    [ObservableProperty]
+    private string lootRespawnMaxItems = string.Empty;
+
+    [ObservableProperty]
+    private bool constructionPreventsLootRespawn;
+
+    [ObservableProperty]
     private bool sleepAllowed;
 
     [ObservableProperty]
@@ -99,6 +111,12 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
     [ObservableProperty]
     private bool announceDeath;
+
+    [ObservableProperty]
+    private bool dropWhitelistOnDeath;
+
+    [ObservableProperty]
+    private bool allowSledgehammerDestruction;
 
     [ObservableProperty]
     private bool playerSafehouse;
@@ -352,10 +370,16 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             PauseWhenEmpty = bool.TryParse(GetValue(values, ".server.pause-empty"), out var pause) && pause;
             GlobalChatEnabled = bool.TryParse(GetValue(values, ".server.global-chat"), out var globalChat) && globalChat;
             WelcomeMessage = GetValue(values, ".server.welcome-message");
+            SpawnItems = GetValue(values, ".server.spawn-items");
+            LootRespawnHours = GetValue(values, ".server.loot-respawn-hours");
+            LootRespawnMaxItems = GetValue(values, ".server.loot-respawn-max-items");
+            ConstructionPreventsLootRespawn = bool.TryParse(GetValue(values, ".server.construction-prevents-loot-respawn"), out var constructionPreventsLootRespawn) && constructionPreventsLootRespawn;
             SleepAllowed = bool.TryParse(GetValue(values, ".server.sleep-allowed"), out var sleepAllowed) && sleepAllowed;
             SleepNeeded = bool.TryParse(GetValue(values, ".server.sleep-needed"), out var sleepNeeded) && sleepNeeded;
             NoFire = bool.TryParse(GetValue(values, ".server.no-fire"), out var noFire) && noFire;
             AnnounceDeath = bool.TryParse(GetValue(values, ".server.announce-death"), out var announceDeath) && announceDeath;
+            DropWhitelistOnDeath = bool.TryParse(GetValue(values, ".server.drop-whitelist-on-death"), out var dropWhitelistOnDeath) && dropWhitelistOnDeath;
+            AllowSledgehammerDestruction = bool.TryParse(GetValue(values, ".server.allow-sledgehammer-destruction"), out var allowSledgehammerDestruction) && allowSledgehammerDestruction;
             PlayerSafehouse = bool.TryParse(GetValue(values, ".server.player-safehouse"), out var playerSafehouse) && playerSafehouse;
             AdminSafehouse = bool.TryParse(GetValue(values, ".server.admin-safehouse"), out var adminSafehouse) && adminSafehouse;
             SafehouseAllowTrespass = bool.TryParse(GetValue(values, ".server.safehouse-allow-trespass"), out var safehouseAllowTrespass) && safehouseAllowTrespass;
@@ -395,10 +419,16 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             [$"{prefix}.server.pause-empty"] = PauseWhenEmpty.ToString(),
             [$"{prefix}.server.global-chat"] = GlobalChatEnabled.ToString(),
             [$"{prefix}.server.welcome-message"] = WelcomeMessage,
+            [$"{prefix}.server.spawn-items"] = SpawnItems,
+            [$"{prefix}.server.loot-respawn-hours"] = LootRespawnHours,
+            [$"{prefix}.server.loot-respawn-max-items"] = LootRespawnMaxItems,
+            [$"{prefix}.server.construction-prevents-loot-respawn"] = ConstructionPreventsLootRespawn.ToString(),
             [$"{prefix}.server.sleep-allowed"] = SleepAllowed.ToString(),
             [$"{prefix}.server.sleep-needed"] = SleepNeeded.ToString(),
             [$"{prefix}.server.no-fire"] = NoFire.ToString(),
             [$"{prefix}.server.announce-death"] = AnnounceDeath.ToString(),
+            [$"{prefix}.server.drop-whitelist-on-death"] = DropWhitelistOnDeath.ToString(),
+            [$"{prefix}.server.allow-sledgehammer-destruction"] = AllowSledgehammerDestruction.ToString(),
             [$"{prefix}.server.player-safehouse"] = PlayerSafehouse.ToString(),
             [$"{prefix}.server.admin-safehouse"] = AdminSafehouse.ToString(),
             [$"{prefix}.server.safehouse-allow-trespass"] = SafehouseAllowTrespass.ToString(),
@@ -467,10 +497,16 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             PauseWhenEmpty = false;
             GlobalChatEnabled = false;
             WelcomeMessage = string.Empty;
+            SpawnItems = string.Empty;
+            LootRespawnHours = string.Empty;
+            LootRespawnMaxItems = string.Empty;
+            ConstructionPreventsLootRespawn = false;
             SleepAllowed = false;
             SleepNeeded = false;
             NoFire = false;
             AnnounceDeath = false;
+            DropWhitelistOnDeath = false;
+            AllowSledgehammerDestruction = false;
             PlayerSafehouse = false;
             AdminSafehouse = false;
             SafehouseAllowTrespass = false;
@@ -508,10 +544,16 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
     partial void OnPauseWhenEmptyChanged(bool value) => NotifyFieldEdited();
     partial void OnGlobalChatEnabledChanged(bool value) => NotifyFieldEdited();
     partial void OnWelcomeMessageChanged(string value) => NotifyFieldEdited();
+    partial void OnSpawnItemsChanged(string value) => NotifyFieldEdited();
+    partial void OnLootRespawnHoursChanged(string value) => NotifyFieldEdited();
+    partial void OnLootRespawnMaxItemsChanged(string value) => NotifyFieldEdited();
+    partial void OnConstructionPreventsLootRespawnChanged(bool value) => NotifyFieldEdited();
     partial void OnSleepAllowedChanged(bool value) => NotifyFieldEdited();
     partial void OnSleepNeededChanged(bool value) => NotifyFieldEdited();
     partial void OnNoFireChanged(bool value) => NotifyFieldEdited();
     partial void OnAnnounceDeathChanged(bool value) => NotifyFieldEdited();
+    partial void OnDropWhitelistOnDeathChanged(bool value) => NotifyFieldEdited();
+    partial void OnAllowSledgehammerDestructionChanged(bool value) => NotifyFieldEdited();
     partial void OnPlayerSafehouseChanged(bool value) => NotifyFieldEdited();
     partial void OnAdminSafehouseChanged(bool value) => NotifyFieldEdited();
     partial void OnSafehouseAllowTrespassChanged(bool value) => NotifyFieldEdited();

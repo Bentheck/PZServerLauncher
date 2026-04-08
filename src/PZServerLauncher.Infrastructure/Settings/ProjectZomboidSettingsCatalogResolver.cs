@@ -69,6 +69,26 @@ public sealed class ProjectZomboidSettingsCatalogResolver : ISettingsCatalogReso
                         Field($"{branchPrefix}.server.welcome-message", "Welcome Message", StructuredValueKind.MultiLineText, ConfigFileKind.Ini, "ServerWelcomeMessage", helpText: "Use line breaks here; they will be written back as <LINE> markers for Project Zomboid."),
                     }),
                 new StructuredSectionDefinition(
+                    $"{branchPrefix}.general.spawn-and-loot",
+                    "Spawn & Loot Lifecycle",
+                    new[]
+                    {
+                        Field($"{branchPrefix}.server.spawn-items", "Spawn Items", StructuredValueKind.MultiLineText, ConfigFileKind.Ini, "SpawnItems", helpText: "One item per line. The launcher writes them back as a comma-separated Project Zomboid SpawnItems list."),
+                        Field($"{branchPrefix}.server.loot-respawn-hours", "Loot Respawn Hours", StructuredValueKind.Integer, ConfigFileKind.Ini, "HoursForLootRespawn", defaultValue: "0", helpText: "In-game hours before loot can respawn. Use 0 to disable loot respawn."),
+                        Field($"{branchPrefix}.server.loot-respawn-max-items", "Loot Respawn Max Items", StructuredValueKind.Integer, ConfigFileKind.Ini, "MaxItemsForLootRespawn", defaultValue: "4", helpText: "Containers respawn loot only when they contain this many items or fewer."),
+                        Field($"{branchPrefix}.server.construction-prevents-loot-respawn", "Construction Blocks Loot Respawn", StructuredValueKind.Boolean, ConfigFileKind.Ini, "ConstructionPreventsLootRespawn", defaultValue: "true", helpText: "Prevent loot respawn in containers near player construction."),
+                    }),
+                new StructuredSectionDefinition(
+                    $"{branchPrefix}.general.loot-respawn",
+                    "Spawn & Loot Lifecycle",
+                    new[]
+                    {
+                        Field($"{branchPrefix}.server.spawn-items", "Spawn Items", StructuredValueKind.MultiLineText, ConfigFileKind.Ini, "SpawnItems", helpText: "One item per line. The launcher writes them back as a comma-separated SpawnItems list."),
+                        Field($"{branchPrefix}.server.loot-respawn-hours", "Loot Respawn Hours", StructuredValueKind.Integer, ConfigFileKind.Ini, "HoursForLootRespawn", defaultValue: "0", helpText: "In-game hours that must pass before cleared containers can respawn loot. Use 0 to disable loot respawn."),
+                        Field($"{branchPrefix}.server.loot-respawn-max-items", "Loot Respawn Max Items", StructuredValueKind.Integer, ConfigFileKind.Ini, "MaxItemsForLootRespawn", defaultValue: "4", helpText: "Containers only respawn loot when they have this many items or fewer."),
+                        Field($"{branchPrefix}.server.construction-prevents-loot-respawn", "Construction Blocks Loot Respawn", StructuredValueKind.Boolean, ConfigFileKind.Ini, "ConstructionPreventsLootRespawn", defaultValue: "true", helpText: "Prevent loot respawn near player-built structures."),
+                    }),
+                new StructuredSectionDefinition(
                     $"{branchPrefix}.general.survival-rules",
                     "Survival Rules",
                     new[]
@@ -77,6 +97,8 @@ public sealed class ProjectZomboidSettingsCatalogResolver : ISettingsCatalogReso
                         Field($"{branchPrefix}.server.sleep-needed", "Sleep Needed", StructuredValueKind.Boolean, ConfigFileKind.Ini, "SleepNeeded", defaultValue: "false", helpText: "Require survivors to sleep when exhausted."),
                         Field($"{branchPrefix}.server.no-fire", "Disable Fire", StructuredValueKind.Boolean, ConfigFileKind.Ini, "NoFire", defaultValue: "false", helpText: "Disable most fire spread and fire damage on the server."),
                         Field($"{branchPrefix}.server.announce-death", "Announce Death", StructuredValueKind.Boolean, ConfigFileKind.Ini, "AnnounceDeath", defaultValue: "true", helpText: "Broadcast character deaths to the whole server."),
+                        Field($"{branchPrefix}.server.drop-whitelist-on-death", "Drop Whitelist On Death", StructuredValueKind.Boolean, ConfigFileKind.Ini, "DropOffWhiteListAfterDeath", defaultValue: "false", helpText: "Remove a player's whitelist access when their current character dies."),
+                        Field($"{branchPrefix}.server.allow-sledgehammer-destruction", "Allow Sledgehammer Destruction", StructuredValueKind.Boolean, ConfigFileKind.Ini, "AllowDestructionBySledgehammer", defaultValue: "true", helpText: "Allow survivors to destroy world objects with a sledgehammer."),
                     }),
                 new StructuredSectionDefinition(
                     $"{branchPrefix}.general.safehouses",
@@ -301,6 +323,7 @@ public sealed class ProjectZomboidSettingsCatalogResolver : ISettingsCatalogReso
                         Field($"{branchPrefix}.network.ping-limit", "Ping Limit", StructuredValueKind.Integer, ConfigFileKind.Ini, "PingLimit", defaultValue: "250", helpText: "Players consistently above this ping can be kicked. Use 100 to disable the limit."),
                         Field($"{branchPrefix}.network.steam-vac", "Steam VAC", StructuredValueKind.Boolean, ConfigFileKind.Ini, "SteamVAC", defaultValue: "true", helpText: "Enable Valve Anti-Cheat integration for Steam clients."),
                         Field($"{branchPrefix}.network.kick-fast-players", "Kick Fast Players", StructuredValueKind.Boolean, ConfigFileKind.Ini, "KickFastPlayers", defaultValue: "false", helpText: "Kick players whose movement looks too fast for the simulation."),
+                        Field($"{branchPrefix}.network.deny-login-overloaded", "Deny Login When Overloaded", StructuredValueKind.Boolean, ConfigFileKind.Ini, "DenyLoginOnOverloadedServer", defaultValue: "true", helpText: "Reject new logins while the server is under heavy load."),
                     }),
                 new StructuredSectionDefinition(
                     $"{branchPrefix}.network.identity-and-safety",
@@ -310,8 +333,12 @@ public sealed class ProjectZomboidSettingsCatalogResolver : ISettingsCatalogReso
                         Field($"{branchPrefix}.network.display-user-name", "Display Username", StructuredValueKind.Boolean, ConfigFileKind.Ini, "DisplayUserName", defaultValue: "true", helpText: "Show a player's username over their character."),
                         Field($"{branchPrefix}.network.show-first-last-name", "Show First & Last Name", StructuredValueKind.Boolean, ConfigFileKind.Ini, "ShowFirstAndLastName", defaultValue: "false", helpText: "Show character first and last names instead of just usernames."),
                         Field($"{branchPrefix}.network.safety-system", "Safety System", StructuredValueKind.Boolean, ConfigFileKind.Ini, "SafetySystem", defaultValue: "true", helpText: "Enable PvP safety toggles for players."),
+                        Field($"{branchPrefix}.network.show-safety", "Show Safety Icon", StructuredValueKind.Boolean, ConfigFileKind.Ini, "ShowSafety", defaultValue: "true", helpText: "Show the PvP safety skull icon above players when safety is disabled."),
                         Field($"{branchPrefix}.network.safety-toggle-timer", "Safety Toggle Timer", StructuredValueKind.Integer, ConfigFileKind.Ini, "SafetyToggleTimer", defaultValue: "100", helpText: "Seconds needed to turn the safety toggle on or off."),
                         Field($"{branchPrefix}.network.safety-cooldown-timer", "Safety Cooldown Timer", StructuredValueKind.Integer, ConfigFileKind.Ini, "SafetyCooldownTimer", defaultValue: "120", helpText: "Seconds before safety can be toggled again."),
+                        Field($"{branchPrefix}.network.max-accounts-per-user", "Max Accounts Per User", StructuredValueKind.Integer, ConfigFileKind.Ini, "MaxAccountsPerUser", defaultValue: "0", helpText: "Limit how many different server accounts a single Steam user may create. Use 0 for unlimited."),
+                        Field($"{branchPrefix}.network.allow-non-ascii-username", "Allow Non-ASCII Usernames", StructuredValueKind.Boolean, ConfigFileKind.Ini, "AllowNonAsciiUsername", defaultValue: "false", helpText: "Permit usernames that contain non-ASCII characters."),
+                        Field($"{branchPrefix}.network.player-save-on-damage", "Save Player On Damage", StructuredValueKind.Boolean, ConfigFileKind.Ini, "PlayerSaveOnDamage", defaultValue: "true", helpText: "Persist character state when damage is taken to reduce rollback after crashes."),
                     }),
                 new StructuredSectionDefinition(
                     $"{branchPrefix}.network.voice",
