@@ -1,5 +1,7 @@
 @page "/profiles/{ProfileId}/backups"
 @attribute [Authorize]
+@using System.Globalization
+@using System.Text.RegularExpressions
 @inject ProfileStore ProfileStore
 @inject RuntimeStateStore RuntimeStateStore
 @inject ServerBackupService BackupService
@@ -44,6 +46,7 @@ else
                     </div>
                     <div class="hero-pills">
                         <span class="pill">@_profile.Branch</span>
+                        <span class="pill">@BackupCountSummary</span>
                         <span class="pill">@(_backupSummary?.ArchiveMixSummary ?? "Archive mix unavailable")</span>
                         <span class="pill pill--strong">@(_backupSummary?.LatestArchiveSummary ?? "Latest archive unavailable")</span>
                     </div>
@@ -76,27 +79,41 @@ else
 
                     <div class="profile-section">
                         <div class="admin-grid">
-                            <label>
+                            <div>
                                 <span>Available Backups</span>
-                                <select size="8" @bind="_selectedBackup" @bind:after="RefreshBackupSummary" disabled="@_busy">
-                                    @if (_backups.Count == 0)
-                                    {
-                                        <option value="">No backups yet</option>
-                                    }
-                                    else
-                                    {
-                                        @foreach (var backup in _backups)
+                                @if (_backupEntries.Count == 0)
+                                {
+                                    <div class="settings-banner settings-banner--warning">
+                                        <strong>No backups yet.</strong>
+                                        <p>Create the first manual archive from this page or from Overview.</p>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="stack-list">
+                                        @foreach (var backup in _backupEntries)
                                         {
-                                            <option value="@backup">@backup</option>
+                                            <label class="field-card">
+                                                <input type="radio"
+                                                       name="selected-backup"
+                                                       checked="@string.Equals(_selectedBackup, backup.FileName, StringComparison.Ordinal)"
+                                                       @onchange="@(() => SelectBackup(backup.FileName))"
+                                                       disabled="@_busy" />
+                                                <span class="field-label">@backup.Title</span>
+                                                <span>@backup.KindLabel | @backup.TimestampLabel</span>
+                                                <span class="muted-text">@backup.FileLabel</span>
+                                            </label>
                                         }
-                                    }
-                                </select>
-                            </label>
+                                    </div>
+                                }
+                            </div>
 
-                            <label>
+                            <div>
                                 <span>Selected Backup</span>
+                                <input value="@SelectedBackupHeadline" disabled />
                                 <input value="@(_backupSummary?.SelectedArchiveSummary ?? "No recovery point is currently selected.")" disabled />
-                            </label>
+                                <input value="@(_selectedBackupEntry?.TimestampLabel ?? "Timestamp unavailable.")" disabled />
+                            </div>
                         </div>
                     </div>
 
@@ -185,10 +202,20 @@ else
     private bool _installDetected;
     private bool _cacheDetected;
     private string? _selectedBackup;
+    private List<BackupArchiveRow> _backupEntries = [];
+    private BackupArchiveRow? _selectedBackupEntry;
     private bool _restartAfterRestore = true;
     private ProjectZomboidBackupPostureSummary? _backupSummary;
 
+    private static readonly Regex BackupPattern = new(
+        "-(manual|preupdate|scheduled)-(\\d{8}-\\d{6})\\.zip$",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+
     private string? _latestBackup => _backups.FirstOrDefault();
+    private string BackupCountSummary => _backupSummary is null
+        ? "Archives unavailable"
+        : $"{_backupSummary.TotalBackupCount} total | {_backupSummary.ManualBackupCount} manual | {_backupSummary.PreUpdateBackupCount} pre-update | {_backupSummary.ScheduledBackupCount} scheduled";
+    private string SelectedBackupHeadline => _selectedBackupEntry?.Title ?? "No recovery point selected";
 
     protected override async Task OnParametersSetAsync()
     {
@@ -205,10 +232,12 @@ else
 
         _runtimeStatus = RuntimeStateStore.GetOrDefault(ProfileId);
         _backups = BackupService.ListBackups(ProfileId).ToList();
+        _backupEntries = _backups.Select((backup, index) => ParseBackupEntry(backup, index == 0)).ToList();
         if (_selectedBackup is null || !_backups.Contains(_selectedBackup, StringComparer.Ordinal))
         {
             _selectedBackup = _latestBackup;
         }
+        _selectedBackupEntry = _backupEntries.FirstOrDefault(entry => string.Equals(entry.FileName, _selectedBackup, StringComparison.Ordinal));
         _installDetected = Directory.Exists(_profile.InstallDirectory);
         _cacheDetected = Directory.Exists(_profile.CacheDirectory);
         RefreshBackupSummary();
@@ -304,14 +333,22 @@ else
         if (_profile is null)
         {
             _backupSummary = null;
+            _selectedBackupEntry = null;
             return;
         }
 
+        _selectedBackupEntry = _backupEntries.FirstOrDefault(entry => string.Equals(entry.FileName, _selectedBackup, StringComparison.Ordinal));
         _backupSummary = ProjectZomboidBackupPostureSummaryBuilder.Build(
             _profile,
             _backups,
             _selectedBackup,
             _runtimeStatus?.State.ToString() ?? "Stopped");
+    }
+
+    private void SelectBackup(string backupFileName)
+    {
+        _selectedBackup = backupFileName;
+        RefreshBackupSummary();
     }
 
     private string BuildRestoreSafetyCopy()
@@ -328,4 +365,44 @@ else
             : "Restore mode: stop the server, unpack the archive, and leave it offline for inspection.";
 
     private string OverviewHref => $"/profiles/{Uri.EscapeDataString(ProfileId)}/overview";
+
+    private static BackupArchiveRow ParseBackupEntry(string backupFileName, bool isLatest)
+    {
+        var match = BackupPattern.Match(backupFileName);
+        var (title, kindLabel) = match.Success
+            ? match.Groups[1].Value.ToLowerInvariant() switch
+            {
+                "manual" => ("Manual Snapshot", "Manual"),
+                "preupdate" => ("Pre-Update Safety Net", "Pre-Update"),
+                "scheduled" => ("Scheduled Archive", "Scheduled"),
+                _ => ("Recovery Archive", "Archive"),
+            }
+            : ("Recovery Archive", "Archive");
+
+        var timestampLabel = "Timestamp unavailable.";
+        if (match.Success &&
+            DateTimeOffset.TryParseExact(
+                match.Groups[2].Value,
+                "yyyyMMdd-HHmmss",
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+                out var createdAtUtc))
+        {
+            timestampLabel = createdAtUtc.ToLocalTime().ToString("MMM d, yyyy 'at' h:mm tt", CultureInfo.CurrentCulture);
+        }
+
+        if (isLatest)
+        {
+            title = $"{title} (Latest)";
+        }
+
+        return new BackupArchiveRow(backupFileName, title, kindLabel, timestampLabel, backupFileName);
+    }
+
+    private sealed record BackupArchiveRow(
+        string FileName,
+        string Title,
+        string KindLabel,
+        string TimestampLabel,
+        string FileLabel);
 }
