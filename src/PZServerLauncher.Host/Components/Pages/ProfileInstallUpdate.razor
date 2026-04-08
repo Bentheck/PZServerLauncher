@@ -1,9 +1,11 @@
 @page "/profiles/{ProfileId}/install-update"
 @attribute [Authorize(Roles="Owner,Admin,Operator")]
 @using PZServerLauncher.Core.Planning
+@using PZServerLauncher.Core.Runtime
 @using PZServerLauncher.Infrastructure.Planning
 @inject ProfileStore ProfileStore
 @inject RuntimeStateStore RuntimeStateStore
+@inject ServerProcessSupervisor ProcessSupervisor
 @inject ServerInstallService InstallService
 @inject ServerBackupService BackupService
 @inject BackgroundJobDispatcher JobDispatcher
@@ -33,13 +35,16 @@ else
             <a class="nav-button secondary-button" href="@OverviewHref">Overview</a>
             <button class="nav-button" @onclick="InstallAsync" disabled="@_busy">Install</button>
             <button class="nav-button secondary-button" @onclick="UpdateAsync" disabled="@_busy">Update</button>
+            <button class="nav-button secondary-button" @onclick="StartAsync" disabled="@(!_canStart || _busy)">Start</button>
+            <button class="nav-button secondary-button" @onclick="StopAsync" disabled="@(!_canStop || _busy)">Stop</button>
+            <button class="nav-button secondary-button" @onclick="RestartAsync" disabled="@(!_canRestart || _busy)">Restart</button>
         </Actions>
         <ChildContent>
             <section class="workspace-panel hero-panel">
                 <div class="workspace-panel__copy">
                     <p class="eyebrow">Install &amp; Update</p>
                     <h2>@_profile.DisplayName</h2>
-                    <p class="muted-text">@(_installPosture?.DeploymentPostureSummary ?? "Install first, then update with confidence. This page surfaces the branch channel, launcher footprint, cache/config readiness, and runtime posture before you queue a new deployment cycle.")</p>
+                    <p class="muted-text">@(_installPosture?.DeploymentPostureSummary ?? "Install first, then update with confidence. This page now shows the branch channel, launcher footprint, cache and config readiness, runtime posture, and the safest operator path before you touch the binaries.")</p>
                     <p class="muted-text">@(_installPosture?.MaintenanceWindowSummary ?? "Maintenance window guidance unavailable.")</p>
                 </div>
 
@@ -48,14 +53,16 @@ else
                     <span class="pill">@(_installDetected ? "Install detected" : "Install missing")</span>
                     <span class="pill">@(_cacheDetected ? "Cache ready" : "Cache missing")</span>
                     <span class="pill">@(_installPosture?.UsesDirectJavaTemplate == true ? "Direct Java ready" : "Batch fallback")</span>
+                    <span class="pill">@RuntimeStateLabel</span>
                 </div>
             </section>
 
             <section class="metric-grid">
                 <article class="metric-card">
                     <span class="metric-label">Runtime</span>
-                    <strong class="metric-value">@(_runtimeStatus?.State.ToString() ?? "Unknown")</strong>
+                    <strong class="metric-value">@RuntimeStateLabel</strong>
                     <span class="metric-note">@(_runtimeStatus?.LatestLogLine ?? "No recent log line.")</span>
+                    <span class="metric-note">@RuntimeActionSummary</span>
                 </article>
                 <article class="metric-card">
                     <span class="metric-label">Branch And Install</span>
@@ -141,6 +148,21 @@ else
                     </ul>
                 </section>
             </div>
+
+            <section class="workspace-panel hero-panel">
+                <div class="workspace-panel__copy">
+                    <p class="eyebrow">Runtime Controls</p>
+                    <h2>@RuntimeStateLabel</h2>
+                    <p class="muted-text">@RuntimeActionSummary</p>
+                    <p class="muted-text">@(_installPosture?.LaunchReadinessSummary ?? "Launch readiness summary unavailable.")</p>
+                </div>
+
+                <div class="workspace-actions">
+                    <button class="nav-button" @onclick="StartAsync" disabled="@(!_canStart || _busy)">Start</button>
+                    <button class="nav-button secondary-button" @onclick="StopAsync" disabled="@(!_canStop || _busy)">Stop</button>
+                    <button class="nav-button secondary-button" @onclick="RestartAsync" disabled="@(!_canRestart || _busy)">Restart</button>
+                </div>
+            </section>
 
             <div class="cards cards--wide">
                 <section class="card">
@@ -252,17 +274,7 @@ else
                     <p class="muted-text">@(_installPosture?.DeploymentPostureSummary ?? "Runtime posture unavailable.")</p>
                     <p class="muted-text">@(_installPosture?.OperatorSequenceSummary ?? "Operator sequence summary unavailable.")</p>
                     <p class="muted-text">@(_installPosture?.LaunchReadinessSummary ?? "Launch readiness summary unavailable.")</p>
-
-                    <div class="workspace-actions">
-                        <button class="nav-button" @onclick="InstallAsync" disabled="@_busy">Install</button>
-                        <button class="nav-button secondary-button" @onclick="UpdateAsync" disabled="@_busy">Update</button>
-                        <a class="nav-button secondary-button" href="@OverviewHref">Overview</a>
-                    </div>
-
-                    <div class="workspace-actions">
-                        <button class="nav-button secondary-button" @onclick="InstallAsync" disabled="@_busy">Queue Install</button>
-                        <button class="nav-button secondary-button" @onclick="UpdateAsync" disabled="@_busy">Queue Update</button>
-                    </div>
+                    <p class="muted-text">Use the action bar above for install, update, start, stop, and restart. This panel now explains the safest order instead of repeating the same controls again.</p>
                 </section>
 
                 <section class="card">
@@ -303,6 +315,26 @@ else
     private bool _installDetected;
     private bool _cacheDetected;
 
+    private bool _canStart => !_busy && _profile is not null && !IsRunningOrStarting();
+    private bool _canStop => !_busy && _profile is not null && IsStopAllowed();
+    private bool _canRestart => !_busy && _profile is not null && _runtimeStatus?.State is ServerRuntimeState.Running;
+    private string RuntimeStateLabel => _runtimeStatus?.State.ToString() ?? "Unknown";
+    private string RuntimeActionSummary => _profile is null
+        ? "Pick a profile to see runtime controls."
+        : _runtimeStatus?.State switch
+        {
+            ServerRuntimeState.Running => "The server is online. Stop it before a maintenance update, or restart it if you only need a clean bounce.",
+            ServerRuntimeState.Starting => "The server is starting. Wait for the runtime to settle before sending more actions.",
+            ServerRuntimeState.Stopping => "The server is stopping. Hold off on new commands until the process is fully down.",
+            ServerRuntimeState.Crashed => "The server crashed. Restart it after you review the install/update posture and the latest log line.",
+            _ when _installDetected => "The install is present. Start it when you're ready, or update it first if you're preparing a maintenance window.",
+            _ => "Install the branch first, then use Start once the runtime footprint is ready.",
+        };
+
+    private bool IsRunningOrStarting() => _runtimeStatus?.State is ServerRuntimeState.Running or ServerRuntimeState.Starting;
+
+    private bool IsStopAllowed() => _runtimeStatus?.State is ServerRuntimeState.Running or ServerRuntimeState.Starting or ServerRuntimeState.Crashed;
+
     protected override async Task OnParametersSetAsync()
     {
         await ReloadAsync();
@@ -331,6 +363,79 @@ else
     private async Task InstallAsync() => await QueueInstallAsync(Core.Runtime.OperationJobKind.Install, "Install");
 
     private async Task UpdateAsync() => await QueueUpdateAsync();
+
+    private async Task StartAsync()
+    {
+        if (_profile is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            await ProcessSupervisor.StartAsync(_profile, CancellationToken.None);
+            _statusMessage = "Server start requested.";
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task StopAsync()
+    {
+        if (_profile is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            await ProcessSupervisor.StopAsync(_profile.ProfileId, CancellationToken.None);
+            _statusMessage = "Server stop requested.";
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task RestartAsync()
+    {
+        if (_profile is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            await ProcessSupervisor.StopAsync(_profile.ProfileId, CancellationToken.None);
+            await ProcessSupervisor.StartAsync(_profile, CancellationToken.None);
+            _statusMessage = "Server restart requested.";
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
 
     private async Task QueueInstallAsync(Core.Runtime.OperationJobKind kind, string actionName)
     {
