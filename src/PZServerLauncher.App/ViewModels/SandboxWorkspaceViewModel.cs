@@ -21,7 +21,7 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             "Branch-aware gameplay and world settings from SandboxVars.lua.",
             "Sandbox settings are in sync.",
             legacy,
-            ["World setup", "Zombie lore", "Utilities", "Loot and climate", "Survival systems", "World events", "Survivor boosts", "Cleanup and wear", "Player experience"])
+            ["World setup", "Zombie population", "Zombie lore", "Utilities", "Loot and climate", "Survival systems", "World events", "Survivor boosts", "Cleanup and wear", "Player experience"])
     {
         _hostApiClient = hostApiClient;
         SaveSettingsCommand = new AsyncRelayCommand(SaveSettingsAsync);
@@ -94,6 +94,45 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
     [ObservableProperty]
     private string startTime = string.Empty;
+
+    [ObservableProperty]
+    private string populationMultiplier = string.Empty;
+
+    [ObservableProperty]
+    private string populationStartMultiplier = string.Empty;
+
+    [ObservableProperty]
+    private string populationPeakMultiplier = string.Empty;
+
+    [ObservableProperty]
+    private string populationPeakDay = string.Empty;
+
+    [ObservableProperty]
+    private string respawnHours = string.Empty;
+
+    [ObservableProperty]
+    private string respawnUnseenHours = string.Empty;
+
+    [ObservableProperty]
+    private string respawnMultiplier = string.Empty;
+
+    [ObservableProperty]
+    private string redistributeHours = string.Empty;
+
+    [ObservableProperty]
+    private string followSoundDistance = string.Empty;
+
+    [ObservableProperty]
+    private string rallyGroupSize = string.Empty;
+
+    [ObservableProperty]
+    private string rallyTravelDistance = string.Empty;
+
+    [ObservableProperty]
+    private string rallyGroupSeparation = string.Empty;
+
+    [ObservableProperty]
+    private string rallyGroupRadius = string.Empty;
 
     [ObservableProperty]
     private string zombieLoreSpeed = string.Empty;
@@ -420,6 +459,19 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             StartMonth = GetValue(values, ".sandbox.start-month");
             StartDay = GetValue(values, ".sandbox.start-day");
             StartTime = GetValue(values, ".sandbox.start-time");
+            PopulationMultiplier = GetValue(values, ".sandbox.population-multiplier");
+            PopulationStartMultiplier = GetValue(values, ".sandbox.population-start-multiplier");
+            PopulationPeakMultiplier = GetValue(values, ".sandbox.population-peak-multiplier");
+            PopulationPeakDay = GetValue(values, ".sandbox.population-peak-day");
+            RespawnHours = GetValue(values, ".sandbox.respawn-hours");
+            RespawnUnseenHours = GetValue(values, ".sandbox.respawn-unseen-hours");
+            RespawnMultiplier = GetValue(values, ".sandbox.respawn-multiplier");
+            RedistributeHours = GetValue(values, ".sandbox.redistribute-hours");
+            FollowSoundDistance = GetValue(values, ".sandbox.follow-sound-distance");
+            RallyGroupSize = GetValue(values, ".sandbox.rally-group-size");
+            RallyTravelDistance = GetValue(values, ".sandbox.rally-travel-distance");
+            RallyGroupSeparation = GetValue(values, ".sandbox.rally-group-separation");
+            RallyGroupRadius = GetValue(values, ".sandbox.rally-group-radius");
             ZombieLoreSpeed = GetValue(values, ".sandbox.zombie-lore-speed");
             ZombieLoreStrength = GetValue(values, ".sandbox.zombie-lore-strength");
             ZombieLoreToughness = GetValue(values, ".sandbox.zombie-lore-toughness");
@@ -487,6 +539,19 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             [$"{prefix}.sandbox.start-month"] = StartMonth,
             [$"{prefix}.sandbox.start-day"] = StartDay,
             [$"{prefix}.sandbox.start-time"] = StartTime,
+            [$"{prefix}.sandbox.population-multiplier"] = PopulationMultiplier,
+            [$"{prefix}.sandbox.population-start-multiplier"] = PopulationStartMultiplier,
+            [$"{prefix}.sandbox.population-peak-multiplier"] = PopulationPeakMultiplier,
+            [$"{prefix}.sandbox.population-peak-day"] = PopulationPeakDay,
+            [$"{prefix}.sandbox.respawn-hours"] = RespawnHours,
+            [$"{prefix}.sandbox.respawn-unseen-hours"] = RespawnUnseenHours,
+            [$"{prefix}.sandbox.respawn-multiplier"] = RespawnMultiplier,
+            [$"{prefix}.sandbox.redistribute-hours"] = RedistributeHours,
+            [$"{prefix}.sandbox.follow-sound-distance"] = FollowSoundDistance,
+            [$"{prefix}.sandbox.rally-group-size"] = RallyGroupSize,
+            [$"{prefix}.sandbox.rally-travel-distance"] = RallyTravelDistance,
+            [$"{prefix}.sandbox.rally-group-separation"] = RallyGroupSeparation,
+            [$"{prefix}.sandbox.rally-group-radius"] = RallyGroupRadius,
             [$"{prefix}.sandbox.zombie-lore-speed"] = ZombieLoreSpeed,
             [$"{prefix}.sandbox.zombie-lore-strength"] = ZombieLoreStrength,
             [$"{prefix}.sandbox.zombie-lore-toughness"] = ZombieLoreToughness,
@@ -584,6 +649,19 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             StartMonth = string.Empty;
             StartDay = string.Empty;
             StartTime = string.Empty;
+            PopulationMultiplier = string.Empty;
+            PopulationStartMultiplier = string.Empty;
+            PopulationPeakMultiplier = string.Empty;
+            PopulationPeakDay = string.Empty;
+            RespawnHours = string.Empty;
+            RespawnUnseenHours = string.Empty;
+            RespawnMultiplier = string.Empty;
+            RedistributeHours = string.Empty;
+            FollowSoundDistance = string.Empty;
+            RallyGroupSize = string.Empty;
+            RallyTravelDistance = string.Empty;
+            RallyGroupSeparation = string.Empty;
+            RallyGroupRadius = string.Empty;
             ZombieLoreSpeed = string.Empty;
             ZombieLoreStrength = string.Empty;
             ZombieLoreToughness = string.Empty;
@@ -649,6 +727,19 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
     partial void OnStartMonthChanged(string value) => NotifyFieldEdited();
     partial void OnStartDayChanged(string value) => NotifyFieldEdited();
     partial void OnStartTimeChanged(string value) => NotifyFieldEdited();
+    partial void OnPopulationMultiplierChanged(string value) => NotifyFieldEdited();
+    partial void OnPopulationStartMultiplierChanged(string value) => NotifyFieldEdited();
+    partial void OnPopulationPeakMultiplierChanged(string value) => NotifyFieldEdited();
+    partial void OnPopulationPeakDayChanged(string value) => NotifyFieldEdited();
+    partial void OnRespawnHoursChanged(string value) => NotifyFieldEdited();
+    partial void OnRespawnUnseenHoursChanged(string value) => NotifyFieldEdited();
+    partial void OnRespawnMultiplierChanged(string value) => NotifyFieldEdited();
+    partial void OnRedistributeHoursChanged(string value) => NotifyFieldEdited();
+    partial void OnFollowSoundDistanceChanged(string value) => NotifyFieldEdited();
+    partial void OnRallyGroupSizeChanged(string value) => NotifyFieldEdited();
+    partial void OnRallyTravelDistanceChanged(string value) => NotifyFieldEdited();
+    partial void OnRallyGroupSeparationChanged(string value) => NotifyFieldEdited();
+    partial void OnRallyGroupRadiusChanged(string value) => NotifyFieldEdited();
     partial void OnZombieLoreSpeedChanged(string value) => NotifyFieldEdited();
     partial void OnZombieLoreStrengthChanged(string value) => NotifyFieldEdited();
     partial void OnZombieLoreToughnessChanged(string value) => NotifyFieldEdited();

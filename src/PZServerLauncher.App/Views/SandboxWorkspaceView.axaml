@@ -157,6 +157,66 @@
                     </Border>
                 </Grid>
 
+                <Border Classes="card" Padding="18" IsEnabled="{Binding CanEdit}">
+                    <StackPanel Spacing="12">
+                        <TextBlock Classes="kicker" Text="Zombie Population" />
+                        <Grid ColumnDefinitions="*,*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="10">
+                            <StackPanel Spacing="4">
+                                <TextBlock Classes="body" Text="Population Multiplier" />
+                                <TextBox Text="{Binding PopulationMultiplier}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Spacing="4">
+                                <TextBlock Classes="body" Text="Start Population" />
+                                <TextBox Text="{Binding PopulationStartMultiplier}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2" Spacing="4">
+                                <TextBlock Classes="body" Text="Peak Population" />
+                                <TextBox Text="{Binding PopulationPeakMultiplier}" />
+                            </StackPanel>
+                            <StackPanel Grid.Row="1" Spacing="4">
+                                <TextBlock Classes="body" Text="Peak Day" />
+                                <TextBox Text="{Binding PopulationPeakDay}" />
+                            </StackPanel>
+                            <StackPanel Grid.Row="1" Grid.Column="1" Spacing="4">
+                                <TextBlock Classes="body" Text="Respawn Hours" />
+                                <TextBox Text="{Binding RespawnHours}" />
+                            </StackPanel>
+                            <StackPanel Grid.Row="1" Grid.Column="2" Spacing="4">
+                                <TextBlock Classes="body" Text="Respawn Unseen Hours" />
+                                <TextBox Text="{Binding RespawnUnseenHours}" />
+                            </StackPanel>
+                            <StackPanel Grid.Row="2" Spacing="4">
+                                <TextBlock Classes="body" Text="Respawn Multiplier" />
+                                <TextBox Text="{Binding RespawnMultiplier}" />
+                            </StackPanel>
+                            <StackPanel Grid.Row="2" Grid.Column="1" Spacing="4">
+                                <TextBlock Classes="body" Text="Redistribute Hours" />
+                                <TextBox Text="{Binding RedistributeHours}" />
+                            </StackPanel>
+                            <StackPanel Grid.Row="2" Grid.Column="2" Spacing="4">
+                                <TextBlock Classes="body" Text="Follow Sound Distance" />
+                                <TextBox Text="{Binding FollowSoundDistance}" />
+                            </StackPanel>
+                            <StackPanel Grid.Row="3" Spacing="4">
+                                <TextBlock Classes="body" Text="Rally Group Size" />
+                                <TextBox Text="{Binding RallyGroupSize}" />
+                            </StackPanel>
+                            <StackPanel Grid.Row="3" Grid.Column="1" Spacing="4">
+                                <TextBlock Classes="body" Text="Rally Travel Distance" />
+                                <TextBox Text="{Binding RallyTravelDistance}" />
+                            </StackPanel>
+                            <StackPanel Grid.Row="3" Grid.Column="2" Spacing="4">
+                                <TextBlock Classes="body" Text="Rally Group Separation" />
+                                <TextBox Text="{Binding RallyGroupSeparation}" />
+                            </StackPanel>
+                            <StackPanel Grid.Row="4" Spacing="4">
+                                <TextBlock Classes="body" Text="Rally Group Radius" />
+                                <TextBox Text="{Binding RallyGroupRadius}" />
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
                 <Grid ColumnDefinitions="1.2*,.8*" ColumnSpacing="16" IsEnabled="{Binding CanEdit}">
                     <Border Classes="card" Padding="18">
                         <StackPanel Spacing="12">

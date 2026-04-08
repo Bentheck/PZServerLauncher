@@ -138,6 +138,25 @@ public sealed class ProjectZomboidSettingsCatalogResolver : ISettingsCatalogReso
                         Field($"{branchPrefix}.sandbox.start-time", "Start Time", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "StartTime", defaultValue: "2", helpText: "1 is 7AM, 5 is 5PM, 9 is 5AM."),
                     }),
                 new StructuredSectionDefinition(
+                    $"{branchPrefix}.sandbox.zombie-population",
+                    "Zombie Population",
+                    new[]
+                    {
+                        Field($"{branchPrefix}.sandbox.population-multiplier", "Population Multiplier", StructuredValueKind.Text, ConfigFileKind.SandboxVars, "ZombieConfig.PopulationMultiplier", defaultValue: "1.0", helpText: "Global zombie population multiplier across the map."),
+                        Field($"{branchPrefix}.sandbox.population-start-multiplier", "Start Population", StructuredValueKind.Text, ConfigFileKind.SandboxVars, "ZombieConfig.PopulationStartMultiplier", defaultValue: "1.0", helpText: "Population multiplier on day one."),
+                        Field($"{branchPrefix}.sandbox.population-peak-multiplier", "Peak Population", StructuredValueKind.Text, ConfigFileKind.SandboxVars, "ZombieConfig.PopulationPeakMultiplier", defaultValue: "1.5", helpText: "Population multiplier once the world reaches peak intensity."),
+                        Field($"{branchPrefix}.sandbox.population-peak-day", "Peak Day", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "ZombieConfig.PopulationPeakDay", defaultValue: "28", helpText: "Days after apocalypse start before peak population is reached."),
+                        Field($"{branchPrefix}.sandbox.respawn-hours", "Respawn Hours", StructuredValueKind.Text, ConfigFileKind.SandboxVars, "ZombieConfig.RespawnHours", defaultValue: "72.0", helpText: "Hours before cleared zones begin to respawn zombies."),
+                        Field($"{branchPrefix}.sandbox.respawn-unseen-hours", "Respawn Unseen Hours", StructuredValueKind.Text, ConfigFileKind.SandboxVars, "ZombieConfig.RespawnUnseenHours", defaultValue: "16.0", helpText: "Hours a cell must remain unseen before respawn can happen."),
+                        Field($"{branchPrefix}.sandbox.respawn-multiplier", "Respawn Multiplier", StructuredValueKind.Text, ConfigFileKind.SandboxVars, "ZombieConfig.RespawnMultiplier", defaultValue: "0.1", helpText: "Share of missing population restored on each respawn pass."),
+                        Field($"{branchPrefix}.sandbox.redistribute-hours", "Redistribute Hours", StructuredValueKind.Text, ConfigFileKind.SandboxVars, "ZombieConfig.RedistributeHours", defaultValue: "12.0", helpText: "Hours between zombie redistribution passes."),
+                        Field($"{branchPrefix}.sandbox.follow-sound-distance", "Follow Sound Distance", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "ZombieConfig.FollowSoundDistance", defaultValue: "100", helpText: "How far zombies follow a sound source before giving up."),
+                        Field($"{branchPrefix}.sandbox.rally-group-size", "Rally Group Size", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "ZombieConfig.RallyGroupSize", defaultValue: "20", helpText: "Maximum number of zombies in one rally group."),
+                        Field($"{branchPrefix}.sandbox.rally-travel-distance", "Rally Travel Distance", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "ZombieConfig.RallyTravelDistance", defaultValue: "20", helpText: "How far rally groups move when redistributing."),
+                        Field($"{branchPrefix}.sandbox.rally-group-separation", "Rally Group Separation", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "ZombieConfig.RallyGroupSeparation", defaultValue: "15", helpText: "Distance kept between neighboring rally groups."),
+                        Field($"{branchPrefix}.sandbox.rally-group-radius", "Rally Group Radius", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "ZombieConfig.RallyGroupRadius", defaultValue: "3", helpText: "Radius occupied by a rally group once it gathers."),
+                    }),
+                new StructuredSectionDefinition(
                     $"{branchPrefix}.sandbox.zombie-lore",
                     "Zombie Lore",
                     new[]

@@ -33,6 +33,9 @@ public sealed class SettingsCatalogResolverTests
         Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.erosion-speed");
         Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.food-rot-speed");
         Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.alarm");
+        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.population-multiplier" && field.Target.KeyPath == "ZombieConfig.PopulationMultiplier");
+        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.respawn-multiplier" && field.Target.KeyPath == "ZombieConfig.RespawnMultiplier");
+        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.rally-group-size" && field.Target.KeyPath == "ZombieConfig.RallyGroupSize");
         Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.helicopter");
         Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.zombie-lore-speed" && field.Target.KeyPath == "ZombieLore.Speed");
         Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.zombie-lore-transmission" && field.Target.KeyPath == "ZombieLore.Transmission");

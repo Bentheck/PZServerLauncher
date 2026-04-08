@@ -736,6 +736,79 @@ public sealed class StructuredSettingsServiceTests : IDisposable
         Assert.Contains("ThumpNoChasing = true", sandboxText);
     }
 
+    [Fact]
+    public async Task Sandbox_PageWritesZombiePopulationFieldsIntoNestedTable()
+    {
+        Directory.CreateDirectory(_tempRoot);
+        var profile = ServerProfileFactory.CreateStarterProfile() with
+        {
+            ProfileId = "profile-zombie-population",
+            DisplayName = "Profile Zombie Population",
+            ServerName = "profile-zombie-population",
+            InstallDirectory = Path.Combine(_tempRoot, "install-zombie-population"),
+            CacheDirectory = Path.Combine(_tempRoot, "cache-zombie-population"),
+        };
+
+        var planner = new ProjectZomboidServerPlanner();
+        var paths = planner.ResolvePaths(profile);
+        Directory.CreateDirectory(Path.GetDirectoryName(paths.SandboxVarsFilePath)!);
+        File.WriteAllText(paths.SandboxVarsFilePath, """
+            SandboxVars = {
+                VERSION = 4,
+                Zombies = 4,
+                ZombieConfig = {
+                    PopulationMultiplier = 1.0,
+                }
+            }
+            """);
+
+        await using var dbContext = TestDatabaseFactory.Create(Path.Combine(_tempRoot, "sandbox-zombie-population.db"));
+        var profileStore = new ProfileStore(dbContext);
+        await profileStore.UpsertAsync(profile);
+
+        var service = CreateService(profileStore, planner);
+        var valueSet = service.GetPage(profile, ProfileWorkspacePageIds.Sandbox);
+
+        Assert.Equal("1.0", valueSet.Values["b42.sandbox.population-multiplier"]);
+        Assert.Equal("1.0", valueSet.Values["b42.sandbox.population-start-multiplier"]);
+        Assert.Equal("28", valueSet.Values["b42.sandbox.population-peak-day"]);
+
+        var saveResult = await service.SaveAsync(profile, ProfileWorkspacePageIds.Sandbox, new Dictionary<string, string?>(valueSet.Values, StringComparer.Ordinal)
+        {
+            ["b42.sandbox.population-multiplier"] = "1.8",
+            ["b42.sandbox.population-start-multiplier"] = "0.6",
+            ["b42.sandbox.population-peak-multiplier"] = "2.5",
+            ["b42.sandbox.population-peak-day"] = "45",
+            ["b42.sandbox.respawn-hours"] = "96.0",
+            ["b42.sandbox.respawn-unseen-hours"] = "18.0",
+            ["b42.sandbox.respawn-multiplier"] = "0.15",
+            ["b42.sandbox.redistribute-hours"] = "8.0",
+            ["b42.sandbox.follow-sound-distance"] = "120",
+            ["b42.sandbox.rally-group-size"] = "12",
+            ["b42.sandbox.rally-travel-distance"] = "18",
+            ["b42.sandbox.rally-group-separation"] = "20",
+            ["b42.sandbox.rally-group-radius"] = "5",
+        });
+
+        var sandboxText = File.ReadAllText(paths.SandboxVarsFilePath);
+
+        Assert.True(saveResult.Validation.IsValid);
+        Assert.Contains("ZombieConfig = {", sandboxText);
+        Assert.Contains("PopulationMultiplier = 1.8", sandboxText);
+        Assert.Contains("PopulationStartMultiplier = 0.6", sandboxText);
+        Assert.Contains("PopulationPeakMultiplier = 2.5", sandboxText);
+        Assert.Contains("PopulationPeakDay = 45", sandboxText);
+        Assert.Contains("RespawnHours = 96.0", sandboxText);
+        Assert.Contains("RespawnUnseenHours = 18.0", sandboxText);
+        Assert.Contains("RespawnMultiplier = 0.15", sandboxText);
+        Assert.Contains("RedistributeHours = 8.0", sandboxText);
+        Assert.Contains("FollowSoundDistance = 120", sandboxText);
+        Assert.Contains("RallyGroupSize = 12", sandboxText);
+        Assert.Contains("RallyTravelDistance = 18", sandboxText);
+        Assert.Contains("RallyGroupSeparation = 20", sandboxText);
+        Assert.Contains("RallyGroupRadius = 5", sandboxText);
+    }
+
     private static StructuredSettingsService CreateService(ProfileStore profileStore, ProjectZomboidServerPlanner planner) =>
         new(
             profileStore,

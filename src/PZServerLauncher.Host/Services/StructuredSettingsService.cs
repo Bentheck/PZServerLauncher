@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using System.Globalization;
 using System.Net;
 using System.Text;
 using System.Text.Json;
@@ -569,6 +570,19 @@ public sealed class StructuredSettingsService(
         ValidateRangedInteger(values, $"{branchPrefix}.sandbox.start-month", 1, 12, "Start month must be between 1 and 12.", fieldErrors);
         ValidateRangedInteger(values, $"{branchPrefix}.sandbox.start-day", 1, 31, "Start day must be between 1 and 31.", fieldErrors);
         ValidateRangedInteger(values, $"{branchPrefix}.sandbox.start-time", 1, 9, "Start time must be between 1 and 9.", fieldErrors);
+        ValidateMinimumDecimal(values, $"{branchPrefix}.sandbox.population-multiplier", 0m, "Population multiplier must be zero or greater.", fieldErrors);
+        ValidateMinimumDecimal(values, $"{branchPrefix}.sandbox.population-start-multiplier", 0m, "Start population must be zero or greater.", fieldErrors);
+        ValidateMinimumDecimal(values, $"{branchPrefix}.sandbox.population-peak-multiplier", 0m, "Peak population must be zero or greater.", fieldErrors);
+        ValidateMinimumInteger(values, $"{branchPrefix}.sandbox.population-peak-day", 0, "Peak day must be zero or greater.", fieldErrors);
+        ValidateMinimumDecimal(values, $"{branchPrefix}.sandbox.respawn-hours", 0m, "Respawn hours must be zero or greater.", fieldErrors);
+        ValidateMinimumDecimal(values, $"{branchPrefix}.sandbox.respawn-unseen-hours", 0m, "Respawn unseen hours must be zero or greater.", fieldErrors);
+        ValidateMinimumDecimal(values, $"{branchPrefix}.sandbox.respawn-multiplier", 0m, "Respawn multiplier must be zero or greater.", fieldErrors);
+        ValidateMinimumDecimal(values, $"{branchPrefix}.sandbox.redistribute-hours", 0m, "Redistribute hours must be zero or greater.", fieldErrors);
+        ValidateMinimumInteger(values, $"{branchPrefix}.sandbox.follow-sound-distance", 0, "Follow sound distance must be zero or greater.", fieldErrors);
+        ValidateMinimumInteger(values, $"{branchPrefix}.sandbox.rally-group-size", 0, "Rally group size must be zero or greater.", fieldErrors);
+        ValidateMinimumInteger(values, $"{branchPrefix}.sandbox.rally-travel-distance", 0, "Rally travel distance must be zero or greater.", fieldErrors);
+        ValidateMinimumInteger(values, $"{branchPrefix}.sandbox.rally-group-separation", 0, "Rally group separation must be zero or greater.", fieldErrors);
+        ValidateMinimumInteger(values, $"{branchPrefix}.sandbox.rally-group-radius", 0, "Rally group radius must be zero or greater.", fieldErrors);
         ValidateMinimumInteger(values, $"{branchPrefix}.sandbox.water-shut-modifier", -1, "Water shutoff day must be -1 or greater.", fieldErrors);
         ValidateMinimumInteger(values, $"{branchPrefix}.sandbox.electricity-shut-modifier", -1, "Electricity shutoff day must be -1 or greater.", fieldErrors);
         ValidateRangedInteger(values, $"{branchPrefix}.sandbox.erosion-speed", 1, 5, "Erosion speed must be between 1 and 5.", fieldErrors);
@@ -903,6 +917,21 @@ public sealed class StructuredSettingsService(
         IDictionary<string, IReadOnlyList<string>> fieldErrors)
     {
         if (!values.TryGetValue(fieldId, out var value) || !int.TryParse(value, out var parsed) || parsed < minimum)
+        {
+            fieldErrors[fieldId] = [error];
+        }
+    }
+
+    private static void ValidateMinimumDecimal(
+        IReadOnlyDictionary<string, string?> values,
+        string fieldId,
+        decimal minimum,
+        string error,
+        IDictionary<string, IReadOnlyList<string>> fieldErrors)
+    {
+        if (!values.TryGetValue(fieldId, out var value) ||
+            !decimal.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed) ||
+            parsed < minimum)
         {
             fieldErrors[fieldId] = [error];
         }
