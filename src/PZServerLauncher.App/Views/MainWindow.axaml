@@ -41,7 +41,7 @@
 
                     <WrapPanel HorizontalAlignment="Right" ItemWidth="132" ItemHeight="36">
                         <Button Command="{Binding RefreshLegacyCommand}" Content="Refresh" />
-                        <Button Command="{Binding OpenClassicCommand}" Content="Open Classic" />
+                        <Button Command="{Binding OpenClassicCommand}" Content="Open Legacy" />
                         <Button Command="{Binding ExitDesktopCommand}" Content="Exit Desktop" />
                     </WrapPanel>
                 </StackPanel>
@@ -96,7 +96,7 @@
                     <Border Background="#F1E6D7" CornerRadius="14" Padding="14">
                         <StackPanel Spacing="6">
                             <TextBlock Classes="kicker" Text="Migration Note" />
-                            <TextBlock Classes="body" Text="All per-profile workspace pages are now live. Classic remains only for the remaining global host-level surfaces while the final shell cutover lands." TextWrapping="Wrap" />
+                            <TextBlock Classes="body" Text="Dashboard, Profiles, Host, Remote Access, and Users now have dedicated workspace pages. Legacy stays available only as a fallback while the final cleanup lands." TextWrapping="Wrap" />
                         </StackPanel>
                     </Border>
                 </StackPanel>

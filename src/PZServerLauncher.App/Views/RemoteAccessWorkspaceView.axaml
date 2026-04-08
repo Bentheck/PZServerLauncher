@@ -1,0 +1,58 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:PZServerLauncher.App.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignWidth="1120"
+             d:DesignHeight="860"
+             x:Class="PZServerLauncher.App.Views.RemoteAccessWorkspaceView"
+             x:DataType="vm:RemoteAccessWorkspaceViewModel">
+    <Border Classes="card" Padding="24">
+        <StackPanel Spacing="18">
+            <StackPanel Spacing="4">
+                <TextBlock Classes="panel-title" FontSize="24" Text="{Binding PageTitle}" />
+                <TextBlock Classes="body" Text="{Binding PageSummary}" TextWrapping="Wrap" />
+            </StackPanel>
+
+            <Grid ColumnDefinitions="Auto,*,Auto,*" ColumnSpacing="12" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="10">
+                <CheckBox Grid.ColumnSpan="4"
+                          Content="Enable Remote Access"
+                          IsChecked="{Binding Legacy.RemoteAccessEnabled}" />
+
+                <TextBlock Grid.Row="1" Classes="body" Text="Bind Address" VerticalAlignment="Center" />
+                <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Legacy.RemoteBindAddress}" />
+                <TextBlock Grid.Row="1" Grid.Column="2" Classes="body" Text="HTTPS Port" VerticalAlignment="Center" />
+                <TextBox Grid.Row="1" Grid.Column="3" Text="{Binding Legacy.RemoteHttpsPort}" />
+
+                <TextBlock Grid.Row="2" Classes="body" Text="Public Hostname" VerticalAlignment="Center" />
+                <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Legacy.RemotePublicHostname}" />
+                <TextBlock Grid.Row="2" Grid.Column="2" Classes="body" Text="PFX Password" VerticalAlignment="Center" />
+                <TextBox Grid.Row="2" Grid.Column="3" PasswordChar="*" Text="{Binding Legacy.RemoteCertificatePassword}" />
+
+                <TextBlock Grid.Row="3" Classes="body" Text="PFX Certificate Path" VerticalAlignment="Center" />
+                <TextBox Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="3" Text="{Binding Legacy.RemoteCertificatePath}" />
+            </Grid>
+
+            <CheckBox Content="Create Or Update The Windows Firewall Rule"
+                      IsChecked="{Binding Legacy.RemoteCreateFirewallRule}" />
+
+            <WrapPanel Orientation="Horizontal" ItemWidth="176" ItemHeight="36">
+                <Button Command="{Binding Legacy.SaveRemoteAccessCommand}" Content="Save Remote Settings" />
+                <Button Command="{Binding Legacy.RemoteSelfTestCommand}" Content="Run Local Self-Test" />
+                <Button Command="{Binding Legacy.ApplyFirewallRuleCommand}" Content="Apply Firewall Rule" />
+            </WrapPanel>
+
+            <Border Background="#FFF8F1" CornerRadius="14" Padding="16">
+                <StackPanel Spacing="8">
+                    <TextBlock Classes="kicker" Text="Setup Status" />
+                    <TextBlock Classes="body" Text="{Binding Legacy.RemoteWizardStatus}" TextWrapping="Wrap" />
+                    <TextBlock Classes="body"
+                               FontFamily="Cascadia Code,Consolas,monospace"
+                               Text="{Binding Legacy.RemoteSelfTestChecks}"
+                               TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </Border>
+</UserControl>

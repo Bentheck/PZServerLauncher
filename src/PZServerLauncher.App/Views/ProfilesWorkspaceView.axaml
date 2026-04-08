@@ -55,7 +55,7 @@
                         <TextBlock Classes="panel-title" FontSize="24" Text="Per-Profile Workspace" />
                         <TextBlock Classes="body" Text="Choose a profile section below. Every per-profile workspace page is now live, including Advanced Files as the raw fallback for unsupported cases." TextWrapping="Wrap" />
                     </StackPanel>
-                    <Button Grid.Column="1" Command="{Binding OpenClassicCommand}" Content="Open Classic" />
+                    <Button Grid.Column="1" Command="{Binding OpenClassicCommand}" Content="Open Legacy" />
                 </Grid>
             </Border>
 

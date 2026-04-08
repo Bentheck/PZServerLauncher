@@ -1,0 +1,63 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:PZServerLauncher.App.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignWidth="980"
+             d:DesignHeight="760"
+             x:Class="PZServerLauncher.App.Views.UsersWorkspaceView"
+             x:DataType="vm:UsersWorkspaceViewModel">
+    <Border Classes="card" Padding="24">
+        <StackPanel Spacing="18">
+            <StackPanel Spacing="4">
+                <TextBlock Classes="panel-title" FontSize="24" Text="{Binding PageTitle}" />
+                <TextBlock Classes="body" Text="{Binding PageSummary}" TextWrapping="Wrap" />
+            </StackPanel>
+
+            <Border Background="#F1E6D7" CornerRadius="14" Padding="16">
+                <StackPanel Spacing="6">
+                    <TextBlock Classes="kicker" Text="Current Owner State" />
+                    <TextBlock Classes="body" Text="{Binding Legacy.OwnerSummary}" TextWrapping="Wrap" />
+                    <TextBlock Classes="body" Text="The optional web admin still provides the fuller role-management surface. Desktop keeps owner bootstrap close at hand so the web side can be enabled without leaving the app." TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+
+            <Border Background="#FFF8F1"
+                    CornerRadius="14"
+                    Padding="18"
+                    IsVisible="{Binding Legacy.OwnerBootstrapRequired}">
+                <StackPanel Spacing="14">
+                    <StackPanel Spacing="4">
+                        <TextBlock Classes="panel-title" FontSize="20" Text="Owner Bootstrap" />
+                        <TextBlock Classes="body" Text="Create the initial local owner account now so the optional web admin surface can be enabled later without leaving the desktop app." TextWrapping="Wrap" />
+                    </StackPanel>
+
+                    <Grid ColumnDefinitions="*,*,*" ColumnSpacing="12">
+                        <StackPanel Spacing="4">
+                            <TextBlock Classes="kicker" Text="Username" />
+                            <TextBox Text="{Binding Legacy.OwnerUserName}" PlaceholderText="owner" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Spacing="4">
+                            <TextBlock Classes="kicker" Text="Email" />
+                            <TextBox Text="{Binding Legacy.OwnerEmail}" PlaceholderText="owner@localhost" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" Spacing="4">
+                            <TextBlock Classes="kicker" Text="Password" />
+                            <TextBox Text="{Binding Legacy.OwnerPassword}" PasswordChar="*" PlaceholderText="Choose a password" />
+                        </StackPanel>
+                    </Grid>
+
+                    <Button HorizontalAlignment="Left"
+                            Command="{Binding Legacy.BootstrapOwnerCommand}"
+                            Content="Create Owner Account" />
+                </StackPanel>
+            </Border>
+
+            <TextBlock Classes="body"
+                       IsVisible="{Binding OwnerBootstrapConfigured}"
+                       Text="Owner bootstrap is already configured. Use the web Users page for ongoing multi-user administration."
+                       TextWrapping="Wrap" />
+        </StackPanel>
+    </Border>
+</UserControl>

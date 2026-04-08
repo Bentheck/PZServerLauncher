@@ -1,0 +1,39 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:PZServerLauncher.App.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignWidth="980"
+             d:DesignHeight="760"
+             x:Class="PZServerLauncher.App.Views.HostWorkspaceView"
+             x:DataType="vm:HostWorkspaceViewModel">
+    <Border Classes="card" Padding="24">
+        <StackPanel Spacing="18">
+            <StackPanel Spacing="4">
+                <TextBlock Classes="panel-title" FontSize="24" Text="{Binding PageTitle}" />
+                <TextBlock Classes="body" Text="{Binding PageSummary}" TextWrapping="Wrap" />
+            </StackPanel>
+
+            <Border Background="#F1E6D7" CornerRadius="14" Padding="16">
+                <StackPanel Spacing="6">
+                    <TextBlock Classes="kicker" Text="Host Status" />
+                    <TextBlock Classes="body" Text="{Binding Legacy.HostSummary}" TextWrapping="Wrap" />
+                    <TextBlock Classes="body" Text="{Binding Legacy.StatusMessage}" TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+
+            <CheckBox Content="Start Host With Windows"
+                      IsChecked="{Binding Legacy.HostStartWithWindows}" />
+
+            <WrapPanel Orientation="Horizontal" ItemWidth="156" ItemHeight="36">
+                <Button Command="{Binding Legacy.SaveHostSettingsCommand}" Content="Save Host Settings" />
+                <Button Command="{Binding Legacy.StopHostCommand}" Content="Stop Host" />
+                <Button Command="{Binding Legacy.StopAllAndHostCommand}" Content="Stop All + Host" />
+                <Button Command="{Binding Legacy.ExitDesktopCommand}" Content="Exit Desktop" />
+            </WrapPanel>
+
+            <TextBlock Classes="body" Text="Closing the window still minimizes to tray. Exit Desktop closes only the UI and leaves the local host running until you explicitly stop it." TextWrapping="Wrap" />
+        </StackPanel>
+    </Border>
+</UserControl>

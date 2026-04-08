@@ -26,26 +26,10 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
         _hostApiClient = hostApiClient;
         _desktopShellService = desktopShellService;
 
-        Dashboard = new WorkspaceSectionViewModel(
-            "Dashboard",
-            "High-level status, quick navigation, and migration guidance while the workspace shell is still landing.",
-            "Dashboard draft cleared.",
-            ["Runtime summary", "Latest jobs", "Host status", "Migration guidance"]);
-        Host = new WorkspaceSectionViewModel(
-            "Host",
-            "Host settings, host lifecycle controls, and startup behavior are grouped here during the migration.",
-            "Host draft cleared.",
-            ["Start with Windows", "Stop host", "Start/stop all", "Host health"]);
-        RemoteAccess = new WorkspaceSectionViewModel(
-            "Remote Access",
-            "Optional HTTPS admin setup, firewall guidance, and self-test scaffolding live here.",
-            "Remote Access draft cleared.",
-            ["HTTPS binding", "Firewall rule", "Self-test", "Remote admin"]);
-        Users = new WorkspaceSectionViewModel(
-            "Users",
-            "Owner bootstrap and the future web-role surface will land here.",
-            "Users draft cleared.",
-            ["Owner bootstrap", "Admin roles", "Operator roles", "Viewer roles"]);
+        Dashboard = new DashboardWorkspaceViewModel(legacy);
+        Host = new HostWorkspaceViewModel(legacy);
+        RemoteAccess = new RemoteAccessWorkspaceViewModel(legacy);
+        Users = new UsersWorkspaceViewModel(legacy);
         Profiles = new ProfilesWorkspaceViewModel(legacy, hostApiClient, runtimeEventStream, () => SelectGlobalPageByKey("classic"));
         Classic = new ClassicWorkspaceViewModel(legacy);
 
@@ -90,7 +74,7 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
 
     public string PageTitle => "Project Zomboid Workspace";
 
-    public string PageSummary => "Workspace shell scaffold with dashboard, profiles, host, remote access, users, and a temporary Classic surface.";
+    public string PageSummary => "Workspace shell with dedicated dashboard, profiles, host, remote access, users, and a temporary legacy fallback.";
 
     public string CurrentPageTitle => CurrentPage is IWorkspacePageHeader header ? header.PageTitle : PageTitle;
 
@@ -98,15 +82,15 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
 
     public ObservableCollection<WorkspaceNavigationItemViewModel> GlobalNavigation { get; }
 
-    public WorkspaceSectionViewModel Dashboard { get; }
+    public DashboardWorkspaceViewModel Dashboard { get; }
 
     public ProfilesWorkspaceViewModel Profiles { get; }
 
-    public WorkspaceSectionViewModel Host { get; }
+    public HostWorkspaceViewModel Host { get; }
 
-    public WorkspaceSectionViewModel RemoteAccess { get; }
+    public RemoteAccessWorkspaceViewModel RemoteAccess { get; }
 
-    public WorkspaceSectionViewModel Users { get; }
+    public UsersWorkspaceViewModel Users { get; }
 
     public ClassicWorkspaceViewModel Classic { get; }
 
