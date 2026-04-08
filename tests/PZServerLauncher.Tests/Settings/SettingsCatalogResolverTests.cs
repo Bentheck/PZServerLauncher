@@ -21,8 +21,10 @@ public sealed class SettingsCatalogResolverTests
         Assert.Equal(ProjectZomboidBranch.Unstable42, unstable.Branch);
         Assert.Contains(stable.Pages, page => page.PageId == "b41.general");
         Assert.Contains(stable.Pages, page => page.PageId == "b41.sandbox");
+        Assert.Contains(stable.Pages, page => page.PageId == "b41.network-and-admin");
         Assert.Contains(unstable.Pages, page => page.PageId == "b42.general");
         Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.runtime.memory");
         Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.zombies");
+        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.network.bind-ip");
     }
 }

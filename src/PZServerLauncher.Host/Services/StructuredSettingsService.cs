@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using System.Net;
 using System.Text;
 using System.Text.Json;
 using PZServerLauncher.Contracts.Profiles;
@@ -40,6 +41,7 @@ public sealed class StructuredSettingsService(
         {
             ProfileWorkspacePageIds.General => BuildGeneralValueSet(profile, catalog, pageId),
             ProfileWorkspacePageIds.Sandbox => BuildSandboxValueSet(profile, catalog, definition, pageId),
+            ProfileWorkspacePageIds.NetworkAndAdmin => BuildNetworkValueSet(profile, catalog, pageId),
             _ => BuildFallbackValueSet(catalog, pageId, SettingsUnavailableMessage),
         };
     }
@@ -50,6 +52,7 @@ public sealed class StructuredSettingsService(
         {
             ProfileWorkspacePageIds.General => ValidateGeneral(profile, pageId, values),
             ProfileWorkspacePageIds.Sandbox => ValidateSandbox(profile, pageId, values),
+            ProfileWorkspacePageIds.NetworkAndAdmin => ValidateNetwork(profile, pageId, values),
             _ => BuildFallbackValidation(pageId, SettingsUnavailableMessage),
         };
     }
@@ -133,6 +136,19 @@ public sealed class StructuredSettingsService(
                     configFileService.WriteRawFile(profile, ConfigFileKind.SandboxVars, raw.Sha256, updatedContent);
                     return new SettingsSaveResultDto(GetPage(profile, pageId), validation, true);
                 }
+            case ProfileWorkspacePageIds.NetworkAndAdmin:
+                {
+                    var branchPrefix = GetBranchPrefix(profile.Branch);
+                    var updated = await profileStore.UpsertAsync(profile with
+                    {
+                        BindIp = NormalizeOptional(values, $"{branchPrefix}.network.bind-ip"),
+                        AdminUsername = NormalizeOptional(values, $"{branchPrefix}.network.admin-user"),
+                        AdminPassword = NormalizeWriteOnlySecret(values, $"{branchPrefix}.network.admin-password", profile.AdminPassword),
+                        UpdatedAtUtc = DateTimeOffset.UtcNow,
+                    }, cancellationToken);
+
+                    return new SettingsSaveResultDto(GetPage(updated, pageId), validation, true);
+                }
             default:
                 return new SettingsSaveResultDto(
                     BuildFallbackValueSet(catalog, pageId, SettingsUnavailableMessage),
@@ -213,6 +229,26 @@ public sealed class StructuredSettingsService(
             null);
     }
 
+    private SettingsValueSetDto BuildNetworkValueSet(ServerProfile profile, StructuredSettingsCatalog catalog, string pageId)
+    {
+        var branchPrefix = GetBranchPrefix(profile.Branch);
+        var values = new Dictionary<string, string?>(StringComparer.Ordinal)
+        {
+            [$"{branchPrefix}.network.bind-ip"] = profile.BindIp ?? string.Empty,
+            [$"{branchPrefix}.network.admin-user"] = profile.AdminUsername ?? string.Empty,
+            [$"{branchPrefix}.network.admin-password"] = string.Empty,
+        };
+
+        return new SettingsValueSetDto(
+            catalog.CatalogId,
+            catalog.CatalogVersion,
+            pageId,
+            values,
+            ComputeSourceHash(values),
+            false,
+            null);
+    }
+
     private static SettingsValidationResultDto ValidateGeneral(
         ServerProfile profile,
         string pageId,
@@ -270,17 +306,52 @@ public sealed class StructuredSettingsService(
             null);
     }
 
+    private static SettingsValidationResultDto ValidateNetwork(
+        ServerProfile profile,
+        string pageId,
+        IReadOnlyDictionary<string, string?> values)
+    {
+        var branchPrefix = GetBranchPrefix(profile.Branch);
+        var fieldErrors = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
+
+        var bindIpKey = $"{branchPrefix}.network.bind-ip";
+        if (values.TryGetValue(bindIpKey, out var bindIp) &&
+            !string.IsNullOrWhiteSpace(bindIp) &&
+            !IPAddress.TryParse(bindIp, out _))
+        {
+            fieldErrors[bindIpKey] = ["Bind IP must be empty or a valid IPv4/IPv6 address."];
+        }
+
+        var passwordKey = $"{branchPrefix}.network.admin-password";
+        var usernameKey = $"{branchPrefix}.network.admin-user";
+        if (values.TryGetValue(passwordKey, out var password) &&
+            !string.IsNullOrWhiteSpace(password) &&
+            (!values.TryGetValue(usernameKey, out var username) || string.IsNullOrWhiteSpace(username)))
+        {
+            fieldErrors[usernameKey] = ["Admin username is required when setting a new admin password."];
+        }
+
+        return new SettingsValidationResultDto(
+            pageId,
+            fieldErrors.Count == 0,
+            fieldErrors,
+            [],
+            false,
+            null);
+    }
+
     private static SettingsPageDto MapPage(StructuredPageDefinition definition)
     {
         var pageId = MapPageId(definition.PageId);
-        var supportsStructuredEditing = pageId is ProfileWorkspacePageIds.General or ProfileWorkspacePageIds.Sandbox;
+        var supportsStructuredEditing = pageId is ProfileWorkspacePageIds.General or ProfileWorkspacePageIds.Sandbox or ProfileWorkspacePageIds.NetworkAndAdmin;
+        var supportsDrafts = pageId is ProfileWorkspacePageIds.General or ProfileWorkspacePageIds.Sandbox;
 
         return new SettingsPageDto(
             pageId,
             definition.DisplayName,
             BuildPageDescription(definition.PageId),
             supportsStructuredEditing,
-            supportsStructuredEditing,
+            supportsDrafts,
             definition.Sections.Select(MapSection).ToArray());
     }
 
@@ -487,6 +558,16 @@ public sealed class StructuredSettingsService(
         values.TryGetValue(key, out var value) && bool.TryParse(value, out var parsed)
             ? parsed
             : throw new InvalidOperationException($"Invalid boolean setting '{key}'.");
+
+    private static string? NormalizeOptional(IReadOnlyDictionary<string, string?> values, string key) =>
+        values.TryGetValue(key, out var value) && !string.IsNullOrWhiteSpace(value)
+            ? value.Trim()
+            : null;
+
+    private static string? NormalizeWriteOnlySecret(IReadOnlyDictionary<string, string?> values, string key, string? existingValue) =>
+        values.TryGetValue(key, out var value) && !string.IsNullOrWhiteSpace(value)
+            ? value.Trim()
+            : existingValue;
 
     private static string ComputeSourceHash(IReadOnlyDictionary<string, string?> values)
     {

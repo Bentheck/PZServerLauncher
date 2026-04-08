@@ -19,11 +19,7 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
         General = new GeneralWorkspaceViewModel(legacy, hostApiClient);
         Sandbox = new SandboxWorkspaceViewModel(legacy, hostApiClient);
         ModsAndMaps = new ModsAndMapsWorkspaceViewModel(legacy, hostApiClient);
-        NetworkAndAdmin = new WorkspaceSectionViewModel(
-            "Network & Admin",
-            "Bind address, admin/RCON settings, and access/security-related server knobs.",
-            "Network & Admin draft cleared.",
-            ["Bind IP", "RCON", "Admin settings", "Security options"]);
+        NetworkAndAdmin = new NetworkAndAdminWorkspaceViewModel(legacy, hostApiClient);
         Backups = new WorkspaceSectionViewModel(
             "Backups",
             "Backup history, manual backups, restore flow, and retention hints.",
@@ -98,7 +94,7 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
 
     public ModsAndMapsWorkspaceViewModel ModsAndMaps { get; }
 
-    public WorkspaceSectionViewModel NetworkAndAdmin { get; }
+    public NetworkAndAdminWorkspaceViewModel NetworkAndAdmin { get; }
 
     public WorkspaceSectionViewModel Backups { get; }
 
