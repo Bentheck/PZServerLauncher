@@ -1,0 +1,40 @@
+using Avalonia;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Data.Core;
+using Avalonia.Data.Core.Plugins;
+using System.Linq;
+using Avalonia.Markup.Xaml;
+using Microsoft.Extensions.DependencyInjection;
+using PZServerLauncher.App.ViewModels;
+using PZServerLauncher.App.Services;
+using PZServerLauncher.App.Views;
+
+namespace PZServerLauncher.App;
+
+public partial class App : Application
+{
+    private IServiceProvider? _serviceProvider;
+
+    public override void Initialize()
+    {
+        AvaloniaXamlLoader.Load(this);
+    }
+
+    public override void OnFrameworkInitializationCompleted()
+    {
+        _serviceProvider = new ServiceCollection()
+            .AddSingleton<LocalHostApiClient>()
+            .AddTransient<MainWindowViewModel>()
+            .BuildServiceProvider();
+
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            desktop.MainWindow = new MainWindow
+            {
+                DataContext = _serviceProvider.GetRequiredService<MainWindowViewModel>(),
+            };
+        }
+
+        base.OnFrameworkInitializationCompleted();
+    }
+}

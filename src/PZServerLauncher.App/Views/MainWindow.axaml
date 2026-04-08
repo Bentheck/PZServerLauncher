@@ -1,0 +1,132 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:PZServerLauncher.App.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        d:DesignWidth="1400"
+        d:DesignHeight="960"
+        x:Class="PZServerLauncher.App.Views.MainWindow"
+        x:Name="RootWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Icon="/Assets/avalonia-logo.ico"
+        Title="PZ Server Launcher"
+        Width="1400"
+        Height="960"
+        MinWidth="1100"
+        MinHeight="780">
+
+    <Design.DataContext>
+        <vm:MainWindowViewModel />
+    </Design.DataContext>
+
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto,*" Margin="28" RowSpacing="20">
+            <Border Classes="card" Padding="28">
+                <Grid ColumnDefinitions="*,360" ColumnSpacing="20">
+                    <StackPanel Spacing="10">
+                        <TextBlock Classes="kicker" Text="Desktop Control Surface" />
+                        <TextBlock FontSize="40" FontWeight="Bold" Foreground="#1D1A17" Text="{Binding Title}" />
+                        <TextBlock Classes="body" FontSize="18" Text="{Binding Subtitle}" />
+                    </StackPanel>
+                    <Border Background="#1F1D1B" CornerRadius="16" Padding="18">
+                        <StackPanel Spacing="8">
+                            <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Host Summary" />
+                            <TextBlock FontSize="20" FontWeight="SemiBold" Foreground="#F7F0E7" Text="{Binding HostSummary}" />
+                            <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding RemoteSummary}" />
+                            <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding OwnerSummary}" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Border>
+
+            <Border Grid.Row="1" Classes="card">
+                <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="12">
+                    <Button Command="{Binding RefreshCommand}" Content="Refresh" />
+                    <Button Grid.Column="1" Command="{Binding CreateStarterProfileCommand}" Content="Create Starter Profile" />
+                    <TextBlock Grid.Column="2" Classes="body" VerticalAlignment="Center" Text="{Binding StatusMessage}" />
+                </Grid>
+            </Border>
+
+            <Border Grid.Row="2" Classes="card">
+                <TextBlock Classes="body" Text="The desktop app starts or connects to the local host automatically, then drives the same loopback API used by the optional web companion." />
+            </Border>
+
+            <Border Grid.Row="3" Classes="card" IsVisible="{Binding OwnerBootstrapRequired}">
+                <StackPanel Spacing="14">
+                    <StackPanel Spacing="4">
+                        <TextBlock Classes="panel-title" FontSize="24" Text="Owner Bootstrap" />
+                        <TextBlock Classes="body" Text="Create the initial local owner account now so the optional web admin surface can be enabled later without leaving the desktop app." TextWrapping="Wrap" />
+                    </StackPanel>
+
+                    <Grid ColumnDefinitions="*,*,*" ColumnSpacing="12">
+                        <StackPanel Spacing="4">
+                            <TextBlock Classes="kicker" Text="Username" />
+                            <TextBox Text="{Binding OwnerUserName}" PlaceholderText="owner" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Spacing="4">
+                            <TextBlock Classes="kicker" Text="Email" />
+                            <TextBox Text="{Binding OwnerEmail}" PlaceholderText="owner@localhost" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" Spacing="4">
+                            <TextBlock Classes="kicker" Text="Password" />
+                            <TextBox Text="{Binding OwnerPassword}" PasswordChar="*" PlaceholderText="Choose a password" />
+                        </StackPanel>
+                    </Grid>
+
+                    <Button HorizontalAlignment="Left" Command="{Binding BootstrapOwnerCommand}" Content="Create Owner Account" />
+                </StackPanel>
+            </Border>
+
+            <ItemsControl Grid.Row="4" ItemsSource="{Binding Profiles}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:ProfileCardViewModel">
+                        <Border Classes="card" Margin="0,0,0,16">
+                            <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="14">
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Classes="panel-title" FontSize="22" Text="{Binding DisplayName}" />
+                                        <TextBlock Classes="body" Text="{Binding Branch}" />
+                                    </StackPanel>
+                                    <Border Background="#2A2927" CornerRadius="14" Padding="12,8" HorizontalAlignment="Right">
+                                        <TextBlock Foreground="#F7F0E7" Text="{Binding RuntimeState}" />
+                                    </Border>
+                                </Grid>
+
+                                <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="18">
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Classes="kicker" Text="Paths" />
+                                        <TextBlock Classes="body" FontFamily="Cascadia Code,Consolas,monospace" Text="{Binding InstallDirectory}" />
+                                        <TextBlock Classes="body" FontFamily="Cascadia Code,Consolas,monospace" Text="{Binding CacheDirectory}" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Spacing="4">
+                                        <TextBlock Classes="kicker" Text="Ports And Backups" />
+                                        <TextBlock Classes="body" Text="{Binding Ports}" />
+                                        <TextBlock Classes="body" Text="{Binding LastBackup}" />
+                                    </StackPanel>
+                                </Grid>
+
+                                <StackPanel Grid.Row="2" Spacing="12">
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Classes="kicker" Text="Latest Log" />
+                                        <TextBlock Classes="body" Text="{Binding LatestLogLine}" TextWrapping="Wrap" />
+                                    </StackPanel>
+
+                                    <WrapPanel ItemHeight="36" ItemWidth="132" Orientation="Horizontal">
+                                    <Button Command="{Binding #RootWindow.DataContext.InstallCommand}" CommandParameter="{Binding .}" Content="Install" />
+                                    <Button Command="{Binding #RootWindow.DataContext.UpdateCommand}" CommandParameter="{Binding .}" Content="Update" />
+                                    <Button Command="{Binding #RootWindow.DataContext.StartCommand}" CommandParameter="{Binding .}" Content="Start" />
+                                    <Button Command="{Binding #RootWindow.DataContext.StopCommand}" CommandParameter="{Binding .}" Content="Stop" />
+                                    <Button Command="{Binding #RootWindow.DataContext.RestartCommand}" CommandParameter="{Binding .}" Content="Restart" />
+                                    <Button Command="{Binding #RootWindow.DataContext.BackupCommand}" CommandParameter="{Binding .}" Content="Backup" />
+                                        <Button Command="{Binding #RootWindow.DataContext.RestoreCommand}" CommandParameter="{Binding .}" Content="Restore Latest" IsEnabled="{Binding HasBackup}" />
+                                    </WrapPanel>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Grid>
+    </ScrollViewer>
+</Window>
