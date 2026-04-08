@@ -37,20 +37,33 @@ public static class ProjectZomboidProfilePostureSummaryBuilder
         var factionEnabled = ParseBool(generalValues, ".server.faction-enabled");
         var tradeUi = ParseBool(generalValues, ".server.allow-trade-ui");
         var noFire = ParseBool(generalValues, ".server.no-fire");
-        var serverRulesSummary = $"Sleep {(sleepAllowed ? (sleepNeeded ? "required" : "allowed") : "disabled")} | safehouses {(playerSafehouse ? "enabled" : "off")} | factions {(factionEnabled ? "enabled" : "off")} | trade UI {(tradeUi ? "enabled" : "off")} | fire spread {(noFire ? "disabled" : "enabled")}.";
+        var respawnWithSelf = ParseBool(generalValues, ".server.respawn-with-self");
+        var worldItemRemovalHours = GetValue(generalValues, ".server.world-item-removal-hours", "0.0");
+        var cleanupSummary = decimal.TryParse(worldItemRemovalHours, out var cleanupHours) && cleanupHours > 0m
+            ? $"{cleanupHours:0.##}h"
+            : "off";
+        var serverRulesSummary = $"Sleep {(sleepAllowed ? (sleepNeeded ? "required" : "allowed") : "disabled")} | respawn self {(respawnWithSelf ? "on" : "off")} | cleanup {cleanupSummary} | safehouses {(playerSafehouse ? "enabled" : "off")} | factions {(factionEnabled ? "enabled" : "off")} | trade UI {(tradeUi ? "enabled" : "off")} | fire spread {(noFire ? "disabled" : "enabled")}.";
 
         var bindIp = GetValue(networkValues, ".network.bind-ip", "default bind");
         var steamVac = ParseBool(networkValues, ".network.steam-vac", true);
         var autoWhitelist = ParseBool(networkValues, ".network.auto-whitelist");
+        var displayUserName = ParseBool(networkValues, ".network.display-user-name", true);
+        var showFirstAndLastName = ParseBool(networkValues, ".network.show-first-last-name");
+        var mouseOverDisplayName = ParseBool(networkValues, ".network.mouse-over-display-name", true);
+        var hidePlayersBehindYou = ParseBool(networkValues, ".network.hide-players-behind-you", true);
+        var playerBumpPlayer = ParseBool(networkValues, ".network.player-bump-player");
         var voice3d = ParseBool(networkValues, ".network.voice-3d", true);
         var voiceMin = GetValue(networkValues, ".network.voice-min-distance", "10");
         var voiceMax = GetValue(networkValues, ".network.voice-max-distance", "100");
+        var nameplateSummary = displayUserName
+            ? showFirstAndLastName ? "full names" : "usernames"
+            : mouseOverDisplayName ? "hover names" : "names hidden";
         var voiceSummary = voiceEnabled
             ? voice3d
                 ? $"3D voice {voiceMin}-{voiceMax}"
                 : "global voice"
             : "voice disabled";
-        var networkSummary = $"Bind {bindIp} | VAC {(steamVac ? "on" : "off")} | whitelist {(autoWhitelist ? "auto-create" : "manual")} | safety {(safetyEnabled ? "enabled" : "off")} | {voiceSummary}.";
+        var networkSummary = $"Bind {bindIp} | VAC {(steamVac ? "on" : "off")} | whitelist {(autoWhitelist ? "auto-create" : "manual")} | safety {(safetyEnabled ? "enabled" : "off")} | names {nameplateSummary} | rear cull {(hidePlayersBehindYou ? "on" : "off")} | bump {(playerBumpPlayer ? "on" : "off")} | {voiceSummary}.";
 
         var zombies = GetValue(sandboxValues, ".sandbox.zombies", "4");
         var dayLength = GetValue(sandboxValues, ".sandbox.day-length", "3");

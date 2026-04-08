@@ -37,6 +37,8 @@ public sealed class ProjectZomboidProfilePostureSummaryBuilderTests
             ["b42.server.faction-enabled"] = "true",
             ["b42.server.allow-trade-ui"] = "false",
             ["b42.server.no-fire"] = "true",
+            ["b42.server.respawn-with-self"] = "true",
+            ["b42.server.world-item-removal-hours"] = "36.5",
         };
 
         var summary = ProjectZomboidProfilePostureSummaryBuilder.Build(
@@ -45,7 +47,7 @@ public sealed class ProjectZomboidProfilePostureSummaryBuilderTests
             new Dictionary<string, string?>(StringComparer.Ordinal),
             new Dictionary<string, string?>(StringComparer.Ordinal));
 
-        Assert.Equal("Sleep allowed | safehouses enabled | factions enabled | trade UI off | fire spread disabled.", summary.ServerRulesSummary);
+        Assert.Equal("Sleep allowed | respawn self on | cleanup 36.5h | safehouses enabled | factions enabled | trade UI off | fire spread disabled.", summary.ServerRulesSummary);
     }
 
     [Fact]
@@ -57,6 +59,11 @@ public sealed class ProjectZomboidProfilePostureSummaryBuilderTests
             ["b42.network.steam-vac"] = "true",
             ["b42.network.auto-whitelist"] = "false",
             ["b42.network.safety-system"] = "true",
+            ["b42.network.display-user-name"] = "false",
+            ["b42.network.show-first-last-name"] = "false",
+            ["b42.network.mouse-over-display-name"] = "true",
+            ["b42.network.hide-players-behind-you"] = "true",
+            ["b42.network.player-bump-player"] = "false",
             ["b42.network.voice-enabled"] = "true",
             ["b42.network.voice-3d"] = "true",
             ["b42.network.voice-min-distance"] = "12",
@@ -69,7 +76,7 @@ public sealed class ProjectZomboidProfilePostureSummaryBuilderTests
             networkValues,
             new Dictionary<string, string?>(StringComparer.Ordinal));
 
-        Assert.Equal("Bind 10.0.0.42 | VAC on | whitelist manual | safety enabled | 3D voice 12-48.", summary.NetworkSummary);
+        Assert.Equal("Bind 10.0.0.42 | VAC on | whitelist manual | safety enabled | names hover names | rear cull on | bump off | 3D voice 12-48.", summary.NetworkSummary);
         Assert.True(summary.IsVoiceEnabled);
         Assert.True(summary.IsSafetyEnabled);
     }
