@@ -27,6 +27,9 @@ public sealed class SettingsCatalogResolverTests
         Assert.Contains(unstable.Pages, page => page.PageId == "b42.general");
         Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.runtime.memory");
         Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.zombies");
+        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.erosion-speed");
+        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.food-rot-speed");
+        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.alarm");
         Assert.All(
             stable.Pages.Single(page => page.PageId == "b41.mods-and-maps").Sections.SelectMany(section => section.Fields),
             field => Assert.Equal(ConfigFileKind.Ini, field.Target.FileKind));

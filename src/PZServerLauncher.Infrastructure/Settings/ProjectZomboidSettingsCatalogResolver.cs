@@ -110,6 +110,8 @@ public sealed class ProjectZomboidSettingsCatalogResolver : ISettingsCatalogReso
                     {
                         Field($"{branchPrefix}.sandbox.water-shut-modifier", "Water Shutoff Day", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "WaterShutModifier", defaultValue: "500", helpText: "-1 is instant. Otherwise use the number of days before water shuts off."),
                         Field($"{branchPrefix}.sandbox.electricity-shut-modifier", "Electricity Shutoff Day", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "ElecShutModifier", defaultValue: "480", helpText: "-1 is instant. Otherwise use the number of days before electricity shuts off."),
+                        Field($"{branchPrefix}.sandbox.erosion-speed", "Erosion Speed", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "ErosionSpeed", defaultValue: "5", helpText: "1 is overgrown quickly, 5 is very slow."),
+                        Field($"{branchPrefix}.sandbox.loot-respawn", "Loot Respawn", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "LootRespawn", defaultValue: "2", helpText: "1 is none, 2 is every day, 5 is every two months."),
                     }),
                 new StructuredSectionDefinition(
                     $"{branchPrefix}.sandbox.loot-and-climate",
@@ -121,6 +123,22 @@ public sealed class ProjectZomboidSettingsCatalogResolver : ISettingsCatalogReso
                         Field($"{branchPrefix}.sandbox.other-loot", "Other Loot", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "OtherLoot", defaultValue: "3", helpText: "1 is extremely rare, 5 is abundant."),
                         Field($"{branchPrefix}.sandbox.temperature", "Temperature", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "Temperature", defaultValue: "3", helpText: "1 is very cold, 5 is very hot."),
                         Field($"{branchPrefix}.sandbox.rain", "Rain", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "Rain", defaultValue: "3", helpText: "1 is very dry, 5 is very rainy."),
+                        Field($"{branchPrefix}.sandbox.alarm", "House Alarm Frequency", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "Alarm", defaultValue: "6", helpText: "1 is never, 6 is very often."),
+                        Field($"{branchPrefix}.sandbox.locked-houses", "Locked Houses", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "LockedHouses", defaultValue: "6", helpText: "1 is never, 6 is very often."),
+                    }),
+                new StructuredSectionDefinition(
+                    $"{branchPrefix}.sandbox.survival-systems",
+                    "Survival Systems",
+                    new[]
+                    {
+                        Field($"{branchPrefix}.sandbox.farming", "Farming Speed", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "Farming", defaultValue: "1", helpText: "1 is very fast, 5 is very slow."),
+                        Field($"{branchPrefix}.sandbox.stats-decrease", "Stats Decrease", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "StatsDecrease", defaultValue: "4", helpText: "1 is very fast, 5 is very slow."),
+                        Field($"{branchPrefix}.sandbox.nature-abundance", "Nature Abundance", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "NatureAbundance", defaultValue: "3", helpText: "1 is very poor, 5 is very abundant."),
+                        Field($"{branchPrefix}.sandbox.food-rot-speed", "Food Rot Speed", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "FoodRotSpeed", defaultValue: "5", helpText: "1 is very fast, 5 is very slow."),
+                        Field($"{branchPrefix}.sandbox.fridge-factor", "Fridge Factor", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "FridgeFactor", defaultValue: "5", helpText: "1 is very low, 5 is very high."),
+                        Field($"{branchPrefix}.sandbox.plant-resilience", "Plant Resilience", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "PlantResilience", defaultValue: "3", helpText: "1 is very low, 5 is very high."),
+                        Field($"{branchPrefix}.sandbox.plant-abundance", "Plant Abundance", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "PlantAbundance", defaultValue: "3", helpText: "1 is very poor, 5 is very abundant."),
+                        Field($"{branchPrefix}.sandbox.end-regen", "Endurance Regen", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "EndRegen", defaultValue: "3", helpText: "1 is very fast, 5 is very slow."),
                     }),
                 new StructuredSectionDefinition(
                     $"{branchPrefix}.sandbox.player-experience",

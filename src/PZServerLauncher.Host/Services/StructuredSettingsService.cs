@@ -528,11 +528,23 @@ public sealed class StructuredSettingsService(
         ValidateRangedInteger(values, $"{branchPrefix}.sandbox.start-time", 1, 9, "Start time must be between 1 and 9.", fieldErrors);
         ValidateMinimumInteger(values, $"{branchPrefix}.sandbox.water-shut-modifier", -1, "Water shutoff day must be -1 or greater.", fieldErrors);
         ValidateMinimumInteger(values, $"{branchPrefix}.sandbox.electricity-shut-modifier", -1, "Electricity shutoff day must be -1 or greater.", fieldErrors);
+        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.erosion-speed", 1, 5, "Erosion speed must be between 1 and 5.", fieldErrors);
+        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.loot-respawn", 1, 5, "Loot respawn must be between 1 and 5.", fieldErrors);
         ValidateRangedInteger(values, $"{branchPrefix}.sandbox.food-loot", 1, 5, "Food loot must be between 1 and 5.", fieldErrors);
         ValidateRangedInteger(values, $"{branchPrefix}.sandbox.weapon-loot", 1, 5, "Weapon loot must be between 1 and 5.", fieldErrors);
         ValidateRangedInteger(values, $"{branchPrefix}.sandbox.other-loot", 1, 5, "Other loot must be between 1 and 5.", fieldErrors);
         ValidateRangedInteger(values, $"{branchPrefix}.sandbox.temperature", 1, 5, "Temperature must be between 1 and 5.", fieldErrors);
         ValidateRangedInteger(values, $"{branchPrefix}.sandbox.rain", 1, 5, "Rain must be between 1 and 5.", fieldErrors);
+        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.alarm", 1, 6, "House alarm frequency must be between 1 and 6.", fieldErrors);
+        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.locked-houses", 1, 6, "Locked houses must be between 1 and 6.", fieldErrors);
+        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.farming", 1, 5, "Farming speed must be between 1 and 5.", fieldErrors);
+        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.stats-decrease", 1, 5, "Stats decrease must be between 1 and 5.", fieldErrors);
+        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.nature-abundance", 1, 5, "Nature abundance must be between 1 and 5.", fieldErrors);
+        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.food-rot-speed", 1, 5, "Food rot speed must be between 1 and 5.", fieldErrors);
+        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.fridge-factor", 1, 5, "Fridge factor must be between 1 and 5.", fieldErrors);
+        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.plant-resilience", 1, 5, "Plant resilience must be between 1 and 5.", fieldErrors);
+        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.plant-abundance", 1, 5, "Plant abundance must be between 1 and 5.", fieldErrors);
+        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.end-regen", 1, 5, "Endurance regeneration must be between 1 and 5.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.sandbox.starter-kit", "Starter kit must be true or false.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.sandbox.nutrition", "Nutrition must be true or false.", fieldErrors);
 

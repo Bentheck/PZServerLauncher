@@ -286,6 +286,104 @@ public sealed class StructuredSettingsServiceTests : IDisposable
         Assert.Equal(["Muldraugh, KY", "RavenCreek"], updatedProfile.WorkshopPreset.MapFolders);
     }
 
+    [Fact]
+    public async Task Sandbox_PageReadsAndWritesExpandedTopLevelFields()
+    {
+        Directory.CreateDirectory(_tempRoot);
+        var profile = ServerProfileFactory.CreateStarterProfile() with
+        {
+            ProfileId = "profile-d",
+            DisplayName = "Profile D",
+            ServerName = "profile-server",
+            InstallDirectory = Path.Combine(_tempRoot, "install"),
+            CacheDirectory = Path.Combine(_tempRoot, "cache"),
+        };
+
+        var planner = new ProjectZomboidServerPlanner();
+        var paths = planner.ResolvePaths(profile);
+        Directory.CreateDirectory(Path.GetDirectoryName(paths.SandboxVarsFilePath)!);
+        File.WriteAllText(paths.SandboxVarsFilePath, """
+            SandboxVars = {
+                VERSION = 4,
+                Zombies = 4,
+                Distribution = 1,
+                DayLength = 3,
+                StartYear = 1,
+                StartMonth = 4,
+                StartDay = 1,
+                StartTime = 2,
+                WaterShutModifier = 500,
+                ElecShutModifier = 480,
+                ErosionSpeed = 5,
+                LootRespawn = 2,
+                FoodLoot = 4,
+                WeaponLoot = 2,
+                OtherLoot = 3,
+                Temperature = 3,
+                Rain = 3,
+                Alarm = 6,
+                LockedHouses = 6,
+                Farming = 1,
+                StatsDecrease = 4,
+                NatureAbundance = 3,
+                FoodRotSpeed = 5,
+                FridgeFactor = 5,
+                PlantResilience = 3,
+                PlantAbundance = 3,
+                EndRegen = 3,
+                StarterKit = false,
+                Nutrition = false,
+            }
+            """);
+
+        await using var dbContext = TestDatabaseFactory.Create(Path.Combine(_tempRoot, "sandbox-extended.db"));
+        var profileStore = new ProfileStore(dbContext);
+        await profileStore.UpsertAsync(profile);
+
+        var service = CreateService(profileStore, planner);
+
+        var valueSet = service.GetPage(profile, ProfileWorkspacePageIds.Sandbox);
+
+        Assert.Equal("5", valueSet.Values["b42.sandbox.erosion-speed"]);
+        Assert.Equal("2", valueSet.Values["b42.sandbox.loot-respawn"]);
+        Assert.Equal("6", valueSet.Values["b42.sandbox.alarm"]);
+        Assert.Equal("1", valueSet.Values["b42.sandbox.farming"]);
+        Assert.Equal("5", valueSet.Values["b42.sandbox.food-rot-speed"]);
+        Assert.Equal("3", valueSet.Values["b42.sandbox.end-regen"]);
+
+        var saveResult = await service.SaveAsync(profile, ProfileWorkspacePageIds.Sandbox, new Dictionary<string, string?>(valueSet.Values, StringComparer.Ordinal)
+        {
+            ["b42.sandbox.erosion-speed"] = "2",
+            ["b42.sandbox.loot-respawn"] = "4",
+            ["b42.sandbox.alarm"] = "3",
+            ["b42.sandbox.locked-houses"] = "4",
+            ["b42.sandbox.farming"] = "4",
+            ["b42.sandbox.stats-decrease"] = "2",
+            ["b42.sandbox.nature-abundance"] = "5",
+            ["b42.sandbox.food-rot-speed"] = "2",
+            ["b42.sandbox.fridge-factor"] = "4",
+            ["b42.sandbox.plant-resilience"] = "4",
+            ["b42.sandbox.plant-abundance"] = "5",
+            ["b42.sandbox.end-regen"] = "2",
+        });
+
+        var sandboxText = File.ReadAllText(paths.SandboxVarsFilePath);
+
+        Assert.True(saveResult.Validation.IsValid);
+        Assert.Contains("ErosionSpeed = 2", sandboxText);
+        Assert.Contains("LootRespawn = 4", sandboxText);
+        Assert.Contains("Alarm = 3", sandboxText);
+        Assert.Contains("LockedHouses = 4", sandboxText);
+        Assert.Contains("Farming = 4", sandboxText);
+        Assert.Contains("StatsDecrease = 2", sandboxText);
+        Assert.Contains("NatureAbundance = 5", sandboxText);
+        Assert.Contains("FoodRotSpeed = 2", sandboxText);
+        Assert.Contains("FridgeFactor = 4", sandboxText);
+        Assert.Contains("PlantResilience = 4", sandboxText);
+        Assert.Contains("PlantAbundance = 5", sandboxText);
+        Assert.Contains("EndRegen = 2", sandboxText);
+    }
+
     private static StructuredSettingsService CreateService(ProfileStore profileStore, ProjectZomboidServerPlanner planner) =>
         new(
             profileStore,

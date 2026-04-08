@@ -21,7 +21,7 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             "Branch-aware gameplay and world settings from SandboxVars.lua.",
             "Sandbox settings are in sync.",
             legacy,
-            ["World setup", "Utilities", "Loot and climate", "Player experience"])
+            ["World setup", "Utilities", "Loot and climate", "Survival systems", "Player experience"])
     {
         _hostApiClient = hostApiClient;
         SaveSettingsCommand = new AsyncRelayCommand(SaveSettingsAsync);
@@ -38,7 +38,7 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
     public string WorkspaceSummary => SelectedProfile is null
         ? "Choose a profile to unlock Sandbox settings."
-        : $"{SelectedProfile.DisplayName} is ready for branch-aware gameplay and world tuning.";
+        : $"{SelectedProfile.DisplayName} is ready for branch-aware gameplay, world, and survival-system tuning.";
 
     public string ActionSummary => RequiresAdvancedFilesFallback
         ? "Structured editing is unavailable for this Sandbox file. Use Advanced Files for raw recovery."
@@ -102,6 +102,12 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
     private string electricityShutModifier = string.Empty;
 
     [ObservableProperty]
+    private string erosionSpeed = string.Empty;
+
+    [ObservableProperty]
+    private string lootRespawn = string.Empty;
+
+    [ObservableProperty]
     private string foodLoot = string.Empty;
 
     [ObservableProperty]
@@ -115,6 +121,36 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
     [ObservableProperty]
     private string rain = string.Empty;
+
+    [ObservableProperty]
+    private string alarm = string.Empty;
+
+    [ObservableProperty]
+    private string lockedHouses = string.Empty;
+
+    [ObservableProperty]
+    private string farming = string.Empty;
+
+    [ObservableProperty]
+    private string statsDecrease = string.Empty;
+
+    [ObservableProperty]
+    private string natureAbundance = string.Empty;
+
+    [ObservableProperty]
+    private string foodRotSpeed = string.Empty;
+
+    [ObservableProperty]
+    private string fridgeFactor = string.Empty;
+
+    [ObservableProperty]
+    private string plantResilience = string.Empty;
+
+    [ObservableProperty]
+    private string plantAbundance = string.Empty;
+
+    [ObservableProperty]
+    private string endRegen = string.Empty;
 
     [ObservableProperty]
     private bool starterKit;
@@ -305,11 +341,23 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             StartTime = GetValue(values, ".sandbox.start-time");
             WaterShutModifier = GetValue(values, ".sandbox.water-shut-modifier");
             ElectricityShutModifier = GetValue(values, ".sandbox.electricity-shut-modifier");
+            ErosionSpeed = GetValue(values, ".sandbox.erosion-speed");
+            LootRespawn = GetValue(values, ".sandbox.loot-respawn");
             FoodLoot = GetValue(values, ".sandbox.food-loot");
             WeaponLoot = GetValue(values, ".sandbox.weapon-loot");
             OtherLoot = GetValue(values, ".sandbox.other-loot");
             Temperature = GetValue(values, ".sandbox.temperature");
             Rain = GetValue(values, ".sandbox.rain");
+            Alarm = GetValue(values, ".sandbox.alarm");
+            LockedHouses = GetValue(values, ".sandbox.locked-houses");
+            Farming = GetValue(values, ".sandbox.farming");
+            StatsDecrease = GetValue(values, ".sandbox.stats-decrease");
+            NatureAbundance = GetValue(values, ".sandbox.nature-abundance");
+            FoodRotSpeed = GetValue(values, ".sandbox.food-rot-speed");
+            FridgeFactor = GetValue(values, ".sandbox.fridge-factor");
+            PlantResilience = GetValue(values, ".sandbox.plant-resilience");
+            PlantAbundance = GetValue(values, ".sandbox.plant-abundance");
+            EndRegen = GetValue(values, ".sandbox.end-regen");
             StarterKit = bool.TryParse(GetValue(values, ".sandbox.starter-kit"), out var starterKit) && starterKit;
             Nutrition = bool.TryParse(GetValue(values, ".sandbox.nutrition"), out var nutrition) && nutrition;
         }
@@ -333,11 +381,23 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             [$"{prefix}.sandbox.start-time"] = StartTime,
             [$"{prefix}.sandbox.water-shut-modifier"] = WaterShutModifier,
             [$"{prefix}.sandbox.electricity-shut-modifier"] = ElectricityShutModifier,
+            [$"{prefix}.sandbox.erosion-speed"] = ErosionSpeed,
+            [$"{prefix}.sandbox.loot-respawn"] = LootRespawn,
             [$"{prefix}.sandbox.food-loot"] = FoodLoot,
             [$"{prefix}.sandbox.weapon-loot"] = WeaponLoot,
             [$"{prefix}.sandbox.other-loot"] = OtherLoot,
             [$"{prefix}.sandbox.temperature"] = Temperature,
             [$"{prefix}.sandbox.rain"] = Rain,
+            [$"{prefix}.sandbox.alarm"] = Alarm,
+            [$"{prefix}.sandbox.locked-houses"] = LockedHouses,
+            [$"{prefix}.sandbox.farming"] = Farming,
+            [$"{prefix}.sandbox.stats-decrease"] = StatsDecrease,
+            [$"{prefix}.sandbox.nature-abundance"] = NatureAbundance,
+            [$"{prefix}.sandbox.food-rot-speed"] = FoodRotSpeed,
+            [$"{prefix}.sandbox.fridge-factor"] = FridgeFactor,
+            [$"{prefix}.sandbox.plant-resilience"] = PlantResilience,
+            [$"{prefix}.sandbox.plant-abundance"] = PlantAbundance,
+            [$"{prefix}.sandbox.end-regen"] = EndRegen,
             [$"{prefix}.sandbox.starter-kit"] = StarterKit.ToString(),
             [$"{prefix}.sandbox.nutrition"] = Nutrition.ToString(),
         };
@@ -391,11 +451,23 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             StartTime = string.Empty;
             WaterShutModifier = string.Empty;
             ElectricityShutModifier = string.Empty;
+            ErosionSpeed = string.Empty;
+            LootRespawn = string.Empty;
             FoodLoot = string.Empty;
             WeaponLoot = string.Empty;
             OtherLoot = string.Empty;
             Temperature = string.Empty;
             Rain = string.Empty;
+            Alarm = string.Empty;
+            LockedHouses = string.Empty;
+            Farming = string.Empty;
+            StatsDecrease = string.Empty;
+            NatureAbundance = string.Empty;
+            FoodRotSpeed = string.Empty;
+            FridgeFactor = string.Empty;
+            PlantResilience = string.Empty;
+            PlantAbundance = string.Empty;
+            EndRegen = string.Empty;
             StarterKit = false;
             Nutrition = false;
         }
@@ -417,11 +489,23 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
     partial void OnStartTimeChanged(string value) => NotifyFieldEdited();
     partial void OnWaterShutModifierChanged(string value) => NotifyFieldEdited();
     partial void OnElectricityShutModifierChanged(string value) => NotifyFieldEdited();
+    partial void OnErosionSpeedChanged(string value) => NotifyFieldEdited();
+    partial void OnLootRespawnChanged(string value) => NotifyFieldEdited();
     partial void OnFoodLootChanged(string value) => NotifyFieldEdited();
     partial void OnWeaponLootChanged(string value) => NotifyFieldEdited();
     partial void OnOtherLootChanged(string value) => NotifyFieldEdited();
     partial void OnTemperatureChanged(string value) => NotifyFieldEdited();
     partial void OnRainChanged(string value) => NotifyFieldEdited();
+    partial void OnAlarmChanged(string value) => NotifyFieldEdited();
+    partial void OnLockedHousesChanged(string value) => NotifyFieldEdited();
+    partial void OnFarmingChanged(string value) => NotifyFieldEdited();
+    partial void OnStatsDecreaseChanged(string value) => NotifyFieldEdited();
+    partial void OnNatureAbundanceChanged(string value) => NotifyFieldEdited();
+    partial void OnFoodRotSpeedChanged(string value) => NotifyFieldEdited();
+    partial void OnFridgeFactorChanged(string value) => NotifyFieldEdited();
+    partial void OnPlantResilienceChanged(string value) => NotifyFieldEdited();
+    partial void OnPlantAbundanceChanged(string value) => NotifyFieldEdited();
+    partial void OnEndRegenChanged(string value) => NotifyFieldEdited();
     partial void OnStarterKitChanged(bool value) => NotifyFieldEdited();
     partial void OnNutritionChanged(bool value) => NotifyFieldEdited();
 

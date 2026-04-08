@@ -113,6 +113,14 @@
                                     <TextBlock Classes="body" Text="Electricity Shutoff Day" />
                                     <TextBox Text="{Binding ElectricityShutModifier}" />
                                 </StackPanel>
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="body" Text="Erosion Speed" />
+                                    <TextBox Text="{Binding ErosionSpeed}" />
+                                </StackPanel>
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="body" Text="Loot Respawn" />
+                                    <TextBox Text="{Binding LootRespawn}" />
+                                </StackPanel>
                                 <CheckBox Content="Starter Kit" IsChecked="{Binding StarterKit}" />
                                 <CheckBox Content="Nutrition" IsChecked="{Binding Nutrition}" />
                             </StackPanel>
@@ -123,7 +131,7 @@
                 <Border Classes="card" Padding="18" IsEnabled="{Binding CanEdit}">
                     <StackPanel Spacing="12">
                         <TextBlock Classes="kicker" Text="Loot &amp; Climate" />
-                        <Grid ColumnDefinitions="*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto,Auto" RowSpacing="10">
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="10">
                             <StackPanel Spacing="4">
                                 <TextBlock Classes="body" Text="Food Loot" />
                                 <TextBox Text="{Binding FoodLoot}" />
@@ -143,6 +151,54 @@
                             <StackPanel Grid.Row="2" Spacing="4">
                                 <TextBlock Classes="body" Text="Rain" />
                                 <TextBox Text="{Binding Rain}" />
+                            </StackPanel>
+                            <StackPanel Grid.Row="2" Grid.Column="1" Spacing="4">
+                                <TextBlock Classes="body" Text="House Alarm Frequency" />
+                                <TextBox Text="{Binding Alarm}" />
+                            </StackPanel>
+                            <StackPanel Grid.Row="3" Spacing="4">
+                                <TextBlock Classes="body" Text="Locked Houses" />
+                                <TextBox Text="{Binding LockedHouses}" />
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <Border Classes="card" Padding="18" IsEnabled="{Binding CanEdit}">
+                    <StackPanel Spacing="12">
+                        <TextBlock Classes="kicker" Text="Survival Systems" />
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="10">
+                            <StackPanel Spacing="4">
+                                <TextBlock Classes="body" Text="Farming Speed" />
+                                <TextBox Text="{Binding Farming}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Spacing="4">
+                                <TextBlock Classes="body" Text="Stats Decrease" />
+                                <TextBox Text="{Binding StatsDecrease}" />
+                            </StackPanel>
+                            <StackPanel Grid.Row="1" Spacing="4">
+                                <TextBlock Classes="body" Text="Nature Abundance" />
+                                <TextBox Text="{Binding NatureAbundance}" />
+                            </StackPanel>
+                            <StackPanel Grid.Row="1" Grid.Column="1" Spacing="4">
+                                <TextBlock Classes="body" Text="Food Rot Speed" />
+                                <TextBox Text="{Binding FoodRotSpeed}" />
+                            </StackPanel>
+                            <StackPanel Grid.Row="2" Spacing="4">
+                                <TextBlock Classes="body" Text="Fridge Factor" />
+                                <TextBox Text="{Binding FridgeFactor}" />
+                            </StackPanel>
+                            <StackPanel Grid.Row="2" Grid.Column="1" Spacing="4">
+                                <TextBlock Classes="body" Text="Plant Resilience" />
+                                <TextBox Text="{Binding PlantResilience}" />
+                            </StackPanel>
+                            <StackPanel Grid.Row="3" Spacing="4">
+                                <TextBlock Classes="body" Text="Plant Abundance" />
+                                <TextBox Text="{Binding PlantAbundance}" />
+                            </StackPanel>
+                            <StackPanel Grid.Row="3" Grid.Column="1" Spacing="4">
+                                <TextBlock Classes="body" Text="Endurance Regen" />
+                                <TextBox Text="{Binding EndRegen}" />
                             </StackPanel>
                         </Grid>
                     </StackPanel>
