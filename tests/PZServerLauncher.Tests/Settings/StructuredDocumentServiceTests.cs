@@ -8,6 +8,26 @@ public sealed class StructuredDocumentServiceTests
     private readonly SandboxVarsDocumentService _sandboxService = new();
 
     [Fact]
+    public void IniDocumentService_RoundTripsValidTextExactly()
+    {
+        var source = """
+            ; Project Zomboid server settings
+            [Server]
+            ServerName=alpha42
+            DefaultPort=16261
+
+            # Keep this comment
+            BindIP=0.0.0.0
+            """;
+
+        var document = _iniService.Parse(source);
+
+        Assert.True(document.IsSupported);
+        Assert.Empty(document.Issues);
+        Assert.Equal(source, _iniService.Format(document));
+    }
+
+    [Fact]
     public void IniDocumentService_PreservesTextAndFlagsInvalidLines()
     {
         var document = _iniService.Parse("""
@@ -20,6 +40,34 @@ public sealed class StructuredDocumentServiceTests
         Assert.Single(document.Issues);
         Assert.Equal("Expected a key=value entry.", document.Issues[0].Message);
         Assert.Contains("ServerName=alpha", _iniService.Format(document));
+    }
+
+    [Fact]
+    public void IniDocumentService_ReadsAndUpdatesStructuredValues()
+    {
+        const string source = """
+            # Dedicated server
+            PublicName=Alpha 42
+            Public=true
+            ServerWelcomeMessage=Welcome survivor! <LINE> Stay alive.
+            """;
+
+        var values = _iniService.ReadValues(source, ["PublicName", "Public", "ServerWelcomeMessage"]);
+        Assert.Equal("Alpha 42", values["PublicName"]);
+        Assert.Equal("true", values["Public"]);
+        Assert.Equal("Welcome survivor! <LINE> Stay alive.", values["ServerWelcomeMessage"]);
+
+        var updated = _iniService.ApplyValues(source, new Dictionary<string, string?>
+        {
+            ["PublicName"] = "Bravo 42",
+            ["Public"] = "false",
+            ["MaxPlayers"] = "24",
+        });
+
+        Assert.Contains("PublicName=Bravo 42", updated);
+        Assert.Contains("Public=false", updated);
+        Assert.Contains("MaxPlayers=24", updated);
+        Assert.Contains("# Dedicated server", updated);
     }
 
     [Fact]

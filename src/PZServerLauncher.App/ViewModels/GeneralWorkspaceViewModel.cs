@@ -11,7 +11,6 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 {
     private readonly LocalHostApiClient _hostApiClient;
     private SettingsCatalogDto? _catalog;
-    private SettingsPageDto? _page;
     private string? _sourceSha256;
     private bool _isApplyingState;
 
@@ -19,10 +18,10 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         : base(
             ProfileWorkspacePageIds.General,
             "General",
-            "Structured server identity, memory, startup behavior, and primary ports.",
+            "Public listing, core world access, server browser identity, and launcher runtime controls.",
             "General settings are in sync.",
             legacy,
-            ["Server identity", "Primary ports", "Memory", "Startup behavior"])
+            ["Public identity", "Player access", "Ports", "Runtime controls"])
     {
         _hostApiClient = hostApiClient;
         SaveSettingsCommand = new AsyncRelayCommand(SaveSettingsAsync);
@@ -30,21 +29,23 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
     }
 
     public override string PageSummary => SelectedProfile is null
-        ? "Select a profile to edit the first structured settings page."
-        : $"Structured General settings for {SelectedProfile.DisplayName}.";
+        ? "Select a profile to edit real Project Zomboid server settings."
+        : $"General server settings for {SelectedProfile.DisplayName}.";
 
     public string ProfileDisplayName => SelectedProfile?.DisplayName ?? "No profile selected";
+
+    public string ProfileNamespace => SelectedProfile?.EditableServerName ?? "No namespace selected";
 
     public string Branch => SelectedProfile?.Branch ?? "Unknown";
 
     public string WorkspaceSummary => SelectedProfile is null
-        ? "Choose a profile to unlock structured General settings."
-        : $"{SelectedProfile.DisplayName} is ready for ports, memory, startup, and runtime identity edits.";
+        ? "Choose a profile to unlock server browser, ports, and world access controls."
+        : $"{SelectedProfile.DisplayName} now edits actual Project Zomboid .ini values for public listing, access, and core ports.";
 
     public string ActionSummary => RequiresAdvancedFilesFallback
         ? "Structured editing is temporarily unavailable for this file. Use Advanced Files for raw recovery."
         : CanEdit
-            ? "Apply changes to write the active profile, or save a draft first if you want to keep working."
+            ? "Apply changes to write the active server .ini, or save a draft first if you want to keep working."
             : IsLoading
                 ? "Loading structured General settings from the host..."
                 : "General settings are not currently editable.";
@@ -61,7 +62,31 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
     private string loadStatus = "Select a profile to load the structured General editor.";
 
     [ObservableProperty]
-    private string serverName = string.Empty;
+    private string publicName = string.Empty;
+
+    [ObservableProperty]
+    private string publicDescription = string.Empty;
+
+    [ObservableProperty]
+    private bool isPublic;
+
+    [ObservableProperty]
+    private bool isOpen;
+
+    [ObservableProperty]
+    private string maxPlayers = string.Empty;
+
+    [ObservableProperty]
+    private bool pvpEnabled;
+
+    [ObservableProperty]
+    private bool pauseWhenEmpty;
+
+    [ObservableProperty]
+    private bool globalChatEnabled;
+
+    [ObservableProperty]
+    private string welcomeMessage = string.Empty;
 
     [ObservableProperty]
     private string defaultPort = string.Empty;
@@ -206,7 +231,6 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         try
         {
             _catalog = await _hostApiClient.GetSettingsCatalogAsync(profile.ProfileId);
-            _page = _catalog?.Pages.FirstOrDefault(page => string.Equals(page.PageId, ProfileWorkspacePageIds.General, StringComparison.Ordinal));
             var valueSet = await _hostApiClient.GetSettingsPageAsync(profile.ProfileId, ProfileWorkspacePageIds.General);
             var draft = await _hostApiClient.GetSettingsDraftAsync(profile.ProfileId, ProfileWorkspacePageIds.General);
 
@@ -260,10 +284,10 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         CanEdit = !valueSet.RequiresAdvancedFilesFallback;
         ApplyValues(valueSet.Values);
         MarkClean(markCleanMessage);
-            LoadStatus = valueSet.RequiresAdvancedFilesFallback
-                ? valueSet.FallbackReason ?? "Structured editing is unavailable for this file."
-                : markCleanMessage;
-            NotifyComputedState();
+        LoadStatus = valueSet.RequiresAdvancedFilesFallback
+            ? valueSet.FallbackReason ?? "Structured editing is unavailable for this file."
+            : markCleanMessage;
+        NotifyComputedState();
     }
 
     private void ApplyValues(IReadOnlyDictionary<string, string?> values)
@@ -271,7 +295,15 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         _isApplyingState = true;
         try
         {
-            ServerName = GetValue(values, ".server.name");
+            PublicName = GetValue(values, ".server.public-name");
+            PublicDescription = GetValue(values, ".server.public-description");
+            IsPublic = bool.TryParse(GetValue(values, ".server.public"), out var isPublic) && isPublic;
+            IsOpen = bool.TryParse(GetValue(values, ".server.open"), out var isOpen) && isOpen;
+            MaxPlayers = GetValue(values, ".server.max-players");
+            PvpEnabled = bool.TryParse(GetValue(values, ".server.pvp"), out var pvp) && pvp;
+            PauseWhenEmpty = bool.TryParse(GetValue(values, ".server.pause-empty"), out var pause) && pause;
+            GlobalChatEnabled = bool.TryParse(GetValue(values, ".server.global-chat"), out var globalChat) && globalChat;
+            WelcomeMessage = GetValue(values, ".server.welcome-message");
             DefaultPort = GetValue(values, ".server.port");
             UdpPort = GetValue(values, ".server.udp-port");
             RconPort = GetValue(values, ".server.rcon-port");
@@ -290,7 +322,15 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         var prefix = SelectedProfile?.Branch.Contains("42", StringComparison.Ordinal) == true ? "b42" : "b41";
         return new Dictionary<string, string?>(StringComparer.Ordinal)
         {
-            [$"{prefix}.server.name"] = ServerName,
+            [$"{prefix}.server.public-name"] = PublicName,
+            [$"{prefix}.server.public-description"] = PublicDescription,
+            [$"{prefix}.server.public"] = IsPublic.ToString(),
+            [$"{prefix}.server.open"] = IsOpen.ToString(),
+            [$"{prefix}.server.max-players"] = MaxPlayers,
+            [$"{prefix}.server.pvp"] = PvpEnabled.ToString(),
+            [$"{prefix}.server.pause-empty"] = PauseWhenEmpty.ToString(),
+            [$"{prefix}.server.global-chat"] = GlobalChatEnabled.ToString(),
+            [$"{prefix}.server.welcome-message"] = WelcomeMessage,
             [$"{prefix}.server.port"] = DefaultPort,
             [$"{prefix}.server.udp-port"] = UdpPort,
             [$"{prefix}.server.rcon-port"] = RconPort,
@@ -328,7 +368,6 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
     private void Reset()
     {
         _catalog = null;
-        _page = null;
         _sourceSha256 = null;
         CatalogSummary = "No structured catalog loaded.";
         RequiresAdvancedFilesFallback = false;
@@ -339,7 +378,15 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         _isApplyingState = true;
         try
         {
-            ServerName = string.Empty;
+            PublicName = string.Empty;
+            PublicDescription = string.Empty;
+            IsPublic = false;
+            IsOpen = false;
+            MaxPlayers = string.Empty;
+            PvpEnabled = false;
+            PauseWhenEmpty = false;
+            GlobalChatEnabled = false;
+            WelcomeMessage = string.Empty;
             DefaultPort = string.Empty;
             UdpPort = string.Empty;
             RconPort = string.Empty;
@@ -356,7 +403,15 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         NotifyComputedState();
     }
 
-    partial void OnServerNameChanged(string value) => NotifyFieldEdited();
+    partial void OnPublicNameChanged(string value) => NotifyFieldEdited();
+    partial void OnPublicDescriptionChanged(string value) => NotifyFieldEdited();
+    partial void OnIsPublicChanged(bool value) => NotifyFieldEdited();
+    partial void OnIsOpenChanged(bool value) => NotifyFieldEdited();
+    partial void OnMaxPlayersChanged(string value) => NotifyFieldEdited();
+    partial void OnPvpEnabledChanged(bool value) => NotifyFieldEdited();
+    partial void OnPauseWhenEmptyChanged(bool value) => NotifyFieldEdited();
+    partial void OnGlobalChatEnabledChanged(bool value) => NotifyFieldEdited();
+    partial void OnWelcomeMessageChanged(string value) => NotifyFieldEdited();
     partial void OnDefaultPortChanged(string value) => NotifyFieldEdited();
     partial void OnUdpPortChanged(string value) => NotifyFieldEdited();
     partial void OnRconPortChanged(string value) => NotifyFieldEdited();
@@ -380,6 +435,7 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
     {
         OnPropertyChanged(nameof(PageSummary));
         OnPropertyChanged(nameof(ProfileDisplayName));
+        OnPropertyChanged(nameof(ProfileNamespace));
         OnPropertyChanged(nameof(Branch));
         OnPropertyChanged(nameof(WorkspaceSummary));
         OnPropertyChanged(nameof(ActionSummary));

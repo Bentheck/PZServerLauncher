@@ -18,8 +18,8 @@
 
         <div class="workspace-actions">
             <span class="pill">Users @_users.Count</span>
-            <span class="pill">Owners @_users.Count(user => user.Roles.Contains(UserRole.Owner))</span>
-            <span class="pill">Admins @_users.Count(user => user.Roles.Contains(UserRole.Admin))</span>
+            <span class="pill">Owners @_users.Count(user => string.Equals(user.RoleName, nameof(UserRole.Owner), StringComparison.Ordinal))</span>
+            <span class="pill">Admins @_users.Count(user => string.Equals(user.RoleName, nameof(UserRole.Admin), StringComparison.Ordinal))</span>
         </div>
     </section>
 
@@ -38,7 +38,7 @@
         </article>
         <article class="metric-card">
             <span class="metric-label">Privileged Accounts</span>
-            <strong class="metric-value">@_users.Count(user => user.Roles.Any(role => role is UserRole.Owner or UserRole.Admin))</strong>
+            <strong class="metric-value">@_users.Count(user => string.Equals(user.RoleName, nameof(UserRole.Owner), StringComparison.Ordinal) || string.Equals(user.RoleName, nameof(UserRole.Admin), StringComparison.Ordinal))</strong>
             <span class="metric-note">Owners and admins with elevated access</span>
         </article>
         <article class="metric-card">

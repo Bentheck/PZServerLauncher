@@ -5,7 +5,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d"
              d:DesignWidth="1120"
-             d:DesignHeight="900"
+             d:DesignHeight="960"
              x:Class="PZServerLauncher.App.Views.GeneralWorkspaceView"
              x:DataType="vm:GeneralWorkspaceViewModel">
     <ScrollViewer>
@@ -24,15 +24,25 @@
                                        Text="{Binding WorkspaceSummary}"
                                        TextWrapping="Wrap" />
                         </StackPanel>
-                        <Border Grid.Column="1"
-                                Background="#2C2926"
-                                CornerRadius="999"
-                                Padding="14,8"
-                                VerticalAlignment="Top">
-                            <TextBlock Foreground="#F7F0E7"
-                                       FontWeight="SemiBold"
-                                       Text="{Binding Branch}" />
-                        </Border>
+                        <StackPanel Grid.Column="1" Spacing="10" HorizontalAlignment="Right">
+                            <Border Background="#2C2926"
+                                    CornerRadius="999"
+                                    Padding="14,8"
+                                    HorizontalAlignment="Right">
+                                <TextBlock Foreground="#F7F0E7"
+                                           FontWeight="SemiBold"
+                                           Text="{Binding Branch}" />
+                            </Border>
+                            <Border Background="#2C2926"
+                                    CornerRadius="14"
+                                    Padding="14,10"
+                                    HorizontalAlignment="Right">
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Namespace" />
+                                    <TextBlock Foreground="#F7F0E7" Text="{Binding ProfileNamespace}" />
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
                     </Grid>
                 </Border>
 
@@ -67,46 +77,78 @@
                     </StackPanel>
                 </Border>
 
-                <Grid ColumnDefinitions="1.1*,.9*" ColumnSpacing="16" IsEnabled="{Binding CanEdit}">
-                    <Border Classes="card" Padding="18">
-                        <StackPanel Spacing="12">
-                            <TextBlock Classes="kicker" Text="Server Identity" />
-                            <StackPanel Spacing="4">
-                                <TextBlock Classes="body" Text="Server Name" />
-                                <TextBox Text="{Binding ServerName}" />
+                <Grid ColumnDefinitions="1.15*,.85*" ColumnSpacing="16" IsEnabled="{Binding CanEdit}">
+                    <StackPanel Spacing="16">
+                        <Border Classes="card" Padding="18">
+                            <StackPanel Spacing="12">
+                                <TextBlock Classes="kicker" Text="Server Browser Identity" />
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="body" Text="Public Server Name" />
+                                    <TextBox Text="{Binding PublicName}" />
+                                </StackPanel>
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="body" Text="Public Description" />
+                                    <TextBox Text="{Binding PublicDescription}" />
+                                </StackPanel>
+                                <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                                    <CheckBox Content="Public Listing Enabled" IsChecked="{Binding IsPublic}" />
+                                    <CheckBox Grid.Column="1" Content="Open To New Accounts" IsChecked="{Binding IsOpen}" />
+                                </Grid>
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="body" Text="Max Players" />
+                                    <TextBox Text="{Binding MaxPlayers}" />
+                                </StackPanel>
                             </StackPanel>
-                            <StackPanel Spacing="4">
-                                <TextBlock Classes="body" Text="Memory (GB)" />
-                                <TextBox Text="{Binding MemoryInGigabytes}" />
-                            </StackPanel>
-                        </StackPanel>
-                    </Border>
+                        </Border>
 
-                    <Border Grid.Column="1" Classes="card" Padding="18">
-                        <StackPanel Spacing="12">
-                            <TextBlock Classes="kicker" Text="Ports And Startup" />
-                            <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                        <Border Classes="card" Padding="18">
+                            <StackPanel Spacing="12">
+                                <TextBlock Classes="kicker" Text="World Access" />
+                                <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                                    <CheckBox Content="PvP Enabled" IsChecked="{Binding PvpEnabled}" />
+                                    <CheckBox Grid.Column="1" Content="Pause When Empty" IsChecked="{Binding PauseWhenEmpty}" />
+                                </Grid>
+                                <CheckBox Content="Global Chat Enabled" IsChecked="{Binding GlobalChatEnabled}" />
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="body" Text="Welcome Message" />
+                                    <TextBox Text="{Binding WelcomeMessage}" AcceptsReturn="True" Height="120" TextWrapping="Wrap" />
+                                    <TextBlock Classes="body" FontSize="12" Text="Line breaks will be converted to &lt;LINE&gt; markers for Project Zomboid." TextWrapping="Wrap" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1" Spacing="16">
+                        <Border Classes="card" Padding="18">
+                            <StackPanel Spacing="12">
+                                <TextBlock Classes="kicker" Text="Ports" />
                                 <StackPanel Spacing="4">
                                     <TextBlock Classes="body" Text="Default Port" />
                                     <TextBox Text="{Binding DefaultPort}" />
                                 </StackPanel>
-                                <StackPanel Grid.Column="1" Spacing="4">
-                                    <TextBlock Classes="body" Text="UDP Port" />
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="body" Text="UDP Port Override" />
                                     <TextBox Text="{Binding UdpPort}" />
                                 </StackPanel>
-                            </Grid>
-                            <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
                                 <StackPanel Spacing="4">
                                     <TextBlock Classes="body" Text="RCON Port" />
                                     <TextBox Text="{Binding RconPort}" />
                                 </StackPanel>
-                                <StackPanel Grid.Column="1" Spacing="12" VerticalAlignment="Bottom">
-                                    <CheckBox Content="Start With Host" IsChecked="{Binding StartWithHost}" />
-                                    <CheckBox Content="Auto Restart On Crash" IsChecked="{Binding AutoRestartOnCrash}" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Classes="card" Padding="18">
+                            <StackPanel Spacing="12">
+                                <TextBlock Classes="kicker" Text="Launcher Runtime" />
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="body" Text="Preferred Memory (GB)" />
+                                    <TextBox Text="{Binding MemoryInGigabytes}" />
                                 </StackPanel>
-                            </Grid>
-                        </StackPanel>
-                    </Border>
+                                <CheckBox Content="Start With Host" IsChecked="{Binding StartWithHost}" />
+                                <CheckBox Content="Auto Restart On Crash" IsChecked="{Binding AutoRestartOnCrash}" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
                 </Grid>
 
                 <Border Background="#F1E6D7" CornerRadius="14" Padding="16">

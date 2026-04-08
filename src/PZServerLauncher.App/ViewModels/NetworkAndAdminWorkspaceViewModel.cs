@@ -18,10 +18,10 @@ public partial class NetworkAndAdminWorkspaceViewModel : ProfileWorkspacePageVie
         : base(
             ProfileWorkspacePageIds.NetworkAndAdmin,
             "Network & Admin",
-            "Bind address and admin identity settings for the selected profile.",
+            "Join passwords, compatibility toggles, bind address, and launcher admin bootstrap settings.",
             "Network & Admin settings are in sync.",
             legacy,
-            ["Bind IP", "Admin username", "Write-only admin password"])
+            ["Access passwords", "Compatibility", "Launcher admin bootstrap"])
     {
         _hostApiClient = hostApiClient;
         SaveSettingsCommand = new AsyncRelayCommand(SaveSettingsAsync);
@@ -37,13 +37,13 @@ public partial class NetworkAndAdminWorkspaceViewModel : ProfileWorkspacePageVie
     public string Branch => SelectedProfile?.Branch ?? "Unknown";
 
     public string WorkspaceSummary => SelectedProfile is null
-        ? "Choose a profile to unlock network and admin controls."
-        : $"{SelectedProfile.DisplayName} can now be tuned for bind IP, admin identity, and launcher-managed startup.";
+        ? "Choose a profile to unlock passwords, compatibility, and launcher admin controls."
+        : $"{SelectedProfile.DisplayName} now controls server passwords, compatibility flags, bind IP, and the launcher bootstrap admin.";
 
     public string ActionSummary => DraftsDisabled
-        ? "Drafts are disabled so the write-only admin password never lands in workspace storage."
+        ? "Drafts are disabled so write-only password fields never land in workspace storage."
         : CanEdit
-            ? "Apply settings to update the active profile. Reload if you want to discard local edits."
+            ? "Apply settings to update the active server .ini and launcher profile. Reload if you want to discard local edits."
             : IsLoading
                 ? "Loading structured network settings from the host..."
                 : "Network & Admin settings are not currently editable.";
@@ -83,6 +83,24 @@ public partial class NetworkAndAdminWorkspaceViewModel : ProfileWorkspacePageVie
     private string bindIp = string.Empty;
 
     [ObservableProperty]
+    private string serverPassword = string.Empty;
+
+    [ObservableProperty]
+    private string rconPassword = string.Empty;
+
+    [ObservableProperty]
+    private bool autoCreateWhitelistUsers;
+
+    [ObservableProperty]
+    private bool doLuaChecksum;
+
+    [ObservableProperty]
+    private bool upnpEnabled;
+
+    [ObservableProperty]
+    private string pingLimit = string.Empty;
+
+    [ObservableProperty]
     private string adminUsername = string.Empty;
 
     [ObservableProperty]
@@ -96,7 +114,7 @@ public partial class NetworkAndAdminWorkspaceViewModel : ProfileWorkspacePageVie
 
     public override async Task SaveDraftAsync()
     {
-        LoadStatus = "Drafts are disabled on Network & Admin so the write-only admin password is never persisted.";
+        LoadStatus = "Drafts are disabled on Network & Admin so password fields are never persisted.";
         await Task.CompletedTask;
     }
 
@@ -209,6 +227,12 @@ public partial class NetworkAndAdminWorkspaceViewModel : ProfileWorkspacePageVie
         try
         {
             BindIp = GetValue(values, ".network.bind-ip");
+            ServerPassword = string.Empty;
+            RconPassword = string.Empty;
+            AutoCreateWhitelistUsers = bool.TryParse(GetValue(values, ".network.auto-whitelist"), out var autoWhitelist) && autoWhitelist;
+            DoLuaChecksum = bool.TryParse(GetValue(values, ".network.do-lua-checksum"), out var doLuaChecksum) && doLuaChecksum;
+            UpnpEnabled = bool.TryParse(GetValue(values, ".network.upnp"), out var upnpEnabled) && upnpEnabled;
+            PingLimit = GetValue(values, ".network.ping-limit");
             AdminUsername = GetValue(values, ".network.admin-user");
             AdminPassword = string.Empty;
         }
@@ -224,6 +248,12 @@ public partial class NetworkAndAdminWorkspaceViewModel : ProfileWorkspacePageVie
         return new Dictionary<string, string?>(StringComparer.Ordinal)
         {
             [$"{prefix}.network.bind-ip"] = BindIp,
+            [$"{prefix}.network.server-password"] = ServerPassword,
+            [$"{prefix}.network.rcon-password"] = RconPassword,
+            [$"{prefix}.network.auto-whitelist"] = AutoCreateWhitelistUsers.ToString(),
+            [$"{prefix}.network.do-lua-checksum"] = DoLuaChecksum.ToString(),
+            [$"{prefix}.network.upnp"] = UpnpEnabled.ToString(),
+            [$"{prefix}.network.ping-limit"] = PingLimit,
             [$"{prefix}.network.admin-user"] = AdminUsername,
             [$"{prefix}.network.admin-password"] = AdminPassword,
         };
@@ -271,6 +301,12 @@ public partial class NetworkAndAdminWorkspaceViewModel : ProfileWorkspacePageVie
         try
         {
             BindIp = string.Empty;
+            ServerPassword = string.Empty;
+            RconPassword = string.Empty;
+            AutoCreateWhitelistUsers = false;
+            DoLuaChecksum = false;
+            UpnpEnabled = false;
+            PingLimit = string.Empty;
             AdminUsername = string.Empty;
             AdminPassword = string.Empty;
         }
@@ -284,6 +320,12 @@ public partial class NetworkAndAdminWorkspaceViewModel : ProfileWorkspacePageVie
     }
 
     partial void OnBindIpChanged(string value) => NotifyFieldEdited();
+    partial void OnServerPasswordChanged(string value) => NotifyFieldEdited();
+    partial void OnRconPasswordChanged(string value) => NotifyFieldEdited();
+    partial void OnAutoCreateWhitelistUsersChanged(bool value) => NotifyFieldEdited();
+    partial void OnDoLuaChecksumChanged(bool value) => NotifyFieldEdited();
+    partial void OnUpnpEnabledChanged(bool value) => NotifyFieldEdited();
+    partial void OnPingLimitChanged(string value) => NotifyFieldEdited();
     partial void OnAdminUsernameChanged(string value) => NotifyFieldEdited();
     partial void OnAdminPasswordChanged(string value) => NotifyFieldEdited();
 
@@ -295,7 +337,7 @@ public partial class NetworkAndAdminWorkspaceViewModel : ProfileWorkspacePageVie
         }
 
         MarkDirty("Unsaved changes in Network & Admin.");
-        LoadStatus = "Network & Admin settings changed locally. Apply them to update the active profile.";
+        LoadStatus = "Network & Admin settings changed locally. Apply them to update the active server.";
         NotifyComputedState();
     }
 

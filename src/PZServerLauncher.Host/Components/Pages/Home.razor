@@ -222,4 +222,7 @@
         _profiles = await ProfileStore.ListAsync();
         _users = await UserManagementService.ListAsync();
     }
+
+    private static string BuildProfileHref(string profileId, string page) =>
+        $"/profiles/{Uri.EscapeDataString(profileId)}/{page}";
 }

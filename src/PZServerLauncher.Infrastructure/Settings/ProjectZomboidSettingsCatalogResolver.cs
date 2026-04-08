@@ -48,20 +48,34 @@ public sealed class ProjectZomboidSettingsCatalogResolver : ISettingsCatalogReso
             new[]
             {
                 new StructuredSectionDefinition(
-                    $"{branchPrefix}.general.server",
-                    "Server",
+                    $"{branchPrefix}.general.identity",
+                    "Server Browser Identity",
                     new[]
                     {
-                        Field($"{branchPrefix}.server.name", "Server Name", StructuredValueKind.Text, ConfigFileKind.Ini, "ServerName"),
-                        Field($"{branchPrefix}.server.port", "Default Port", StructuredValueKind.Integer, ConfigFileKind.Ini, "DefaultPort"),
-                        Field($"{branchPrefix}.server.udp-port", "UDP Port", StructuredValueKind.Integer, ConfigFileKind.Ini, "UDPPort"),
-                        Field($"{branchPrefix}.server.rcon-port", "RCON Port", StructuredValueKind.Integer, ConfigFileKind.Ini, "RCONPort"),
+                        Field($"{branchPrefix}.server.public-name", "Public Server Name", StructuredValueKind.Text, ConfigFileKind.Ini, "PublicName", helpText: "This is the visible server name shown in the browser."),
+                        Field($"{branchPrefix}.server.public-description", "Public Description", StructuredValueKind.Text, ConfigFileKind.Ini, "PublicDescription", helpText: "Short browser description for players browsing public servers."),
+                        Field($"{branchPrefix}.server.public", "Public Listing Enabled", StructuredValueKind.Boolean, ConfigFileKind.Ini, "Public", defaultValue: "true", helpText: "Show the server on Steam and in the public browser."),
+                        Field($"{branchPrefix}.server.open", "Open To New Accounts", StructuredValueKind.Boolean, ConfigFileKind.Ini, "Open", defaultValue: "true", helpText: "Allow players to create accounts without a manual whitelist step."),
+                        Field($"{branchPrefix}.server.max-players", "Max Players", StructuredValueKind.Integer, ConfigFileKind.Ini, "MaxPlayers", defaultValue: "16", helpText: "Maximum number of survivors allowed to connect."),
                     }),
                 new StructuredSectionDefinition(
-                    $"{branchPrefix}.general.runtime",
-                    "Runtime",
+                    $"{branchPrefix}.general.world-access",
+                    "World Access",
                     new[]
                     {
+                        Field($"{branchPrefix}.server.pvp", "PvP Enabled", StructuredValueKind.Boolean, ConfigFileKind.Ini, "PVP", defaultValue: "true", helpText: "Allow player versus player combat on the server."),
+                        Field($"{branchPrefix}.server.pause-empty", "Pause When Empty", StructuredValueKind.Boolean, ConfigFileKind.Ini, "PauseEmpty", defaultValue: "true", helpText: "Pause world simulation when nobody is online."),
+                        Field($"{branchPrefix}.server.global-chat", "Global Chat", StructuredValueKind.Boolean, ConfigFileKind.Ini, "GlobalChat", defaultValue: "true", helpText: "Allow server-wide chat streams."),
+                        Field($"{branchPrefix}.server.welcome-message", "Welcome Message", StructuredValueKind.MultiLineText, ConfigFileKind.Ini, "ServerWelcomeMessage", helpText: "Use line breaks here; they will be written back as <LINE> markers for Project Zomboid."),
+                    }),
+                new StructuredSectionDefinition(
+                    $"{branchPrefix}.general.ports",
+                    "Ports & Runtime",
+                    new[]
+                    {
+                        Field($"{branchPrefix}.server.port", "Default Port", StructuredValueKind.Integer, ConfigFileKind.Ini, "DefaultPort", helpText: "Primary server port exposed to clients."),
+                        Field($"{branchPrefix}.server.udp-port", "UDP Port Override", StructuredValueKind.Integer, ConfigFileKind.Ini, "UDPPort", helpText: "Launcher-managed UDP override used when starting the server."),
+                        Field($"{branchPrefix}.server.rcon-port", "RCON Port", StructuredValueKind.Integer, ConfigFileKind.Ini, "RCONPort", helpText: "Remote console port for administration tools."),
                         Field($"{branchPrefix}.runtime.memory", "Preferred Memory (GB)", StructuredValueKind.Integer, ConfigFileKind.Ini, "PreferredMemoryInGigabytes", restartRequired: true),
                         Field($"{branchPrefix}.runtime.start-with-host", "Start With Host", StructuredValueKind.Boolean, ConfigFileKind.Ini, "StartWithHost"),
                         Field($"{branchPrefix}.runtime.auto-restart", "Auto Restart On Crash", StructuredValueKind.Boolean, ConfigFileKind.Ini, "AutoRestartOnCrash"),
@@ -146,13 +160,31 @@ public sealed class ProjectZomboidSettingsCatalogResolver : ISettingsCatalogReso
             new[]
             {
                 new StructuredSectionDefinition(
-                    $"{branchPrefix}.network.connection",
-                    "Connection",
+                    $"{branchPrefix}.network.access",
+                    "Access & Passwords",
                     new[]
                     {
-                        Field($"{branchPrefix}.network.bind-ip", "Bind IP", StructuredValueKind.Text, ConfigFileKind.Ini, "BindIP"),
-                        Field($"{branchPrefix}.network.admin-user", "Admin Username", StructuredValueKind.Text, ConfigFileKind.Ini, "AdminUsername"),
-                        Field($"{branchPrefix}.network.admin-password", "Admin Password", StructuredValueKind.Text, ConfigFileKind.Ini, "AdminPassword"),
+                        Field($"{branchPrefix}.network.bind-ip", "Bind IP", StructuredValueKind.Text, ConfigFileKind.Ini, "BindIP", helpText: "Leave empty to bind normally, or pin the server to a specific interface."),
+                        Field($"{branchPrefix}.network.server-password", "Server Password", StructuredValueKind.Text, ConfigFileKind.Ini, "Password", helpText: "Optional join password for players. Leave blank to preserve the existing value."),
+                        Field($"{branchPrefix}.network.rcon-password", "RCON Password", StructuredValueKind.Text, ConfigFileKind.Ini, "RCONPassword", helpText: "Optional password for remote console clients. Leave blank to preserve the existing value."),
+                    }),
+                new StructuredSectionDefinition(
+                    $"{branchPrefix}.network.compatibility",
+                    "Compatibility & Discovery",
+                    new[]
+                    {
+                        Field($"{branchPrefix}.network.auto-whitelist", "Auto Create Whitelist Users", StructuredValueKind.Boolean, ConfigFileKind.Ini, "AutoCreateUserInWhiteList", defaultValue: "false", helpText: "Automatically add first-time players instead of requiring manual adduser."),
+                        Field($"{branchPrefix}.network.do-lua-checksum", "Enforce Lua Checksum", StructuredValueKind.Boolean, ConfigFileKind.Ini, "DoLuaChecksum", defaultValue: "true", helpText: "Kick players whose Lua files do not match the server."),
+                        Field($"{branchPrefix}.network.upnp", "Enable UPnP", StructuredValueKind.Boolean, ConfigFileKind.Ini, "UPnP", defaultValue: "true", helpText: "Ask routers that support UPnP to open ports automatically."),
+                        Field($"{branchPrefix}.network.ping-limit", "Ping Limit", StructuredValueKind.Integer, ConfigFileKind.Ini, "PingLimit", defaultValue: "250", helpText: "Players consistently above this ping can be kicked. Use 100 to disable the limit."),
+                    }),
+                new StructuredSectionDefinition(
+                    $"{branchPrefix}.network.bootstrap",
+                    "Launcher Admin Bootstrap",
+                    new[]
+                    {
+                        Field($"{branchPrefix}.network.admin-user", "Admin Username", StructuredValueKind.Text, ConfigFileKind.Ini, "AdminUsername", helpText: "Launcher-managed bootstrap admin account used on server start."),
+                        Field($"{branchPrefix}.network.admin-password", "Admin Password", StructuredValueKind.Text, ConfigFileKind.Ini, "AdminPassword", helpText: "Write-only launcher-managed bootstrap admin password."),
                     }),
             });
     }

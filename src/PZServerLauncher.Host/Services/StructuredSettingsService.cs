@@ -14,6 +14,7 @@ public sealed class StructuredSettingsService(
     ProfileStore profileStore,
     ConfigFileService configFileService,
     ISettingsCatalogResolver catalogResolver,
+    IIniDocumentService iniDocumentService,
     ISandboxVarsDocumentService sandboxVarsDocumentService)
 {
     private const string SettingsUnavailableMessage = "Structured editing for this page has not been implemented yet. Use Advanced Files for the raw editor.";
@@ -39,9 +40,9 @@ public sealed class StructuredSettingsService(
 
         return pageId switch
         {
-            ProfileWorkspacePageIds.General => BuildGeneralValueSet(profile, catalog, pageId),
+            ProfileWorkspacePageIds.General => BuildGeneralValueSet(profile, catalog, definition, pageId),
             ProfileWorkspacePageIds.Sandbox => BuildSandboxValueSet(profile, catalog, definition, pageId),
-            ProfileWorkspacePageIds.NetworkAndAdmin => BuildNetworkValueSet(profile, catalog, pageId),
+            ProfileWorkspacePageIds.NetworkAndAdmin => BuildNetworkValueSet(profile, catalog, definition, pageId),
             _ => BuildFallbackValueSet(catalog, pageId, SettingsUnavailableMessage),
         };
     }
@@ -85,19 +86,49 @@ public sealed class StructuredSettingsService(
             case ProfileWorkspacePageIds.General:
                 {
                     var branchPrefix = GetBranchPrefix(profile.Branch);
-                    var current = configFileService.GetCommonConfig(profile);
-                    var common = current with
+                    var raw = configFileService.ReadRawFile(profile, ConfigFileKind.Ini);
+                    if (!string.IsNullOrWhiteSpace(raw.Content))
                     {
-                        ServerName = GetRequiredString(values, $"{branchPrefix}.server.name"),
+                        var parsed = iniDocumentService.Parse(raw.Content);
+                        if (!parsed.IsSupported)
+                        {
+                            var fallbackReason = BuildIniFallbackReason(parsed);
+                            return new SettingsSaveResultDto(
+                                BuildFallbackValueSet(catalog, pageId, fallbackReason),
+                                BuildFallbackValidation(pageId, fallbackReason),
+                                false);
+                        }
+                    }
+
+                    var iniValues = new Dictionary<string, string?>(StringComparer.Ordinal)
+                    {
+                        ["PublicName"] = NormalizeIniLineValue(values, $"{branchPrefix}.server.public-name"),
+                        ["PublicDescription"] = NormalizeIniLineValue(values, $"{branchPrefix}.server.public-description"),
+                        ["Public"] = ParseBool(values, $"{branchPrefix}.server.public").ToString().ToLowerInvariant(),
+                        ["Open"] = ParseBool(values, $"{branchPrefix}.server.open").ToString().ToLowerInvariant(),
+                        ["MaxPlayers"] = ParseInt(values, $"{branchPrefix}.server.max-players").ToString(),
+                        ["PVP"] = ParseBool(values, $"{branchPrefix}.server.pvp").ToString().ToLowerInvariant(),
+                        ["PauseEmpty"] = ParseBool(values, $"{branchPrefix}.server.pause-empty").ToString().ToLowerInvariant(),
+                        ["GlobalChat"] = ParseBool(values, $"{branchPrefix}.server.global-chat").ToString().ToLowerInvariant(),
+                        ["ServerWelcomeMessage"] = NormalizeWelcomeMessage(values, $"{branchPrefix}.server.welcome-message"),
+                        ["DefaultPort"] = ParseInt(values, $"{branchPrefix}.server.port").ToString(),
+                        ["RCONPort"] = ParseInt(values, $"{branchPrefix}.server.rcon-port").ToString(),
+                    };
+
+                    var updatedContent = iniDocumentService.ApplyValues(raw.Content, iniValues);
+                    configFileService.WriteRawFile(profile, ConfigFileKind.Ini, raw.Sha256, updatedContent);
+
+                    var updated = await profileStore.UpsertAsync(profile with
+                    {
                         DefaultPort = ParseInt(values, $"{branchPrefix}.server.port"),
                         UdpPort = ParseInt(values, $"{branchPrefix}.server.udp-port"),
                         RconPort = ParseInt(values, $"{branchPrefix}.server.rcon-port"),
                         PreferredMemoryInGigabytes = ParseInt(values, $"{branchPrefix}.runtime.memory"),
                         StartWithHost = ParseBool(values, $"{branchPrefix}.runtime.start-with-host"),
                         AutoRestartOnCrash = ParseBool(values, $"{branchPrefix}.runtime.auto-restart"),
-                    };
+                        UpdatedAtUtc = DateTimeOffset.UtcNow,
+                    }, cancellationToken);
 
-                    var updated = await profileStore.UpsertAsync(configFileService.ApplyCommonConfig(profile, common), cancellationToken);
                     return new SettingsSaveResultDto(GetPage(updated, pageId), validation, true);
                 }
             case ProfileWorkspacePageIds.Sandbox:
@@ -139,6 +170,38 @@ public sealed class StructuredSettingsService(
             case ProfileWorkspacePageIds.NetworkAndAdmin:
                 {
                     var branchPrefix = GetBranchPrefix(profile.Branch);
+                    var raw = configFileService.ReadRawFile(profile, ConfigFileKind.Ini);
+                    if (!string.IsNullOrWhiteSpace(raw.Content))
+                    {
+                        var parsed = iniDocumentService.Parse(raw.Content);
+                        if (!parsed.IsSupported)
+                        {
+                            var fallbackReason = BuildIniFallbackReason(parsed);
+                            return new SettingsSaveResultDto(
+                                BuildFallbackValueSet(catalog, pageId, fallbackReason),
+                                BuildFallbackValidation(pageId, fallbackReason),
+                                false);
+                        }
+                    }
+
+                    var currentIniValues = iniDocumentService.ReadValues(raw.Content, ["Password", "RCONPassword"]);
+                    var serverPassword = NormalizeWriteOnlySecret(values, $"{branchPrefix}.network.server-password", GetIniValueOrDefault(currentIniValues, "Password", null));
+                    var rconPassword = NormalizeWriteOnlySecret(values, $"{branchPrefix}.network.rcon-password", GetIniValueOrDefault(currentIniValues, "RCONPassword", null));
+
+                    var iniValues = new Dictionary<string, string?>(StringComparer.Ordinal)
+                    {
+                        ["BindIP"] = NormalizeOptional(values, $"{branchPrefix}.network.bind-ip"),
+                        ["Password"] = serverPassword,
+                        ["RCONPassword"] = rconPassword,
+                        ["AutoCreateUserInWhiteList"] = ParseBool(values, $"{branchPrefix}.network.auto-whitelist").ToString().ToLowerInvariant(),
+                        ["DoLuaChecksum"] = ParseBool(values, $"{branchPrefix}.network.do-lua-checksum").ToString().ToLowerInvariant(),
+                        ["UPnP"] = ParseBool(values, $"{branchPrefix}.network.upnp").ToString().ToLowerInvariant(),
+                        ["PingLimit"] = ParseInt(values, $"{branchPrefix}.network.ping-limit").ToString(),
+                    };
+
+                    var updatedContent = iniDocumentService.ApplyValues(raw.Content, iniValues);
+                    configFileService.WriteRawFile(profile, ConfigFileKind.Ini, raw.Sha256, updatedContent);
+
                     var updated = await profileStore.UpsertAsync(profile with
                     {
                         BindIp = NormalizeOptional(values, $"{branchPrefix}.network.bind-ip"),
@@ -157,19 +220,44 @@ public sealed class StructuredSettingsService(
         }
     }
 
-    private SettingsValueSetDto BuildGeneralValueSet(ServerProfile profile, StructuredSettingsCatalog catalog, string pageId)
+    private SettingsValueSetDto BuildGeneralValueSet(
+        ServerProfile profile,
+        StructuredSettingsCatalog catalog,
+        StructuredPageDefinition definition,
+        string pageId)
     {
         var values = new Dictionary<string, string?>(StringComparer.Ordinal);
-        var common = configFileService.GetCommonConfig(profile);
-        var branchPrefix = GetBranchPrefix(profile.Branch);
+        var raw = configFileService.ReadRawFile(profile, ConfigFileKind.Ini);
+        if (!string.IsNullOrWhiteSpace(raw.Content))
+        {
+            var parsed = iniDocumentService.Parse(raw.Content);
+            if (!parsed.IsSupported)
+            {
+                var fallbackReason = BuildIniFallbackReason(parsed);
+                return BuildFallbackValueSet(catalog, pageId, fallbackReason);
+            }
+        }
 
-        values[$"{branchPrefix}.server.name"] = common.ServerName;
-        values[$"{branchPrefix}.server.port"] = common.DefaultPort.ToString();
-        values[$"{branchPrefix}.server.udp-port"] = common.UdpPort.ToString();
-        values[$"{branchPrefix}.server.rcon-port"] = common.RconPort.ToString();
-        values[$"{branchPrefix}.runtime.memory"] = common.PreferredMemoryInGigabytes.ToString();
-        values[$"{branchPrefix}.runtime.start-with-host"] = common.StartWithHost.ToString();
-        values[$"{branchPrefix}.runtime.auto-restart"] = common.AutoRestartOnCrash.ToString();
+        var sourceValues = iniDocumentService.ReadValues(
+            raw.Content,
+            definition.Sections
+                .SelectMany(section => section.Fields)
+                .Where(field => !IsGeneralProfileBackedField(field.FieldId))
+                .Select(field => field.Target.KeyPath));
+
+        foreach (var field in definition.Sections.SelectMany(section => section.Fields))
+        {
+            values[field.FieldId] = field.FieldId switch
+            {
+                var id when id.EndsWith(".server.udp-port", StringComparison.Ordinal) => profile.UdpPort.ToString(),
+                var id when id.EndsWith(".runtime.memory", StringComparison.Ordinal) => profile.PreferredMemoryInGigabytes.ToString(),
+                var id when id.EndsWith(".runtime.start-with-host", StringComparison.Ordinal) => profile.StartWithHost.ToString(),
+                var id when id.EndsWith(".runtime.auto-restart", StringComparison.Ordinal) => profile.AutoRestartOnCrash.ToString(),
+                var id when id.EndsWith(".server.welcome-message", StringComparison.Ordinal) => ExpandWelcomeMessage(
+                    GetIniValueOrDefault(sourceValues, field.Target.KeyPath, field.DefaultValue)),
+                _ => GetIniValueOrDefault(sourceValues, field.Target.KeyPath, field.DefaultValue),
+            };
+        }
 
         return new SettingsValueSetDto(
             catalog.CatalogId,
@@ -229,15 +317,43 @@ public sealed class StructuredSettingsService(
             null);
     }
 
-    private SettingsValueSetDto BuildNetworkValueSet(ServerProfile profile, StructuredSettingsCatalog catalog, string pageId)
+    private SettingsValueSetDto BuildNetworkValueSet(
+        ServerProfile profile,
+        StructuredSettingsCatalog catalog,
+        StructuredPageDefinition definition,
+        string pageId)
     {
-        var branchPrefix = GetBranchPrefix(profile.Branch);
-        var values = new Dictionary<string, string?>(StringComparer.Ordinal)
+        var raw = configFileService.ReadRawFile(profile, ConfigFileKind.Ini);
+        if (!string.IsNullOrWhiteSpace(raw.Content))
         {
-            [$"{branchPrefix}.network.bind-ip"] = profile.BindIp ?? string.Empty,
-            [$"{branchPrefix}.network.admin-user"] = profile.AdminUsername ?? string.Empty,
-            [$"{branchPrefix}.network.admin-password"] = string.Empty,
-        };
+            var parsed = iniDocumentService.Parse(raw.Content);
+            if (!parsed.IsSupported)
+            {
+                var fallbackReason = BuildIniFallbackReason(parsed);
+                return BuildFallbackValueSet(catalog, pageId, fallbackReason);
+            }
+        }
+
+        var sourceValues = iniDocumentService.ReadValues(
+            raw.Content,
+            definition.Sections
+                .SelectMany(section => section.Fields)
+                .Where(field => !IsNetworkProfileBackedField(field.FieldId))
+                .Select(field => field.Target.KeyPath));
+
+        var values = new Dictionary<string, string?>(StringComparer.Ordinal);
+        foreach (var field in definition.Sections.SelectMany(section => section.Fields))
+        {
+            values[field.FieldId] = field.FieldId switch
+            {
+                var id when id.EndsWith(".network.bind-ip", StringComparison.Ordinal) => GetIniValueOrDefault(sourceValues, field.Target.KeyPath, profile.BindIp ?? field.DefaultValue),
+                var id when id.EndsWith(".network.admin-user", StringComparison.Ordinal) => profile.AdminUsername ?? string.Empty,
+                var id when id.EndsWith(".network.admin-password", StringComparison.Ordinal) => string.Empty,
+                var id when id.EndsWith(".network.server-password", StringComparison.Ordinal) => string.Empty,
+                var id when id.EndsWith(".network.rcon-password", StringComparison.Ordinal) => string.Empty,
+                _ => GetIniValueOrDefault(sourceValues, field.Target.KeyPath, field.DefaultValue),
+            };
+        }
 
         return new SettingsValueSetDto(
             catalog.CatalogId,
@@ -257,11 +373,18 @@ public sealed class StructuredSettingsService(
         var branchPrefix = GetBranchPrefix(profile.Branch);
         var fieldErrors = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
 
-        ValidateRequiredString(values, $"{branchPrefix}.server.name", "Server name is required.", fieldErrors);
+        ValidateRequiredString(values, $"{branchPrefix}.server.public-name", "Public server name is required.", fieldErrors);
         ValidatePort(values, $"{branchPrefix}.server.port", fieldErrors);
         ValidatePort(values, $"{branchPrefix}.server.udp-port", fieldErrors);
         ValidatePort(values, $"{branchPrefix}.server.rcon-port", fieldErrors);
+        ValidatePositiveInteger(values, $"{branchPrefix}.server.max-players", "Max players must be a whole number greater than zero.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.server.public", "Public listing must be true or false.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.server.open", "Open access must be true or false.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.server.pvp", "PvP must be true or false.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.server.pause-empty", "Pause when empty must be true or false.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.server.global-chat", "Global chat must be true or false.", fieldErrors);
         ValidatePositiveInteger(values, $"{branchPrefix}.runtime.memory", "Memory must be a whole number greater than zero.", fieldErrors);
+        ValidateMaximumLength(values, $"{branchPrefix}.server.public-description", 256, "Public description should stay under 256 characters for the server browser.", fieldErrors);
 
         return new SettingsValidationResultDto(
             pageId,
@@ -322,6 +445,11 @@ public sealed class StructuredSettingsService(
             fieldErrors[bindIpKey] = ["Bind IP must be empty or a valid IPv4/IPv6 address."];
         }
 
+        ValidateBoolean(values, $"{branchPrefix}.network.auto-whitelist", "Auto whitelist must be true or false.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.network.do-lua-checksum", "Lua checksum enforcement must be true or false.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.network.upnp", "UPnP must be true or false.", fieldErrors);
+        ValidateMinimumInteger(values, $"{branchPrefix}.network.ping-limit", 0, "Ping limit must be zero or greater.", fieldErrors);
+
         var passwordKey = $"{branchPrefix}.network.admin-password";
         var usernameKey = $"{branchPrefix}.network.admin-user";
         if (values.TryGetValue(passwordKey, out var password) &&
@@ -368,7 +496,7 @@ public sealed class StructuredSettingsService(
             definition.DisplayName,
             definition.Target.KeyPath,
             definition.Target.FileKind,
-            MapControlKind(definition.ValueKind),
+            MapControlKind(definition),
             MapValueKind(definition.ValueKind),
             definition.DefaultValue,
             definition.HelpText,
@@ -443,8 +571,16 @@ public sealed class StructuredSettingsService(
             _ => "Structured settings page.",
         };
 
-    private static SettingsFieldControlKind MapControlKind(StructuredValueKind valueKind) =>
-        valueKind switch
+    private static SettingsFieldControlKind MapControlKind(StructuredFieldDefinition definition)
+    {
+        if (definition.FieldId.Contains(".password", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(definition.Target.KeyPath, "Password", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(definition.Target.KeyPath, "RCONPassword", StringComparison.OrdinalIgnoreCase))
+        {
+            return SettingsFieldControlKind.Password;
+        }
+
+        return definition.ValueKind switch
         {
             StructuredValueKind.Integer => SettingsFieldControlKind.Numeric,
             StructuredValueKind.Boolean => SettingsFieldControlKind.Checkbox,
@@ -452,6 +588,7 @@ public sealed class StructuredSettingsService(
             StructuredValueKind.Choice => SettingsFieldControlKind.Select,
             _ => SettingsFieldControlKind.TextBox,
         };
+    }
 
     private static SettingsValueKind MapValueKind(StructuredValueKind valueKind) =>
         valueKind switch
@@ -544,6 +681,21 @@ public sealed class StructuredSettingsService(
         }
     }
 
+    private static void ValidateMaximumLength(
+        IReadOnlyDictionary<string, string?> values,
+        string fieldId,
+        int maximumLength,
+        string error,
+        IDictionary<string, IReadOnlyList<string>> fieldErrors)
+    {
+        if (values.TryGetValue(fieldId, out var value) &&
+            value is not null &&
+            value.Length > maximumLength)
+        {
+            fieldErrors[fieldId] = [error];
+        }
+    }
+
     private static string GetRequiredString(IReadOnlyDictionary<string, string?> values, string key) =>
         values.TryGetValue(key, out var value) && !string.IsNullOrWhiteSpace(value)
             ? value
@@ -564,10 +716,61 @@ public sealed class StructuredSettingsService(
             ? value.Trim()
             : null;
 
+    private static string? NormalizeIniLineValue(IReadOnlyDictionary<string, string?> values, string key) =>
+        values.TryGetValue(key, out var value)
+            ? value?.ReplaceLineEndings(" ").Trim()
+            : null;
+
+    private static string NormalizeWelcomeMessage(IReadOnlyDictionary<string, string?> values, string key)
+    {
+        if (!values.TryGetValue(key, out var value) || string.IsNullOrWhiteSpace(value))
+        {
+            return string.Empty;
+        }
+
+        return value
+            .ReplaceLineEndings(" <LINE> ")
+            .Replace("  ", " ", StringComparison.Ordinal)
+            .Trim();
+    }
+
     private static string? NormalizeWriteOnlySecret(IReadOnlyDictionary<string, string?> values, string key, string? existingValue) =>
         values.TryGetValue(key, out var value) && !string.IsNullOrWhiteSpace(value)
             ? value.Trim()
             : existingValue;
+
+    private static string ExpandWelcomeMessage(string? value) =>
+        string.IsNullOrWhiteSpace(value)
+            ? string.Empty
+            : value.Replace("<LINE>", Environment.NewLine, StringComparison.OrdinalIgnoreCase).Trim();
+
+    private static string? GetIniValueOrDefault(
+        IReadOnlyDictionary<string, string?> values,
+        string keyPath,
+        string? defaultValue) =>
+        values.TryGetValue(keyPath, out var value) && !string.IsNullOrWhiteSpace(value)
+            ? value
+            : defaultValue;
+
+    private static bool IsGeneralProfileBackedField(string fieldId) =>
+        fieldId.EndsWith(".server.udp-port", StringComparison.Ordinal) ||
+        fieldId.EndsWith(".runtime.memory", StringComparison.Ordinal) ||
+        fieldId.EndsWith(".runtime.start-with-host", StringComparison.Ordinal) ||
+        fieldId.EndsWith(".runtime.auto-restart", StringComparison.Ordinal);
+
+    private static bool IsNetworkProfileBackedField(string fieldId) =>
+        fieldId.EndsWith(".network.admin-user", StringComparison.Ordinal) ||
+        fieldId.EndsWith(".network.admin-password", StringComparison.Ordinal);
+
+    private static string BuildIniFallbackReason(StructuredConfigDocument document)
+    {
+        if (document.Issues.Count == 0)
+        {
+            return "The Project Zomboid server INI could not be represented safely in the structured editor. Use Advanced Files instead.";
+        }
+
+        return string.Join(" ", document.Issues.Select(issue => issue.Message));
+    }
 
     private static string ComputeSourceHash(IReadOnlyDictionary<string, string?> values)
     {

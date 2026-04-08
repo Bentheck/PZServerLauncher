@@ -30,7 +30,7 @@
         </article>
         <article class="metric-card">
             <span class="metric-label">Branches</span>
-            <strong class="metric-value">@(_profiles.Select(profile => profile.Branch).Distinct(StringComparer.OrdinalIgnoreCase).Count())</strong>
+            <strong class="metric-value">@(_profiles.Select(profile => profile.Branch).Distinct().Count())</strong>
             <span class="metric-note">Build 41 / Build 42 mix</span>
         </article>
         <article class="metric-card">

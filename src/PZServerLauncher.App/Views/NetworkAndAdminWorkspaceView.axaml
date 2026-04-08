@@ -5,7 +5,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d"
              d:DesignWidth="1120"
-             d:DesignHeight="900"
+             d:DesignHeight="960"
              x:Class="PZServerLauncher.App.Views.NetworkAndAdminWorkspaceView"
              x:DataType="vm:NetworkAndAdminWorkspaceViewModel">
     <ScrollViewer>
@@ -59,42 +59,91 @@
                     <StackPanel Spacing="6">
                         <TextBlock Classes="kicker" Text="Fallback Required" />
                         <TextBlock Classes="body" Text="{Binding FallbackReason}" TextWrapping="Wrap" />
-                        <TextBlock Classes="body" Text="Use Advanced Files if this server's network settings can't be represented safely in the structured editor." TextWrapping="Wrap" />
+                        <TextBlock Classes="body"
+                                   Text="Use Advanced Files if this server's network settings can't be represented safely in the structured editor."
+                                   TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
 
-                <Grid ColumnDefinitions="1.2*,.8*" ColumnSpacing="16" IsEnabled="{Binding CanEdit}">
-                    <Border Classes="card" Padding="18">
-                        <StackPanel Spacing="14">
-                            <TextBlock Classes="kicker" Text="Connection" />
-                            <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
+                <Grid ColumnDefinitions="1.15*,.85*" ColumnSpacing="16" IsEnabled="{Binding CanEdit}">
+                    <StackPanel Spacing="16">
+                        <Border Classes="card" Padding="18">
+                            <StackPanel Spacing="14">
+                                <TextBlock Classes="kicker" Text="Access &amp; Passwords" />
                                 <StackPanel Spacing="4">
                                     <TextBlock Classes="body" Text="Bind IP" />
                                     <TextBox Text="{Binding BindIp}" />
-                                    <TextBlock Classes="body" FontSize="12" Text="Leave empty to let the server bind normally, or set a specific IPv4/IPv6 address." TextWrapping="Wrap" />
+                                    <TextBlock Classes="body"
+                                               FontSize="12"
+                                               Text="Leave empty to let the server bind normally, or set a specific IPv4/IPv6 address."
+                                               TextWrapping="Wrap" />
                                 </StackPanel>
-                                <StackPanel Grid.Column="1" Spacing="4">
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="body" Text="Server Password" />
+                                    <TextBox PasswordChar="*" Text="{Binding ServerPassword}" />
+                                    <TextBlock Classes="body"
+                                               FontSize="12"
+                                               Text="Write-only. Leave blank to keep the existing join password."
+                                               TextWrapping="Wrap" />
+                                </StackPanel>
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="body" Text="RCON Password" />
+                                    <TextBox PasswordChar="*" Text="{Binding RconPassword}" />
+                                    <TextBlock Classes="body"
+                                               FontSize="12"
+                                               Text="Write-only. Leave blank to keep the existing remote console password."
+                                               TextWrapping="Wrap" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Classes="card" Padding="18">
+                            <StackPanel Spacing="14">
+                                <TextBlock Classes="kicker" Text="Compatibility &amp; Discovery" />
+                                <CheckBox Content="Auto Create Whitelist Users" IsChecked="{Binding AutoCreateWhitelistUsers}" />
+                                <CheckBox Content="Enforce Lua Checksum" IsChecked="{Binding DoLuaChecksum}" />
+                                <CheckBox Content="Enable UPnP" IsChecked="{Binding UpnpEnabled}" />
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="body" Text="Ping Limit" />
+                                    <TextBox Text="{Binding PingLimit}" />
+                                    <TextBlock Classes="body"
+                                               FontSize="12"
+                                               Text="Players consistently above this limit can be kicked. Use 100 to disable the check."
+                                               TextWrapping="Wrap" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1" Spacing="16">
+                        <Border Classes="card" Padding="18">
+                            <StackPanel Spacing="14">
+                                <TextBlock Classes="kicker" Text="Launcher Admin Bootstrap" />
+                                <StackPanel Spacing="4">
                                     <TextBlock Classes="body" Text="Admin Username" />
                                     <TextBox Text="{Binding AdminUsername}" />
-                                    <TextBlock Classes="body" FontSize="12" Text="Used by launcher-managed startup arguments when an admin identity is configured." TextWrapping="Wrap" />
+                                    <TextBlock Classes="body"
+                                               FontSize="12"
+                                               Text="Used by launcher-managed startup arguments when the server needs to bootstrap an admin account."
+                                               TextWrapping="Wrap" />
                                 </StackPanel>
-                            </Grid>
-                        </StackPanel>
-                    </Border>
-
-                    <Border Grid.Column="1" Classes="card" Padding="18">
-                        <StackPanel Spacing="14">
-                            <TextBlock Classes="kicker" Text="Security" />
-                            <StackPanel Spacing="4">
-                                <TextBlock Classes="body" Text="Admin Password" />
-                                <TextBox PasswordChar="*" Text="{Binding AdminPassword}" />
-                                <TextBlock Classes="body" FontSize="12" Text="Write-only. Leave blank to keep the existing password; enter a new value only when you want to rotate it." TextWrapping="Wrap" />
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="body" Text="Admin Password" />
+                                    <TextBox PasswordChar="*" Text="{Binding AdminPassword}" />
+                                    <TextBlock Classes="body"
+                                               FontSize="12"
+                                               Text="Write-only. Leave blank to keep the existing bootstrap admin password."
+                                               TextWrapping="Wrap" />
+                                </StackPanel>
                             </StackPanel>
-                            <Border Background="#F6EFE6" CornerRadius="12" Padding="12" IsVisible="{Binding DraftsDisabled}">
-                                <TextBlock Classes="body" Text="Drafts are intentionally disabled on this page so the admin password is never persisted in workspace draft storage." TextWrapping="Wrap" />
-                            </Border>
-                        </StackPanel>
-                    </Border>
+                        </Border>
+
+                        <Border Background="#F6EFE6" CornerRadius="12" Padding="12" IsVisible="{Binding DraftsDisabled}">
+                            <TextBlock Classes="body"
+                                       Text="Drafts are intentionally disabled on this page so passwords are never persisted in workspace draft storage."
+                                       TextWrapping="Wrap" />
+                        </Border>
+                    </StackPanel>
                 </Grid>
 
                 <WrapPanel Orientation="Horizontal" ItemWidth="152" ItemHeight="36">
