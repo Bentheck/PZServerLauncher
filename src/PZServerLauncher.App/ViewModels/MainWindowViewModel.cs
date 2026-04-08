@@ -8,6 +8,7 @@ using PZServerLauncher.Contracts.Runtime;
 using PZServerLauncher.Core.Planning;
 using PZServerLauncher.Core.Profiles;
 using PZServerLauncher.Core.Runtime;
+using PZServerLauncher.Core.Settings;
 
 namespace PZServerLauncher.App.ViewModels;
 
@@ -208,12 +209,20 @@ public partial class MainWindowViewModel : ViewModelBase
             HostStartWithWindows = snapshot.HostInfo.Settings.StartHostWithWindows;
             PopulateRemoteAccessSettings(snapshot.HostInfo.Settings.RemoteAccess);
 
+            var postureTasks = snapshot.Profiles
+                .Select(profile => LoadProfilePostureSummaryAsync(profile.ProfileId, profile.DisplayName))
+                .ToArray();
+            var postureResults = await Task.WhenAll(postureTasks);
+            var postureLookup = postureResults.ToDictionary(result => result.ProfileId, result => result.Summary, StringComparer.OrdinalIgnoreCase);
+
             Profiles.Clear();
             foreach (var profile in snapshot.Profiles)
             {
                 snapshot.Statuses.TryGetValue(profile.ProfileId, out var status);
                 snapshot.Backups.TryGetValue(profile.ProfileId, out var backups);
                 var latestBackup = backups?.FirstOrDefault() ?? "No backups";
+                var installDetected = Directory.Exists(profile.InstallDirectory) || Directory.Exists(Path.Combine(profile.InstallDirectory, "server"));
+                var posture = postureLookup.GetValueOrDefault(profile.ProfileId) ?? ProjectZomboidProfilePostureSummaryBuilder.Unavailable(profile.DisplayName);
 
                 Profiles.Add(new ProfileCardViewModel(
                     profile.ProfileId,
@@ -236,7 +245,9 @@ public partial class MainWindowViewModel : ViewModelBase
                     profile.StartWithHost,
                     profile.AutoRestartOnCrash,
                     FormatWorkshopSummary(profile.WorkshopPreset),
-                    "Workshop validation has not been run yet."));
+                    "Workshop validation has not been run yet.",
+                    installDetected,
+                    posture));
             }
 
             RecentJobs.Clear();
@@ -668,6 +679,33 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private static string FormatWorkshopSummary(WorkshopPreset preset) =>
         $"{preset.WorkshopItemIds.Count} workshop / {preset.EnabledModIds.Count} mods / {preset.MapFolders.Count} maps";
+
+    private async Task<(string ProfileId, ProjectZomboidProfilePostureSummary Summary)> LoadProfilePostureSummaryAsync(string profileId, string displayName)
+    {
+        try
+        {
+            var generalTask = _hostApiClient.GetSettingsPageAsync(profileId, ProfileWorkspacePageIds.General, CancellationToken.None);
+            var networkTask = _hostApiClient.GetSettingsPageAsync(profileId, ProfileWorkspacePageIds.NetworkAndAdmin, CancellationToken.None);
+            var sandboxTask = _hostApiClient.GetSettingsPageAsync(profileId, ProfileWorkspacePageIds.Sandbox, CancellationToken.None);
+            await Task.WhenAll(generalTask, networkTask, sandboxTask);
+
+            var generalValues = generalTask.Result?.Values ?? new Dictionary<string, string?>(StringComparer.Ordinal);
+            var networkValues = networkTask.Result?.Values ?? new Dictionary<string, string?>(StringComparer.Ordinal);
+            var sandboxValues = sandboxTask.Result?.Values ?? new Dictionary<string, string?>(StringComparer.Ordinal);
+
+            return (
+                profileId,
+                ProjectZomboidProfilePostureSummaryBuilder.Build(
+                    displayName,
+                    generalValues,
+                    networkValues,
+                    sandboxValues));
+        }
+        catch
+        {
+            return (profileId, ProjectZomboidProfilePostureSummaryBuilder.Unavailable(displayName));
+        }
+    }
 
     private static bool TryBuildCommonConfig(ProfileCardViewModel profile, out CommonConfigDto? config, out string? errorMessage)
     {

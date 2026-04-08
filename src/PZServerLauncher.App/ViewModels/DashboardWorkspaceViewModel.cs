@@ -12,6 +12,7 @@ public sealed class DashboardWorkspaceViewModel : WorkspacePageViewModelBase
             ["Host summary", "Import candidates", "Recent jobs", "Quick actions"])
     {
         Legacy = legacy;
+        Legacy.Profiles.CollectionChanged += OnCollectionChanged;
         Legacy.ImportCandidates.CollectionChanged += OnCollectionChanged;
         Legacy.RecentJobs.CollectionChanged += OnCollectionChanged;
     }
@@ -36,7 +37,29 @@ public sealed class DashboardWorkspaceViewModel : WorkspacePageViewModelBase
 
     public string NextActionSummary => HasImportCandidates
         ? "Review import candidates, then jump into Profiles to create or import the first server profile."
-        : "Refresh the host, then discover local imports so the panel can surface existing Zomboid servers.";
+        : HasProfiles
+            ? "Review the fleet posture below, then jump into Profiles or Overview to tune the next server."
+            : "Refresh the host, then discover local imports so the panel can surface existing Zomboid servers.";
+
+    public bool HasProfiles => Legacy.Profiles.Count > 0;
+
+    public bool HasNoProfiles => Legacy.Profiles.Count == 0;
+
+    public int ProfileCount => Legacy.Profiles.Count;
+
+    public int InstalledProfileCount => Legacy.Profiles.Count(profile => profile.IsInstallDetected);
+
+    public int PublicProfileCount => Legacy.Profiles.Count(profile => profile.IsPubliclyListed);
+
+    public int PvpProfileCount => Legacy.Profiles.Count(profile => profile.IsPvpEnabled);
+
+    public int VoiceEnabledProfileCount => Legacy.Profiles.Count(profile => profile.IsVoiceEnabled);
+
+    public int BackupCoverageCount => Legacy.Profiles.Count(profile => profile.HasBackup);
+
+    public string FleetSummary => HasProfiles
+        ? $"{InstalledProfileCount}/{Legacy.Profiles.Count} installed | {PublicProfileCount} public | {PvpProfileCount} PvP on | {VoiceEnabledProfileCount} voice-enabled | {BackupCoverageCount} with backups"
+        : "No server fleet posture is available until the first profile exists.";
 
     public bool HasImportCandidates => Legacy.ImportCandidates.Count > 0;
 
@@ -59,6 +82,15 @@ public sealed class DashboardWorkspaceViewModel : WorkspacePageViewModelBase
         OnPropertyChanged(nameof(ImportSummary));
         OnPropertyChanged(nameof(RecentJobSummary));
         OnPropertyChanged(nameof(NextActionSummary));
+        OnPropertyChanged(nameof(HasProfiles));
+        OnPropertyChanged(nameof(HasNoProfiles));
+        OnPropertyChanged(nameof(ProfileCount));
+        OnPropertyChanged(nameof(InstalledProfileCount));
+        OnPropertyChanged(nameof(PublicProfileCount));
+        OnPropertyChanged(nameof(PvpProfileCount));
+        OnPropertyChanged(nameof(VoiceEnabledProfileCount));
+        OnPropertyChanged(nameof(BackupCoverageCount));
+        OnPropertyChanged(nameof(FleetSummary));
         OnPropertyChanged(nameof(ImportCandidateCount));
         OnPropertyChanged(nameof(RecentJobCount));
         OnPropertyChanged(nameof(HasImportCandidates));

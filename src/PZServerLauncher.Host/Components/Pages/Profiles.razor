@@ -1,8 +1,10 @@
 @page "/profiles"
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@using PZServerLauncher.Core.Settings
 @using PZServerLauncher.Host.Services
 @inject ProfileStore ProfileStore
 @inject RuntimeStateStore RuntimeStateStore
+@inject StructuredSettingsService StructuredSettingsService
 
 <PageTitle>Profiles</PageTitle>
 
@@ -15,7 +17,7 @@
         </div>
 
         <div class="workspace-actions">
-            <span class="pill">@(_profiles.Count == 0 ? "No profiles loaded" : $"{_profiles.Count} profiles")</span>
+            <span class="pill">@(_rows.Count == 0 ? "No profiles loaded" : $"{_rows.Count} profiles")</span>
             <span class="pill">Overview</span>
             <span class="pill">Install &amp; Update</span>
             <span class="pill">Advanced Files</span>
@@ -25,23 +27,23 @@
     <section class="metric-grid metric-grid--host">
         <article class="metric-card">
             <span class="metric-label">Profiles</span>
-            <strong class="metric-value">@(_profiles.Count)</strong>
+            <strong class="metric-value">@(_rows.Count)</strong>
             <span class="metric-note">Known server workspaces</span>
         </article>
         <article class="metric-card">
             <span class="metric-label">Branches</span>
-            <strong class="metric-value">@(_profiles.Select(profile => profile.Branch).Distinct().Count())</strong>
+            <strong class="metric-value">@(_rows.Select(row => row.Profile.Branch).Distinct().Count())</strong>
             <span class="metric-note">Build 41 / Build 42 mix</span>
         </article>
         <article class="metric-card">
             <span class="metric-label">Running</span>
-            <strong class="metric-value">@(_profiles.Count(profile => RuntimeStateStore.GetOrDefault(profile.ProfileId).State.ToString() == "Running"))</strong>
+            <strong class="metric-value">@(_rows.Count(row => string.Equals(row.Runtime.State.ToString(), "Running", StringComparison.OrdinalIgnoreCase)))</strong>
             <span class="metric-note">Active server processes</span>
         </article>
         <article class="metric-card">
-            <span class="metric-label">Workspace Pages</span>
-            <strong class="metric-value">9</strong>
-            <span class="metric-note">Per-profile pages available per server</span>
+            <span class="metric-label">Public / Voice</span>
+            <strong class="metric-value">@(_rows.Count(row => row.Posture.IsPubliclyListed)) / @(_rows.Count(row => row.Posture.IsVoiceEnabled))</strong>
+            <span class="metric-note">Publicly listed and voice-enabled profiles</span>
         </article>
     </section>
 
@@ -51,10 +53,10 @@
                 <p class="eyebrow">Known Profiles</p>
                 <h2>Server Index</h2>
             </div>
-            <span class="pill">@(_profiles.Count == 0 ? "Waiting for a profile" : "Workspace ready")</span>
+            <span class="pill">@(_rows.Count == 0 ? "Waiting for a profile" : "Workspace ready")</span>
         </div>
 
-        @if (_profiles.Count == 0)
+        @if (_rows.Count == 0)
         {
             <div class="empty-state">
                 <p>No profiles have been created yet. Use the desktop app to create or import the first server profile.</p>
@@ -69,18 +71,27 @@
                         <th>Branch</th>
                         <th>Ports</th>
                         <th>Runtime</th>
+                        <th>Posture</th>
                         <th>Workspace</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var profile in _profiles)
+                    @foreach (var row in _rows)
                     {
-                        var runtime = RuntimeStateStore.GetOrDefault(profile.ProfileId);
+                        var profile = row.Profile;
+                        var runtime = row.Runtime;
                         <tr>
                             <td>@profile.DisplayName</td>
                             <td>@profile.Branch</td>
                             <td>@profile.DefaultPort / @profile.UdpPort / @profile.RconPort</td>
                             <td>@runtime.State</td>
+                            <td>
+                                <div class="stack-list">
+                                    <div>@row.Posture.CommunitySummary</div>
+                                    <div>@row.Posture.NetworkSummary</div>
+                                    <div>@row.Posture.WorldSummary</div>
+                                </div>
+                            </td>
                             <td>
                                 <div class="actions-cell">
                                     <a class="nav-button secondary-button" href="@BuildProfileHref(profile.ProfileId, "overview")">Overview</a>
@@ -105,21 +116,41 @@
         <div class="card-heading">
             <div>
                 <p class="eyebrow">Next Milestone</p>
-                <h2>Workspace Coverage</h2>
+                <h2>Fleet Posture</h2>
             </div>
         </div>
-        <p>Desktop and web now converge on Overview, Install &amp; Update, General, Sandbox, Mods &amp; Maps, Network &amp; Admin, Backups, Logs, and Advanced Files. Pick a profile and jump straight into the operator surface that matches the task.</p>
+        <p>@(_rows.Count == 0 ? "Desktop and web now converge on the same workspace map. Add the first profile to start seeing real server posture here." : $"{_rows.Count(row => row.InstallDetected)}/{_rows.Count} installs detected, {_rows.Count(row => row.Posture.IsPvpEnabled)} PvP-enabled, {_rows.Count(row => row.Posture.IsSafetyEnabled)} safety-enabled, {_rows.Count(row => row.Posture.IsVoiceEnabled)} with voice chat.")</p>
     </section>
 </div>
 
 @code {
-    private IReadOnlyList<PZServerLauncher.Core.Profiles.ServerProfile> _profiles = [];
+    private IReadOnlyList<ProfileIndexRow> _rows = [];
 
     protected override async Task OnInitializedAsync()
     {
-        _profiles = await ProfileStore.ListAsync();
+        var profiles = await ProfileStore.ListAsync();
+        _rows = profiles
+            .Select(profile =>
+            {
+                var generalValues = StructuredSettingsService.GetPage(profile, "general").Values;
+                var networkValues = StructuredSettingsService.GetPage(profile, "network-admin").Values;
+                var sandboxValues = StructuredSettingsService.GetPage(profile, "sandbox").Values;
+
+                return new ProfileIndexRow(
+                    profile,
+                    RuntimeStateStore.GetOrDefault(profile.ProfileId),
+                    ProjectZomboidProfilePostureSummaryBuilder.Build(profile.DisplayName, generalValues, networkValues, sandboxValues),
+                    Directory.Exists(profile.InstallDirectory) || Directory.Exists(Path.Combine(profile.InstallDirectory, "server")));
+            })
+            .ToList();
     }
 
     private static string BuildProfileHref(string profileId, string page) =>
         $"/profiles/{Uri.EscapeDataString(profileId)}/{page}";
+
+    private sealed record ProfileIndexRow(
+        PZServerLauncher.Core.Profiles.ServerProfile Profile,
+        PZServerLauncher.Core.Runtime.ServerRuntimeStatus Runtime,
+        ProjectZomboidProfilePostureSummary Posture,
+        bool InstallDetected);
 }

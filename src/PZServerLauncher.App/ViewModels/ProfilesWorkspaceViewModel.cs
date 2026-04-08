@@ -122,6 +122,22 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
         ? "Ports unavailable."
         : $"TCP {SelectedProfile.EditableDefaultPort} | UDP {SelectedProfile.EditableUdpPort} | RCON {SelectedProfile.EditableRconPort}";
 
+    public string SelectedCommunitySummary => SelectedProfile?.CommunitySummary ?? "Select a profile to see its community posture.";
+
+    public string SelectedNetworkSummary => SelectedProfile?.NetworkSummary ?? "Select a profile to see its network and trust posture.";
+
+    public string SelectedWorldSummary => SelectedProfile?.WorldSummary ?? "Select a profile to see its sandbox snapshot.";
+
+    public string SelectedWelcomeSummary => SelectedProfile?.WelcomeSummary ?? "No welcome message summary available.";
+
+    public int InstalledProfileCount => Legacy.Profiles.Count(profile => profile.IsInstallDetected);
+
+    public int PublicProfileCount => Legacy.Profiles.Count(profile => profile.IsPubliclyListed);
+
+    public int VoiceEnabledProfileCount => Legacy.Profiles.Count(profile => profile.IsVoiceEnabled);
+
+    public int RunningProfileCount => Legacy.Profiles.Count(profile => string.Equals(profile.RuntimeState, "Running", StringComparison.OrdinalIgnoreCase));
+
     public string SelectedWorkspaceSummary => SelectedProfile is null
         ? "Select a profile to unlock the workspace rail."
         : $"This workspace is centered on {SelectedProfile.DisplayName}. The section rail below keeps all profile-specific tasks in one place.";
@@ -306,6 +322,10 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
         OnPropertyChanged(nameof(SelectedProfileRuntimeSummary));
         OnPropertyChanged(nameof(SelectedProfilePathSummary));
         OnPropertyChanged(nameof(SelectedProfilePortsSummary));
+        OnPropertyChanged(nameof(SelectedCommunitySummary));
+        OnPropertyChanged(nameof(SelectedNetworkSummary));
+        OnPropertyChanged(nameof(SelectedWorldSummary));
+        OnPropertyChanged(nameof(SelectedWelcomeSummary));
         OnPropertyChanged(nameof(SelectedWorkspaceSummary));
         OnPropertyChanged(nameof(SelectedWorkspaceAction));
         OnPropertyChanged(nameof(WorkspaceHeadline));
@@ -320,6 +340,10 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
     private void OnProfilesChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
         OnPropertyChanged(nameof(ProfileCountSummary));
+        OnPropertyChanged(nameof(InstalledProfileCount));
+        OnPropertyChanged(nameof(PublicProfileCount));
+        OnPropertyChanged(nameof(VoiceEnabledProfileCount));
+        OnPropertyChanged(nameof(RunningProfileCount));
         OnPropertyChanged(nameof(WorkspaceHeadline));
         OnPropertyChanged(nameof(WorkspaceGuidance));
     }

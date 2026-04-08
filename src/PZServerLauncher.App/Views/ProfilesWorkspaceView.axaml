@@ -31,6 +31,8 @@
                         <TextBlock Classes="panel-title" FontSize="18" Text="{Binding SelectedProfileSummary}" TextWrapping="Wrap" />
                         <TextBlock Classes="body" Text="{Binding SelectedProfilePathSummary}" TextWrapping="Wrap" />
                         <TextBlock Classes="body" Text="{Binding SelectedProfilePortsSummary}" TextWrapping="Wrap" />
+                        <TextBlock Classes="body" Text="{Binding SelectedCommunitySummary}" TextWrapping="Wrap" />
+                        <TextBlock Classes="body" Text="{Binding SelectedNetworkSummary}" TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
 
@@ -40,11 +42,25 @@
                          MinHeight="240">
                     <ListBox.ItemTemplate>
                         <DataTemplate x:DataType="vm:ProfileCardViewModel">
-                            <StackPanel Spacing="4" Margin="4">
-                                <TextBlock FontSize="15" FontWeight="SemiBold" Text="{Binding DisplayName}" />
-                                <TextBlock Classes="body" FontSize="12" Text="{Binding Branch}" />
-                                <TextBlock Classes="body" FontSize="12" Text="{Binding RuntimeState}" />
-                            </StackPanel>
+                            <Border Background="#F6EFE6" CornerRadius="12" Padding="12" Margin="4">
+                                <StackPanel Spacing="6">
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                        <StackPanel Spacing="2">
+                                            <TextBlock FontSize="15" FontWeight="SemiBold" Text="{Binding DisplayName}" />
+                                            <TextBlock Classes="body" FontSize="12" Text="{Binding Branch}" />
+                                        </StackPanel>
+                                        <Border Grid.Column="1"
+                                                Background="#2A2927"
+                                                CornerRadius="999"
+                                                Padding="10,4"
+                                                VerticalAlignment="Top">
+                                            <TextBlock Foreground="#F7F0E7" FontSize="11" Text="{Binding RuntimeState}" />
+                                        </Border>
+                                    </Grid>
+                                    <TextBlock Classes="body" FontSize="12" Text="{Binding CommunitySummary}" TextWrapping="Wrap" />
+                                    <TextBlock Classes="body" FontSize="12" Text="{Binding NetworkSummary}" TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Border>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
@@ -77,7 +93,7 @@
                 </Grid>
             </Border>
 
-            <Grid Grid.Row="1" ColumnDefinitions="*,*,*" ColumnSpacing="14">
+            <Grid Grid.Row="1" ColumnDefinitions="*,*,*,*" ColumnSpacing="14">
                 <Border Classes="card" Padding="16">
                     <StackPanel Spacing="6">
                         <TextBlock Classes="kicker" Text="Profile Focus" />
@@ -86,14 +102,20 @@
                 </Border>
                 <Border Grid.Column="1" Classes="card" Padding="16">
                     <StackPanel Spacing="6">
-                        <TextBlock Classes="kicker" Text="Workspace Action" />
-                        <TextBlock Classes="body" Text="{Binding SelectedWorkspaceAction}" TextWrapping="Wrap" />
+                        <TextBlock Classes="kicker" Text="Community Posture" />
+                        <TextBlock Classes="body" Text="{Binding SelectedCommunitySummary}" TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
                 <Border Grid.Column="2" Classes="card" Padding="16">
                     <StackPanel Spacing="6">
-                        <TextBlock Classes="kicker" Text="Selected State" />
-                        <TextBlock Classes="body" Text="{Binding SelectedWorkspaceSummary}" TextWrapping="Wrap" />
+                        <TextBlock Classes="kicker" Text="Network Posture" />
+                        <TextBlock Classes="body" Text="{Binding SelectedNetworkSummary}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="3" Classes="card" Padding="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="World Snapshot" />
+                        <TextBlock Classes="body" Text="{Binding SelectedWorldSummary}" TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
             </Grid>
@@ -112,33 +134,64 @@
 
             <Grid Grid.Row="3" RowDefinitions="Auto,*" RowSpacing="16">
                 <Border Classes="card" Padding="12">
-                    <ItemsControl ItemsSource="{Binding SectionItems}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <WrapPanel />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate x:DataType="vm:WorkspaceNavigationItemViewModel">
-                                <Button Margin="0,0,10,10"
-                                        Command="{Binding #ProfilesRoot.DataContext.SelectSectionCommand}"
-                                        CommandParameter="{Binding .}"
-                                        IsEnabled="{Binding IsEnabled}">
-                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                                        <TextBlock Text="{Binding Title}" />
-                                        <Border Grid.Column="1"
-                                                Background="#2A2927"
-                                                CornerRadius="999"
-                                                Padding="8,2"
-                                                VerticalAlignment="Center"
-                                                IsVisible="{Binding IsSelected}">
-                                            <TextBlock Foreground="#F7F0E7" FontSize="11" Text="Active" />
-                                        </Border>
-                                    </Grid>
-                                </Button>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                    <StackPanel Spacing="12">
+                        <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="12">
+                            <Border Background="#F1E6D7" CornerRadius="12" Padding="12">
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="kicker" Text="Installed" />
+                                    <TextBlock Classes="panel-title" FontSize="20" Text="{Binding InstalledProfileCount}" />
+                                </StackPanel>
+                            </Border>
+                            <Border Grid.Column="1" Background="#F1E6D7" CornerRadius="12" Padding="12">
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="kicker" Text="Public Listing" />
+                                    <TextBlock Classes="panel-title" FontSize="20" Text="{Binding PublicProfileCount}" />
+                                </StackPanel>
+                            </Border>
+                            <Border Grid.Column="2" Background="#F1E6D7" CornerRadius="12" Padding="12">
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="kicker" Text="Voice Enabled" />
+                                    <TextBlock Classes="panel-title" FontSize="20" Text="{Binding VoiceEnabledProfileCount}" />
+                                </StackPanel>
+                            </Border>
+                            <Border Grid.Column="3" Background="#F1E6D7" CornerRadius="12" Padding="12">
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="kicker" Text="Running" />
+                                    <TextBlock Classes="panel-title" FontSize="20" Text="{Binding RunningProfileCount}" />
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+
+                        <TextBlock Classes="body" Text="{Binding SelectedWelcomeSummary}" TextWrapping="Wrap" />
+
+                        <ItemsControl ItemsSource="{Binding SectionItems}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:WorkspaceNavigationItemViewModel">
+                                    <Button Margin="0,0,10,10"
+                                            Command="{Binding #ProfilesRoot.DataContext.SelectSectionCommand}"
+                                            CommandParameter="{Binding .}"
+                                            IsEnabled="{Binding IsEnabled}">
+                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                            <TextBlock Text="{Binding Title}" />
+                                            <Border Grid.Column="1"
+                                                    Background="#2A2927"
+                                                    CornerRadius="999"
+                                                    Padding="8,2"
+                                                    VerticalAlignment="Center"
+                                                    IsVisible="{Binding IsSelected}">
+                                                <TextBlock Foreground="#F7F0E7" FontSize="11" Text="Active" />
+                                            </Border>
+                                        </Grid>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
                 </Border>
 
                 <Border Grid.Row="1" Classes="card" Padding="0">

@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.Input;
 using PZServerLauncher.App.Services;
 using PZServerLauncher.Contracts.Runtime;
+using PZServerLauncher.Core.Settings;
 
 namespace PZServerLauncher.App.ViewModels;
 
@@ -167,12 +168,18 @@ public sealed class OverviewWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             var networkValues = networkTask.Result?.Values ?? new Dictionary<string, string?>(StringComparer.Ordinal);
             var sandboxValues = sandboxTask.Result?.Values ?? new Dictionary<string, string?>(StringComparer.Ordinal);
 
+            var posture = ProjectZomboidProfilePostureSummaryBuilder.Build(
+                profile.DisplayName,
+                generalValues,
+                networkValues,
+                sandboxValues);
+
             SetStructuredSummaries(
-                BuildCommunitySummary(profile, generalValues),
-                BuildServerRulesSummary(generalValues),
-                BuildNetworkSummary(networkValues),
-                BuildWorldSnapshotSummary(sandboxValues),
-                BuildWelcomeMessageSummary(generalValues));
+                posture.CommunitySummary,
+                posture.ServerRulesSummary,
+                posture.NetworkSummary,
+                posture.WorldSummary,
+                posture.WelcomeSummary);
         }
         catch
         {
@@ -207,86 +214,6 @@ public sealed class OverviewWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         OnPropertyChanged(nameof(NetworkPostureSummary));
         OnPropertyChanged(nameof(WorldSnapshotSummary));
         OnPropertyChanged(nameof(WelcomeMessageSummary));
-    }
-
-    private static string BuildCommunitySummary(ProfileCardViewModel profile, IReadOnlyDictionary<string, string?> values)
-    {
-        var publicName = GetValue(values, ".server.public-name");
-        var maxPlayers = GetValue(values, ".server.max-players", "32");
-        var isPublic = ParseBool(values, ".server.public");
-        var isOpen = ParseBool(values, ".server.open");
-        var pvp = ParseBool(values, ".server.pvp", true);
-
-        return $"{(string.IsNullOrWhiteSpace(publicName) ? profile.DisplayName : publicName)} | {maxPlayers} slots | {(isPublic ? "public listing on" : "private listing")} | {(isOpen ? "open access" : "password-gated")} | PvP {(pvp ? "on" : "off")}.";
-    }
-
-    private static string BuildServerRulesSummary(IReadOnlyDictionary<string, string?> values)
-    {
-        var sleepAllowed = ParseBool(values, ".server.sleep-allowed");
-        var sleepNeeded = ParseBool(values, ".server.sleep-needed");
-        var playerSafehouse = ParseBool(values, ".server.player-safehouse");
-        var factionEnabled = ParseBool(values, ".server.faction-enabled");
-        var tradeUi = ParseBool(values, ".server.allow-trade-ui");
-        var noFire = ParseBool(values, ".server.no-fire");
-
-        return $"Sleep {(sleepAllowed ? (sleepNeeded ? "required" : "allowed") : "disabled")} | safehouses {(playerSafehouse ? "enabled" : "off")} | factions {(factionEnabled ? "enabled" : "off")} | trade UI {(tradeUi ? "enabled" : "off")} | fire spread {(noFire ? "disabled" : "enabled")}.";
-    }
-
-    private static string BuildNetworkSummary(IReadOnlyDictionary<string, string?> values)
-    {
-        var bindIp = GetValue(values, ".network.bind-ip", "default bind");
-        var steamVac = ParseBool(values, ".network.steam-vac", true);
-        var autoWhitelist = ParseBool(values, ".network.auto-whitelist");
-        var safetySystem = ParseBool(values, ".network.safety-system", true);
-        var voiceEnabled = ParseBool(values, ".network.voice-enabled", true);
-        var voice3d = ParseBool(values, ".network.voice-3d", true);
-        var voiceMin = GetValue(values, ".network.voice-min-distance", "10");
-        var voiceMax = GetValue(values, ".network.voice-max-distance", "100");
-
-        var voiceSummary = voiceEnabled
-            ? voice3d
-                ? $"3D voice {voiceMin}-{voiceMax}"
-                : "global voice"
-            : "voice disabled";
-
-        return $"Bind {bindIp} | VAC {(steamVac ? "on" : "off")} | whitelist {(autoWhitelist ? "auto-create" : "manual")} | safety {(safetySystem ? "enabled" : "off")} | {voiceSummary}.";
-    }
-
-    private static string BuildWorldSnapshotSummary(IReadOnlyDictionary<string, string?> values)
-    {
-        var zombies = GetValue(values, ".sandbox.zombies", "4");
-        var dayLength = GetValue(values, ".sandbox.day-length", "3");
-        var waterShutoff = GetValue(values, ".sandbox.water-shut-modifier", "500");
-        var electricityShutoff = GetValue(values, ".sandbox.electricity-shut-modifier", "480");
-        var lootRespawn = GetValue(values, ".sandbox.loot-respawn", "2");
-        var starterKit = ParseBool(values, ".sandbox.starter-kit");
-        var nutrition = ParseBool(values, ".sandbox.nutrition");
-
-        return $"Zombies {zombies} | day length {dayLength} | water shutoff {waterShutoff} days | electricity shutoff {electricityShutoff} days | loot respawn {lootRespawn} | starter kit {(starterKit ? "on" : "off")} | nutrition {(nutrition ? "on" : "off")}.";
-    }
-
-    private static string BuildWelcomeMessageSummary(IReadOnlyDictionary<string, string?> values)
-    {
-        var message = GetValue(values, ".server.welcome-message");
-        if (string.IsNullOrWhiteSpace(message))
-        {
-            return "No welcome message configured yet.";
-        }
-
-        var singleLine = message.ReplaceLineEndings(" ").Replace("  ", " ", StringComparison.Ordinal).Trim();
-        return $"Welcome: {singleLine}";
-    }
-
-    private static string GetValue(IReadOnlyDictionary<string, string?> values, string suffix, string fallback = "")
-    {
-        var key = values.Keys.FirstOrDefault(candidate => candidate.EndsWith(suffix, StringComparison.Ordinal));
-        return key is null ? fallback : values[key] ?? fallback;
-    }
-
-    private static bool ParseBool(IReadOnlyDictionary<string, string?> values, string suffix, bool fallback = false)
-    {
-        var key = values.Keys.FirstOrDefault(candidate => candidate.EndsWith(suffix, StringComparison.Ordinal));
-        return key is not null && bool.TryParse(values[key], out var parsed) ? parsed : fallback;
     }
 
     private void Notify()

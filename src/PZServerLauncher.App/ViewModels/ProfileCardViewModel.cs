@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using PZServerLauncher.Core.Runtime;
+using PZServerLauncher.Core.Settings;
 
 namespace PZServerLauncher.App.ViewModels;
 
@@ -26,7 +27,9 @@ public partial class ProfileCardViewModel : ViewModelBase
         bool editableStartWithHost,
         bool editableAutoRestartOnCrash,
         string workshopSummary,
-        string workshopDiagnostics)
+        string workshopDiagnostics,
+        bool isInstallDetected,
+        ProjectZomboidProfilePostureSummary posture)
     {
         ProfileId = profileId;
         DisplayName = displayName;
@@ -49,6 +52,8 @@ public partial class ProfileCardViewModel : ViewModelBase
         EditableAutoRestartOnCrash = editableAutoRestartOnCrash;
         WorkshopSummary = workshopSummary;
         WorkshopDiagnostics = workshopDiagnostics;
+        IsInstallDetected = isInstallDetected;
+        Posture = posture;
         SelectedRawConfigKind = ConfigFileOptionViewModel.All[0];
         RawConfigDiagnostics = "Load a raw config file to run validation.";
         RawConfigStatus = "No raw config file loaded yet.";
@@ -65,6 +70,30 @@ public partial class ProfileCardViewModel : ViewModelBase
     public string InstallDirectory { get; }
 
     public string CacheDirectory { get; }
+
+    public bool IsInstallDetected { get; }
+
+    public ProjectZomboidProfilePostureSummary Posture { get; }
+
+    public string CommunitySummary => Posture.CommunitySummary;
+
+    public string ServerRulesSummary => Posture.ServerRulesSummary;
+
+    public string NetworkSummary => Posture.NetworkSummary;
+
+    public string WorldSummary => Posture.WorldSummary;
+
+    public string WelcomeSummary => Posture.WelcomeSummary;
+
+    public bool IsPubliclyListed => Posture.IsPubliclyListed;
+
+    public bool IsOpenAccess => Posture.IsOpenAccess;
+
+    public bool IsPvpEnabled => Posture.IsPvpEnabled;
+
+    public bool IsVoiceEnabled => Posture.IsVoiceEnabled;
+
+    public bool IsSafetyEnabled => Posture.IsSafetyEnabled;
 
     public IReadOnlyList<ConfigFileOptionViewModel> RawConfigKinds { get; } = ConfigFileOptionViewModel.All;
 
