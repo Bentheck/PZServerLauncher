@@ -209,6 +209,32 @@
 
                         <Border Classes="card" Padding="18">
                             <StackPanel Spacing="12">
+                                <TextBlock Classes="kicker" Text="Respawn &amp; Cleanup" />
+                                <Grid ColumnDefinitions="*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto" RowSpacing="10">
+                                    <CheckBox Content="Respawn At Death Location" IsChecked="{Binding RespawnWithSelf}" />
+                                    <CheckBox Grid.Column="1" Content="Respawn With Split-Screen Partner" IsChecked="{Binding RespawnWithOther}" />
+                                    <StackPanel Grid.Row="1" Spacing="4">
+                                        <TextBlock Classes="body" Text="World Item Removal Hours" />
+                                        <TextBox Text="{Binding WorldItemRemovalHours}" />
+                                        <TextBlock Classes="body"
+                                                   FontSize="12"
+                                                   Text="In-game hours before configured ground items are cleaned up. Use 0 to disable removal."
+                                                   TextWrapping="Wrap" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Row="1" Grid.Column="1" Spacing="4">
+                                        <TextBlock Classes="body" Text="World Item Removal List" />
+                                        <TextBox Text="{Binding WorldItemRemovalList}" AcceptsReturn="True" Height="108" TextWrapping="Wrap" />
+                                        <TextBlock Classes="body"
+                                                   FontSize="12"
+                                                   Text="Use one item per line. The launcher writes them back as a comma-separated cleanup list."
+                                                   TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Classes="card" Padding="18">
+                            <StackPanel Spacing="12">
                                 <TextBlock Classes="kicker" Text="Ports" />
                                 <StackPanel Spacing="4">
                                     <TextBlock Classes="body" Text="Default Port" />

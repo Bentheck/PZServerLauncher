@@ -170,6 +170,10 @@ public sealed class StructuredSettingsService(
                         ["HoursForLootRespawn"] = ParseInt(values, $"{branchPrefix}.server.loot-respawn-hours").ToString(),
                         ["MaxItemsForLootRespawn"] = ParseInt(values, $"{branchPrefix}.server.loot-respawn-max-items").ToString(),
                         ["ConstructionPreventsLootRespawn"] = ParseBool(values, $"{branchPrefix}.server.construction-prevents-loot-respawn").ToString().ToLowerInvariant(),
+                        ["PlayerRespawnWithSelf"] = ParseBool(values, $"{branchPrefix}.server.respawn-with-self").ToString().ToLowerInvariant(),
+                        ["PlayerRespawnWithOther"] = ParseBool(values, $"{branchPrefix}.server.respawn-with-other").ToString().ToLowerInvariant(),
+                        ["HoursForWorldItemRemoval"] = ParseDecimal(values, $"{branchPrefix}.server.world-item-removal-hours"),
+                        ["WorldItemRemovalList"] = JoinCommaSeparatedList(ParseCommaSeparatedEditorList(values, $"{branchPrefix}.server.world-item-removal-list")),
                         ["SleepAllowed"] = ParseBool(values, $"{branchPrefix}.server.sleep-allowed").ToString().ToLowerInvariant(),
                         ["SleepNeeded"] = ParseBool(values, $"{branchPrefix}.server.sleep-needed").ToString().ToLowerInvariant(),
                         ["NoFire"] = ParseBool(values, $"{branchPrefix}.server.no-fire").ToString().ToLowerInvariant(),
@@ -364,6 +368,8 @@ public sealed class StructuredSettingsService(
                 var id when id.EndsWith(".runtime.auto-restart", StringComparison.Ordinal) => profile.AutoRestartOnCrash.ToString(),
                 var id when id.EndsWith(".server.spawn-items", StringComparison.Ordinal) => ExpandCommaSeparatedList(
                     GetIniValueOrDefault(sourceValues, field.Target.KeyPath, field.DefaultValue)),
+                var id when id.EndsWith(".server.world-item-removal-list", StringComparison.Ordinal) => ExpandCommaSeparatedList(
+                    GetIniValueOrDefault(sourceValues, field.Target.KeyPath, field.DefaultValue)),
                 var id when id.EndsWith(".server.welcome-message", StringComparison.Ordinal) => ExpandWelcomeMessage(
                     GetIniValueOrDefault(sourceValues, field.Target.KeyPath, field.DefaultValue)),
                 _ => GetIniValueOrDefault(sourceValues, field.Target.KeyPath, field.DefaultValue),
@@ -543,6 +549,9 @@ public sealed class StructuredSettingsService(
         ValidateMinimumInteger(values, $"{branchPrefix}.server.loot-respawn-hours", 0, "Loot respawn hours must be zero or greater.", fieldErrors);
         ValidateMinimumInteger(values, $"{branchPrefix}.server.loot-respawn-max-items", 0, "Loot respawn max items must be zero or greater.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.server.construction-prevents-loot-respawn", "Construction loot-respawn protection must be true or false.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.server.respawn-with-self", "Respawn at death location must be true or false.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.server.respawn-with-other", "Respawn with split-screen partner must be true or false.", fieldErrors);
+        ValidateMinimumDecimal(values, $"{branchPrefix}.server.world-item-removal-hours", 0m, "World item removal hours must be zero or greater.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.server.sleep-allowed", "Sleep allowed must be true or false.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.server.sleep-needed", "Sleep needed must be true or false.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.server.no-fire", "Disable fire must be true or false.", fieldErrors);
@@ -1029,6 +1038,12 @@ public sealed class StructuredSettingsService(
         values.TryGetValue(key, out var value) && int.TryParse(value, out var parsed)
             ? parsed
             : throw new InvalidOperationException($"Invalid integer setting '{key}'.");
+
+    private static string ParseDecimal(IReadOnlyDictionary<string, string?> values, string key) =>
+        values.TryGetValue(key, out var value) &&
+        decimal.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed)
+            ? parsed.ToString(CultureInfo.InvariantCulture)
+            : throw new InvalidOperationException($"Invalid decimal setting '{key}'.");
 
     private static bool TryParseInt(IReadOnlyDictionary<string, string?> values, string key, out int parsed)
     {

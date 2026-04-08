@@ -50,6 +50,10 @@ public sealed class StructuredSettingsServiceTests : IDisposable
             HoursForLootRespawn=6
             MaxItemsForLootRespawn=3
             ConstructionPreventsLootRespawn=false
+            PlayerRespawnWithSelf=true
+            PlayerRespawnWithOther=false
+            HoursForWorldItemRemoval=24.0
+            WorldItemRemovalList=Base.TinCanEmpty,Base.PopBottleEmpty
             SleepAllowed=true
             SleepNeeded=false
             NoFire=true
@@ -136,6 +140,10 @@ public sealed class StructuredSettingsServiceTests : IDisposable
         Assert.Equal("6", generalValues.Values[$"{branchPrefix}.server.loot-respawn-hours"]);
         Assert.Equal("3", generalValues.Values[$"{branchPrefix}.server.loot-respawn-max-items"]);
         Assert.Equal("false", generalValues.Values[$"{branchPrefix}.server.construction-prevents-loot-respawn"]);
+        Assert.Equal("true", generalValues.Values[$"{branchPrefix}.server.respawn-with-self"]);
+        Assert.Equal("false", generalValues.Values[$"{branchPrefix}.server.respawn-with-other"]);
+        Assert.Equal("24.0", generalValues.Values[$"{branchPrefix}.server.world-item-removal-hours"]);
+        Assert.Equal($"Base.TinCanEmpty{Environment.NewLine}Base.PopBottleEmpty", generalValues.Values[$"{branchPrefix}.server.world-item-removal-list"]);
         Assert.Equal("true", generalValues.Values[$"{branchPrefix}.server.sleep-allowed"]);
         Assert.Equal("false", generalValues.Values[$"{branchPrefix}.server.sleep-needed"]);
         Assert.Equal("true", generalValues.Values[$"{branchPrefix}.server.no-fire"]);
@@ -227,6 +235,10 @@ public sealed class StructuredSettingsServiceTests : IDisposable
             HoursForLootRespawn=0
             MaxItemsForLootRespawn=4
             ConstructionPreventsLootRespawn=true
+            PlayerRespawnWithSelf=false
+            PlayerRespawnWithOther=true
+            HoursForWorldItemRemoval=0.0
+            WorldItemRemovalList=Base.EmptyPetrolCan
             SleepAllowed=false
             SleepNeeded=false
             NoFire=false
@@ -293,6 +305,10 @@ public sealed class StructuredSettingsServiceTests : IDisposable
             ["b42.server.loot-respawn-hours"] = "12",
             ["b42.server.loot-respawn-max-items"] = "2",
             ["b42.server.construction-prevents-loot-respawn"] = "false",
+            ["b42.server.respawn-with-self"] = "true",
+            ["b42.server.respawn-with-other"] = "false",
+            ["b42.server.world-item-removal-hours"] = "36.5",
+            ["b42.server.world-item-removal-list"] = "Base.TinCanEmpty\nBase.PopBottleEmpty",
             ["b42.server.sleep-allowed"] = "true",
             ["b42.server.sleep-needed"] = "true",
             ["b42.server.no-fire"] = "true",
@@ -371,6 +387,10 @@ public sealed class StructuredSettingsServiceTests : IDisposable
         Assert.Contains("HoursForLootRespawn=12", iniText);
         Assert.Contains("MaxItemsForLootRespawn=2", iniText);
         Assert.Contains("ConstructionPreventsLootRespawn=false", iniText);
+        Assert.Contains("PlayerRespawnWithSelf=true", iniText);
+        Assert.Contains("PlayerRespawnWithOther=false", iniText);
+        Assert.Contains("HoursForWorldItemRemoval=36.5", iniText);
+        Assert.Contains("WorldItemRemovalList=Base.TinCanEmpty,Base.PopBottleEmpty", iniText);
         Assert.Contains("SleepAllowed=true", iniText);
         Assert.Contains("SleepNeeded=true", iniText);
         Assert.Contains("NoFire=true", iniText);

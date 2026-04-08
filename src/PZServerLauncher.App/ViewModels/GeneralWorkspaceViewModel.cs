@@ -21,7 +21,7 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             "Public listing, core world access, server browser identity, and launcher runtime controls.",
             "General settings are in sync.",
             legacy,
-            ["Public identity", "World access", "Spawn and loot", "Survival rules", "Safehouses", "Factions and trade", "Ports", "Runtime controls"])
+            ["Public identity", "World access", "Spawn and loot", "Respawn and cleanup", "Survival rules", "Safehouses", "Factions and trade", "Ports", "Runtime controls"])
     {
         _hostApiClient = hostApiClient;
         SaveSettingsCommand = new AsyncRelayCommand(SaveSettingsAsync);
@@ -99,6 +99,18 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
     [ObservableProperty]
     private bool constructionPreventsLootRespawn;
+
+    [ObservableProperty]
+    private bool respawnWithSelf;
+
+    [ObservableProperty]
+    private bool respawnWithOther;
+
+    [ObservableProperty]
+    private string worldItemRemovalHours = string.Empty;
+
+    [ObservableProperty]
+    private string worldItemRemovalList = string.Empty;
 
     [ObservableProperty]
     private bool sleepAllowed;
@@ -374,6 +386,10 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             LootRespawnHours = GetValue(values, ".server.loot-respawn-hours");
             LootRespawnMaxItems = GetValue(values, ".server.loot-respawn-max-items");
             ConstructionPreventsLootRespawn = bool.TryParse(GetValue(values, ".server.construction-prevents-loot-respawn"), out var constructionPreventsLootRespawn) && constructionPreventsLootRespawn;
+            RespawnWithSelf = bool.TryParse(GetValue(values, ".server.respawn-with-self"), out var respawnWithSelf) && respawnWithSelf;
+            RespawnWithOther = bool.TryParse(GetValue(values, ".server.respawn-with-other"), out var respawnWithOther) && respawnWithOther;
+            WorldItemRemovalHours = GetValue(values, ".server.world-item-removal-hours");
+            WorldItemRemovalList = GetValue(values, ".server.world-item-removal-list");
             SleepAllowed = bool.TryParse(GetValue(values, ".server.sleep-allowed"), out var sleepAllowed) && sleepAllowed;
             SleepNeeded = bool.TryParse(GetValue(values, ".server.sleep-needed"), out var sleepNeeded) && sleepNeeded;
             NoFire = bool.TryParse(GetValue(values, ".server.no-fire"), out var noFire) && noFire;
@@ -423,6 +439,10 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             [$"{prefix}.server.loot-respawn-hours"] = LootRespawnHours,
             [$"{prefix}.server.loot-respawn-max-items"] = LootRespawnMaxItems,
             [$"{prefix}.server.construction-prevents-loot-respawn"] = ConstructionPreventsLootRespawn.ToString(),
+            [$"{prefix}.server.respawn-with-self"] = RespawnWithSelf.ToString(),
+            [$"{prefix}.server.respawn-with-other"] = RespawnWithOther.ToString(),
+            [$"{prefix}.server.world-item-removal-hours"] = WorldItemRemovalHours,
+            [$"{prefix}.server.world-item-removal-list"] = WorldItemRemovalList,
             [$"{prefix}.server.sleep-allowed"] = SleepAllowed.ToString(),
             [$"{prefix}.server.sleep-needed"] = SleepNeeded.ToString(),
             [$"{prefix}.server.no-fire"] = NoFire.ToString(),
@@ -501,6 +521,10 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             LootRespawnHours = string.Empty;
             LootRespawnMaxItems = string.Empty;
             ConstructionPreventsLootRespawn = false;
+            RespawnWithSelf = false;
+            RespawnWithOther = false;
+            WorldItemRemovalHours = string.Empty;
+            WorldItemRemovalList = string.Empty;
             SleepAllowed = false;
             SleepNeeded = false;
             NoFire = false;
@@ -548,6 +572,10 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
     partial void OnLootRespawnHoursChanged(string value) => NotifyFieldEdited();
     partial void OnLootRespawnMaxItemsChanged(string value) => NotifyFieldEdited();
     partial void OnConstructionPreventsLootRespawnChanged(bool value) => NotifyFieldEdited();
+    partial void OnRespawnWithSelfChanged(bool value) => NotifyFieldEdited();
+    partial void OnRespawnWithOtherChanged(bool value) => NotifyFieldEdited();
+    partial void OnWorldItemRemovalHoursChanged(string value) => NotifyFieldEdited();
+    partial void OnWorldItemRemovalListChanged(string value) => NotifyFieldEdited();
     partial void OnSleepAllowedChanged(bool value) => NotifyFieldEdited();
     partial void OnSleepNeededChanged(bool value) => NotifyFieldEdited();
     partial void OnNoFireChanged(bool value) => NotifyFieldEdited();
