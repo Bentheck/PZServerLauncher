@@ -32,6 +32,22 @@ public partial class NetworkAndAdminWorkspaceViewModel : ProfileWorkspacePageVie
         ? "Select a profile to load Network & Admin settings."
         : $"Network and admin settings for {SelectedProfile.DisplayName}.";
 
+    public string ProfileDisplayName => SelectedProfile?.DisplayName ?? "No profile selected";
+
+    public string Branch => SelectedProfile?.Branch ?? "Unknown";
+
+    public string WorkspaceSummary => SelectedProfile is null
+        ? "Choose a profile to unlock network and admin controls."
+        : $"{SelectedProfile.DisplayName} can now be tuned for bind IP, admin identity, and launcher-managed startup.";
+
+    public string ActionSummary => DraftsDisabled
+        ? "Drafts are disabled so the write-only admin password never lands in workspace storage."
+        : CanEdit
+            ? "Apply settings to update the active profile. Reload if you want to discard local edits."
+            : IsLoading
+                ? "Loading structured network settings from the host..."
+                : "Network & Admin settings are not currently editable.";
+
     public ObservableCollection<string> FieldErrors { get; } = [];
 
     public bool HasFieldErrors => FieldErrors.Count > 0;
@@ -75,6 +91,7 @@ public partial class NetworkAndAdminWorkspaceViewModel : ProfileWorkspacePageVie
     protected override void OnSelectedProfileChangedCore(ProfileCardViewModel? profile)
     {
         _ = LoadAsync(profile);
+        NotifyComputedState();
     }
 
     public override async Task SaveDraftAsync()
@@ -120,6 +137,7 @@ public partial class NetworkAndAdminWorkspaceViewModel : ProfileWorkspacePageVie
 
         ApplyValueSet(result.ValueSet, $"Saved Network & Admin settings for {SelectedProfile.DisplayName}.");
         await Legacy.RefreshCommand.ExecuteAsync(null);
+        NotifyComputedState();
     }
 
     private async Task ReloadAsync()
@@ -158,6 +176,7 @@ public partial class NetworkAndAdminWorkspaceViewModel : ProfileWorkspacePageVie
             }
 
             ApplyValueSet(valueSet, "Network & Admin settings loaded from the local host.");
+            NotifyComputedState();
         }
         catch (Exception ex)
         {
@@ -181,6 +200,7 @@ public partial class NetworkAndAdminWorkspaceViewModel : ProfileWorkspacePageVie
         LoadStatus = valueSet.RequiresAdvancedFilesFallback
             ? valueSet.FallbackReason ?? "Structured Network & Admin editing is unavailable for this file."
             : cleanMessage;
+        NotifyComputedState();
     }
 
     private void ApplyValues(IReadOnlyDictionary<string, string?> values)
@@ -260,6 +280,7 @@ public partial class NetworkAndAdminWorkspaceViewModel : ProfileWorkspacePageVie
         }
 
         MarkClean("Network & Admin settings are in sync.");
+        NotifyComputedState();
     }
 
     partial void OnBindIpChanged(string value) => NotifyFieldEdited();
@@ -275,10 +296,23 @@ public partial class NetworkAndAdminWorkspaceViewModel : ProfileWorkspacePageVie
 
         MarkDirty("Unsaved changes in Network & Admin.");
         LoadStatus = "Network & Admin settings changed locally. Apply them to update the active profile.";
+        NotifyComputedState();
     }
 
     partial void OnSupportsDraftsChanged(bool value)
     {
         OnPropertyChanged(nameof(DraftsDisabled));
+    }
+
+    private void NotifyComputedState()
+    {
+        OnPropertyChanged(nameof(PageSummary));
+        OnPropertyChanged(nameof(ProfileDisplayName));
+        OnPropertyChanged(nameof(Branch));
+        OnPropertyChanged(nameof(WorkspaceSummary));
+        OnPropertyChanged(nameof(ActionSummary));
+        OnPropertyChanged(nameof(DraftsDisabled));
+        OnPropertyChanged(nameof(CanEdit));
+        OnPropertyChanged(nameof(RequiresAdvancedFilesFallback));
     }
 }

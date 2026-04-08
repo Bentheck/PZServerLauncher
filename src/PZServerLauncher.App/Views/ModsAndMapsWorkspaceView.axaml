@@ -8,92 +8,113 @@
              d:DesignHeight="960"
              x:Class="PZServerLauncher.App.Views.ModsAndMapsWorkspaceView"
              x:DataType="vm:ModsAndMapsWorkspaceViewModel">
-    <Border Classes="card" Padding="24">
-        <StackPanel Spacing="18">
-            <StackPanel Spacing="4">
-                <TextBlock Classes="panel-title" FontSize="24" Text="{Binding PageTitle}" />
-                <TextBlock Classes="body" Text="{Binding PageSummary}" TextWrapping="Wrap" />
-            </StackPanel>
+    <ScrollViewer>
+        <Border Classes="card" Padding="24">
+            <StackPanel Spacing="18">
+                <Border Background="#1F1E1B" CornerRadius="18" Padding="22">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18">
+                        <StackPanel Spacing="8">
+                            <TextBlock Classes="kicker" Foreground="#D7A36A" Text="Mods &amp; Maps" />
+                            <TextBlock FontSize="30"
+                                       FontWeight="SemiBold"
+                                       Foreground="#F7F0E7"
+                                       Text="{Binding ProfileDisplayName}" />
+                            <TextBlock Classes="body"
+                                       Foreground="#D7CCBE"
+                                       Text="{Binding WorkspaceSummary}"
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
+                        <Border Grid.Column="1"
+                                Background="#2C2926"
+                                CornerRadius="999"
+                                Padding="14,8"
+                                VerticalAlignment="Top">
+                            <TextBlock Foreground="#F7F0E7"
+                                       FontWeight="SemiBold"
+                                       Text="{Binding Branch}" />
+                        </Border>
+                    </Grid>
+                </Border>
 
-            <Border Background="#F6EFE6" CornerRadius="14" Padding="16">
-                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                    <StackPanel Spacing="6">
-                        <TextBlock Classes="kicker" Text="Catalog" />
-                        <TextBlock Classes="body" Text="{Binding CatalogSummary}" TextWrapping="Wrap" />
-                        <TextBlock Classes="body" Text="{Binding LoadStatus}" TextWrapping="Wrap" />
-                    </StackPanel>
-                    <Border Grid.Column="1"
-                            Background="#2A2927"
-                            CornerRadius="14"
-                            Padding="12,8"
-                            VerticalAlignment="Top">
-                        <TextBlock Foreground="#F7F0E7" Text="{Binding DirtyStateMessage}" />
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="14">
+                    <Border Background="#F6EFE6" CornerRadius="14" Padding="16">
+                        <StackPanel Spacing="6">
+                            <TextBlock Classes="kicker" Text="Catalog" />
+                            <TextBlock Classes="body" Text="{Binding CatalogSummary}" TextWrapping="Wrap" />
+                            <TextBlock Classes="body" Text="{Binding LoadStatus}" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Column="1" Background="#F6EFE6" CornerRadius="14" Padding="16">
+                        <StackPanel Spacing="6">
+                            <TextBlock Classes="kicker" Text="Operator Guidance" />
+                            <TextBlock Classes="body" Text="{Binding ActionSummary}" TextWrapping="Wrap" />
+                        </StackPanel>
                     </Border>
                 </Grid>
-            </Border>
 
-            <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
-                <Border Classes="card" Padding="16">
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
+                    <Border Classes="card" Padding="18">
+                        <StackPanel Spacing="10">
+                            <TextBlock Classes="kicker" Text="Workshop Item IDs Or URLs" />
+                            <TextBlock Classes="body" Text="Paste one Steam Workshop ID or URL per line. Apply settings to save the ordered preset, then scan to validate local content." TextWrapping="Wrap" />
+                            <TextBox MinHeight="220"
+                                     AcceptsReturn="True"
+                                     Text="{Binding WorkshopItemIdsText}"
+                                     VerticalContentAlignment="Top"
+                                     TextWrapping="NoWrap" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="1" Classes="card" Padding="18">
+                        <StackPanel Spacing="10">
+                            <TextBlock Classes="kicker" Text="Enabled Mods" />
+                            <TextBlock Classes="body" Text="List one mod ID per line in the exact order the server should enable them." TextWrapping="Wrap" />
+                            <TextBox MinHeight="220"
+                                     AcceptsReturn="True"
+                                     Text="{Binding EnabledModIdsText}"
+                                     VerticalContentAlignment="Top"
+                                     TextWrapping="NoWrap" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <Border Classes="card" Padding="18">
                     <StackPanel Spacing="10">
-                        <TextBlock Classes="kicker" Text="Workshop Item IDs Or URLs" />
-                        <TextBlock Classes="body" Text="Paste one Steam Workshop ID or URL per line. Apply settings to save the ordered preset, then scan to validate local content." TextWrapping="Wrap" />
-                        <TextBox MinHeight="220"
+                        <TextBlock Classes="kicker" Text="Map Folders" />
+                        <TextBlock Classes="body" Text="List one map folder per line to control map load order. These values are validated against locally discovered workshop content after a scan." TextWrapping="Wrap" />
+                        <TextBox MinHeight="160"
                                  AcceptsReturn="True"
-                                 Text="{Binding WorkshopItemIdsText}"
+                                 Text="{Binding MapFoldersText}"
                                  VerticalContentAlignment="Top"
                                  TextWrapping="NoWrap" />
                     </StackPanel>
                 </Border>
 
-                <Border Grid.Column="1" Classes="card" Padding="16">
-                    <StackPanel Spacing="10">
-                        <TextBlock Classes="kicker" Text="Enabled Mods" />
-                        <TextBlock Classes="body" Text="List one mod ID per line in the exact order the server should enable them." TextWrapping="Wrap" />
-                        <TextBox MinHeight="220"
-                                 AcceptsReturn="True"
-                                 Text="{Binding EnabledModIdsText}"
-                                 VerticalContentAlignment="Top"
-                                 TextWrapping="NoWrap" />
+                <WrapPanel Orientation="Horizontal" ItemWidth="152" ItemHeight="36">
+                    <Button Command="{Binding SaveSettingsCommand}" Content="Apply Settings" />
+                    <Button Command="{Binding SaveDraftCommand}" Content="Save Draft" />
+                    <Button Command="{Binding DiscardDraftCommand}" Content="Discard Draft" />
+                    <Button Command="{Binding ScanCommand}" Content="Run Scan" IsEnabled="{Binding CanScan}" />
+                    <Button Command="{Binding ReloadCommand}" Content="Reload From Host" />
+                </WrapPanel>
+
+                <Border Background="#FBF7F1" CornerRadius="14" Padding="16">
+                    <StackPanel Spacing="8">
+                        <TextBlock Classes="kicker" Text="Diagnostics" />
+                        <ItemsControl ItemsSource="{Binding Diagnostics}" IsVisible="{Binding HasDiagnostics}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Classes="body" Text="{Binding .}" TextWrapping="Wrap" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock Classes="body"
+                                   IsVisible="{Binding HasNoDiagnostics}"
+                                   Text="No workshop diagnostics yet. Apply settings and run a scan to validate local workshop content."
+                                   TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
-            </Grid>
-
-            <Border Classes="card" Padding="16">
-                <StackPanel Spacing="10">
-                    <TextBlock Classes="kicker" Text="Map Folders" />
-                    <TextBlock Classes="body" Text="List one map folder per line to control map load order. These values are validated against locally discovered workshop content after a scan." TextWrapping="Wrap" />
-                    <TextBox MinHeight="160"
-                             AcceptsReturn="True"
-                             Text="{Binding MapFoldersText}"
-                             VerticalContentAlignment="Top"
-                             TextWrapping="NoWrap" />
-                </StackPanel>
-            </Border>
-
-            <WrapPanel Orientation="Horizontal" ItemWidth="152" ItemHeight="36">
-                <Button Command="{Binding SaveSettingsCommand}" Content="Apply Settings" />
-                <Button Command="{Binding SaveDraftCommand}" Content="Save Draft" />
-                <Button Command="{Binding DiscardDraftCommand}" Content="Discard Draft" />
-                <Button Command="{Binding ScanCommand}" Content="Run Scan" IsEnabled="{Binding CanScan}" />
-                <Button Command="{Binding ReloadCommand}" Content="Reload From Host" />
-            </WrapPanel>
-
-            <Border Background="#FBF7F1" CornerRadius="14" Padding="16">
-                <StackPanel Spacing="8">
-                    <TextBlock Classes="kicker" Text="Diagnostics" />
-                    <ItemsControl ItemsSource="{Binding Diagnostics}" IsVisible="{Binding HasDiagnostics}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <TextBlock Classes="body" Text="{Binding .}" TextWrapping="Wrap" />
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                    <TextBlock Classes="body"
-                               IsVisible="{Binding HasNoDiagnostics}"
-                               Text="No workshop diagnostics yet. Apply settings and run a scan to validate local workshop content." 
-                               TextWrapping="Wrap" />
-                </StackPanel>
-            </Border>
-        </StackPanel>
-    </Border>
+            </StackPanel>
+        </Border>
+    </ScrollViewer>
 </UserControl>

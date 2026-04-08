@@ -8,84 +8,134 @@
              d:DesignHeight="900"
              x:Class="PZServerLauncher.App.Views.GeneralWorkspaceView"
              x:DataType="vm:GeneralWorkspaceViewModel">
-    <Border Classes="card" Padding="24">
-        <StackPanel Spacing="18">
-            <StackPanel Spacing="4">
-                <TextBlock Classes="panel-title" FontSize="24" Text="{Binding PageTitle}" />
-                <TextBlock Classes="body" Text="{Binding PageSummary}" TextWrapping="Wrap" />
-            </StackPanel>
+    <ScrollViewer>
+        <Border Classes="card" Padding="24">
+            <StackPanel Spacing="18">
+                <Border Background="#201D1A" CornerRadius="18" Padding="22">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18">
+                        <StackPanel Spacing="8">
+                            <TextBlock Classes="kicker" Foreground="#E5A26B" Text="General Settings" />
+                            <TextBlock FontSize="30"
+                                       FontWeight="SemiBold"
+                                       Foreground="#F7F0E7"
+                                       Text="{Binding ProfileDisplayName}" />
+                            <TextBlock Classes="body"
+                                       Foreground="#D7CCBE"
+                                       Text="{Binding WorkspaceSummary}"
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
+                        <Border Grid.Column="1"
+                                Background="#2C2926"
+                                CornerRadius="999"
+                                Padding="14,8"
+                                VerticalAlignment="Top">
+                            <TextBlock Foreground="#F7F0E7"
+                                       FontWeight="SemiBold"
+                                       Text="{Binding Branch}" />
+                        </Border>
+                    </Grid>
+                </Border>
 
-            <Border Background="#F6EFE6" CornerRadius="14" Padding="16">
-                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                    <StackPanel Spacing="6">
-                        <TextBlock Classes="kicker" Text="Catalog" />
-                        <TextBlock Classes="body" Text="{Binding CatalogSummary}" TextWrapping="Wrap" />
-                        <TextBlock Classes="body" Text="{Binding LoadStatus}" TextWrapping="Wrap" />
-                    </StackPanel>
-                    <Border Grid.Column="1"
-                            Background="#2A2927"
-                            CornerRadius="14"
-                            Padding="12,8"
-                            VerticalAlignment="Top">
-                        <TextBlock Foreground="#F7F0E7" Text="{Binding DirtyStateMessage}" />
+                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="14">
+                    <Border Background="#F6EFE6" CornerRadius="14" Padding="16">
+                        <StackPanel Spacing="6">
+                            <TextBlock Classes="kicker" Text="Catalog" />
+                            <TextBlock Classes="body" Text="{Binding CatalogSummary}" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Column="1" Background="#F6EFE6" CornerRadius="14" Padding="16">
+                        <StackPanel Spacing="6">
+                            <TextBlock Classes="kicker" Text="Status" />
+                            <TextBlock Classes="body" Text="{Binding LoadStatus}" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Column="2" Background="#F6EFE6" CornerRadius="14" Padding="16">
+                        <StackPanel Spacing="6">
+                            <TextBlock Classes="kicker" Text="Operator Guidance" />
+                            <TextBlock Classes="body" Text="{Binding ActionSummary}" TextWrapping="Wrap" />
+                        </StackPanel>
                     </Border>
                 </Grid>
-            </Border>
 
-            <Border Background="#FFF8F1" CornerRadius="14" Padding="16" IsVisible="{Binding RequiresAdvancedFilesFallback}">
-                <StackPanel Spacing="6">
-                    <TextBlock Classes="kicker" Text="Fallback Required" />
-                    <TextBlock Classes="body" Text="{Binding FallbackReason}" TextWrapping="Wrap" />
-                </StackPanel>
-            </Border>
+                <Border Background="#FFF8F1"
+                        CornerRadius="14"
+                        Padding="16"
+                        IsVisible="{Binding RequiresAdvancedFilesFallback}">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Fallback Required" />
+                        <TextBlock Classes="body" Text="{Binding FallbackReason}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
 
-            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="12" IsEnabled="{Binding CanEdit}">
-                <StackPanel Spacing="4">
-                    <TextBlock Classes="body" Text="Server Name" />
-                    <TextBox Text="{Binding ServerName}" />
-                </StackPanel>
-                <StackPanel Grid.Column="1" Spacing="4">
-                    <TextBlock Classes="body" Text="Default Port" />
-                    <TextBox Text="{Binding DefaultPort}" />
-                </StackPanel>
-                <StackPanel Grid.Column="2" Spacing="4">
-                    <TextBlock Classes="body" Text="UDP Port" />
-                    <TextBox Text="{Binding UdpPort}" />
-                </StackPanel>
-            </Grid>
+                <Grid ColumnDefinitions="1.1*,.9*" ColumnSpacing="16" IsEnabled="{Binding CanEdit}">
+                    <Border Classes="card" Padding="18">
+                        <StackPanel Spacing="12">
+                            <TextBlock Classes="kicker" Text="Server Identity" />
+                            <StackPanel Spacing="4">
+                                <TextBlock Classes="body" Text="Server Name" />
+                                <TextBox Text="{Binding ServerName}" />
+                            </StackPanel>
+                            <StackPanel Spacing="4">
+                                <TextBlock Classes="body" Text="Memory (GB)" />
+                                <TextBox Text="{Binding MemoryInGigabytes}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
 
-            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="12" IsEnabled="{Binding CanEdit}">
-                <StackPanel Spacing="4">
-                    <TextBlock Classes="body" Text="RCON Port" />
-                    <TextBox Text="{Binding RconPort}" />
-                </StackPanel>
-                <StackPanel Grid.Column="1" Spacing="4">
-                    <TextBlock Classes="body" Text="Memory (GB)" />
-                    <TextBox Text="{Binding MemoryInGigabytes}" />
-                </StackPanel>
-                <StackPanel Grid.Column="2" Spacing="12" VerticalAlignment="Bottom">
-                    <CheckBox Content="Start With Host" IsChecked="{Binding StartWithHost}" />
-                    <CheckBox Content="Auto Restart On Crash" IsChecked="{Binding AutoRestartOnCrash}" />
-                </StackPanel>
-            </Grid>
+                    <Border Grid.Column="1" Classes="card" Padding="18">
+                        <StackPanel Spacing="12">
+                            <TextBlock Classes="kicker" Text="Ports And Startup" />
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="body" Text="Default Port" />
+                                    <TextBox Text="{Binding DefaultPort}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Spacing="4">
+                                    <TextBlock Classes="body" Text="UDP Port" />
+                                    <TextBox Text="{Binding UdpPort}" />
+                                </StackPanel>
+                            </Grid>
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="body" Text="RCON Port" />
+                                    <TextBox Text="{Binding RconPort}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Spacing="12" VerticalAlignment="Bottom">
+                                    <CheckBox Content="Start With Host" IsChecked="{Binding StartWithHost}" />
+                                    <CheckBox Content="Auto Restart On Crash" IsChecked="{Binding AutoRestartOnCrash}" />
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </Grid>
 
-            <WrapPanel Orientation="Horizontal" ItemWidth="152" ItemHeight="36">
-                <Button Command="{Binding SaveSettingsCommand}" Content="Apply Settings" IsEnabled="{Binding CanEdit}" />
-                <Button Command="{Binding SaveDraftCommand}" Content="Save Draft" IsEnabled="{Binding CanEdit}" />
-                <Button Command="{Binding DiscardDraftCommand}" Content="Discard Draft" />
-                <Button Command="{Binding ReloadCommand}" Content="Reload From Host" />
-            </WrapPanel>
+                <Border Background="#F1E6D7" CornerRadius="14" Padding="16">
+                    <StackPanel Spacing="8">
+                        <TextBlock Classes="kicker" Text="Operator Guidance" />
+                        <TextBlock Classes="body" Text="{Binding ActionSummary}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
 
-            <StackPanel Spacing="8" IsVisible="{Binding HasFieldErrors}">
-                <TextBlock Classes="kicker" Text="Validation" />
-                <ItemsControl ItemsSource="{Binding FieldErrors}">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <TextBlock Classes="body" Text="{Binding .}" TextWrapping="Wrap" />
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
+                <WrapPanel Orientation="Horizontal" ItemWidth="152" ItemHeight="36">
+                    <Button Command="{Binding SaveSettingsCommand}" Content="Apply Settings" IsEnabled="{Binding CanEdit}" />
+                    <Button Command="{Binding SaveDraftCommand}" Content="Save Draft" IsEnabled="{Binding CanEdit}" />
+                    <Button Command="{Binding DiscardDraftCommand}" Content="Discard Draft" />
+                    <Button Command="{Binding ReloadCommand}" Content="Reload From Host" />
+                </WrapPanel>
+
+                <Border Background="#FBF7F1" CornerRadius="14" Padding="16" IsVisible="{Binding HasFieldErrors}">
+                    <StackPanel Spacing="8">
+                        <TextBlock Classes="kicker" Text="Validation" />
+                        <ItemsControl ItemsSource="{Binding FieldErrors}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Classes="body" Text="{Binding .}" TextWrapping="Wrap" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
             </StackPanel>
-        </StackPanel>
-    </Border>
+        </Border>
+    </ScrollViewer>
 </UserControl>

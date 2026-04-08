@@ -8,82 +8,112 @@
              d:DesignHeight="900"
              x:Class="PZServerLauncher.App.Views.NetworkAndAdminWorkspaceView"
              x:DataType="vm:NetworkAndAdminWorkspaceViewModel">
-    <Border Classes="card" Padding="24">
-        <StackPanel Spacing="18">
-            <StackPanel Spacing="4">
-                <TextBlock Classes="panel-title" FontSize="24" Text="{Binding PageTitle}" />
-                <TextBlock Classes="body" Text="{Binding PageSummary}" TextWrapping="Wrap" />
-            </StackPanel>
+    <ScrollViewer>
+        <Border Classes="card" Padding="24">
+            <StackPanel Spacing="18">
+                <Border Background="#201E1A" CornerRadius="18" Padding="22">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18">
+                        <StackPanel Spacing="8">
+                            <TextBlock Classes="kicker" Foreground="#D7A36A" Text="Network &amp; Admin" />
+                            <TextBlock FontSize="30"
+                                       FontWeight="SemiBold"
+                                       Foreground="#F7F0E7"
+                                       Text="{Binding ProfileDisplayName}" />
+                            <TextBlock Classes="body"
+                                       Foreground="#D7CCBE"
+                                       Text="{Binding WorkspaceSummary}"
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
+                        <Border Grid.Column="1"
+                                Background="#2C2926"
+                                CornerRadius="999"
+                                Padding="14,8"
+                                VerticalAlignment="Top">
+                            <TextBlock Foreground="#F7F0E7"
+                                       FontWeight="SemiBold"
+                                       Text="{Binding Branch}" />
+                        </Border>
+                    </Grid>
+                </Border>
 
-            <Border Background="#F6EFE6" CornerRadius="14" Padding="16">
-                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                    <StackPanel Spacing="6">
-                        <TextBlock Classes="kicker" Text="Catalog" />
-                        <TextBlock Classes="body" Text="{Binding CatalogSummary}" TextWrapping="Wrap" />
-                        <TextBlock Classes="body" Text="{Binding LoadStatus}" TextWrapping="Wrap" />
-                    </StackPanel>
-                    <Border Grid.Column="1"
-                            Background="#2A2927"
-                            CornerRadius="14"
-                            Padding="12,8"
-                            VerticalAlignment="Top">
-                        <TextBlock Foreground="#F7F0E7" Text="{Binding DirtyStateMessage}" />
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="14">
+                    <Border Background="#F6EFE6" CornerRadius="14" Padding="16">
+                        <StackPanel Spacing="6">
+                            <TextBlock Classes="kicker" Text="Catalog" />
+                            <TextBlock Classes="body" Text="{Binding CatalogSummary}" TextWrapping="Wrap" />
+                            <TextBlock Classes="body" Text="{Binding LoadStatus}" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Column="1" Background="#F6EFE6" CornerRadius="14" Padding="16">
+                        <StackPanel Spacing="6">
+                            <TextBlock Classes="kicker" Text="Operator Guidance" />
+                            <TextBlock Classes="body" Text="{Binding ActionSummary}" TextWrapping="Wrap" />
+                        </StackPanel>
                     </Border>
                 </Grid>
-            </Border>
 
-            <Border Background="#FFF8F1" CornerRadius="14" Padding="16" IsVisible="{Binding RequiresAdvancedFilesFallback}">
-                <StackPanel Spacing="6">
-                    <TextBlock Classes="kicker" Text="Fallback Required" />
-                    <TextBlock Classes="body" Text="{Binding FallbackReason}" TextWrapping="Wrap" />
-                    <TextBlock Classes="body" Text="Use Advanced Files if this server's network settings can't be represented safely in the structured editor." TextWrapping="Wrap" />
-                </StackPanel>
-            </Border>
-
-            <Border Background="#FBF7F1" CornerRadius="14" Padding="16" IsEnabled="{Binding CanEdit}">
-                <StackPanel Spacing="14">
-                    <TextBlock Classes="kicker" Text="Connection" />
-                    <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
-                        <StackPanel Spacing="4">
-                            <TextBlock Classes="body" Text="Bind IP" />
-                            <TextBox Text="{Binding BindIp}" />
-                            <TextBlock Classes="body" FontSize="12" Text="Leave empty to let the server bind normally, or set a specific IPv4/IPv6 address." TextWrapping="Wrap" />
-                        </StackPanel>
-                        <StackPanel Grid.Column="1" Spacing="4">
-                            <TextBlock Classes="body" Text="Admin Username" />
-                            <TextBox Text="{Binding AdminUsername}" />
-                            <TextBlock Classes="body" FontSize="12" Text="Used by launcher-managed startup arguments when an admin identity is configured." TextWrapping="Wrap" />
-                        </StackPanel>
-                    </Grid>
-
-                    <StackPanel Spacing="4">
-                        <TextBlock Classes="body" Text="Admin Password" />
-                        <TextBox PasswordChar="*" Text="{Binding AdminPassword}" />
-                        <TextBlock Classes="body" FontSize="12" Text="Write-only. Leave blank to keep the existing password; enter a new value only when you want to rotate it." TextWrapping="Wrap" />
+                <Border Background="#FFF8F1"
+                        CornerRadius="14"
+                        Padding="16"
+                        IsVisible="{Binding RequiresAdvancedFilesFallback}">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Fallback Required" />
+                        <TextBlock Classes="body" Text="{Binding FallbackReason}" TextWrapping="Wrap" />
+                        <TextBlock Classes="body" Text="Use Advanced Files if this server's network settings can't be represented safely in the structured editor." TextWrapping="Wrap" />
                     </StackPanel>
+                </Border>
+
+                <Grid ColumnDefinitions="1.2*,.8*" ColumnSpacing="16" IsEnabled="{Binding CanEdit}">
+                    <Border Classes="card" Padding="18">
+                        <StackPanel Spacing="14">
+                            <TextBlock Classes="kicker" Text="Connection" />
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="body" Text="Bind IP" />
+                                    <TextBox Text="{Binding BindIp}" />
+                                    <TextBlock Classes="body" FontSize="12" Text="Leave empty to let the server bind normally, or set a specific IPv4/IPv6 address." TextWrapping="Wrap" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Spacing="4">
+                                    <TextBlock Classes="body" Text="Admin Username" />
+                                    <TextBox Text="{Binding AdminUsername}" />
+                                    <TextBlock Classes="body" FontSize="12" Text="Used by launcher-managed startup arguments when an admin identity is configured." TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="1" Classes="card" Padding="18">
+                        <StackPanel Spacing="14">
+                            <TextBlock Classes="kicker" Text="Security" />
+                            <StackPanel Spacing="4">
+                                <TextBlock Classes="body" Text="Admin Password" />
+                                <TextBox PasswordChar="*" Text="{Binding AdminPassword}" />
+                                <TextBlock Classes="body" FontSize="12" Text="Write-only. Leave blank to keep the existing password; enter a new value only when you want to rotate it." TextWrapping="Wrap" />
+                            </StackPanel>
+                            <Border Background="#F6EFE6" CornerRadius="12" Padding="12" IsVisible="{Binding DraftsDisabled}">
+                                <TextBlock Classes="body" Text="Drafts are intentionally disabled on this page so the admin password is never persisted in workspace draft storage." TextWrapping="Wrap" />
+                            </Border>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <WrapPanel Orientation="Horizontal" ItemWidth="152" ItemHeight="36">
+                    <Button Command="{Binding SaveSettingsCommand}" Content="Apply Settings" IsEnabled="{Binding CanEdit}" />
+                    <Button Command="{Binding DiscardDraftCommand}" Content="Reload" />
+                    <Button Command="{Binding ReloadCommand}" Content="Reload From Host" />
+                </WrapPanel>
+
+                <StackPanel Spacing="8" IsVisible="{Binding HasFieldErrors}">
+                    <TextBlock Classes="kicker" Text="Validation" />
+                    <ItemsControl ItemsSource="{Binding FieldErrors}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Classes="body" Text="{Binding .}" TextWrapping="Wrap" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
                 </StackPanel>
-            </Border>
-
-            <WrapPanel Orientation="Horizontal" ItemWidth="152" ItemHeight="36">
-                <Button Command="{Binding SaveSettingsCommand}" Content="Apply Settings" IsEnabled="{Binding CanEdit}" />
-                <Button Command="{Binding DiscardDraftCommand}" Content="Reload" />
-                <Button Command="{Binding ReloadCommand}" Content="Reload From Host" />
-            </WrapPanel>
-
-            <Border Background="#F6EFE6" CornerRadius="14" Padding="16" IsVisible="{Binding DraftsDisabled}">
-                <TextBlock Classes="body" Text="Drafts are intentionally disabled on this page so the admin password is never persisted in workspace draft storage." TextWrapping="Wrap" />
-            </Border>
-
-            <StackPanel Spacing="8" IsVisible="{Binding HasFieldErrors}">
-                <TextBlock Classes="kicker" Text="Validation" />
-                <ItemsControl ItemsSource="{Binding FieldErrors}">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <TextBlock Classes="body" Text="{Binding .}" TextWrapping="Wrap" />
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
             </StackPanel>
-        </StackPanel>
-    </Border>
+        </Border>
+    </ScrollViewer>
 </UserControl>

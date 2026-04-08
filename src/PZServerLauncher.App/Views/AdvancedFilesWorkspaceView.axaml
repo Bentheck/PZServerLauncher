@@ -8,107 +8,153 @@
              d:DesignHeight="940"
              x:Class="PZServerLauncher.App.Views.AdvancedFilesWorkspaceView"
              x:DataType="vm:AdvancedFilesWorkspaceViewModel">
-    <Border Classes="card" Padding="24">
-        <Grid RowDefinitions="Auto,Auto,Auto,*" RowSpacing="18">
-            <StackPanel Spacing="4">
-                <TextBlock Classes="panel-title" FontSize="24" Text="{Binding PageTitle}" />
-                <TextBlock Classes="body" Text="{Binding PageSummary}" TextWrapping="Wrap" />
-            </StackPanel>
+    <ScrollViewer>
+        <Border Classes="card" Padding="24">
+            <Grid RowDefinitions="Auto,Auto,Auto,Auto,*" RowSpacing="18">
+                <Border Background="#1E1D1A" CornerRadius="18" Padding="22">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18">
+                        <StackPanel Spacing="8">
+                            <TextBlock Classes="kicker" Foreground="#D7A36A" Text="Advanced Files" />
+                            <TextBlock FontSize="30"
+                                       FontWeight="SemiBold"
+                                       Foreground="#F7F0E7"
+                                       Text="{Binding ProfileDisplayName}" />
+                            <TextBlock Classes="body"
+                                       Foreground="#D7CCBE"
+                                       Text="{Binding WorkspaceSummary}"
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
+                        <Border Grid.Column="1"
+                                Background="#2C2926"
+                                CornerRadius="999"
+                                Padding="14,8"
+                                VerticalAlignment="Top">
+                            <TextBlock Foreground="#F7F0E7"
+                                       FontWeight="SemiBold"
+                                       Text="{Binding Branch}" />
+                        </Border>
+                    </Grid>
+                </Border>
 
-            <Border Grid.Row="1" Background="#FFF8F1" CornerRadius="14" Padding="16">
-                <StackPanel Spacing="6">
-                    <TextBlock Classes="kicker" Text="Structured Editor Fallback" />
-                    <TextBlock Classes="body" Text="Use this page when a structured editor cannot safely own a file or when you intentionally want the raw Project Zomboid source files." TextWrapping="Wrap" />
-                    <TextBlock Classes="body" Text="{Binding LoadStatus}" TextWrapping="Wrap" />
-                </StackPanel>
-            </Border>
-
-            <Grid Grid.Row="2" ColumnDefinitions="280,Auto,Auto,*" ColumnSpacing="12">
-                <StackPanel Spacing="4">
-                    <TextBlock Classes="kicker" Text="File Kind" />
-                    <ComboBox ItemsSource="{Binding FileKinds}"
-                              SelectedItem="{Binding SelectedKind}">
-                        <ComboBox.ItemTemplate>
-                            <DataTemplate x:DataType="vm:ConfigFileOptionViewModel">
-                                <TextBlock Text="{Binding Label}" />
-                            </DataTemplate>
-                        </ComboBox.ItemTemplate>
-                    </ComboBox>
-                </StackPanel>
-
-                <Button Grid.Column="1"
-                        VerticalAlignment="Bottom"
-                        Command="{Binding LoadCommand}"
-                        Content="Load File"
-                        IsEnabled="{Binding CanLoad}" />
-
-                <Button Grid.Column="2"
-                        VerticalAlignment="Bottom"
-                        Command="{Binding SaveCommand}"
-                        Content="Save File"
-                        IsEnabled="{Binding CanSave}" />
-
-                <StackPanel Grid.Column="3" Spacing="4">
-                    <TextBlock Classes="kicker" Text="Current Path" />
-                    <TextBlock Classes="body"
-                               FontFamily="Cascadia Code,Consolas,monospace"
-                               Text="{Binding CurrentPath}"
-                               TextWrapping="Wrap" />
-                </StackPanel>
-            </Grid>
-
-            <Grid Grid.Row="3" ColumnDefinitions="*,320" ColumnSpacing="18">
-                <StackPanel Spacing="10">
-                    <Border Background="#F6EFE6"
-                            CornerRadius="14"
-                            Padding="12"
-                            IsVisible="{Binding ShowKindMismatchWarning}">
-                        <TextBlock Classes="body"
-                                   Text="The selected file kind does not match the currently loaded buffer. Load the selected file before saving."
-                                   TextWrapping="Wrap" />
-                    </Border>
-
-                    <TextBox MinHeight="380"
-                             AcceptsReturn="True"
-                             AcceptsTab="True"
-                             FontFamily="Cascadia Code,Consolas,monospace"
-                             HorizontalAlignment="Stretch"
-                             IsEnabled="{Binding IsEditorEnabled}"
-                             Text="{Binding EditorContent}"
-                             TextWrapping="NoWrap"
-                             VerticalContentAlignment="Top" />
-                </StackPanel>
-
-                <StackPanel Grid.Column="1" Spacing="12">
-                    <Border Classes="card" Padding="16">
+                <Grid Grid.Row="1" ColumnDefinitions="*,*,*" ColumnSpacing="14">
+                    <Border Background="#F6EFE6" CornerRadius="14" Padding="16">
                         <StackPanel Spacing="6">
-                            <TextBlock Classes="kicker" Text="File Status" />
-                            <TextBlock Classes="body" Text="{Binding DirtyStateMessage}" TextWrapping="Wrap" />
+                            <TextBlock Classes="kicker" Text="File Mode" />
+                            <TextBlock Classes="body" Text="{Binding LoadStatus}" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Column="1" Background="#F6EFE6" CornerRadius="14" Padding="16">
+                        <StackPanel Spacing="6">
+                            <TextBlock Classes="kicker" Text="Current File" />
                             <TextBlock Classes="body"
                                        FontFamily="Cascadia Code,Consolas,monospace"
-                                       Text="{Binding CurrentSha256}"
+                                       Text="{Binding CurrentPath}"
                                        TextWrapping="Wrap" />
                         </StackPanel>
                     </Border>
+                    <Border Grid.Column="2" Background="#F6EFE6" CornerRadius="14" Padding="16">
+                        <StackPanel Spacing="6">
+                            <TextBlock Classes="kicker" Text="Operator Guidance" />
+                            <TextBlock Classes="body" Text="{Binding ActionSummary}" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
 
-                    <Border Classes="card" Padding="16">
-                        <StackPanel Spacing="8">
-                            <TextBlock Classes="kicker" Text="Diagnostics" />
-                            <ItemsControl ItemsSource="{Binding Diagnostics}" IsVisible="{Binding HasDiagnostics}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Classes="body" Text="{Binding .}" TextWrapping="Wrap" Margin="0,0,0,6" />
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
+                <Border Grid.Row="2" Background="#FFF8F1" CornerRadius="14" Padding="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Structured Editor Fallback" />
+                        <TextBlock Classes="body" Text="Use this page when a structured editor cannot safely own a file or when you intentionally want the raw Project Zomboid source files." TextWrapping="Wrap" />
+                        <TextBlock Classes="body" Text="{Binding LoadStatus}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+
+                <Grid Grid.Row="3" ColumnDefinitions="280,Auto,Auto,*" ColumnSpacing="12">
+                    <StackPanel Spacing="4">
+                        <TextBlock Classes="kicker" Text="File Kind" />
+                        <ComboBox ItemsSource="{Binding FileKinds}"
+                                  SelectedItem="{Binding SelectedKind}">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate x:DataType="vm:ConfigFileOptionViewModel">
+                                    <TextBlock Text="{Binding Label}" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </StackPanel>
+
+                    <Button Grid.Column="1"
+                            VerticalAlignment="Bottom"
+                            Command="{Binding LoadCommand}"
+                            Content="Load File"
+                            IsEnabled="{Binding CanLoad}" />
+
+                    <Button Grid.Column="2"
+                            VerticalAlignment="Bottom"
+                            Command="{Binding SaveCommand}"
+                            Content="Save File"
+                            IsEnabled="{Binding CanSave}" />
+
+                    <StackPanel Grid.Column="3" Spacing="4">
+                        <TextBlock Classes="kicker" Text="Current Path" />
+                        <TextBlock Classes="body"
+                                   FontFamily="Cascadia Code,Consolas,monospace"
+                                   Text="{Binding CurrentPath}"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+                </Grid>
+
+                <Grid Grid.Row="4" ColumnDefinitions="*,320" ColumnSpacing="18">
+                    <StackPanel Spacing="10">
+                        <Border Background="#F6EFE6"
+                                CornerRadius="14"
+                                Padding="12"
+                                IsVisible="{Binding ShowKindMismatchWarning}">
                             <TextBlock Classes="body"
-                                       IsVisible="{Binding HasNoDiagnostics}"
-                                       Text="No validation diagnostics were reported for the loaded file."
+                                       Text="The selected file kind does not match the currently loaded buffer. Load the selected file before saving."
                                        TextWrapping="Wrap" />
-                        </StackPanel>
-                    </Border>
-                </StackPanel>
+                        </Border>
+
+                        <TextBox MinHeight="380"
+                                 AcceptsReturn="True"
+                                 AcceptsTab="True"
+                                 FontFamily="Cascadia Code,Consolas,monospace"
+                                 HorizontalAlignment="Stretch"
+                                 IsEnabled="{Binding IsEditorEnabled}"
+                                 Text="{Binding EditorContent}"
+                                 TextWrapping="NoWrap"
+                                 VerticalContentAlignment="Top" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1" Spacing="12">
+                        <Border Classes="card" Padding="16">
+                            <StackPanel Spacing="6">
+                                <TextBlock Classes="kicker" Text="File Status" />
+                                <TextBlock Classes="body" Text="{Binding DirtyStateMessage}" TextWrapping="Wrap" />
+                                <TextBlock Classes="body"
+                                           FontFamily="Cascadia Code,Consolas,monospace"
+                                           Text="{Binding CurrentSha256}"
+                                           TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Classes="card" Padding="16">
+                            <StackPanel Spacing="8">
+                                <TextBlock Classes="kicker" Text="Diagnostics" />
+                                <ItemsControl ItemsSource="{Binding Diagnostics}" IsVisible="{Binding HasDiagnostics}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Classes="body" Text="{Binding .}" TextWrapping="Wrap" Margin="0,0,0,6" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                                <TextBlock Classes="body"
+                                           IsVisible="{Binding HasNoDiagnostics}"
+                                           Text="No validation diagnostics were reported for the loaded file."
+                                           TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Grid>
             </Grid>
-        </Grid>
-    </Border>
+        </Border>
+    </ScrollViewer>
 </UserControl>

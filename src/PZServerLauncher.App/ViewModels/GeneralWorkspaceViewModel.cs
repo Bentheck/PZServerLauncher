@@ -33,6 +33,22 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         ? "Select a profile to edit the first structured settings page."
         : $"Structured General settings for {SelectedProfile.DisplayName}.";
 
+    public string ProfileDisplayName => SelectedProfile?.DisplayName ?? "No profile selected";
+
+    public string Branch => SelectedProfile?.Branch ?? "Unknown";
+
+    public string WorkspaceSummary => SelectedProfile is null
+        ? "Choose a profile to unlock structured General settings."
+        : $"{SelectedProfile.DisplayName} is ready for ports, memory, startup, and runtime identity edits.";
+
+    public string ActionSummary => RequiresAdvancedFilesFallback
+        ? "Structured editing is temporarily unavailable for this file. Use Advanced Files for raw recovery."
+        : CanEdit
+            ? "Apply changes to write the active profile, or save a draft first if you want to keep working."
+            : IsLoading
+                ? "Loading structured General settings from the host..."
+                : "General settings are not currently editable.";
+
     public ObservableCollection<string> FieldErrors { get; } = [];
 
     public bool HasFieldErrors => FieldErrors.Count > 0;
@@ -83,6 +99,7 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
     protected override void OnSelectedProfileChangedCore(ProfileCardViewModel? profile)
     {
         _ = LoadAsync(profile);
+        NotifyComputedState();
     }
 
     public override async Task SaveDraftAsync()
@@ -106,6 +123,7 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         await _hostApiClient.SaveSettingsDraftAsync(SelectedProfile.ProfileId, ProfileWorkspacePageIds.General, payload);
         MarkClean("Saved General draft.");
         LoadStatus = "Saved a General draft. Apply it to write the server files.";
+        NotifyComputedState();
     }
 
     public override async Task DiscardDraftAsync()
@@ -166,6 +184,7 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
         ApplyValueSet(result.ValueSet, markCleanMessage: $"Saved General settings for {SelectedProfile.DisplayName}.");
         await Legacy.RefreshCommand.ExecuteAsync(null);
+        NotifyComputedState();
     }
 
     private async Task ReloadAsync()
@@ -241,9 +260,10 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         CanEdit = !valueSet.RequiresAdvancedFilesFallback;
         ApplyValues(valueSet.Values);
         MarkClean(markCleanMessage);
-        LoadStatus = valueSet.RequiresAdvancedFilesFallback
-            ? valueSet.FallbackReason ?? "Structured editing is unavailable for this file."
-            : markCleanMessage;
+            LoadStatus = valueSet.RequiresAdvancedFilesFallback
+                ? valueSet.FallbackReason ?? "Structured editing is unavailable for this file."
+                : markCleanMessage;
+            NotifyComputedState();
     }
 
     private void ApplyValues(IReadOnlyDictionary<string, string?> values)
@@ -333,6 +353,7 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         }
 
         MarkClean("General settings are in sync.");
+        NotifyComputedState();
     }
 
     partial void OnServerNameChanged(string value) => NotifyFieldEdited();
@@ -352,5 +373,18 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
         MarkDirty("Unsaved changes in General.");
         LoadStatus = "General settings changed locally. Save a draft or apply them to the server files.";
+        NotifyComputedState();
+    }
+
+    private void NotifyComputedState()
+    {
+        OnPropertyChanged(nameof(PageSummary));
+        OnPropertyChanged(nameof(ProfileDisplayName));
+        OnPropertyChanged(nameof(Branch));
+        OnPropertyChanged(nameof(WorkspaceSummary));
+        OnPropertyChanged(nameof(ActionSummary));
+        OnPropertyChanged(nameof(HasFieldErrors));
+        OnPropertyChanged(nameof(CanEdit));
+        OnPropertyChanged(nameof(RequiresAdvancedFilesFallback));
     }
 }

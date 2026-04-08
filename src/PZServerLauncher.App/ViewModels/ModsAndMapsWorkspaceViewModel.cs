@@ -33,6 +33,20 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
         ? "Select a profile to manage workshop items, mods, and maps."
         : $"Workshop, mod, and map settings for {SelectedProfile.DisplayName}.";
 
+    public string ProfileDisplayName => SelectedProfile?.DisplayName ?? "No profile selected";
+
+    public string Branch => SelectedProfile?.Branch ?? "Unknown";
+
+    public string WorkspaceSummary => SelectedProfile is null
+        ? "Choose a profile to unlock workshop and map management."
+        : $"{SelectedProfile.DisplayName} is ready for ordered workshop, mod, and map preset control.";
+
+    public string ActionSummary => HasUnsavedChanges
+        ? "Save or discard changes before scanning so diagnostics match the active preset."
+        : CanScan
+            ? "Run a scan to validate local workshop content and normalize the saved preset."
+            : "Load a profile to inspect workshop, mod, and map settings.";
+
     public ObservableCollection<string> Diagnostics { get; } = [];
 
     public bool HasDiagnostics => Diagnostics.Count > 0;
@@ -68,6 +82,7 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
     protected override void OnSelectedProfileChangedCore(ProfileCardViewModel? profile)
     {
         _ = LoadAsync(profile);
+        NotifyComputedState();
     }
 
     public override async Task SaveDraftAsync()
@@ -91,7 +106,7 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
         await _hostApiClient.SaveSettingsDraftAsync(SelectedProfile.ProfileId, ProfileWorkspacePageIds.ModsAndMaps, payload);
         MarkClean("Saved Mods & Maps draft.");
         LoadStatus = "Saved a Mods & Maps draft. Apply settings to update the active profile preset.";
-        OnPropertyChanged(nameof(CanScan));
+        NotifyComputedState();
     }
 
     public override async Task DiscardDraftAsync()
@@ -138,7 +153,7 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
         MarkClean($"Saved Mods & Maps settings for {SelectedProfile.DisplayName}.");
         await RunScanCoreAsync(SelectedProfile.ProfileId, overwriteEditors: true);
         await Legacy.RefreshCommand.ExecuteAsync(null);
-        OnPropertyChanged(nameof(CanScan));
+        NotifyComputedState();
     }
 
     private async Task ReloadAsync()
@@ -189,6 +204,7 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
             OnPropertyChanged(nameof(HasDiagnostics));
             OnPropertyChanged(nameof(HasNoDiagnostics));
             LoadStatus = "Loaded the saved workshop preset from the local host. Run a scan after applying changes to validate local workshop content.";
+            NotifyComputedState();
 
             if (draft is not null && draft.Values.Count > 0)
             {
@@ -233,6 +249,7 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
         LoadStatus = result.Diagnostics.Count == 0
             ? "Workshop scan passed. Saved preset is present in the local workshop cache."
             : $"Workshop scan completed with {result.Diagnostics.Count} issue(s).";
+        NotifyComputedState();
     }
 
     private void ApplyPreset(WorkshopPreset preset)
@@ -326,7 +343,7 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
         }
 
         MarkClean("Mods & Maps settings are in sync.");
-        OnPropertyChanged(nameof(CanScan));
+        NotifyComputedState();
     }
 
     partial void OnWorkshopItemIdsTextChanged(string value) => NotifyEdited();
@@ -342,6 +359,16 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
 
         MarkDirty("Unsaved changes in Mods & Maps.");
         LoadStatus = "Mods & Maps changed locally. Save a draft or apply the new preset before scanning.";
+        NotifyComputedState();
+    }
+
+    private void NotifyComputedState()
+    {
+        OnPropertyChanged(nameof(PageSummary));
+        OnPropertyChanged(nameof(ProfileDisplayName));
+        OnPropertyChanged(nameof(Branch));
+        OnPropertyChanged(nameof(WorkspaceSummary));
+        OnPropertyChanged(nameof(ActionSummary));
         OnPropertyChanged(nameof(CanScan));
     }
 }

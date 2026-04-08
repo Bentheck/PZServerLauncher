@@ -34,6 +34,20 @@ public partial class AdvancedFilesWorkspaceViewModel : ProfileWorkspacePageViewM
         ? "Select a profile to load raw ini or Lua files."
         : $"Raw config access for {SelectedProfile.DisplayName}. Use this page when a structured editor falls back or when you need the source files directly.";
 
+    public string ProfileDisplayName => SelectedProfile?.DisplayName ?? "No profile selected";
+
+    public string Branch => SelectedProfile?.Branch ?? "Unknown";
+
+    public string WorkspaceSummary => SelectedProfile is null
+        ? "Choose a profile to unlock raw file access."
+        : $"{SelectedProfile.DisplayName} can edit the underlying Project Zomboid source files when structured pages need a fallback.";
+
+    public string ActionSummary => IsLoaded
+        ? ShowKindMismatchWarning
+            ? "Load the selected file kind before saving so the active buffer and chooser stay aligned."
+            : "You can edit and save the current file buffer directly."
+        : "Pick a file kind and load it before editing.";
+
     public IReadOnlyList<ConfigFileOptionViewModel> FileKinds { get; }
 
     public ObservableCollection<string> Diagnostics { get; } = [];
@@ -88,6 +102,7 @@ public partial class AdvancedFilesWorkspaceViewModel : ProfileWorkspacePageViewM
     protected override void OnSelectedProfileChangedCore(ProfileCardViewModel? profile)
     {
         Reset(profile);
+        NotifyComputedState();
     }
 
     public override async Task SaveDraftAsync()
@@ -132,6 +147,7 @@ public partial class AdvancedFilesWorkspaceViewModel : ProfileWorkspacePageViewM
 
             Apply(result);
             LoadStatus = $"Loaded {SelectedKind.Label} for {SelectedProfile.DisplayName}.";
+            NotifyComputedState();
         }, $"Loading {SelectedKind.Label} for {SelectedProfile.DisplayName}...");
     }
 
@@ -165,6 +181,7 @@ public partial class AdvancedFilesWorkspaceViewModel : ProfileWorkspacePageViewM
 
             Apply(result);
             LoadStatus = $"Saved {SelectedKind.Label} for {SelectedProfile.DisplayName}.";
+            NotifyComputedState();
         }, $"Saving {SelectedKind.Label} for {SelectedProfile.DisplayName}...");
     }
 
@@ -192,6 +209,7 @@ public partial class AdvancedFilesWorkspaceViewModel : ProfileWorkspacePageViewM
             OnPropertyChanged(nameof(CanSave));
             OnPropertyChanged(nameof(IsEditorEnabled));
             OnPropertyChanged(nameof(ShowKindMismatchWarning));
+            OnPropertyChanged(nameof(ActionSummary));
         }
     }
 
@@ -216,6 +234,7 @@ public partial class AdvancedFilesWorkspaceViewModel : ProfileWorkspacePageViewM
         OnPropertyChanged(nameof(IsEditorEnabled));
         OnPropertyChanged(nameof(IsLoadedKindSelected));
         OnPropertyChanged(nameof(ShowKindMismatchWarning));
+        NotifyComputedState();
         MarkClean();
     }
 
@@ -241,6 +260,7 @@ public partial class AdvancedFilesWorkspaceViewModel : ProfileWorkspacePageViewM
         OnPropertyChanged(nameof(IsEditorEnabled));
         OnPropertyChanged(nameof(IsLoadedKindSelected));
         OnPropertyChanged(nameof(ShowKindMismatchWarning));
+        NotifyComputedState();
         MarkClean();
     }
 
@@ -283,6 +303,7 @@ public partial class AdvancedFilesWorkspaceViewModel : ProfileWorkspacePageViewM
         OnPropertyChanged(nameof(IsEditorEnabled));
         OnPropertyChanged(nameof(IsLoadedKindSelected));
         OnPropertyChanged(nameof(ShowKindMismatchWarning));
+        OnPropertyChanged(nameof(ActionSummary));
     }
 
     partial void OnEditorContentChanged(string value)
@@ -299,6 +320,7 @@ public partial class AdvancedFilesWorkspaceViewModel : ProfileWorkspacePageViewM
         }
 
         MarkDirty($"Unsaved changes in {Describe(LoadedKind)}.");
+        OnPropertyChanged(nameof(ActionSummary));
     }
 
     partial void OnIsLoadedChanged(bool value)
@@ -318,4 +340,18 @@ public partial class AdvancedFilesWorkspaceViewModel : ProfileWorkspacePageViewM
             ConfigFileKind.SpawnPoints => "SpawnPoints.lua",
             _ => kind.ToString(),
         };
+
+    private void NotifyComputedState()
+    {
+        OnPropertyChanged(nameof(PageSummary));
+        OnPropertyChanged(nameof(ProfileDisplayName));
+        OnPropertyChanged(nameof(Branch));
+        OnPropertyChanged(nameof(WorkspaceSummary));
+        OnPropertyChanged(nameof(ActionSummary));
+        OnPropertyChanged(nameof(CanLoad));
+        OnPropertyChanged(nameof(CanSave));
+        OnPropertyChanged(nameof(IsEditorEnabled));
+        OnPropertyChanged(nameof(IsLoadedKindSelected));
+        OnPropertyChanged(nameof(ShowKindMismatchWarning));
+    }
 }

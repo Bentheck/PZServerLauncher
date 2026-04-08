@@ -32,6 +32,22 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         ? "Select a profile to load the structured Sandbox editor."
         : $"Structured Sandbox settings for {SelectedProfile.DisplayName}.";
 
+    public string ProfileDisplayName => SelectedProfile?.DisplayName ?? "No profile selected";
+
+    public string Branch => SelectedProfile?.Branch ?? "Unknown";
+
+    public string WorkspaceSummary => SelectedProfile is null
+        ? "Choose a profile to unlock Sandbox settings."
+        : $"{SelectedProfile.DisplayName} is ready for branch-aware gameplay and world tuning.";
+
+    public string ActionSummary => RequiresAdvancedFilesFallback
+        ? "Structured editing is unavailable for this Sandbox file. Use Advanced Files for raw recovery."
+        : CanEdit
+            ? "Apply changes to write SandboxVars.lua, or keep a draft while you experiment."
+            : IsLoading
+                ? "Loading structured Sandbox settings from the host..."
+                : "Sandbox settings are not currently editable.";
+
     public ObservableCollection<string> FieldErrors { get; } = [];
 
     public bool HasFieldErrors => FieldErrors.Count > 0;
@@ -109,6 +125,7 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
     protected override void OnSelectedProfileChangedCore(ProfileCardViewModel? profile)
     {
         _ = LoadAsync(profile);
+        NotifyComputedState();
     }
 
     public override async Task SaveDraftAsync()
@@ -132,6 +149,7 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         await _hostApiClient.SaveSettingsDraftAsync(SelectedProfile.ProfileId, ProfileWorkspacePageIds.Sandbox, payload);
         MarkClean("Saved Sandbox draft.");
         LoadStatus = "Saved a Sandbox draft. Apply it to write SandboxVars.lua.";
+        NotifyComputedState();
     }
 
     public override async Task DiscardDraftAsync()
@@ -192,6 +210,7 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
         ApplyValueSet(result.ValueSet, $"Saved Sandbox settings for {SelectedProfile.DisplayName}.");
         await Legacy.RefreshCommand.ExecuteAsync(null);
+        NotifyComputedState();
     }
 
     private async Task ReloadAsync()
@@ -266,9 +285,10 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         CanEdit = !valueSet.RequiresAdvancedFilesFallback;
         ApplyValues(valueSet.Values);
         MarkClean(cleanMessage);
-        LoadStatus = valueSet.RequiresAdvancedFilesFallback
-            ? valueSet.FallbackReason ?? "Structured Sandbox editing is unavailable for this file."
-            : cleanMessage;
+            LoadStatus = valueSet.RequiresAdvancedFilesFallback
+                ? valueSet.FallbackReason ?? "Structured Sandbox editing is unavailable for this file."
+                : cleanMessage;
+            NotifyComputedState();
     }
 
     private void ApplyValues(IReadOnlyDictionary<string, string?> values)
@@ -385,6 +405,7 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         }
 
         MarkClean("Sandbox settings are in sync.");
+        NotifyComputedState();
     }
 
     partial void OnZombiesChanged(string value) => NotifyFieldEdited();
@@ -413,5 +434,18 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
         MarkDirty("Unsaved changes in Sandbox.");
         LoadStatus = "Sandbox settings changed locally. Save a draft or apply them to SandboxVars.lua.";
+        NotifyComputedState();
+    }
+
+    private void NotifyComputedState()
+    {
+        OnPropertyChanged(nameof(PageSummary));
+        OnPropertyChanged(nameof(ProfileDisplayName));
+        OnPropertyChanged(nameof(Branch));
+        OnPropertyChanged(nameof(WorkspaceSummary));
+        OnPropertyChanged(nameof(ActionSummary));
+        OnPropertyChanged(nameof(HasFieldErrors));
+        OnPropertyChanged(nameof(CanEdit));
+        OnPropertyChanged(nameof(RequiresAdvancedFilesFallback));
     }
 }

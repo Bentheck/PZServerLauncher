@@ -8,95 +8,119 @@
              d:DesignHeight="960"
              x:Class="PZServerLauncher.App.Views.SandboxWorkspaceView"
              x:DataType="vm:SandboxWorkspaceViewModel">
-    <Border Classes="card" Padding="24">
-        <StackPanel Spacing="18">
-            <StackPanel Spacing="4">
-                <TextBlock Classes="panel-title" FontSize="24" Text="{Binding PageTitle}" />
-                <TextBlock Classes="body" Text="{Binding PageSummary}" TextWrapping="Wrap" />
-            </StackPanel>
+    <ScrollViewer>
+        <Border Classes="card" Padding="24">
+            <StackPanel Spacing="18">
+                <Border Background="#1E201D" CornerRadius="18" Padding="22">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18">
+                        <StackPanel Spacing="8">
+                            <TextBlock Classes="kicker" Foreground="#D7A36A" Text="Sandbox Settings" />
+                            <TextBlock FontSize="30"
+                                       FontWeight="SemiBold"
+                                       Foreground="#F7F0E7"
+                                       Text="{Binding ProfileDisplayName}" />
+                            <TextBlock Classes="body"
+                                       Foreground="#D7CCBE"
+                                       Text="{Binding WorkspaceSummary}"
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
+                        <Border Grid.Column="1"
+                                Background="#2C2926"
+                                CornerRadius="999"
+                                Padding="14,8"
+                                VerticalAlignment="Top">
+                            <TextBlock Foreground="#F7F0E7"
+                                       FontWeight="SemiBold"
+                                       Text="{Binding Branch}" />
+                        </Border>
+                    </Grid>
+                </Border>
 
-            <Border Background="#F6EFE6" CornerRadius="14" Padding="16">
-                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                    <StackPanel Spacing="6">
-                        <TextBlock Classes="kicker" Text="Catalog" />
-                        <TextBlock Classes="body" Text="{Binding CatalogSummary}" TextWrapping="Wrap" />
-                        <TextBlock Classes="body" Text="{Binding LoadStatus}" TextWrapping="Wrap" />
-                    </StackPanel>
-                    <Border Grid.Column="1"
-                            Background="#2A2927"
-                            CornerRadius="14"
-                            Padding="12,8"
-                            VerticalAlignment="Top">
-                        <TextBlock Foreground="#F7F0E7" Text="{Binding DirtyStateMessage}" />
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="14">
+                    <Border Background="#F6EFE6" CornerRadius="14" Padding="16">
+                        <StackPanel Spacing="6">
+                            <TextBlock Classes="kicker" Text="Catalog" />
+                            <TextBlock Classes="body" Text="{Binding CatalogSummary}" TextWrapping="Wrap" />
+                            <TextBlock Classes="body" Text="{Binding LoadStatus}" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Column="1" Background="#F6EFE6" CornerRadius="14" Padding="16">
+                        <StackPanel Spacing="6">
+                            <TextBlock Classes="kicker" Text="Operator Guidance" />
+                            <TextBlock Classes="body" Text="{Binding ActionSummary}" TextWrapping="Wrap" />
+                        </StackPanel>
                     </Border>
                 </Grid>
-            </Border>
 
-            <Border Background="#FFF8F1" CornerRadius="14" Padding="16" IsVisible="{Binding RequiresAdvancedFilesFallback}">
-                <StackPanel Spacing="6">
-                    <TextBlock Classes="kicker" Text="Fallback Required" />
-                    <TextBlock Classes="body" Text="{Binding FallbackReason}" TextWrapping="Wrap" />
-                    <TextBlock Classes="body" Text="Use Advanced Files for raw SandboxVars.lua editing when this structured page can't safely own the file." TextWrapping="Wrap" />
-                </StackPanel>
-            </Border>
-
-            <Border Background="#FBF7F1" CornerRadius="14" Padding="16" IsEnabled="{Binding CanEdit}">
-                <StackPanel Spacing="14">
-                    <TextBlock Classes="kicker" Text="World Setup" />
-                    <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto" RowSpacing="12">
-                        <StackPanel Spacing="4">
-                            <TextBlock Classes="body" Text="Zombie Spawn Rate" />
-                            <TextBox Text="{Binding Zombies}" />
-                        </StackPanel>
-                        <StackPanel Grid.Column="1" Spacing="4">
-                            <TextBlock Classes="body" Text="Zombie Distribution" />
-                            <TextBox Text="{Binding Distribution}" />
-                        </StackPanel>
-                        <StackPanel Grid.Column="2" Spacing="4">
-                            <TextBlock Classes="body" Text="Day Length" />
-                            <TextBox Text="{Binding DayLength}" />
-                        </StackPanel>
-                        <StackPanel Grid.Column="3" Spacing="4">
-                            <TextBlock Classes="body" Text="Start Year" />
-                            <TextBox Text="{Binding StartYear}" />
-                        </StackPanel>
-
-                        <StackPanel Grid.Row="1" Spacing="4">
-                            <TextBlock Classes="body" Text="Start Month" />
-                            <TextBox Text="{Binding StartMonth}" />
-                        </StackPanel>
-                        <StackPanel Grid.Row="1" Grid.Column="1" Spacing="4">
-                            <TextBlock Classes="body" Text="Start Day" />
-                            <TextBox Text="{Binding StartDay}" />
-                        </StackPanel>
-                        <StackPanel Grid.Row="1" Grid.Column="2" Spacing="4">
-                            <TextBlock Classes="body" Text="Start Time" />
-                            <TextBox Text="{Binding StartTime}" />
-                        </StackPanel>
-                    </Grid>
-                </StackPanel>
-            </Border>
-
-            <Grid ColumnDefinitions="*,*" ColumnSpacing="16" IsEnabled="{Binding CanEdit}">
-                <Border Classes="card" Padding="16">
-                    <StackPanel Spacing="12">
-                        <TextBlock Classes="kicker" Text="Utilities" />
-                        <StackPanel Spacing="8">
-                            <StackPanel Spacing="4">
-                                <TextBlock Classes="body" Text="Water Shutoff Day" />
-                                <TextBox Text="{Binding WaterShutModifier}" />
-                            </StackPanel>
-                            <StackPanel Spacing="4">
-                                <TextBlock Classes="body" Text="Electricity Shutoff Day" />
-                                <TextBox Text="{Binding ElectricityShutModifier}" />
-                            </StackPanel>
-                            <CheckBox Content="Starter Kit" IsChecked="{Binding StarterKit}" />
-                            <CheckBox Content="Nutrition" IsChecked="{Binding Nutrition}" />
-                        </StackPanel>
+                <Border Background="#FFF8F1"
+                        CornerRadius="14"
+                        Padding="16"
+                        IsVisible="{Binding RequiresAdvancedFilesFallback}">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Fallback Required" />
+                        <TextBlock Classes="body" Text="{Binding FallbackReason}" TextWrapping="Wrap" />
+                        <TextBlock Classes="body" Text="Use Advanced Files for raw SandboxVars.lua editing when this structured page can't safely own the file." TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
 
-                <Border Grid.Column="1" Classes="card" Padding="16">
+                <Grid ColumnDefinitions="1.2*,.8*" ColumnSpacing="16" IsEnabled="{Binding CanEdit}">
+                    <Border Classes="card" Padding="18">
+                        <StackPanel Spacing="14">
+                            <TextBlock Classes="kicker" Text="World Setup" />
+                            <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto" RowSpacing="12">
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="body" Text="Zombie Spawn Rate" />
+                                    <TextBox Text="{Binding Zombies}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Spacing="4">
+                                    <TextBlock Classes="body" Text="Zombie Distribution" />
+                                    <TextBox Text="{Binding Distribution}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2" Spacing="4">
+                                    <TextBlock Classes="body" Text="Day Length" />
+                                    <TextBox Text="{Binding DayLength}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="3" Spacing="4">
+                                    <TextBlock Classes="body" Text="Start Year" />
+                                    <TextBox Text="{Binding StartYear}" />
+                                </StackPanel>
+
+                                <StackPanel Grid.Row="1" Spacing="4">
+                                    <TextBlock Classes="body" Text="Start Month" />
+                                    <TextBox Text="{Binding StartMonth}" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="1" Grid.Column="1" Spacing="4">
+                                    <TextBlock Classes="body" Text="Start Day" />
+                                    <TextBox Text="{Binding StartDay}" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="1" Grid.Column="2" Spacing="4">
+                                    <TextBlock Classes="body" Text="Start Time" />
+                                    <TextBox Text="{Binding StartTime}" />
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="1" Classes="card" Padding="18">
+                        <StackPanel Spacing="12">
+                            <TextBlock Classes="kicker" Text="Utilities" />
+                            <StackPanel Spacing="8">
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="body" Text="Water Shutoff Day" />
+                                    <TextBox Text="{Binding WaterShutModifier}" />
+                                </StackPanel>
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="body" Text="Electricity Shutoff Day" />
+                                    <TextBox Text="{Binding ElectricityShutModifier}" />
+                                </StackPanel>
+                                <CheckBox Content="Starter Kit" IsChecked="{Binding StarterKit}" />
+                                <CheckBox Content="Nutrition" IsChecked="{Binding Nutrition}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <Border Classes="card" Padding="18" IsEnabled="{Binding CanEdit}">
                     <StackPanel Spacing="12">
                         <TextBlock Classes="kicker" Text="Loot &amp; Climate" />
                         <Grid ColumnDefinitions="*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto,Auto" RowSpacing="10">
@@ -123,25 +147,25 @@
                         </Grid>
                     </StackPanel>
                 </Border>
-            </Grid>
 
-            <WrapPanel Orientation="Horizontal" ItemWidth="152" ItemHeight="36">
-                <Button Command="{Binding SaveSettingsCommand}" Content="Apply Settings" IsEnabled="{Binding CanEdit}" />
-                <Button Command="{Binding SaveDraftCommand}" Content="Save Draft" IsEnabled="{Binding CanEdit}" />
-                <Button Command="{Binding DiscardDraftCommand}" Content="Discard Draft" />
-                <Button Command="{Binding ReloadCommand}" Content="Reload From Host" />
-            </WrapPanel>
+                <WrapPanel Orientation="Horizontal" ItemWidth="152" ItemHeight="36">
+                    <Button Command="{Binding SaveSettingsCommand}" Content="Apply Settings" IsEnabled="{Binding CanEdit}" />
+                    <Button Command="{Binding SaveDraftCommand}" Content="Save Draft" IsEnabled="{Binding CanEdit}" />
+                    <Button Command="{Binding DiscardDraftCommand}" Content="Discard Draft" />
+                    <Button Command="{Binding ReloadCommand}" Content="Reload From Host" />
+                </WrapPanel>
 
-            <StackPanel Spacing="8" IsVisible="{Binding HasFieldErrors}">
-                <TextBlock Classes="kicker" Text="Validation" />
-                <ItemsControl ItemsSource="{Binding FieldErrors}">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <TextBlock Classes="body" Text="{Binding .}" TextWrapping="Wrap" />
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
+                <StackPanel Spacing="8" IsVisible="{Binding HasFieldErrors}">
+                    <TextBlock Classes="kicker" Text="Validation" />
+                    <ItemsControl ItemsSource="{Binding FieldErrors}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Classes="body" Text="{Binding .}" TextWrapping="Wrap" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
             </StackPanel>
-        </StackPanel>
-    </Border>
+        </Border>
+    </ScrollViewer>
 </UserControl>
