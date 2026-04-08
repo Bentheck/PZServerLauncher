@@ -8,7 +8,8 @@ namespace PZServerLauncher.Host.Services;
 
 public sealed class HostSettingsStore(
     ApplicationDbContext dbContext,
-    HostBootstrapStateStore bootstrapStateStore)
+    HostBootstrapStateStore bootstrapStateStore,
+    HostStartupRegistrationService startupRegistrationService)
 {
     public async Task<HostSettings> GetAsync(CancellationToken cancellationToken = default)
     {
@@ -22,6 +23,7 @@ public sealed class HostSettingsStore(
         entity.ApplyModel(settings);
         await dbContext.SaveChangesAsync(cancellationToken);
         await bootstrapStateStore.UpdateRemoteAccessAsync(settings.RemoteAccess, certificatePassword, cancellationToken);
+        await startupRegistrationService.SyncAsync(settings.StartHostWithWindows, cancellationToken);
         return entity.ToModel();
     }
 

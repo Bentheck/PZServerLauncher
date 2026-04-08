@@ -2,11 +2,13 @@ namespace PZServerLauncher.Host.Infrastructure;
 
 public sealed class AppPaths
 {
-    public AppPaths()
+    public AppPaths(string? rootDirectory = null)
     {
-        RootDirectory = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "PZServerLauncher");
+        RootDirectory = string.IsNullOrWhiteSpace(rootDirectory)
+            ? Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "PZServerLauncher")
+            : rootDirectory;
         DataDirectory = Path.Combine(RootDirectory, "data");
         StateDirectory = Path.Combine(RootDirectory, "state");
         LogsDirectory = Path.Combine(RootDirectory, "logs");
@@ -38,6 +40,10 @@ public sealed class AppPaths
     public string BackupsDirectory { get; }
 
     public string DatabasePath => Path.Combine(DataDirectory, "app.db");
+
+    public string DatabaseBackupPath => Path.Combine(DataDirectory, "app.db.bak");
+
+    public string MigrationLockPath => Path.Combine(StateDirectory, "migration.lock");
 
     public string HostStatePath => Path.Combine(StateDirectory, "host-state.json");
 

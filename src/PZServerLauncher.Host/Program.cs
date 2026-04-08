@@ -45,12 +45,20 @@ public class Program
         builder.Services.AddSingleton(bootstrapStateStore);
         builder.Services.AddSingleton(new StartupMetadata(DateTimeOffset.UtcNow, typeof(Program).Assembly.GetName().Version?.ToString() ?? "0.0.0"));
         builder.Services.AddSingleton<RuntimeStateStore>();
-        builder.Services.AddScoped<ProjectZomboidServerPlanner>();
+        builder.Services.AddSingleton<ProjectZomboidServerPlanner>();
+        builder.Services.AddHttpClient(nameof(SteamCmdToolService));
+        builder.Services.AddSingleton<SteamCmdToolService>();
+        builder.Services.AddSingleton<ServerProcessSupervisor>();
+        builder.Services.AddSingleton<BackgroundJobDispatcher>();
+        builder.Services.AddSingleton<DatabaseInitializer>();
+        builder.Services.AddSingleton<HostStartupRegistrationService>();
         builder.Services.AddScoped<ProfileStore>();
         builder.Services.AddScoped<HostSettingsStore>();
         builder.Services.AddScoped<JobStore>();
         builder.Services.AddScoped<AuditStore>();
         builder.Services.AddScoped<ConfigFileService>();
+        builder.Services.AddScoped<ServerInstallService>();
+        builder.Services.AddScoped<ServerBackupService>();
 
         builder.Services.AddRazorComponents()
             .AddInteractiveServerComponents();
@@ -267,10 +275,25 @@ public class Program
                 return Results.NotFound();
             }
 
-            var updated = configFileService.WriteRawFile(profile, kind, payload.Sha256, payload.Content);
+            RawConfigFileDto updated;
+            try
+            {
+                updated = configFileService.WriteRawFile(profile, kind, payload.Sha256, payload.Content);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.Conflict(new OperationResultDto(false, ex.Message));
+            }
+
             await auditStore.WriteAsync("config.file.updated", profileId, "local", $"Updated raw config {kind}.", cancellationToken: cancellationToken);
             return Results.Ok(updated);
         }).RequireAuthorization("DesktopOrAdmin");
+
+        api.MapGet("/profiles/{profileId}/logs/recent", (
+            string profileId,
+            RuntimeStateStore runtimeStateStore) =>
+            Results.Ok(runtimeStateStore.GetRecentLogs(profileId)))
+            .RequireAuthorization("DesktopOrViewer");
 
         api.MapGet("/settings/host", async (HostSettingsStore store, CancellationToken cancellationToken) =>
             Results.Ok(await store.GetAsync(cancellationToken)))
@@ -296,6 +319,8 @@ public class Program
             HostSettingsStore store,
             CancellationToken cancellationToken) =>
         {
+            RemoteAccessSettingsValidator.Validate(dto);
+
             var current = await store.GetAsync(cancellationToken);
             var updated = current with
             {
@@ -311,6 +336,171 @@ public class Program
             var job = await store.GetAsync(jobId, cancellationToken);
             return job is null ? Results.NotFound() : Results.Ok(job);
         }).RequireAuthorization("DesktopOrViewer");
+
+        api.MapPost("/profiles/{profileId}/install", async (
+            string profileId,
+            BackgroundJobDispatcher dispatcher,
+            CancellationToken cancellationToken) =>
+        {
+            var job = await dispatcher.QueueAsync(
+                OperationJobKind.Install,
+                profileId,
+                $"Install {profileId}",
+                async (services, runningJob, token) =>
+                {
+                    var installer = services.GetRequiredService<ServerInstallService>();
+                    var jobStore = services.GetRequiredService<JobStore>();
+                    var runtimeStateStore = services.GetRequiredService<RuntimeStateStore>();
+                    await installer.ExecuteInstallAsync(profileId, runningJob, jobStore, runtimeStateStore, token);
+                },
+                cancellationToken);
+            return Results.Accepted($"/api/jobs/{job.JobId}", new OperationResultDto(true, "Install queued.", job.JobId));
+        }).RequireAuthorization("DesktopOrOperator");
+
+        api.MapPost("/profiles/{profileId}/update", async (
+            string profileId,
+            BackgroundJobDispatcher dispatcher,
+            CancellationToken cancellationToken) =>
+        {
+            var job = await dispatcher.QueueAsync(
+                OperationJobKind.Update,
+                profileId,
+                $"Update {profileId}",
+                async (services, runningJob, token) =>
+                {
+                    var installer = services.GetRequiredService<ServerInstallService>();
+                    var jobStore = services.GetRequiredService<JobStore>();
+                    var runtimeStateStore = services.GetRequiredService<RuntimeStateStore>();
+                    var backupService = services.GetRequiredService<ServerBackupService>();
+                    await backupService.CreateBackupAsync(profileId, BackupTrigger.PreUpdate, token);
+                    await installer.ExecuteInstallAsync(profileId, runningJob, jobStore, runtimeStateStore, token);
+                },
+                cancellationToken);
+            return Results.Accepted($"/api/jobs/{job.JobId}", new OperationResultDto(true, "Update queued.", job.JobId));
+        }).RequireAuthorization("DesktopOrOperator");
+
+        api.MapPost("/profiles/{profileId}/start", async (
+            string profileId,
+            ProfileStore profileStore,
+            ServerProcessSupervisor supervisor,
+            AuditStore auditStore,
+            CancellationToken cancellationToken) =>
+        {
+            var profile = await profileStore.GetAsync(profileId, cancellationToken);
+            if (profile is null)
+            {
+                return Results.NotFound();
+            }
+
+            await supervisor.StartAsync(profile, cancellationToken);
+            await auditStore.WriteAsync("runtime.started", profileId, "local", "Started server process.", cancellationToken: cancellationToken);
+            return Results.Ok(new OperationResultDto(true, "Server started."));
+        }).RequireAuthorization("DesktopOrOperator");
+
+        api.MapPost("/profiles/{profileId}/stop", async (
+            string profileId,
+            ServerProcessSupervisor supervisor,
+            AuditStore auditStore,
+            CancellationToken cancellationToken) =>
+        {
+            await supervisor.StopAsync(profileId, cancellationToken);
+            await auditStore.WriteAsync("runtime.stopped", profileId, "local", "Stopped server process.", cancellationToken: cancellationToken);
+            return Results.Ok(new OperationResultDto(true, "Server stopped."));
+        }).RequireAuthorization("DesktopOrOperator");
+
+        api.MapPost("/profiles/{profileId}/restart", async (
+            string profileId,
+            ProfileStore profileStore,
+            ServerProcessSupervisor supervisor,
+            AuditStore auditStore,
+            CancellationToken cancellationToken) =>
+        {
+            var profile = await profileStore.GetAsync(profileId, cancellationToken);
+            if (profile is null)
+            {
+                return Results.NotFound();
+            }
+
+            await supervisor.StopAsync(profileId, cancellationToken);
+            await supervisor.StartAsync(profile, cancellationToken);
+            await auditStore.WriteAsync("runtime.restarted", profileId, "local", "Restarted server process.", cancellationToken: cancellationToken);
+            return Results.Ok(new OperationResultDto(true, "Server restarted."));
+        }).RequireAuthorization("DesktopOrOperator");
+
+        api.MapGet("/profiles/{profileId}/backups", (
+            string profileId,
+            ServerBackupService backupService) =>
+            Results.Ok(backupService.ListBackups(profileId)))
+            .RequireAuthorization("DesktopOrViewer");
+
+        api.MapPost("/profiles/{profileId}/backup", async (
+            string profileId,
+            BackgroundJobDispatcher dispatcher,
+            CancellationToken cancellationToken) =>
+        {
+            var job = await dispatcher.QueueAsync(
+                OperationJobKind.Backup,
+                profileId,
+                $"Backup {profileId}",
+                async (services, runningJob, token) =>
+                {
+                    var backupService = services.GetRequiredService<ServerBackupService>();
+                    var jobStore = services.GetRequiredService<JobStore>();
+                    var zipPath = await backupService.CreateBackupAsync(profileId, BackupTrigger.Manual, token);
+                    await jobStore.UpdateAsync(runningJob with
+                    {
+                        Status = OperationJobStatus.Succeeded,
+                        ProgressPercent = 100,
+                        Detail = $"Created backup {Path.GetFileName(zipPath)}.",
+                        CompletedAtUtc = DateTimeOffset.UtcNow,
+                    }, token);
+                },
+                cancellationToken);
+            return Results.Accepted($"/api/jobs/{job.JobId}", new OperationResultDto(true, "Backup queued.", job.JobId));
+        }).RequireAuthorization("DesktopOrOperator");
+
+        api.MapPost("/profiles/{profileId}/restore", async (
+            string profileId,
+            RestoreBackupRequestDto request,
+            BackgroundJobDispatcher dispatcher,
+            CancellationToken cancellationToken) =>
+        {
+            var job = await dispatcher.QueueAsync(
+                OperationJobKind.Restore,
+                profileId,
+                $"Restore {profileId}",
+                async (services, runningJob, token) =>
+                {
+                    var supervisor = services.GetRequiredService<ServerProcessSupervisor>();
+                    var backupService = services.GetRequiredService<ServerBackupService>();
+                    var profileStore = services.GetRequiredService<ProfileStore>();
+                    var jobStore = services.GetRequiredService<JobStore>();
+
+                    if (supervisor.IsRunning(profileId))
+                    {
+                        await supervisor.StopAsync(profileId, token);
+                    }
+
+                    await backupService.RestoreBackupAsync(profileId, request.BackupFileName, token);
+
+                    if (request.RestartAfterRestore)
+                    {
+                        var profile = await profileStore.GetAsync(profileId, token)
+                            ?? throw new InvalidOperationException($"Profile '{profileId}' was not found.");
+                        await supervisor.StartAsync(profile, token);
+                    }
+
+                    await jobStore.UpdateAsync(runningJob with
+                    {
+                        Status = OperationJobStatus.Succeeded,
+                        ProgressPercent = 100,
+                        Detail = $"Restored backup {request.BackupFileName}.",
+                        CompletedAtUtc = DateTimeOffset.UtcNow,
+                    }, token);
+                },
+                cancellationToken);
+            return Results.Accepted($"/api/jobs/{job.JobId}", new OperationResultDto(true, "Restore queued.", job.JobId));
+        }).RequireAuthorization("DesktopOrOperator");
 
         api.MapGet("/users", async (
             UserManager<ApplicationUser> userManager,
@@ -378,7 +568,8 @@ public class Program
     {
         await using var scope = services.CreateAsyncScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        await dbContext.Database.MigrateAsync();
+        var initializer = scope.ServiceProvider.GetRequiredService<DatabaseInitializer>();
+        await initializer.EnsureReadyAsync(dbContext);
 
         var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
         foreach (var role in new[] { UserRole.Owner, UserRole.Admin, UserRole.Operator, UserRole.Viewer })

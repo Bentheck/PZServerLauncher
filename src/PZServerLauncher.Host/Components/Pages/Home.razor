@@ -1,7 +1,82 @@
-﻿@page "/"
+@page "/"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@using PZServerLauncher.Host.Services
+@inject HostSettingsStore HostSettingsStore
+@inject ProfileStore ProfileStore
+@inject RuntimeStateStore RuntimeStateStore
 
-<PageTitle>Home</PageTitle>
+<PageTitle>PZ Server Launcher Host</PageTitle>
 
-<h1>Hello, world!</h1>
+<div class="home-shell">
+    <div class="hero">
+        <p class="eyebrow">Host Dashboard</p>
+        <h1>PZServerLauncher Host</h1>
+        <p>The orchestration host is running and ready to manage Project Zomboid server profiles.</p>
+    </div>
 
-Welcome to your new app.
+    @if (_settings is null)
+    {
+        <p>Loading host state...</p>
+    }
+    else
+    {
+        <div class="cards">
+            <section class="card">
+                <h2>Host</h2>
+                <p>Loopback port: @_settings.LoopbackPort</p>
+                <p>Start with Windows: @(_settings.StartHostWithWindows ? "On" : "Off")</p>
+                <p>Remote access: @(_settings.RemoteAccess.IsEnabled ? "Enabled" : "Disabled")</p>
+                <p>Remote endpoint: @(_settings.RemoteAccess.IsEnabled ? $"https://{(_settings.RemoteAccess.PublicHostname ?? _settings.RemoteAccess.BindAddress)}:{_settings.RemoteAccess.HttpsPort}" : "Not exposed")</p>
+            </section>
+            <section class="card">
+                <h2>Owner Bootstrap</h2>
+                <p>Status: @(_settings.OwnerBootstrap.IsConfigured ? "Configured" : "Pending")</p>
+                <p>Owner: @(_settings.OwnerBootstrap.OwnerUserName ?? "Not set")</p>
+            </section>
+        </div>
+
+        <section class="profiles card">
+            <h2>Profiles</h2>
+            @if (_profiles.Count == 0)
+            {
+                <p>No profiles have been created yet. Use the desktop app to create the first server profile.</p>
+            }
+            else
+            {
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Branch</th>
+                            <th>Ports</th>
+                            <th>Runtime</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var profile in _profiles)
+                        {
+                            var runtime = RuntimeStateStore.GetOrDefault(profile.ProfileId);
+                            <tr>
+                                <td>@profile.DisplayName</td>
+                                <td>@profile.Branch</td>
+                                <td>@profile.DefaultPort / @profile.UdpPort / @profile.RconPort</td>
+                                <td>@runtime.State</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </section>
+    }
+</div>
+
+@code {
+    private PZServerLauncher.Core.Runtime.HostSettings? _settings;
+    private IReadOnlyList<PZServerLauncher.Core.Profiles.ServerProfile> _profiles = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _settings = await HostSettingsStore.GetAsync();
+        _profiles = await ProfileStore.ListAsync();
+    }
+}
