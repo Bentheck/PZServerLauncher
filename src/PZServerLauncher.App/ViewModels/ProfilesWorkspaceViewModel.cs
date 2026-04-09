@@ -12,7 +12,11 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
     private readonly IReadOnlyDictionary<string, ViewModelBase> _sections;
     private string? _selectedProfileId;
 
-    public ProfilesWorkspaceViewModel(MainWindowViewModel legacy, LocalHostApiClient hostApiClient, RuntimeEventStream runtimeEventStream)
+    public ProfilesWorkspaceViewModel(
+        MainWindowViewModel legacy,
+        LocalHostApiClient hostApiClient,
+        RuntimeEventStream runtimeEventStream,
+        FolderPickerService folderPickerService)
     {
         Legacy = legacy;
         if (Legacy.Profiles is INotifyCollectionChanged profiles)
@@ -26,7 +30,7 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
         }
 
         Overview = new OverviewWorkspaceViewModel(legacy, hostApiClient, runtimeEventStream);
-        InstallAndUpdate = new InstallUpdateWorkspaceViewModel(legacy);
+        InstallAndUpdate = new InstallUpdateWorkspaceViewModel(legacy, hostApiClient, folderPickerService);
         General = new GeneralWorkspaceViewModel(legacy, hostApiClient);
         Sandbox = new SandboxWorkspaceViewModel(legacy, hostApiClient);
         ModsAndMaps = new ModsAndMapsWorkspaceViewModel(legacy, hostApiClient);

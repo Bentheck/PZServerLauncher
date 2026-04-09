@@ -268,7 +268,7 @@ public class Program
                 request.StopRunningServers && runningProfiles.Count > 0
                     ? $"Stopping {runningProfiles.Count} server(s) and shutting down the local host."
                     : "Shutting down the local host."));
-        }).RequireAuthorization("DesktopOnly");
+        }).RequireAuthorization("DesktopOrOperator");
 
         api.MapGet("/profiles", async (ProfileStore store, CancellationToken cancellationToken) =>
         {
@@ -291,7 +291,7 @@ public class Program
             var profile = await importService.ImportAsync(candidateId, cancellationToken);
             await auditStore.WriteAsync("profile.imported", profile.ProfileId, "local", $"Imported local server '{profile.ServerName}'.", cancellationToken: cancellationToken);
             return Results.Ok(profile.ToDto());
-        }).RequireAuthorization("DesktopOrAdmin");
+        }).RequireAuthorization("DesktopOrOperator");
 
         api.MapGet("/profiles/{profileId}", async (string profileId, ProfileStore store, CancellationToken cancellationToken) =>
         {
@@ -325,6 +325,41 @@ public class Program
             var profile = await store.UpsertAsync(request.ToModel(), cancellationToken);
             await auditStore.WriteAsync("profile.updated", profile.ProfileId, "local", $"Updated profile {profile.DisplayName}.", cancellationToken: cancellationToken);
             return Results.Ok(profile.ToDto());
+        }).RequireAuthorization("DesktopOrAdmin");
+
+        api.MapPut("/profiles/{profileId}/paths", async (
+            string profileId,
+            ProfilePathUpdateDto request,
+            ProfileStore store,
+            AuditStore auditStore,
+            CancellationToken cancellationToken) =>
+        {
+            if (string.IsNullOrWhiteSpace(request.InstallDirectory) || string.IsNullOrWhiteSpace(request.CacheDirectory))
+            {
+                return Results.BadRequest(new OperationResultDto(false, "Install and cache directories are both required."));
+            }
+
+            var profile = await store.GetAsync(profileId, cancellationToken);
+            if (profile is null)
+            {
+                return Results.NotFound();
+            }
+
+            var updated = await store.UpsertAsync(profile with
+            {
+                InstallDirectory = request.InstallDirectory.Trim(),
+                CacheDirectory = request.CacheDirectory.Trim(),
+                UpdatedAtUtc = DateTimeOffset.UtcNow,
+            }, cancellationToken);
+
+            await auditStore.WriteAsync(
+                "profile.paths.updated",
+                updated.ProfileId,
+                "local",
+                $"Updated install and cache paths for {updated.DisplayName}.",
+                cancellationToken: cancellationToken);
+
+            return Results.Ok(updated.ToDto());
         }).RequireAuthorization("DesktopOrAdmin");
 
         api.MapDelete("/profiles/{profileId}", async (
@@ -743,7 +778,7 @@ public class Program
             {
                 return Results.BadRequest(new OperationResultDto(false, ex.Message));
             }
-        }).RequireAuthorization("DesktopOrOperator");
+        }).RequireAuthorization("DesktopOnly");
 
         api.MapPost("/profiles/{profileId}/operations/command", async (
             string profileId,
@@ -767,7 +802,7 @@ public class Program
             {
                 return Results.BadRequest(new OperationResultDto(false, ex.Message));
             }
-        }).RequireAuthorization("DesktopOrOperator");
+        }).RequireAuthorization("DesktopOnly");
 
         api.MapGet("/settings/host", async (HostSettingsStore store, CancellationToken cancellationToken) =>
             Results.Ok(await store.GetAsync(cancellationToken)))

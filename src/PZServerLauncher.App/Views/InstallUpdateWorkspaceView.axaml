@@ -150,14 +150,23 @@
                             <Border Background="#F5E8DA" CornerRadius="14" Padding="14">
                                 <StackPanel Spacing="6">
                                     <TextBlock Classes="kicker" Text="Install Root" />
-                                    <TextBlock Classes="caption" FontFamily="Cascadia Code,Consolas,monospace" Text="{Binding InstallDirectory}" TextWrapping="Wrap" />
+                                    <TextBox Text="{Binding EditableInstallDirectory}" />
+                                    <WrapPanel Orientation="Horizontal" ItemHeight="34">
+                                        <Button Classes="action-secondary" Command="{Binding BrowseInstallDirectoryCommand}" Content="Browse" />
+                                        <Button Classes="action-secondary" Command="{Binding ResetPathOverridesCommand}" Content="Reset" />
+                                    </WrapPanel>
                                     <TextBlock Classes="body" Text="{Binding InstallReadiness}" TextWrapping="Wrap" />
                                 </StackPanel>
                             </Border>
                             <Border Background="#F5E8DA" CornerRadius="14" Padding="14">
                                 <StackPanel Spacing="6">
                                     <TextBlock Classes="kicker" Text="Cache Root" />
-                                    <TextBlock Classes="caption" FontFamily="Cascadia Code,Consolas,monospace" Text="{Binding CacheDirectory}" TextWrapping="Wrap" />
+                                    <TextBox Text="{Binding EditableCacheDirectory}" />
+                                    <WrapPanel Orientation="Horizontal" ItemHeight="34">
+                                        <Button Classes="action-secondary" Command="{Binding BrowseCacheDirectoryCommand}" Content="Browse" />
+                                        <Button Classes="action-secondary" Command="{Binding SavePathOverridesCommand}" Content="Save Paths" />
+                                    </WrapPanel>
+                                    <TextBlock Classes="caption" Text="{Binding PathOverrideSummary}" TextWrapping="Wrap" />
                                     <TextBlock Classes="body" Text="{Binding CacheReadiness}" TextWrapping="Wrap" />
                                 </StackPanel>
                             </Border>

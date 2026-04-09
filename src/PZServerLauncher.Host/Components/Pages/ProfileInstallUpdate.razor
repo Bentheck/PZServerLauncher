@@ -34,8 +34,6 @@ else
         <Actions>
             <a class="nav-button secondary-button" href="@OverviewHref">Overview</a>
             <a class="nav-button secondary-button" href="@BackupsHref">Backups</a>
-            <button class="nav-button" @onclick="InstallAsync" disabled="@_busy">Install</button>
-            <button class="nav-button secondary-button" @onclick="UpdateAsync" disabled="@_busy">Update</button>
             <button class="nav-button secondary-button" @onclick="CreateBackupAsync" disabled="@_busy">Manual Backup</button>
             <button class="nav-button secondary-button" @onclick="StartAsync" disabled="@(!_canStart || _busy)">Start</button>
             <button class="nav-button secondary-button" @onclick="StopAsync" disabled="@(!_canStop || _busy)">Stop</button>
@@ -52,12 +50,13 @@ else
 
                 <div class="workspace-actions">
                     <span class="pill">@_profile.Branch</span>
-                    <span class="pill">@(_installDetected ? "Install detected" : "Install missing")</span>
-                    <span class="pill">@(_cacheDetected ? "Cache ready" : "Cache missing")</span>
-                    <span class="pill">@(_installPosture?.UsesDirectJavaTemplate == true ? "Direct Java ready" : "Batch fallback")</span>
-                    <span class="pill">@RuntimeStateLabel</span>
-                </div>
-            </section>
+                        <span class="pill">@(_installDetected ? "Install detected" : "Install missing")</span>
+                        <span class="pill">@(_cacheDetected ? "Cache ready" : "Cache missing")</span>
+                        <span class="pill">@(_installPosture?.UsesDirectJavaTemplate == true ? "Direct Java ready" : "Batch fallback")</span>
+                        <span class="pill">Desktop install only</span>
+                        <span class="pill">@RuntimeStateLabel</span>
+                    </div>
+                </section>
 
             <section class="metric-grid">
                 <article class="metric-card">
@@ -156,6 +155,12 @@ else
                             <span class="info-label">Deployment posture</span>
                             <span class="info-value">@(_installPosture?.DeploymentPostureSummary ?? "Unavailable")</span>
                         </div>
+                    </div>
+
+                    <div class="section-spacer"></div>
+                    <div class="status-banner">
+                        <strong>Desktop-only install control</strong>
+                        <p>The browser can review install posture, backups, and runtime state, but install/update work and path changes stay local to the desktop app.</p>
                     </div>
                 </section>
 

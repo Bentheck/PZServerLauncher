@@ -1,12 +1,20 @@
 using System.Collections.Specialized;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using PZServerLauncher.App.Services;
 using PZServerLauncher.Core.Runtime;
 
 namespace PZServerLauncher.App.ViewModels;
 
-public sealed class InstallUpdateWorkspaceViewModel : ProfileWorkspacePageViewModelBase
+public sealed partial class InstallUpdateWorkspaceViewModel : ProfileWorkspacePageViewModelBase
 {
-    public InstallUpdateWorkspaceViewModel(MainWindowViewModel legacy)
+    private readonly LocalHostApiClient _hostApiClient;
+    private readonly FolderPickerService _folderPickerService;
+
+    public InstallUpdateWorkspaceViewModel(
+        MainWindowViewModel legacy,
+        LocalHostApiClient hostApiClient,
+        FolderPickerService folderPickerService)
         : base(
             "install-update",
             "Install & Update",
@@ -15,6 +23,8 @@ public sealed class InstallUpdateWorkspaceViewModel : ProfileWorkspacePageViewMo
             legacy,
             ["Install path", "Update actions", "Runtime controls", "Recent jobs"])
     {
+        _hostApiClient = hostApiClient;
+        _folderPickerService = folderPickerService;
         Legacy.RecentOperationJobs.CollectionChanged += OnRecentOperationJobsChanged;
         InstallCommand = new AsyncRelayCommand(() => ExecuteProfileCommandAsync(Legacy.InstallCommand));
         UpdateCommand = new AsyncRelayCommand(() => ExecuteProfileCommandAsync(Legacy.UpdateCommand));
@@ -23,6 +33,10 @@ public sealed class InstallUpdateWorkspaceViewModel : ProfileWorkspacePageViewMo
         StopCommand = new AsyncRelayCommand(() => ExecuteProfileCommandAsync(Legacy.StopCommand));
         RestartCommand = new AsyncRelayCommand(() => ExecuteProfileCommandAsync(Legacy.RestartCommand));
         RefreshCommand = new AsyncRelayCommand(() => Legacy.RefreshCommand.ExecuteAsync(null));
+        SavePathOverridesCommand = new AsyncRelayCommand(SavePathOverridesAsync);
+        ResetPathOverridesCommand = new RelayCommand(ResetPathOverrides);
+        BrowseInstallDirectoryCommand = new AsyncRelayCommand(BrowseInstallDirectoryAsync);
+        BrowseCacheDirectoryCommand = new AsyncRelayCommand(BrowseCacheDirectoryAsync);
     }
 
     public IAsyncRelayCommand InstallCommand { get; }
@@ -39,6 +53,14 @@ public sealed class InstallUpdateWorkspaceViewModel : ProfileWorkspacePageViewMo
 
     public IAsyncRelayCommand RefreshCommand { get; }
 
+    public IAsyncRelayCommand SavePathOverridesCommand { get; }
+
+    public IRelayCommand ResetPathOverridesCommand { get; }
+
+    public IAsyncRelayCommand BrowseInstallDirectoryCommand { get; }
+
+    public IAsyncRelayCommand BrowseCacheDirectoryCommand { get; }
+
     public override string PageSummary => SelectedProfile is null
         ? "Select a profile to install, update, and control its runtime."
         : $"Install and lifecycle controls for {SelectedProfile.DisplayName}, with preflight context for branch, paths, and safety.";
@@ -52,6 +74,16 @@ public sealed class InstallUpdateWorkspaceViewModel : ProfileWorkspacePageViewMo
     public string InstallDirectory => SelectedProfile?.InstallDirectory ?? "No install path available";
 
     public string CacheDirectory => SelectedProfile?.CacheDirectory ?? "No cache path available";
+
+    public bool HasPathOverridesDirty => SelectedProfile is not null &&
+        (!string.Equals(EditableInstallDirectory.Trim(), SelectedProfile.InstallDirectory, StringComparison.Ordinal) ||
+         !string.Equals(EditableCacheDirectory.Trim(), SelectedProfile.CacheDirectory, StringComparison.Ordinal));
+
+    public string PathOverrideSummary => SelectedProfile is null
+        ? "Select a profile before editing install and cache locations."
+        : HasPathOverridesDirty
+            ? "Path changes are pending. Save them before installing or updating this profile."
+            : "Choose where the dedicated server binaries live and where this profile stores its Zomboid cache, saves, and config files.";
 
     public IReadOnlyList<OperationJob> RecentProfileJobs => SelectedProfile is null
         ? []
@@ -279,9 +311,29 @@ public sealed class InstallUpdateWorkspaceViewModel : ProfileWorkspacePageViewMo
             new("Recovery", RecoveryStateHeadline, BackupSafety)
         ];
 
+    [ObservableProperty]
+    private string editableInstallDirectory = string.Empty;
+
+    [ObservableProperty]
+    private string editableCacheDirectory = string.Empty;
+
     protected override void OnSelectedProfileChangedCore(ProfileCardViewModel? profile)
     {
+        EditableInstallDirectory = profile?.InstallDirectory ?? string.Empty;
+        EditableCacheDirectory = profile?.CacheDirectory ?? string.Empty;
         Notify();
+    }
+
+    partial void OnEditableInstallDirectoryChanged(string value)
+    {
+        OnPropertyChanged(nameof(HasPathOverridesDirty));
+        OnPropertyChanged(nameof(PathOverrideSummary));
+    }
+
+    partial void OnEditableCacheDirectoryChanged(string value)
+    {
+        OnPropertyChanged(nameof(HasPathOverridesDirty));
+        OnPropertyChanged(nameof(PathOverrideSummary));
     }
 
     private async Task ExecuteProfileCommandAsync(IAsyncRelayCommand<ProfileCardViewModel> command)
@@ -295,6 +347,63 @@ public sealed class InstallUpdateWorkspaceViewModel : ProfileWorkspacePageViewMo
         Notify();
     }
 
+    private async Task SavePathOverridesAsync()
+    {
+        if (SelectedProfile is null)
+        {
+            return;
+        }
+
+        var installDirectory = EditableInstallDirectory.Trim();
+        var cacheDirectory = EditableCacheDirectory.Trim();
+        if (string.IsNullOrWhiteSpace(installDirectory) || string.IsNullOrWhiteSpace(cacheDirectory))
+        {
+            Legacy.StatusMessage = "Install and cache directories are both required.";
+            return;
+        }
+
+        if (!Path.IsPathRooted(installDirectory) || !Path.IsPathRooted(cacheDirectory))
+        {
+            Legacy.StatusMessage = "Install and cache directories must use absolute paths.";
+            return;
+        }
+
+        try
+        {
+            await _hostApiClient.UpdateProfilePathsAsync(SelectedProfile.ProfileId, installDirectory, cacheDirectory, CancellationToken.None);
+            await Legacy.RefreshCommand.ExecuteAsync(null);
+            Legacy.StatusMessage = $"Updated install and cache paths for {SelectedProfile.DisplayName}.";
+        }
+        catch (Exception ex)
+        {
+            Legacy.StatusMessage = ex.Message;
+        }
+    }
+
+    private void ResetPathOverrides()
+    {
+        EditableInstallDirectory = SelectedProfile?.InstallDirectory ?? string.Empty;
+        EditableCacheDirectory = SelectedProfile?.CacheDirectory ?? string.Empty;
+    }
+
+    private async Task BrowseInstallDirectoryAsync()
+    {
+        var folder = await _folderPickerService.PickFolderAsync("Choose dedicated server install directory");
+        if (!string.IsNullOrWhiteSpace(folder))
+        {
+            EditableInstallDirectory = folder;
+        }
+    }
+
+    private async Task BrowseCacheDirectoryAsync()
+    {
+        var folder = await _folderPickerService.PickFolderAsync("Choose profile cache directory");
+        if (!string.IsNullOrWhiteSpace(folder))
+        {
+            EditableCacheDirectory = folder;
+        }
+    }
+
     private void Notify()
     {
         OnPropertyChanged(nameof(PageSummary));
@@ -303,6 +412,8 @@ public sealed class InstallUpdateWorkspaceViewModel : ProfileWorkspacePageViewMo
         OnPropertyChanged(nameof(RuntimeState));
         OnPropertyChanged(nameof(InstallDirectory));
         OnPropertyChanged(nameof(CacheDirectory));
+        OnPropertyChanged(nameof(PathOverrideSummary));
+        OnPropertyChanged(nameof(HasPathOverridesDirty));
         OnPropertyChanged(nameof(RecentProfileJobs));
         OnPropertyChanged(nameof(HasRecentProfileJobs));
         OnPropertyChanged(nameof(LastJobSummary));

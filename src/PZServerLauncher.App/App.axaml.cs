@@ -26,6 +26,7 @@ public partial class App : Application
             .AddSingleton<LocalHostApiClient>()
             .AddSingleton<RuntimeEventStream>()
             .AddSingleton<DesktopShellService>()
+            .AddSingleton<FolderPickerService>()
             .AddSingleton<MainWindowViewModel>()
             .AddSingleton<WorkspaceShellViewModel>()
             .BuildServiceProvider();
@@ -38,6 +39,7 @@ public partial class App : Application
             };
             desktop.MainWindow = mainWindow;
             _serviceProvider.GetRequiredService<DesktopShellService>().Initialize(desktop, mainWindow);
+            _serviceProvider.GetRequiredService<FolderPickerService>().Initialize(mainWindow);
         }
 
         base.OnFrameworkInitializationCompleted();

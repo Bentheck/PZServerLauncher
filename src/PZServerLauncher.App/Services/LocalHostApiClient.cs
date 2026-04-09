@@ -127,6 +127,16 @@ public sealed class LocalHostApiClient
         await PostAsync("/api/profiles", request, cancellationToken);
     }
 
+    public Task<ProfileDto?> UpdateProfilePathsAsync(
+        string profileId,
+        string installDirectory,
+        string cacheDirectory,
+        CancellationToken cancellationToken = default) =>
+        PutAsync<ProfileDto>(
+            $"/api/profiles/{profileId}/paths",
+            new ProfilePathUpdateDto(installDirectory, cacheDirectory),
+            cancellationToken);
+
     public Task<OperationResultDto?> InstallAsync(string profileId, CancellationToken cancellationToken = default) =>
         PostAsync<OperationResultDto>($"/api/profiles/{profileId}/install", null, cancellationToken);
 

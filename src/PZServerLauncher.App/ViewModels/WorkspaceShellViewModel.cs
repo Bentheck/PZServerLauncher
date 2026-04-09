@@ -13,7 +13,12 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
     private readonly LocalHostApiClient _hostApiClient;
 
     public WorkspaceShellViewModel()
-        : this(new MainWindowViewModel(), new LocalHostApiClient(), new RuntimeEventStream(new LocalHostApiClient()), new DesktopShellService())
+        : this(
+            new MainWindowViewModel(),
+            new LocalHostApiClient(),
+            new RuntimeEventStream(new LocalHostApiClient()),
+            new DesktopShellService(),
+            new FolderPickerService())
     {
     }
 
@@ -21,7 +26,8 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
         MainWindowViewModel legacy,
         LocalHostApiClient hostApiClient,
         RuntimeEventStream runtimeEventStream,
-        DesktopShellService desktopShellService)
+        DesktopShellService desktopShellService,
+        FolderPickerService folderPickerService)
     {
         Legacy = legacy;
         _hostApiClient = hostApiClient;
@@ -37,7 +43,7 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
         Host = new HostWorkspaceViewModel(legacy);
         RemoteAccess = new RemoteAccessWorkspaceViewModel(legacy);
         Users = new UsersWorkspaceViewModel(legacy, hostApiClient);
-        Profiles = new ProfilesWorkspaceViewModel(legacy, hostApiClient, runtimeEventStream);
+        Profiles = new ProfilesWorkspaceViewModel(legacy, hostApiClient, runtimeEventStream, folderPickerService);
 
         _pages = new Dictionary<string, ViewModelBase>(StringComparer.Ordinal)
         {

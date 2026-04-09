@@ -2,7 +2,7 @@
 param(
     [string]$Configuration = "Release",
     [string]$RuntimeIdentifier = "win-x64",
-    [string]$InstallerVersion = "0.1.0"
+    [string]$InstallerVersion = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -26,6 +26,17 @@ $artifactsRoot = Join-Path $repoRoot "artifacts"
 $publishRoot = Join-Path $artifactsRoot "publish"
 $appPublishDir = Join-Path $publishRoot "app"
 $hostPublishDir = Join-Path $publishRoot "host"
+
+if ([string]::IsNullOrWhiteSpace($InstallerVersion)) {
+    $commitCount = & git -C $repoRoot rev-list --count HEAD
+    if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($commitCount)) {
+        throw "Unable to derive installer version from git history."
+    }
+
+    $InstallerVersion = "0.1.$commitCount"
+}
+
+Write-Host "Using installer version $InstallerVersion"
 
 $localDotnet = Join-Path $env:USERPROFILE ".dotnet"
 if (Test-Path $localDotnet) {
