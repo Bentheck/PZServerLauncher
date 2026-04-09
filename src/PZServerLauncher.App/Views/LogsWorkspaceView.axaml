@@ -43,6 +43,7 @@
                     <StackPanel Spacing="6">
                         <TextBlock Classes="kicker" Text="Runtime State" />
                         <TextBlock FontSize="20" FontWeight="SemiBold" Text="{Binding LatestRuntimeState}" />
+                        <TextBlock Classes="body" Text="{Binding FeedHealthHeadline}" TextWrapping="Wrap" />
                         <TextBlock Classes="body" Text="{Binding LogStreamSummary}" TextWrapping="Wrap" />
                         <TextBlock Classes="body" Text="{Binding RuntimeWindowSummary}" TextWrapping="Wrap" />
                     </StackPanel>
@@ -50,7 +51,8 @@
                 <Border Grid.Column="1" Background="#F6EFE6" CornerRadius="14" Padding="16">
                     <StackPanel Spacing="6">
                         <TextBlock Classes="kicker" Text="Players Online" />
-                        <TextBlock FontSize="20" FontWeight="SemiBold" Text="{Binding ActivePlayerCountSummary}" />
+                        <TextBlock FontSize="20" FontWeight="SemiBold" Text="{Binding PlayerActivityHeadline}" />
+                        <TextBlock Classes="body" Text="{Binding ActivePlayerCountSummary}" TextWrapping="Wrap" />
                         <TextBlock Classes="body" Text="{Binding RosterPostureSummary}" TextWrapping="Wrap" />
                         <TextBlock Classes="body" Text="{Binding PlayerSignalCountSummary}" TextWrapping="Wrap" />
                     </StackPanel>
@@ -65,6 +67,7 @@
                 <Border Grid.Column="3" Background="#F6EFE6" CornerRadius="14" Padding="16">
                     <StackPanel Spacing="6">
                         <TextBlock Classes="kicker" Text="Operator Posture" />
+                        <TextBlock FontSize="20" FontWeight="SemiBold" Text="{Binding OperatorActionHeadline}" />
                         <TextBlock Classes="body" Text="{Binding OperatorCommandPosture}" TextWrapping="Wrap" />
                         <TextBlock Classes="body" Text="{Binding OperatorActionCountSummary}" TextWrapping="Wrap" />
                     </StackPanel>
@@ -188,6 +191,22 @@
                                        Text="Broadcasts and raw console commands sent from the launcher will appear here as soon as the runtime is live."
                                        TextWrapping="Wrap"
                                        IsVisible="{Binding HasNoOperatorActions}" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Background="#F1E6D7" CornerRadius="14" Padding="16">
+                        <StackPanel Spacing="8">
+                            <TextBlock Classes="kicker" Text="Live Ops Checklist" />
+                            <ItemsControl ItemsSource="{Binding LiveOpsChecklist}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Classes="body"
+                                                   Text="{Binding .}"
+                                                   TextWrapping="Wrap"
+                                                   Margin="0,4,0,0" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
                         </StackPanel>
                     </Border>
                 </StackPanel>

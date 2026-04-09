@@ -113,6 +113,16 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
             ? "No buffered lines yet"
             : $"{CurrentSummary.BufferedLineCount} buffered line(s)";
 
+    public string FeedHealthHeadline => SelectedProfile is null
+        ? "No profile"
+        : CurrentSummary.BufferedLineCount == 0
+            ? "No runtime feed"
+            : CurrentSummary.HasErrorSignals
+                ? "Errors buffered"
+                : CurrentSummary.HasWarningSignals
+                    ? "Warnings buffered"
+                    : "Feed looks clean";
+
     public string FeedPostureSummary => SelectedProfile is null
         ? "No live feed is available yet."
         : CurrentSummary.SignalPostureSummary;
@@ -144,6 +154,14 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
     public string RuntimeWindowSummary => SelectedProfile is null
         ? "Runtime window: no status is available yet."
         : CurrentSummary.RuntimeWindowSummary;
+
+    public string PlayerActivityHeadline => _liveOperations is null
+        ? "No roster sample"
+        : _liveOperations.ConnectedPlayers.Count > 0
+            ? "Live roster active"
+            : _liveOperations.RecentPlayerSignals.Count > 0
+                ? "Signals only"
+                : "No player activity";
 
     public string ActivePlayerCountSummary => _liveOperations is null
         ? "No live roster sampled"
@@ -183,6 +201,12 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
             ? "Broadcasts and raw console commands will appear here after they are sent."
             : _liveOperations.RecentOperatorActions[0].Summary;
 
+    public string OperatorActionHeadline => SelectedProfile is null
+        ? "No profile"
+        : CanSendCommands
+            ? "Live control"
+            : "Monitor only";
+
     public string OperatorActionCountSummary => _liveOperations is null
         ? "No operator commands yet."
         : _liveOperations.RecentOperatorActions.Count == 0
@@ -210,6 +234,24 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
         : CanSendCommands
             ? "Send a broadcast, request the player list, save the world, or issue a raw console command while the server is live."
             : "The live console can reload and review signals while the server is stopped, but broadcasts and raw commands unlock only when the runtime is active.";
+
+    public IReadOnlyList<string> LiveOpsChecklist => SelectedProfile is null
+        ? []
+        :
+        [
+            CurrentSummary.BufferedLineCount == 0
+                ? "Start or reload the server so the host can buffer fresh runtime output."
+                : "Watch the latest signal and the warning/error count before taking moderation or reload actions.",
+            _liveOperations?.ConnectedPlayers.Count > 0
+                ? "Use the inferred roster for targeted moderation only when you recognize the current live players."
+                : "Request the player list during live runtime if you need a fresher roster sample.",
+            CanSendCommands
+                ? "Broadcast, save, and raw console actions are unlocked because the runtime is live."
+                : "The page is in monitor-only mode until the runtime reaches Running.",
+            CurrentSummary.HasModSignals
+                ? "Recent output contains workshop or mod chatter, so keep an eye out for map and checksum failures."
+                : "No recent workshop or mod chatter is buffered right now."
+        ];
 
     public bool CanSendCommands => SelectedProfile is not null &&
         string.Equals(LatestRuntimeState, ServerRuntimeState.Running.ToString(), StringComparison.OrdinalIgnoreCase);
@@ -470,12 +512,14 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
         OnPropertyChanged(nameof(HasNoOperatorActions));
         OnPropertyChanged(nameof(LogStreamSummary));
         OnPropertyChanged(nameof(FeedPostureSummary));
+        OnPropertyChanged(nameof(FeedHealthHeadline));
         OnPropertyChanged(nameof(RuntimeGuidance));
         OnPropertyChanged(nameof(LatestLineSummary));
         OnPropertyChanged(nameof(LatestSignalLabel));
         OnPropertyChanged(nameof(OperatorNextStep));
         OnPropertyChanged(nameof(ConsoleStatusSummary));
         OnPropertyChanged(nameof(RuntimeWindowSummary));
+        OnPropertyChanged(nameof(PlayerActivityHeadline));
         OnPropertyChanged(nameof(ConsoleHeroTitle));
         OnPropertyChanged(nameof(ConsoleHeroCopy));
         OnPropertyChanged(nameof(ActivePlayerCountSummary));
@@ -485,12 +529,14 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
         OnPropertyChanged(nameof(PlayerModerationSummary));
         OnPropertyChanged(nameof(PlayerSignalSummary));
         OnPropertyChanged(nameof(PlayerSignalCountSummary));
+        OnPropertyChanged(nameof(OperatorActionHeadline));
         OnPropertyChanged(nameof(OperatorActionSummary));
         OnPropertyChanged(nameof(OperatorActionCountSummary));
         OnPropertyChanged(nameof(OperatorCommandPosture));
         OnPropertyChanged(nameof(BroadcastGuidance));
         OnPropertyChanged(nameof(RosterSignalSummary));
         OnPropertyChanged(nameof(ConsoleModeSummary));
+        OnPropertyChanged(nameof(LiveOpsChecklist));
         OnPropertyChanged(nameof(CanSendCommands));
     }
 
