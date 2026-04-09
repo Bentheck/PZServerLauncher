@@ -42,16 +42,36 @@ else
                     <div class="hero-copy">
                         <p class="eyebrow">Recovery Center</p>
                         <h1>@_profile.DisplayName</h1>
-                        <p class="muted-text">Manual recovery points, pre-update safety nets, and scheduled snapshots all converge here so you can recover the world confidently before risky admin work.</p>
+                        <p class="muted-text">Manual recovery points, pre-update safety nets, and scheduled snapshots all converge here so you can recover confidently before risky admin work. The page now favors restore-risk triage first and archive browsing second.</p>
                     </div>
                     <div class="hero-pills">
                         <span class="pill">@_profile.Branch</span>
+                        <span class="pill">@RecoveryPostureLabel</span>
                         <span class="pill">@BackupCountSummary</span>
                         <span class="pill">@(_backupSummary?.ArchiveMixSummary ?? "Archive mix unavailable")</span>
                         <span class="pill pill--strong">@(_backupSummary?.LatestArchiveSummary ?? "Latest archive unavailable")</span>
                     </div>
                 </div>
             </section>
+
+            <div class="cards cards--four">
+                <section class="card">
+                    <h2>Recovery Coverage</h2>
+                    <p class="muted-text">@CoverageCallout</p>
+                </section>
+                <section class="card">
+                    <h2>Latest Known-Good</h2>
+                    <p class="muted-text">@LatestKnownGoodCallout</p>
+                </section>
+                <section class="card">
+                    <h2>Restore Risk</h2>
+                    <p class="muted-text">@RestoreRiskSummary</p>
+                </section>
+                <section class="card">
+                    <h2>Operator Guidance</h2>
+                    <p class="muted-text">@OperatorGuidanceSummary</p>
+                </section>
+            </div>
 
             <div class="cards cards--four">
                 <section class="card">
@@ -75,7 +95,7 @@ else
             <div class="cards">
                 <section class="card">
                     <h2>Backup History</h2>
-                    <p class="muted-text">Select an archive to restore, or create a new manual backup from this page. Restore will stop the server if needed and can restart it afterward.</p>
+                    <p class="muted-text">Select an archive to restore, or create a new manual backup from this page. Restore will stop the server if needed and can restart it afterward. Latest known-good is highlighted so you can choose the safest recovery point quickly.</p>
 
                     <div class="profile-section">
                         <div class="admin-grid">
@@ -101,6 +121,7 @@ else
                                                        disabled="@_busy" />
                                                 <span class="field-label">@backup.Title</span>
                                                 <span>@backup.KindLabel | @backup.TimestampLabel</span>
+                                                <span class="muted-text">@GetArchiveTriageLabel(backup)</span>
                                                 <span class="muted-text">@backup.FileLabel</span>
                                             </label>
                                         }
@@ -113,6 +134,7 @@ else
                                 <input value="@SelectedBackupHeadline" disabled />
                                 <input value="@(_backupSummary?.SelectedArchiveSummary ?? "No recovery point is currently selected.")" disabled />
                                 <input value="@(_selectedBackupEntry?.TimestampLabel ?? "Timestamp unavailable.")" disabled />
+                                <input value="@SelectedBackupTriage" disabled />
                             </div>
                         </div>
                     </div>
@@ -121,7 +143,7 @@ else
                     {
                         <div class="settings-banner settings-banner--warning">
                             <strong>No backups exist yet.</strong>
-                            <p>Create the first manual archive from this page or from Overview.</p>
+                            <p>Create the first manual archive from this page or from Overview. Until then, there is no known-good restore point for this profile.</p>
                         </div>
                     }
                 </section>
@@ -149,7 +171,7 @@ else
 
                     <div class="profile-section">
                         <h3>Retention Notes</h3>
-                        <p class="muted-text">Manual archives are never auto-deleted. Pre-update archives are created before host updates, and scheduled archives only rotate when scheduled backups are enabled in the profile policy.</p>
+                        <p class="muted-text">Manual archives are never auto-deleted. Pre-update archives are created before host updates, and scheduled archives only rotate when scheduled backups are enabled in the profile policy. If the latest known-good is older than you expect, make a manual archive before continuing with risky work.</p>
                     </div>
                 </section>
 
@@ -180,7 +202,9 @@ else
                             <input type="checkbox" @bind="_restartAfterRestore" @bind:after="RefreshBackupSummary" disabled="@_busy" />
                             Restart server after restore
                         </label>
+                        <p class="muted-text">@LatestKnownGoodCallout</p>
                         <p class="muted-text">@BuildRestoreModeSummary()</p>
+                        <p class="muted-text">@RestoreRiskSummary</p>
                     </div>
                 </section>
             </div>
@@ -216,6 +240,34 @@ else
         ? "Archives unavailable"
         : $"{_backupSummary.TotalBackupCount} total | {_backupSummary.ManualBackupCount} manual | {_backupSummary.PreUpdateBackupCount} pre-update | {_backupSummary.ScheduledBackupCount} scheduled";
     private string SelectedBackupHeadline => _selectedBackupEntry?.Title ?? "No recovery point selected";
+    private string RecoveryPostureLabel => _backups.Count == 0
+        ? "No recovery point"
+        : _restartAfterRestore
+            ? "Restore-ready"
+            : "Restore-safe";
+    private string CoverageCallout => _backups.Count == 0
+        ? "This profile still has no archives. Create a manual backup before update or cleanup work."
+        : _backupSummary?.CoverageSummary ?? "Recovery coverage is unavailable.";
+    private string LatestKnownGoodCallout => _latestBackup is null
+        ? "No latest known-good archive exists yet."
+        : string.Equals(_selectedBackup, _latestBackup, StringComparison.Ordinal)
+            ? $"The selected archive is the latest known-good restore point: {_selectedBackupEntry?.Title ?? _latestBackup}."
+            : $"Latest known-good archive: {_backupEntries.FirstOrDefault(entry => string.Equals(entry.FileName, _latestBackup, StringComparison.Ordinal))?.Title ?? _latestBackup}.";
+    private string RestoreRiskSummary => _backups.Count == 0
+        ? "Restore risk is high because there is no archive to fall back to."
+        : !_installDetected || !_cacheDetected
+            ? "Restore risk is elevated because the install or cache footprint is incomplete."
+            : _runtimeStatus?.State.ToString() is "Running"
+                ? "Restore will stop a running server first, then unpack the archive and optionally restart it."
+                : "Restore risk is moderate. The server is offline, so the archive can be unpacked and inspected without immediate runtime pressure.";
+    private string OperatorGuidanceSummary => _backups.Count == 0
+        ? "Create the first manual snapshot now, then revisit this page before any update or cleanup work."
+        : _restartAfterRestore
+            ? "Use Restore Selected for a precise rollback, or Restore Latest when you want the safest recent snapshot with an automatic restart."
+            : "Use Restore Selected to inspect a rollback point offline, or create a manual snapshot before making larger changes.";
+    private string SelectedBackupTriage => _selectedBackupEntry is null
+        ? "No archive triage is available."
+        : $"{_selectedBackupEntry.KindLabel} archive | {(_selectedBackupEntry.IsLatest ? "latest known-good" : "not latest")} | {_selectedBackupEntry.TimestampLabel}";
 
     protected override async Task OnParametersSetAsync()
     {
@@ -366,6 +418,9 @@ else
 
     private string OverviewHref => $"/profiles/{Uri.EscapeDataString(ProfileId)}/overview";
 
+    private static string GetArchiveTriageLabel(BackupArchiveRow row) =>
+        $"{row.KindLabel} | {row.IsLatest ? "latest known-good" : "alternate point"}";
+
     private static BackupArchiveRow ParseBackupEntry(string backupFileName, bool isLatest)
     {
         var match = BackupPattern.Match(backupFileName);
@@ -396,7 +451,7 @@ else
             title = $"{title} (Latest)";
         }
 
-        return new BackupArchiveRow(backupFileName, title, kindLabel, timestampLabel, backupFileName);
+        return new BackupArchiveRow(backupFileName, title, kindLabel, timestampLabel, backupFileName, isLatest);
     }
 
     private sealed record BackupArchiveRow(
@@ -404,5 +459,6 @@ else
         string Title,
         string KindLabel,
         string TimestampLabel,
-        string FileLabel);
+        string FileLabel,
+        bool IsLatest);
 }
