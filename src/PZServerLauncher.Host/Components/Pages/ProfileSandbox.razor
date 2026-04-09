@@ -29,15 +29,15 @@ else
             <a class="nav-button secondary-button" href="@GeneralHref">General</a>
             <a class="nav-button secondary-button" href="@AdvancedFilesHref">Advanced Files</a>
             <button class="nav-button" @onclick="ValidateAsync" disabled="@(!_canEdit || _busy)">Validate</button>
-            <button class="nav-button secondary-button" @onclick="SaveDraftAsync" disabled="@(!_canEdit || _busy || !_pageSupportsDrafts)">Save Draft</button>
-            <button class="nav-button secondary-button" @onclick="ApplyAsync" disabled="@(!_canEdit || _busy)">Apply Changes</button>
+            <button class="nav-button secondary-button" @onclick="SaveDraftAsync" disabled="@(!_canEdit || _busy || !_pageSupportsDrafts)">Save Workspace Draft</button>
+            <button class="nav-button secondary-button" @onclick="ApplyAsync" disabled="@(!_canEdit || _busy)">Apply To File</button>
         </Actions>
         <ChildContent>
             <section class="workspace-panel hero-panel">
                 <div class="workspace-panel__copy">
                     <p class="eyebrow">Sandbox</p>
                     <h1>@_profile.DisplayName</h1>
-                    <p class="muted-text">Branch-aware structured sandbox settings are ready for the fields this host can safely round-trip. When the host marks the page as unsupported, use Advanced Files for the raw editor.</p>
+                    <p class="muted-text">Branch-aware structured sandbox settings for world pressure, survival pace, and the other SandboxVars.lua controls this host can safely round-trip. If the host marks the file unsupported, use Advanced Files to finish the raw edit.</p>
                 </div>
 
                 <div class="workspace-actions">
@@ -45,6 +45,7 @@ else
                     <span class="pill">@(_installDetected ? "Install detected" : "Install missing")</span>
                     <span class="pill">@(_cacheDetected ? "Cache ready" : "Cache missing")</span>
                     <span class="pill">@(_canEdit ? "Structured editing enabled" : "Structured editing unavailable")</span>
+                    <span class="pill">@(_pageSupportsDrafts ? "Drafts supported" : "Drafts unavailable")</span>
                 </div>
             </section>
 
@@ -71,6 +72,29 @@ else
                 </article>
             </section>
 
+            <section class="metric-grid">
+                <article class="metric-card">
+                    <span class="metric-label">World Pressure</span>
+                    <strong class="metric-value">@SandboxPressureValue</strong>
+                    <span class="metric-note">@SandboxPressureSummary</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Survival Rules</span>
+                    <strong class="metric-value">@SandboxSurvivalValue</strong>
+                    <span class="metric-note">@SandboxSurvivalSummary</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">World Timeline</span>
+                    <strong class="metric-value">@SandboxTimelineValue</strong>
+                    <span class="metric-note">@SandboxTimelineSummary</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Recovery &amp; Cleanup</span>
+                    <strong class="metric-value">@SandboxRecoveryValue</strong>
+                    <span class="metric-note">@SandboxRecoverySummary</span>
+                </article>
+            </section>
+
             <div class="cards cards--wide">
                 <section class="card">
                     <div class="card-heading">
@@ -81,7 +105,7 @@ else
                         <span class="pill">@(_canEdit ? "Editable" : "Read only")</span>
                     </div>
 
-                    <p class="muted-text">Branch-aware structured sandbox settings are ready for the fields this host can safely round-trip. When the host marks the page as unsupported, use Advanced Files for the raw editor.</p>
+                    <p class="muted-text">Use this page to shape zombie pressure, survival pacing, and the rest of the branch-aware sandbox catalog. Validate first, save a draft for a checkpoint, then apply only when the structured editor stays supported.</p>
 
                     @if (_catalog is null || _page is null || _valueSet is null)
                     {
@@ -95,8 +119,15 @@ else
                         {
                             <div class="settings-banner settings-banner--warning">
                                 <strong>Structured editing is unavailable for this page.</strong>
-                                <p>@(_valueSet.FallbackReason ?? "Use Advanced Files for the raw sandbox file.")</p>
+                                <p>@SandboxFallbackSummary</p>
                                 <a class="nav-button secondary-button" href="@AdvancedFilesHref">Open Advanced Files</a>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="status-banner status-banner--warm">
+                                <strong>Operator workflow</strong>
+                                <p>@SandboxEditorGuidance</p>
                             </div>
                         }
 
@@ -105,10 +136,7 @@ else
                             <div class="profile-section">
                                 <div class="profile-section__header">
                                     <h3>@sectionDef.Title</h3>
-                                    @if (!string.IsNullOrWhiteSpace(sectionDef.Description))
-                                    {
-                                        <p class="muted-text">@sectionDef.Description</p>
-                                    }
+                                    <p class="muted-text">@GetSectionSummary(sectionDef)</p>
                                 </div>
 
                                 <div class="field-grid">
@@ -164,16 +192,33 @@ else
                                         <p class="eyebrow">Validation</p>
                                         <h3>Editor Feedback</h3>
                                     </div>
+                                    <span class="pill">@ValidationSummary</span>
+                                </div>
+
+                                <div class="info-grid info-grid--compact">
+                                    <div class="info-item">
+                                        <span class="info-label">Page issues</span>
+                                        <span class="info-value">@PageErrorCount</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">Field issues</span>
+                                        <span class="info-value">@FieldErrorCount</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <span class="info-label">State</span>
+                                        <span class="info-value">@(_pageValidation.IsValid ? "Ready" : "Needs attention")</span>
+                                    </div>
                                 </div>
 
                                 @if (_pageValidation.PageErrors.Count == 0 && _pageValidation.FieldErrors.Count == 0)
                                 {
-                                    <p class="muted-text">No validation errors.</p>
+                                    <p class="muted-text">No validation errors are currently blocking the Sandbox page.</p>
                                 }
                                 else
                                 {
                                     @if (_pageValidation.PageErrors.Count > 0)
                                     {
+                                        <p class="eyebrow">Page Issues</p>
                                         <ul class="stack-list">
                                             @foreach (var error in _pageValidation.PageErrors)
                                             {
@@ -184,6 +229,7 @@ else
 
                                     @if (_pageValidation.FieldErrors.Count > 0)
                                     {
+                                        <p class="eyebrow">Field Issues</p>
                                         <ul class="stack-list">
                                             @foreach (var entry in _pageValidation.FieldErrors)
                                             {
@@ -228,10 +274,11 @@ else
                     </div>
 
                     <div class="status-banner status-banner--warm">
-                        <strong>Runtime and install state</strong>
+                        <strong>Runtime and file posture</strong>
                         <p>Runtime: @(_runtimeStatus?.State.ToString() ?? "Unknown")</p>
                         <p>Install: @(_installDetected ? "Detected" : "Missing")</p>
                         <p>Cache: @(_cacheDetected ? "Detected" : "Missing")</p>
+                        <p>@SandboxSnapshotSummary</p>
                     </div>
                 </section>
             </div>
@@ -300,7 +347,7 @@ else
 
         _statusMessage = _valueSet.RequiresAdvancedFilesFallback
             ? _valueSet.FallbackReason ?? "Structured sandbox editing is not available yet."
-            : "Sandbox settings loaded.";
+            : "Sandbox settings loaded. Validate before applying, or save a workspace draft for a local checkpoint.";
     }
 
     private async Task ValidateAsync()
@@ -464,11 +511,135 @@ else
     }
 
     private string GetFieldValue(string fieldId) =>
-        _values.TryGetValue(fieldId, out var currentValue) ? currentValue ?? string.Empty : string.Empty;
+        GetFieldValue(fieldId, string.Empty);
+
+    private string GetFieldValue(string fieldId, string fallback)
+    {
+        if (!_values.TryGetValue(fieldId, out var currentValue) || string.IsNullOrWhiteSpace(currentValue))
+        {
+            return fallback;
+        }
+
+        return currentValue;
+    }
+
+    private string GetBooleanValue(string fieldId, string trueLabel = "Enabled", string falseLabel = "Disabled", string fallback = "Unknown")
+    {
+        var value = GetFieldValue(fieldId, fallback);
+        return bool.TryParse(value, out var parsed)
+            ? parsed ? trueLabel : falseLabel
+            : value;
+    }
 
     private string OverviewHref => $"/profiles/{Uri.EscapeDataString(ProfileId)}/overview";
 
     private string GeneralHref => $"/profiles/{Uri.EscapeDataString(ProfileId)}/general";
 
     private string AdvancedFilesHref => $"/profiles/{Uri.EscapeDataString(ProfileId)}/advanced-files";
+
+    private string SandboxEditorGuidance =>
+        _pageSupportsDrafts
+            ? "Validate first, save a draft if you want a checkpoint, then apply the file once you are confident in the branch-aware values."
+            : "Validate first, then apply only when you are ready. Drafts are not available on this page, so Advanced Files is the fallback for manual recovery.";
+
+    private string SandboxFallbackSummary =>
+        _valueSet?.FallbackReason ?? "Structured editing is unavailable for this Sandbox file. Open Advanced Files to edit SandboxVars.lua directly.";
+
+    private string SandboxSnapshotSummary =>
+        _valueSet?.RequiresAdvancedFilesFallback == true
+            ? SandboxFallbackSummary
+            : "The snapshot reflects the live structured editor values, so operator decisions can be made before opening the raw file.";
+
+    private string SandboxPressureValue =>
+        _valueSet is null
+            ? "Loading..."
+            : $"{GetFieldValue(".sandbox.zombies", "Unknown")} / {GetFieldValue(".sandbox.population-multiplier", "Unknown")}";
+
+    private string SandboxPressureSummary =>
+        _valueSet is null
+            ? "Loading pressure summary..."
+            : $"{GetFieldValue(".sandbox.distribution", "Unknown")} distribution, peak day {GetFieldValue(".sandbox.population-peak-day", "Unknown")}, and sound radius {GetFieldValue(".sandbox.follow-sound-distance", "Unknown")} shape how quickly pressure reaches players.";
+
+    private string SandboxSurvivalValue =>
+        _valueSet is null
+            ? "Loading..."
+            : $"{GetFieldValue(".sandbox.water-shut-modifier", "Unknown")} / {GetFieldValue(".sandbox.electricity-shut-modifier", "Unknown")}";
+
+    private string SandboxSurvivalSummary =>
+        _valueSet is null
+            ? "Loading survival summary..."
+            : $"Food rot {GetFieldValue(".sandbox.food-rot-speed", "Unknown")}, temperature {GetFieldValue(".sandbox.temperature", "Unknown")}, rain {GetFieldValue(".sandbox.rain", "Unknown")}, and nutrition {GetBooleanValue(".sandbox.nutrition")} shape the survival posture.";
+
+    private string SandboxTimelineValue =>
+        _valueSet is null
+            ? "Loading..."
+            : $"{GetFieldValue(".sandbox.day-length", "Unknown")} day / {GetFieldValue(".sandbox.start-time", "Unknown")}";
+
+    private string SandboxTimelineSummary =>
+        _valueSet is null
+            ? "Loading world timeline..."
+            : $"Start date {GetFieldValue(".sandbox.start-year", "Unknown")}-{GetFieldValue(".sandbox.start-month", "Unknown")}-{GetFieldValue(".sandbox.start-day", "Unknown")} with erosion {GetFieldValue(".sandbox.erosion-speed", "Unknown")} and event pressure from helicopter, meta, and sleeping cycles.";
+
+    private string SandboxRecoveryValue =>
+        _valueSet is null
+            ? "Loading..."
+            : $"{GetFieldValue(".sandbox.respawn-hours", "Unknown")}h respawn";
+
+    private string SandboxRecoverySummary =>
+        _valueSet is null
+            ? "Loading recovery summary..."
+            : $"Respawn {GetFieldValue(".sandbox.respawn-hours", "Unknown")}h, unseen respawn {GetFieldValue(".sandbox.respawn-unseen-hours", "Unknown")}h, redistribute {GetFieldValue(".sandbox.redistribute-hours", "Unknown")}h, and corpse removal {GetFieldValue(".sandbox.hours-for-corpse-removal", "Unknown")}h define long-run recovery.";
+
+    private string ValidationSummary
+    {
+        get
+        {
+            if (_pageValidation is null)
+            {
+                return "Run Validate to check the sandbox page.";
+            }
+
+            return _pageValidation.IsValid
+                ? "Validation clean"
+                : $"{PageErrorCount} page / {FieldErrorCount} field issue(s)";
+        }
+    }
+
+    private int PageErrorCount => _pageValidation?.PageErrors.Count ?? 0;
+
+    private int FieldErrorCount => _pageValidation?.FieldErrors.Sum(entry => entry.Value.Count) ?? 0;
+
+    private string GetSectionSummary(SettingsSectionDto section)
+    {
+        var editableCount = section.Fields.Count(field => !field.IsReadOnly);
+        var restartCount = section.Fields.Count(field => field.RequiresRestart);
+        var readOnlyCount = section.Fields.Count(field => field.IsReadOnly);
+
+        var details = new List<string>
+        {
+            $"{section.Fields.Count} fields",
+        };
+
+        if (editableCount > 0)
+        {
+            details.Add($"{editableCount} editable");
+        }
+
+        if (restartCount > 0)
+        {
+            details.Add($"{restartCount} restart required");
+        }
+
+        if (readOnlyCount > 0)
+        {
+            details.Add($"{readOnlyCount} read only");
+        }
+
+        if (!string.IsNullOrWhiteSpace(section.Description))
+        {
+            details.Add(section.Description);
+        }
+
+        return string.Join(" | ", details);
+    }
 }
