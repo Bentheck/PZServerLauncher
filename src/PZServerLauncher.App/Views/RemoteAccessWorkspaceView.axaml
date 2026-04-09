@@ -6,67 +6,106 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d"
              d:DesignWidth="1120"
-             d:DesignHeight="860"
+             d:DesignHeight="900"
              x:Class="PZServerLauncher.App.Views.RemoteAccessWorkspaceView"
              x:DataType="vm:RemoteAccessWorkspaceViewModel">
-    <Border Classes="card" Padding="24">
-        <StackPanel Spacing="18">
-            <Border Background="#1F1D1B" CornerRadius="16" Padding="20">
-                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18">
-                    <StackPanel Spacing="6">
-                        <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Optional Remote Admin" />
-                        <TextBlock FontSize="30" FontWeight="SemiBold" Foreground="#F7F0E7" Text="{Binding PageTitle}" />
-                        <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding PageSummary}" TextWrapping="Wrap" />
-                        <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding RemoteModeSummary}" TextWrapping="Wrap" />
+    <Grid RowDefinitions="Auto,Auto,*" RowSpacing="18">
+        <Grid ColumnDefinitions="1.42*,340" ColumnSpacing="18">
+            <Border Classes="card" Padding="26">
+                <Grid ColumnDefinitions="*,220" ColumnSpacing="18">
+                    <StackPanel Spacing="8">
+                        <TextBlock Classes="kicker" Text="Optional Remote Admin" />
+                        <TextBlock Classes="panel-title" FontSize="30" Text="{Binding PageTitle}" />
+                        <TextBlock Classes="body"
+                                   FontSize="16"
+                                   Foreground="#45382E"
+                                   Text="{Binding RemoteActionSummary}"
+                                   TextWrapping="Wrap" />
+                        <TextBlock Classes="caption" Text="{Binding RemoteNextStepSummary}" TextWrapping="Wrap" />
+
+                        <WrapPanel Margin="0,8,0,0" Orientation="Horizontal" ItemHeight="30">
+                            <Border Background="#2A2927" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                <TextBlock Foreground="#F7F0E7" FontSize="11" Text="{Binding RemoteEnabledLabel}" />
+                            </Border>
+                            <Border Background="#EAD6BF" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                <TextBlock Foreground="#5A4330" FontSize="11" Text="{Binding RemoteStatusSummary}" />
+                            </Border>
+                            <Border Background="#EAD6BF" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                <TextBlock Foreground="#5A4330" FontSize="11" Text="{Binding RemoteSelfTestCheckCount, StringFormat='Checks: {0}'}" />
+                            </Border>
+                        </WrapPanel>
                     </StackPanel>
-                    <Border Grid.Column="1" Background="#2A2927" CornerRadius="999" Padding="14,8" VerticalAlignment="Top">
-                        <TextBlock Foreground="#F7F0E7" FontWeight="SemiBold" Text="{Binding RemoteEnabledLabel}" />
+
+                    <Border Grid.Column="1" Classes="metric-card" Padding="16">
+                        <StackPanel Spacing="6">
+                            <TextBlock Classes="kicker" Text="Next Move" />
+                            <TextBlock Classes="body" FontWeight="SemiBold" Text="{Binding RemoteChecklistHeadline}" TextWrapping="Wrap" />
+                        </StackPanel>
                     </Border>
                 </Grid>
             </Border>
 
-            <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="14">
-                <Border Background="#F6EFE6" CornerRadius="14" Padding="16">
-                    <StackPanel Spacing="6">
-                        <TextBlock Classes="kicker" Text="Readiness" />
-                        <TextBlock FontSize="18" FontWeight="SemiBold" Text="{Binding RemoteStatusSummary}" TextWrapping="Wrap" />
-                        <TextBlock Classes="body" Text="{Binding RemoteReadinessSummary}" TextWrapping="Wrap" />
-                    </StackPanel>
-                </Border>
-                <Border Grid.Column="1" Background="#F6EFE6" CornerRadius="14" Padding="16">
-                    <StackPanel Spacing="6">
-                        <TextBlock Classes="kicker" Text="Endpoint" />
-                        <TextBlock Classes="body" Text="{Binding RemoteEndpointSummary}" TextWrapping="Wrap" />
-                    </StackPanel>
-                </Border>
-                <Border Grid.Column="2" Background="#F6EFE6" CornerRadius="14" Padding="16">
-                    <StackPanel Spacing="6">
-                        <TextBlock Classes="kicker" Text="Identity" />
-                        <TextBlock Classes="body" Text="{Binding RemoteIdentitySummary}" TextWrapping="Wrap" />
-                    </StackPanel>
-                </Border>
-                <Border Grid.Column="3" Background="#F6EFE6" CornerRadius="14" Padding="16">
-                    <StackPanel Spacing="6">
-                        <TextBlock Classes="kicker" Text="Self-Test" />
-                        <TextBlock Classes="body" Text="{Binding RemoteChecklistHeadline}" TextWrapping="Wrap" />
-                        <TextBlock Classes="body" Text="{Binding RemoteChecklistSummary}" TextWrapping="Wrap" />
-                    </StackPanel>
-                </Border>
-            </Grid>
+            <Border Grid.Column="1" Classes="surface-dark" Padding="18">
+                <StackPanel Spacing="10">
+                    <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Rollout Tower" />
+                    <TextBlock FontSize="22"
+                               FontWeight="SemiBold"
+                               Foreground="#F7F0E7"
+                               Text="{Binding RemoteReadinessSummary}"
+                               TextWrapping="Wrap" />
+                    <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding RemoteEndpointSummary}" TextWrapping="Wrap" />
+                    <TextBlock Classes="caption" Foreground="#CCB9A8" Text="{Binding RemoteCertificateStatusSummary}" TextWrapping="Wrap" />
+                    <WrapPanel Orientation="Horizontal" ItemWidth="154" ItemHeight="36">
+                        <Button Command="{Binding Legacy.SaveRemoteAccessCommand}" Content="Save Remote" />
+                        <Button Command="{Binding Legacy.RemoteSelfTestCommand}" Content="Run Self-Test" />
+                        <Button Command="{Binding Legacy.ApplyFirewallRuleCommand}" Content="Apply Firewall" />
+                    </WrapPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
 
-            <Grid ColumnDefinitions="*,360" ColumnSpacing="16">
-                <Border Background="#FFF8F1" CornerRadius="14" Padding="16">
+        <Grid Grid.Row="1" ColumnDefinitions="*,*,*,*" ColumnSpacing="14">
+            <Border Classes="metric-card" Padding="16">
+                <StackPanel Spacing="6">
+                    <TextBlock Classes="kicker" Text="Readiness" />
+                    <TextBlock Classes="panel-title" FontSize="22" Text="{Binding RemoteStatusSummary}" TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+            <Border Grid.Column="1" Classes="metric-card" Padding="16">
+                <StackPanel Spacing="6">
+                    <TextBlock Classes="kicker" Text="Endpoint" />
+                    <TextBlock Classes="panel-title" FontSize="22" Text="{Binding RemoteEndpointSummary}" TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+            <Border Grid.Column="2" Classes="metric-card" Padding="16">
+                <StackPanel Spacing="6">
+                    <TextBlock Classes="kicker" Text="Healthy Checks" />
+                    <TextBlock Classes="panel-title" FontSize="22" Text="{Binding RemoteHealthyCheckCount, StringFormat='{}{0}'}" />
+                    <TextBlock Classes="caption" Text="{Binding RemoteChecklistSummary}" TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+            <Border Grid.Column="3" Classes="metric-card" Padding="16">
+                <StackPanel Spacing="6">
+                    <TextBlock Classes="kicker" Text="Blocking Checks" />
+                    <TextBlock Classes="panel-title" FontSize="22" Text="{Binding RemoteBlockingCheckCount, StringFormat='{}{0}'}" />
+                    <TextBlock Classes="caption" Text="{Binding RemoteFirewallIntentSummary}" TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <Grid Grid.Row="2" ColumnDefinitions="1.18*,.82*" ColumnSpacing="18">
+            <StackPanel Spacing="18">
+                <Border Classes="card" Padding="20">
                     <StackPanel Spacing="12">
                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                             <StackPanel Spacing="4">
-                                <TextBlock Classes="kicker" Text="Remote Setup" />
-                                <TextBlock Classes="panel-title" FontSize="22" Text="{Binding RemoteHostSummary}" TextWrapping="Wrap" />
+                                <TextBlock Classes="kicker" Text="HTTPS Footprint" />
+                                <TextBlock Classes="panel-title" FontSize="24" Text="{Binding RemoteHostSummary}" TextWrapping="Wrap" />
                                 <TextBlock Classes="body" Text="{Binding RemoteBindingSummary}" TextWrapping="Wrap" />
-                                <TextBlock Classes="body" Text="{Binding RemoteExposureSummary}" TextWrapping="Wrap" />
-                                <TextBlock Classes="body" Text="{Binding RemoteCertificateStatusSummary}" TextWrapping="Wrap" />
+                                <TextBlock Classes="caption" Text="{Binding RemoteExposureSummary}" TextWrapping="Wrap" />
                             </StackPanel>
-                            <Border Background="#2A2927" CornerRadius="999" Padding="10,6" VerticalAlignment="Top">
-                                <TextBlock Foreground="#F7F0E7" FontSize="12" Text="Desktop-managed" />
+                            <Border Background="#2A2927" CornerRadius="999" Padding="10,5" VerticalAlignment="Top">
+                                <TextBlock Foreground="#F7F0E7" FontSize="11" Text="Desktop-managed" />
                             </Border>
                         </Grid>
 
@@ -89,60 +128,84 @@
                             <TextBox Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="3" Text="{Binding Legacy.RemoteCertificatePath}" />
                         </Grid>
 
-                        <CheckBox Content="Create Or Update The Windows Firewall Rule"
-                                  IsChecked="{Binding Legacy.RemoteCreateFirewallRule}" />
-
-                        <WrapPanel Orientation="Horizontal" ItemWidth="176" ItemHeight="36">
-                            <Button Command="{Binding Legacy.SaveRemoteAccessCommand}" Content="Save Remote Settings" />
-                            <Button Command="{Binding Legacy.RemoteSelfTestCommand}" Content="Run Local Self-Test" />
-                            <Button Command="{Binding Legacy.ApplyFirewallRuleCommand}" Content="Apply Firewall Rule" />
-                        </WrapPanel>
-
-                        <Border Background="#FFF4E7" CornerRadius="12" Padding="12">
-                            <StackPanel Spacing="4">
-                                <TextBlock Classes="kicker" Text="Local-Only Guidance" />
-                                <TextBlock Classes="body" Text="{Binding RemoteLocalOnlyGuidance}" TextWrapping="Wrap" />
+                        <Border Background="#F5E8DA" CornerRadius="14" Padding="14">
+                            <StackPanel Spacing="6">
+                                <TextBlock Classes="kicker" Text="Firewall Intent" />
+                                <CheckBox Content="Create Or Update The Windows Firewall Rule"
+                                          IsChecked="{Binding Legacy.RemoteCreateFirewallRule}" />
+                                <TextBlock Classes="caption" Text="{Binding RemoteFirewallIntentSummary}" TextWrapping="Wrap" />
                             </StackPanel>
                         </Border>
                     </StackPanel>
                 </Border>
 
-                <Border Grid.Column="1" Background="#F1E6D7" CornerRadius="14" Padding="16">
-                    <StackPanel Spacing="12">
-                        <StackPanel Spacing="4">
-                            <TextBlock Classes="kicker" Text="Operator Checklist" />
-                            <TextBlock Classes="body" Text="{Binding RemoteActionSummary}" TextWrapping="Wrap" />
-                            <TextBlock Classes="body" Text="{Binding RemoteOperatorChecklistSummary}" TextWrapping="Wrap" />
-                            <TextBlock Classes="body" Text="{Binding RemoteFirewallIntentSummary}" TextWrapping="Wrap" />
-                            <TextBlock Classes="body" Text="{Binding RemoteFirewallActionSummary}" TextWrapping="Wrap" />
-                            <TextBlock Classes="body" Text="{Binding RemoteNextStepSummary}" TextWrapping="Wrap" />
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
+                    <Border Classes="surface-dark" Padding="18">
+                        <StackPanel Spacing="10">
+                            <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Rollout Guidance" />
+                            <TextBlock FontSize="24"
+                                       FontWeight="SemiBold"
+                                       Foreground="#F7F0E7"
+                                       Text="{Binding RemoteModeSummary}"
+                                       TextWrapping="Wrap" />
+                            <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding RemoteLocalOnlyGuidance}" TextWrapping="Wrap" />
+                            <TextBlock Classes="caption" Foreground="#CCB9A8" Text="{Binding RemoteOperatorChecklistSummary}" TextWrapping="Wrap" />
                         </StackPanel>
+                    </Border>
 
-                        <StackPanel Spacing="8" IsVisible="{Binding HasRemoteSelfTestChecks}">
-                            <TextBlock Classes="kicker" Text="Latest Self-Test Checks" />
-                            <ItemsControl ItemsSource="{Binding RemoteSelfTestChecks}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="profiles:ProjectZomboidOperatorChecklistItem">
-                                        <Border Background="#FFF8F1" CornerRadius="12" Padding="12" Margin="0,0,0,8">
-                                            <StackPanel Spacing="4">
-                                                <Border Background="#2A2927" CornerRadius="999" Padding="8,3" HorizontalAlignment="Left">
-                                                    <TextBlock Foreground="#F7F0E7" FontSize="11" FontWeight="SemiBold" Text="{Binding StatusLabel}" />
-                                                </Border>
-                                                <TextBlock Classes="body" Text="{Binding Message}" TextWrapping="Wrap" />
-                                            </StackPanel>
-                                        </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
+                    <Border Grid.Column="1" Classes="card" Padding="18">
+                        <StackPanel Spacing="8">
+                            <TextBlock Classes="kicker" Text="Identity And Certs" />
+                            <TextBlock Classes="panel-title" FontSize="22" Text="{Binding RemoteIdentitySummary}" TextWrapping="Wrap" />
+                            <TextBlock Classes="caption" Text="{Binding RemoteCertificateStatusSummary}" TextWrapping="Wrap" />
+                            <TextBlock Classes="caption" Text="{Binding RemoteFirewallActionSummary}" TextWrapping="Wrap" />
                         </StackPanel>
+                    </Border>
+                </Grid>
+            </StackPanel>
 
-                        <TextBlock Classes="body"
-                                   IsVisible="{Binding HasNoRemoteSelfTestChecks}"
-                                   Text="Run the local self-test after saving your HTTPS settings to turn this checklist into actionable results."
-                                   TextWrapping="Wrap" />
+            <StackPanel Grid.Column="1" Spacing="16">
+                <Border Classes="card" Padding="18">
+                    <StackPanel Spacing="8">
+                        <TextBlock Classes="kicker" Text="Latest Self-Test Checks" />
+                        <ItemsControl ItemsSource="{Binding RemoteSelfTestChecks}" IsVisible="{Binding HasRemoteSelfTestChecks}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="profiles:ProjectZomboidOperatorChecklistItem">
+                                    <Border Background="#F5E8DA" CornerRadius="12" Padding="12" Margin="0,0,0,8">
+                                        <StackPanel Spacing="4">
+                                            <Border Background="#26201A" CornerRadius="999" Padding="8,3" HorizontalAlignment="Left">
+                                                <TextBlock Foreground="#F7F0E7" FontSize="11" FontWeight="SemiBold" Text="{Binding StatusLabel}" />
+                                            </Border>
+                                            <TextBlock Classes="caption" Text="{Binding Message}" TextWrapping="Wrap" />
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <Border Background="#1F1D1B"
+                                CornerRadius="16"
+                                Padding="18"
+                                IsVisible="{Binding HasNoRemoteSelfTestChecks}">
+                            <StackPanel Spacing="10">
+                                <TextBlock Classes="kicker" Foreground="#E5A26B" Text="No Self-Test Data Yet" />
+                                <TextBlock Classes="panel-title" FontSize="22" Foreground="#F7F0E7" Text="{Binding RemoteChecklistHeadline}" />
+                                <TextBlock Classes="body"
+                                           Foreground="#D3C8BA"
+                                           Text="Run the local self-test after saving the HTTPS footprint so this page can shift from setup into a real rollout checklist."
+                                           TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
                 </Border>
-            </Grid>
-        </StackPanel>
-    </Border>
+
+                <Border Classes="card" Padding="18">
+                    <StackPanel Spacing="8">
+                        <TextBlock Classes="kicker" Text="Operator Note" />
+                        <TextBlock Classes="body" Text="{Binding RemoteNextStepSummary}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Grid>
+    </Grid>
 </UserControl>
