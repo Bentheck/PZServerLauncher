@@ -32,7 +32,7 @@ else
             <a class="nav-button secondary-button" href="@SandboxHref">Sandbox</a>
             <a class="nav-button secondary-button" href="@AdvancedFilesHref">Advanced Files</a>
             <button class="nav-button" @onclick="ScanAsync" disabled="@_busy">Scan Workshop</button>
-            <button class="nav-button secondary-button" @onclick="SaveAsync" disabled="@(_busy || _requiresAdvancedFilesFallback)">Save Preset</button>
+            <button class="nav-button secondary-button" @onclick="SaveAsync" disabled="@(_busy || _requiresAdvancedFilesFallback)">Save Live Preset</button>
             <button class="nav-button secondary-button" @onclick="ApplyScanResultAsync" disabled="@(_busy || _scanResult is null || _requiresAdvancedFilesFallback)">Apply Scan Result</button>
         </Actions>
         <ChildContent>
@@ -40,13 +40,16 @@ else
                 <div class="workspace-panel__copy">
                     <p class="eyebrow">Mods &amp; Maps</p>
                     <h1>@_profile.DisplayName</h1>
-                    <p class="muted-text">Edit ordered workshop items, enabled mods, and map folders. Scan Workshop normalizes the lists against what is installed locally.</p>
+                    <p class="muted-text">This is the operator console for workshop loadouts, mod order, and map order. Scan Workshop normalizes the lists against what is actually installed, then Save Live Preset writes the live Project Zomboid keys back out.</p>
+                    <p class="muted-text">Named loadouts are for recovery and reuse. If the file is forced into raw fallback, open Advanced Files rather than pushing structured edits through an unsupported config.</p>
                 </div>
 
                 <div class="workspace-actions">
                     <span class="pill">@_profile.Branch</span>
                     <span class="pill">@(_installDetected ? "Install detected" : "Install missing")</span>
                     <span class="pill">@(_cacheDetected ? "Cache ready" : "Cache missing")</span>
+                    <span class="pill">@(_namedPresets.Count == 0 ? "No saved loadouts" : $"{_namedPresets.Count} saved loadouts")</span>
+                    <span class="pill">@(_scanResult is null ? "Scan idle" : "Scan normalized")</span>
                     <span class="pill">@(_hasChanges ? "Unsaved changes" : "In sync")</span>
                 </div>
             </section>
@@ -68,9 +71,9 @@ else
                     <span class="metric-note">Map load order</span>
                 </article>
                 <article class="metric-card">
-                    <span class="metric-label">Scan Diagnostics</span>
-                    <strong class="metric-value">@_scanDiagnostics.Count</strong>
-                    <span class="metric-note">Local workshop validation messages</span>
+                    <span class="metric-label">Saved Loadouts</span>
+                    <strong class="metric-value">@_namedPresets.Count</strong>
+                    <span class="metric-note">@(_namedPresets.Count == 0 ? "No reusable loadouts yet." : "Reusable recovery points and loadouts.")</span>
                 </article>
             </section>
 
@@ -81,10 +84,10 @@ else
                             <p class="eyebrow">Mods &amp; Maps</p>
                             <h2>Preset Editor</h2>
                         </div>
-                        <span class="pill">@(_scanResult is null ? "No scan result" : "Scan ready")</span>
+                        <span class="pill">@(_scanResult is null ? "No normalized scan" : "Normalized scan ready")</span>
                     </div>
 
-                    <p class="muted-text">Edit the ordered workshop item IDs, enabled mod IDs, and map folders directly. This page now keeps the real Project Zomboid <code>WorkshopItems</code>, <code>Mods</code>, and <code>Map</code> INI keys in sync with the launcher preset.</p>
+                    <p class="muted-text">Edit the ordered workshop item IDs, enabled mod IDs, and map folders directly. This page keeps the real Project Zomboid <code>WorkshopItems</code>, <code>Mods</code>, and <code>Map</code> INI keys in sync with the launcher preset while preserving the operator order you see here.</p>
 
                     @if (_requiresAdvancedFilesFallback)
                     {
@@ -95,12 +98,12 @@ else
                         </div>
                     }
 
-                    <div class="status-banner">
-                        <strong>Current preset</strong>
-                        <p>Workshop items: @_profile.WorkshopPreset.WorkshopItemIds.Count</p>
-                        <p>Enabled mods: @_profile.WorkshopPreset.EnabledModIds.Count</p>
-                        <p>Map folders: @_profile.WorkshopPreset.MapFolders.Count</p>
-                        <p>Saved state: @(_hasChanges ? "Unsaved changes" : "In sync")</p>
+                    <div class="status-banner status-banner--warm">
+                        <strong>Operator flow</strong>
+                        <p>1. Scan Workshop to normalize local content and catch missing pieces.</p>
+                        <p>2. Save Live Preset to write the live server loadout back to the profile.</p>
+                        <p>3. Save a named loadout when you want a reusable recovery point or alternate mod set.</p>
+                        <p>4. Use Advanced Files only when this file is too raw for structured editing.</p>
                     </div>
 
                     <div class="profile-section">
@@ -128,17 +131,18 @@ else
                     </div>
 
                     <div class="file-toolbar">
-                        <span class="muted-text">Preset hash: @_presetHash</span>
-                        <span class="muted-text">Scan diagnostics: @_scanDiagnostics.Count</span>
+                        <span class="muted-text">Live preset hash: @_presetHash</span>
+                        <span class="muted-text">@ScanStateSummary</span>
                     </div>
                 </section>
 
                 <section class="card">
                     <div class="card-heading">
                         <div>
-                            <p class="eyebrow">Status</p>
+                            <p class="eyebrow">Recovery</p>
                             <h2>Workspace Snapshot</h2>
                         </div>
+                        <span class="pill">@RecoveryStateSummary</span>
                     </div>
 
                     <div class="info-grid">
@@ -156,34 +160,40 @@ else
                         </div>
                         <div class="info-item">
                             <span class="info-label">Scan result</span>
-                            <span class="info-value">@(_scanResult is null ? "Not run yet" : "Ready")</span>
+                            <span class="info-value">@(_scanResult is null ? "Not run yet" : "Normalized and ready")</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Recovery</span>
+                            <span class="info-value">@RecoveryHintSummary</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Saved loadouts</span>
+                            <span class="info-value">@(_namedPresets.Count == 0 ? "No saved loadouts" : $"{_namedPresets.Count} available")</span>
                         </div>
                     </div>
 
                     <div class="status-banner status-banner--warm">
-                        <strong>Workflow guidance</strong>
-                        <p>Use Advanced Files only for raw file editing fallback. Workshop and map lists are managed here.</p>
+                        <strong>Recovery posture</strong>
+                        <p>@RecoveryGuidanceSummary</p>
+                        <p>@LoadoutGuidanceSummary</p>
                     </div>
 
-                    <div class="inner-card card">
-                        <div class="card-heading">
-                            <div>
-                                <p class="eyebrow">Named Presets</p>
-                                <h3>Saved Loadouts</h3>
-                            </div>
-                            <span class="pill">@(_namedPresets.Count == 0 ? "Empty" : $"{_namedPresets.Count} saved")</span>
+                    <div class="profile-section">
+                        <div class="profile-section__header">
+                            <h3>Saved Loadouts</h3>
+                            <p class="muted-text">Capture the current editor state as a named recovery point, then load it back into the editor whenever you need to rebuild the live preset.</p>
                         </div>
 
-                        <p class="muted-text">Save the current editor state as a reusable loadout, then load it back into the queue later without touching the live server preset until you hit save.</p>
-
                         <div class="file-toolbar">
-                            <input @bind="_newPresetName" placeholder="Preset name" />
-                            <button class="nav-button secondary-button" @onclick="SaveNamedPresetAsync" disabled="@(_busy || string.IsNullOrWhiteSpace(_newPresetName))">Save Preset</button>
+                            <input @bind="_newPresetName" placeholder="Loadout name" />
+                            <button class="nav-button secondary-button" @onclick="SaveNamedPresetAsync" disabled="@(_busy || string.IsNullOrWhiteSpace(_newPresetName))">Save Loadout</button>
                         </div>
 
                         @if (_namedPresets.Count == 0)
                         {
-                            <p class="muted-text">No named presets saved for this profile yet.</p>
+                            <div class="empty-state">
+                                <p class="muted-text">No saved loadouts yet. Use the current editor state to create a recovery point before making a risky mod or map change.</p>
+                            </div>
                         }
                         else
                         {
@@ -205,41 +215,72 @@ else
                             </ul>
                         }
                     </div>
-
-                    @if (_scanResult is not null)
-                    {
-                        <div class="inner-card card">
-                            <div class="card-heading">
-                                <div>
-                                    <p class="eyebrow">Scan Result</p>
-                                    <h3>Normalized Preset</h3>
-                                </div>
-                            </div>
-                            <p>Workshop items: @_scanResult.Preset.WorkshopItemIds.Count</p>
-                            <p>Enabled mods: @_scanResult.Preset.EnabledModIds.Count</p>
-                            <p>Map folders: @_scanResult.Preset.MapFolders.Count</p>
-                        </div>
-                    }
                 </section>
             </div>
 
-            @if (_scanDiagnostics.Count > 0)
-            {
+            <div class="cards cards--wide">
+                <section class="card">
+                    <div class="card-heading">
+                        <div>
+                            <p class="eyebrow">Scan Result</p>
+                            <h2>Normalized Preset</h2>
+                        </div>
+                        <span class="pill">@ScanResultSummary</span>
+                    </div>
+
+                    @if (_scanResult is null)
+                    {
+                        <div class="empty-state">
+                            <p class="muted-text">No normalized scan has been captured yet. Run Scan Workshop to compare the live editor state against local content and populate this summary.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="info-grid info-grid--compact">
+                            <div class="info-item">
+                                <span class="info-label">Workshop items</span>
+                                <span class="info-value">@_scanResult.Preset.WorkshopItemIds.Count</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Enabled mods</span>
+                                <span class="info-value">@_scanResult.Preset.EnabledModIds.Count</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Map folders</span>
+                                <span class="info-value">@_scanResult.Preset.MapFolders.Count</span>
+                            </div>
+                        </div>
+
+                        <p class="muted-text">This normalized loadout is what you can push into the live preset with Apply Scan Result after the scanner has reconciled local workshop content.</p>
+                    }
+                </section>
+
                 <section class="card">
                     <div class="card-heading">
                         <div>
                             <p class="eyebrow">Diagnostics</p>
                             <h2>Scanner Feedback</h2>
                         </div>
+                        <span class="pill">@DiagnosticsSummary</span>
                     </div>
-                    <ul class="stack-list">
-                        @foreach (var diagnostic in _scanDiagnostics)
-                        {
-                            <li>@diagnostic</li>
-                        }
-                    </ul>
+
+                    @if (_scanDiagnostics.Count == 0)
+                    {
+                        <div class="empty-state">
+                            <p class="muted-text">No scanner diagnostics yet. Run a scan to surface missing workshop items, duplicate entries, and map validation messages here.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <ul class="stack-list">
+                            @foreach (var diagnostic in _scanDiagnostics)
+                            {
+                                <li>@diagnostic</li>
+                            }
+                        </ul>
+                    }
                 </section>
-            }
+            </div>
 
             <p class="status-line">@_statusMessage</p>
         </ChildContent>
@@ -422,7 +463,7 @@ else
             await NamedWorkshopPresetStore.UpsertAsync(ProfileId, _profile.Branch, _newPresetName, normalizedPreset);
             _namedPresets = await NamedWorkshopPresetStore.ListAsync(ProfileId);
             _newPresetName = string.Empty;
-            _statusMessage = "Named preset saved.";
+            _statusMessage = "Named loadout saved.";
         }
         catch (Exception ex)
         {
@@ -438,7 +479,7 @@ else
     {
         LoadPreset(preset.Preset);
         _hasChanges = true;
-        _statusMessage = $"Loaded named preset '{preset.Name}' into the editor. Save Preset to push it live.";
+        _statusMessage = $"Loaded named loadout '{preset.Name}' into the editor. Save Live Preset to push it live.";
     }
 
     private async Task DeleteNamedPresetAsync(NamedWorkshopPresetDto preset)
@@ -514,6 +555,38 @@ else
 
     private static string BuildPresetCompositionSummary(PZServerLauncher.Core.Profiles.WorkshopPreset preset) =>
         $"{preset.WorkshopItemIds.Count} workshop | {preset.EnabledModIds.Count} mods | {preset.MapFolders.Count} maps";
+
+    private string DiagnosticsSummary => _scanDiagnostics.Count == 0
+        ? "No diagnostics"
+        : $"{_scanDiagnostics.Count} findings";
+
+    private string RecoveryStateSummary => _requiresAdvancedFilesFallback
+        ? "Raw fallback"
+        : _hasChanges
+            ? "Recovery needed"
+            : "Ready";
+
+    private string RecoveryHintSummary => _requiresAdvancedFilesFallback
+        ? "Use Advanced Files for this profile's raw INI."
+        : _scanResult is null
+            ? "Run a scan before relying on the current loadout as a recovery point."
+            : "Use the scanner output or a saved loadout as the safest rollback path.";
+
+    private string RecoveryGuidanceSummary => _requiresAdvancedFilesFallback
+        ? _fallbackReason ?? "This file is in raw fallback; structured edits are unavailable."
+        : "Keep at least one named loadout before changing workshop IDs, mod order, or map order so you can roll back without rebuilding from scratch.";
+
+    private string LoadoutGuidanceSummary => _namedPresets.Count == 0
+        ? "No saved loadouts exist yet, so the current editor state is your only recovery point."
+        : $"You have {_namedPresets.Count} named loadout{(_namedPresets.Count == 1 ? string.Empty : "s")} ready for fast reload into the editor.";
+
+    private string ScanStateSummary => _scanResult is null
+        ? $"Scan diagnostics: {_scanDiagnostics.Count}"
+        : $"Scan diagnostics: {_scanDiagnostics.Count} | Normalized preset ready";
+
+    private string ScanResultSummary => _scanResult is null
+        ? "Not scanned"
+        : BuildPresetCompositionSummary(_scanResult.Preset);
 
     private string OverviewHref => $"/profiles/{Uri.EscapeDataString(ProfileId)}/overview";
 
