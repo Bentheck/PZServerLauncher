@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using PZServerLauncher.Contracts.Profiles;
 using PZServerLauncher.Contracts.Runtime;
 using PZServerLauncher.Core.Profiles;
@@ -92,7 +93,10 @@ public class Program
         builder.Services.AddSignalR();
 
         builder.Services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseSqlite($"Data Source={appPaths.DatabasePath};Cache=Shared"));
+        {
+            options.UseSqlite($"Data Source={appPaths.DatabasePath};Cache=Shared");
+            options.ConfigureWarnings(warnings => warnings.Log(RelationalEventId.PendingModelChangesWarning));
+        });
         builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
         builder.Services.AddAuthentication(options =>
