@@ -30,10 +30,11 @@ public sealed class AuditStore(ApplicationDbContext dbContext)
     }
 
     public async Task<IReadOnlyList<AuditEntry>> ListAsync(CancellationToken cancellationToken = default) =>
-        await dbContext.AuditEntries
+        (await dbContext.AuditEntries
             .AsNoTracking()
-            .OrderByDescending(x => x.OccurredAtUtc)
-            .Take(100)
             .Select(x => x.ToModel())
-            .ToListAsync(cancellationToken);
+            .ToListAsync(cancellationToken))
+        .OrderByDescending(x => x.OccurredAtUtc)
+        .Take(100)
+        .ToArray();
 }

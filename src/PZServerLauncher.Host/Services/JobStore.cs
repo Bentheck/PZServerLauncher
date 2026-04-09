@@ -36,12 +36,13 @@ public sealed class JobStore(ApplicationDbContext dbContext)
     }
 
     public async Task<IReadOnlyList<OperationJob>> ListRecentAsync(int take = 20, CancellationToken cancellationToken = default) =>
-        await dbContext.OperationJobs
+        (await dbContext.OperationJobs
             .AsNoTracking()
-            .OrderByDescending(x => x.CreatedAtUtc)
-            .Take(take)
             .Select(x => x.ToModel())
-            .ToListAsync(cancellationToken);
+            .ToListAsync(cancellationToken))
+        .OrderByDescending(x => x.CreatedAtUtc)
+        .Take(take)
+        .ToArray();
 
     public async Task<OperationJob> UpdateAsync(OperationJob job, CancellationToken cancellationToken = default)
     {
