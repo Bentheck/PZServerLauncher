@@ -22,6 +22,8 @@ public sealed class RemoteAccessWorkspaceViewModel : WorkspacePageViewModelBase
 
     public bool RemoteAccessIsEnabled => Legacy.RemoteAccessEnabled;
 
+    public bool RemoteAccessIsDisabled => !RemoteAccessIsEnabled;
+
     public string RemoteModeSummary => CurrentSummary.ModeHeadline;
 
     public string RemotePostureSummary => CurrentSummary.OperatorSummary;
@@ -123,6 +125,7 @@ public sealed class RemoteAccessWorkspaceViewModel : WorkspacePageViewModelBase
     private void RefreshSummaryProperties()
     {
         OnPropertyChanged(nameof(RemoteAccessIsEnabled));
+        OnPropertyChanged(nameof(RemoteAccessIsDisabled));
         OnPropertyChanged(nameof(RemoteModeSummary));
         OnPropertyChanged(nameof(RemotePostureSummary));
         OnPropertyChanged(nameof(RemoteStatusSummary));

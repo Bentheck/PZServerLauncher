@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Markup.Xaml;
 
 namespace PZServerLauncher.App.Views;
 
@@ -6,6 +7,6 @@ public partial class HostWorkspaceView : UserControl
 {
     public HostWorkspaceView()
     {
-        InitializeComponent();
+        AvaloniaXamlLoader.Load(this);
     }
 }

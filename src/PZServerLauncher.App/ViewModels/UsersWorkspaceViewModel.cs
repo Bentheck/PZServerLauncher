@@ -92,6 +92,8 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
 
     public ObservableCollection<EditableUserRowViewModel> Users { get; } = [];
 
+    public int UserCount => Users.Count;
+
     public bool CanManageUsers => OwnerBootstrapConfigured && !IsBusy;
 
     public int OwnerCount => Users.Count(user => string.Equals(user.RoleName, nameof(UserRole.Owner), StringComparison.Ordinal));
@@ -542,6 +544,7 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
         OnPropertyChanged(nameof(AccessChecklist));
         OnPropertyChanged(nameof(HasUsers));
         OnPropertyChanged(nameof(HasNoUsers));
+        OnPropertyChanged(nameof(UserCount));
         OnPropertyChanged(nameof(PrivilegedAccountCount));
         OnPropertyChanged(nameof(TwoFactorEnabledCount));
         OnPropertyChanged(nameof(PendingTwoFactorCount));

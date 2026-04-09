@@ -153,6 +153,18 @@ public partial class ProfileCardViewModel : ViewModelBase
 
     public string RecoveryStateHeadline => HasBackup ? "Recovery ready" : "No backup";
 
+    public string RosterCardBackground => IsSelected ? "#241C16" : "#F8F0E6";
+
+    public string RosterCardBorderBrush => IsSelected ? "#D27A3E" : "#D8B28D";
+
+    public string RosterTitleForeground => IsSelected ? "#F7F0E7" : "#191512";
+
+    public string RosterSummaryForeground => IsSelected ? "#D4C3B2" : "#5E4D3F";
+
+    public string RosterChipBackground => IsSelected ? "#F0E2D0" : "#26201A";
+
+    public string RosterChipForeground => IsSelected ? "#5E4735" : "#F7F0E7";
+
     public IReadOnlyList<ConfigFileOptionViewModel> RawConfigKinds { get; } = ConfigFileOptionViewModel.All;
 
     [ObservableProperty]
@@ -221,11 +233,24 @@ public partial class ProfileCardViewModel : ViewModelBase
     [ObservableProperty]
     private bool isRawConfigLoaded;
 
+    [ObservableProperty]
+    private bool isSelected;
+
     partial void OnSelectedRawConfigKindChanged(ConfigFileOptionViewModel value)
     {
         if (IsRawConfigLoaded && LoadedRawConfigKind != value.Kind)
         {
             RawConfigStatus = $"Selected {value.Label}. Load it before editing or saving.";
         }
+    }
+
+    partial void OnIsSelectedChanged(bool value)
+    {
+        OnPropertyChanged(nameof(RosterCardBackground));
+        OnPropertyChanged(nameof(RosterCardBorderBrush));
+        OnPropertyChanged(nameof(RosterTitleForeground));
+        OnPropertyChanged(nameof(RosterSummaryForeground));
+        OnPropertyChanged(nameof(RosterChipBackground));
+        OnPropertyChanged(nameof(RosterChipForeground));
     }
 }

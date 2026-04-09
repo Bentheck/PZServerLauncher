@@ -45,6 +45,18 @@
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="CornerRadius" Value="16" />
         </Style>
+        <Style Selector="Border.callout-card">
+            <Setter Property="Background" Value="#F5E8DA" />
+            <Setter Property="BorderBrush" Value="#E1C3A5" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="16" />
+        </Style>
+        <Style Selector="Border.command-card">
+            <Setter Property="Background" Value="#2A211B" />
+            <Setter Property="BorderBrush" Value="#6E5039" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="18" />
+        </Style>
         <Style Selector="TextBlock.section-title">
             <Setter Property="FontSize" Value="22" />
             <Setter Property="FontWeight" Value="SemiBold" />
@@ -80,6 +92,27 @@
             <Setter Property="AcceptsReturn" Value="True" />
             <Setter Property="Padding" Value="14" />
             <Setter Property="MinHeight" Value="140" />
+        </Style>
+        <Style Selector="Button.action-primary">
+            <Setter Property="Background" Value="#26201A" />
+            <Setter Property="Foreground" Value="#F7F0E7" />
+            <Setter Property="BorderBrush" Value="#26201A" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="14,9" />
+        </Style>
+        <Style Selector="Button.action-secondary">
+            <Setter Property="Background" Value="#F0E2D0" />
+            <Setter Property="Foreground" Value="#32261D" />
+            <Setter Property="BorderBrush" Value="#D2AF8B" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="14,9" />
+        </Style>
+        <Style Selector="Button.action-danger">
+            <Setter Property="Background" Value="#B55239" />
+            <Setter Property="Foreground" Value="#FFF6F1" />
+            <Setter Property="BorderBrush" Value="#B55239" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="14,9" />
         </Style>
     </Application.Styles>
 </Application>

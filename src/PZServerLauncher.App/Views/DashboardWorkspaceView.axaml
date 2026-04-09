@@ -9,10 +9,10 @@
              x:Class="PZServerLauncher.App.Views.DashboardWorkspaceView"
              x:Name="DashboardRoot"
              x:DataType="vm:DashboardWorkspaceViewModel">
-    <Grid RowDefinitions="Auto,Auto,Auto,*" RowSpacing="18">
+    <Grid RowDefinitions="Auto,Auto,*" RowSpacing="18">
         <Grid ColumnDefinitions="1.45*,360" ColumnSpacing="18">
             <Border Classes="card" Padding="26">
-                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18">
+                <Grid ColumnDefinitions="*,220" ColumnSpacing="18">
                     <StackPanel Spacing="8">
                         <TextBlock Classes="kicker" Text="Fleet Command" />
                         <TextBlock Classes="panel-title" FontSize="30" Text="{Binding PageTitle}" />
@@ -21,11 +21,9 @@
                                    Foreground="#45382E"
                                    Text="{Binding PageSummary}"
                                    TextWrapping="Wrap" />
-                        <TextBlock Classes="caption"
-                                   Text="{Binding NextActionSummary}"
-                                   TextWrapping="Wrap" />
+                        <TextBlock Classes="caption" Text="{Binding NextActionSummary}" TextWrapping="Wrap" />
 
-                        <WrapPanel Margin="0,8,0,0" Orientation="Horizontal" ItemHeight="32">
+                        <WrapPanel Margin="0,8,0,0" Orientation="Horizontal" ItemHeight="30">
                             <Border Background="#2A2927" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
                                 <TextBlock Foreground="#F7F0E7" FontSize="11" Text="{Binding FleetRiskSummary}" TextWrapping="Wrap" />
                             </Border>
@@ -35,24 +33,29 @@
                         </WrapPanel>
                     </StackPanel>
 
-                    <WrapPanel Grid.Column="1" Orientation="Horizontal" ItemWidth="154" ItemHeight="38">
-                        <Button Command="{Binding Legacy.RefreshCommand}" Content="Refresh Host" />
-                        <Button Command="{Binding Legacy.CreateStarterProfileCommand}" Content="Create Profile" />
-                        <Button Command="{Binding Legacy.DiscoverImportsCommand}" Content="Scan Imports" />
-                    </WrapPanel>
+                    <Border Grid.Column="1" Classes="metric-card" Padding="16">
+                        <StackPanel Spacing="6">
+                            <TextBlock Classes="kicker" Text="Next Move" />
+                            <TextBlock Classes="body" FontWeight="SemiBold" Text="{Binding NextActionSummary}" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
                 </Grid>
             </Border>
 
             <Border Grid.Column="1" Classes="surface-dark" Padding="18">
                 <StackPanel Spacing="10">
-                    <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Host Watch" />
+                    <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Fleet Tower" />
                     <TextBlock FontSize="22"
                                FontWeight="SemiBold"
                                Foreground="#F7F0E7"
                                Text="{Binding HostStateSummary}" />
                     <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding RemoteAccessSummary}" TextWrapping="Wrap" />
-                    <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding OwnerSummary}" TextWrapping="Wrap" />
-                    <TextBlock Classes="caption" Foreground="#C5B29E" Text="{Binding StatusSummary}" />
+                    <TextBlock Classes="caption" Foreground="#CCB9A8" Text="{Binding OwnerSummary}" TextWrapping="Wrap" />
+                    <WrapPanel Orientation="Horizontal" ItemWidth="156" ItemHeight="36">
+                        <Button Classes="action-primary" Command="{Binding Legacy.RefreshCommand}" Content="Refresh Host" />
+                        <Button Classes="action-secondary" Command="{Binding Legacy.CreateStarterProfileCommand}" Content="Create Profile" />
+                        <Button Classes="action-secondary" Command="{Binding Legacy.DiscoverImportsCommand}" Content="Scan Imports" />
+                    </WrapPanel>
                 </StackPanel>
             </Border>
         </Grid>
@@ -69,7 +72,7 @@
                 <StackPanel Spacing="6">
                     <TextBlock Classes="kicker" Text="Launch Ready" />
                     <TextBlock Classes="panel-title" FontSize="24" Text="{Binding LaunchReadyProfileCount}" />
-                    <TextBlock Classes="caption" Text="Ready to boot without extra cache/config work." />
+                    <TextBlock Classes="caption" Text="Ready to boot without extra cache or config repair." />
                 </StackPanel>
             </Border>
             <Border Grid.Column="2" Classes="metric-card" Padding="16">
@@ -99,83 +102,187 @@
             </Border>
         </Grid>
 
-        <Grid Grid.Row="2" ColumnDefinitions="1.35*,.95*" ColumnSpacing="18">
-            <Border Classes="surface-dark" Padding="22">
-                <Grid ColumnDefinitions="1.1*,.9*" ColumnSpacing="18">
-                    <StackPanel Spacing="10">
-                        <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Fleet Situation" />
-                        <TextBlock FontSize="26"
-                                   FontWeight="SemiBold"
-                                   Foreground="#F7F0E7"
-                                   Text="{Binding FleetAccessHeadline}"
-                                   TextWrapping="Wrap" />
-                        <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding FleetTrustHeadline}" TextWrapping="Wrap" />
-                        <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding FleetCommunicationHeadline}" TextWrapping="Wrap" />
-                        <TextBlock Classes="caption" Foreground="#CCBBA8" Text="{Binding FleetSummary}" />
-                    </StackPanel>
+        <Grid Grid.Row="2" ColumnDefinitions="1.2*,.8*" ColumnSpacing="18">
+            <StackPanel Spacing="18">
+                <Border Classes="surface-dark" Padding="22">
+                    <Grid ColumnDefinitions="1.02*,.98*" ColumnSpacing="18">
+                        <StackPanel Spacing="10">
+                            <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Fleet Situation" />
+                            <TextBlock FontSize="26"
+                                       FontWeight="SemiBold"
+                                       Foreground="#F7F0E7"
+                                       Text="{Binding FleetAccessHeadline}"
+                                       TextWrapping="Wrap" />
+                            <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding FleetTrustHeadline}" TextWrapping="Wrap" />
+                            <TextBlock Classes="caption" Foreground="#CCBBA8" Text="{Binding FleetCommunicationHeadline}" TextWrapping="Wrap" />
+                        </StackPanel>
 
-                    <StackPanel Grid.Column="1" Spacing="10">
-                        <Border Background="#2B221C" CornerRadius="18" Padding="14">
-                            <StackPanel Spacing="6">
-                                <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Operator Focus" />
-                                <TextBlock Classes="body" Foreground="#F0E7DC" Text="{Binding FleetAccessOperatorSummary}" TextWrapping="Wrap" />
+                        <StackPanel Grid.Column="1" Spacing="10">
+                            <Border Background="#2B221C" CornerRadius="18" Padding="14">
+                                <StackPanel Spacing="6">
+                                    <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Operator Focus" />
+                                    <TextBlock Classes="body" Foreground="#F0E7DC" Text="{Binding FleetAccessOperatorSummary}" TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Border>
+
+                            <WrapPanel Orientation="Horizontal" ItemHeight="28">
+                                <Border Background="#F0E2D0" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                    <TextBlock Foreground="#5E4735"
+                                               FontSize="11"
+                                               Text="{Binding PublicProfileCount, StringFormat='Public listed: {0}'}" />
+                                </Border>
+                                <Border Background="#F0E2D0" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                    <TextBlock Foreground="#5E4735"
+                                               FontSize="11"
+                                               Text="{Binding OpenAccessCount, StringFormat='Open access: {0}'}" />
+                                </Border>
+                                <Border Background="#F0E2D0" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                    <TextBlock Foreground="#5E4735"
+                                               FontSize="11"
+                                               Text="{Binding SafetyEnabledCount, StringFormat='Safety enabled: {0}'}" />
+                                </Border>
+                                <Border Background="#F0E2D0" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                    <TextBlock Foreground="#5E4735"
+                                               FontSize="11"
+                                               Text="{Binding VoiceEnabledCount, StringFormat='Voice enabled: {0}'}" />
+                                </Border>
+                            </WrapPanel>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <Border Classes="card" Padding="20">
+                    <StackPanel Spacing="12">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                            <StackPanel Spacing="4">
+                                <TextBlock Classes="kicker" Text="Server Roster" />
+                                <TextBlock Classes="panel-title" FontSize="24" Text="Fleet posture by profile" />
+                                <TextBlock Classes="body" Text="{Binding FleetSummary}" TextWrapping="Wrap" />
                             </StackPanel>
-                        </Border>
+                            <Border Background="#2A2927" CornerRadius="999" Padding="10,5" VerticalAlignment="Top">
+                                <TextBlock Foreground="#F7F0E7" FontSize="11" Text="{Binding ProfileCount}" />
+                            </Border>
+                        </Grid>
 
-                        <WrapPanel Orientation="Horizontal" ItemHeight="28">
-                            <Border Background="#F0E2D0" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
-                                <TextBlock Foreground="#5E4735"
-                                           FontSize="11"
-                                           Text="{Binding PublicProfileCount, StringFormat='Public listed: {0}'}" />
-                            </Border>
-                            <Border Background="#F0E2D0" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
-                                <TextBlock Foreground="#5E4735"
-                                           FontSize="11"
-                                           Text="{Binding OpenAccessCount, StringFormat='Open access: {0}'}" />
-                            </Border>
-                            <Border Background="#F0E2D0" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
-                                <TextBlock Foreground="#5E4735"
-                                           FontSize="11"
-                                           Text="{Binding SafetyEnabledCount, StringFormat='Safety enabled: {0}'}" />
-                            </Border>
-                            <Border Background="#F0E2D0" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
-                                <TextBlock Foreground="#5E4735"
-                                           FontSize="11"
-                                           Text="{Binding VoiceEnabledCount, StringFormat='Voice enabled: {0}'}" />
-                            </Border>
-                        </WrapPanel>
-
-                        <ItemsControl ItemsSource="{Binding FleetAccessChecklist}">
+                        <ItemsControl ItemsSource="{Binding Legacy.Profiles}" IsVisible="{Binding HasProfiles}">
                             <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Border Background="#2B221C" CornerRadius="14" Padding="12" Margin="0,0,0,8">
-                                        <TextBlock Classes="caption"
-                                                   Foreground="#D9C8B6"
-                                                   Text="{Binding .}"
-                                                   TextWrapping="Wrap" />
+                                <DataTemplate x:DataType="vm:ProfileCardViewModel">
+                                    <Border Background="#F6EFE6" CornerRadius="16" Padding="16" Margin="0,0,0,10">
+                                        <Grid ColumnDefinitions="*,220" ColumnSpacing="16">
+                                            <StackPanel Spacing="8">
+                                                <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                                                    <TextBlock Classes="panel-title" FontSize="18" Text="{Binding DisplayName}" />
+                                                    <Border Grid.Column="1" Background="#2A2927" CornerRadius="999" Padding="10,4">
+                                                        <TextBlock Foreground="#F7F0E7" FontSize="11" Text="{Binding Branch}" />
+                                                    </Border>
+                                                    <Border Grid.Column="2" Background="#2A2927" CornerRadius="999" Padding="10,4">
+                                                        <TextBlock Foreground="#F7F0E7" FontSize="11" Text="{Binding RuntimeState}" />
+                                                    </Border>
+                                                </Grid>
+
+                                                <WrapPanel Orientation="Horizontal" ItemHeight="24">
+                                                    <Border Background="#2A2927" CornerRadius="999" Padding="8,3" Margin="0,0,6,6">
+                                                        <TextBlock Foreground="#F7F0E7" FontSize="11" Text="{Binding InstallSignal}" />
+                                                    </Border>
+                                                    <Border Background="#2A2927" CornerRadius="999" Padding="8,3" Margin="0,0,6,6">
+                                                        <TextBlock Foreground="#F7F0E7" FontSize="11" Text="{Binding LaunchModeLabel}" />
+                                                    </Border>
+                                                    <Border Background="#2A2927" CornerRadius="999" Padding="8,3" Margin="0,0,6,6">
+                                                        <TextBlock Foreground="#F7F0E7" FontSize="11" Text="{Binding RecoveryStateHeadline}" />
+                                                    </Border>
+                                                </WrapPanel>
+
+                                                <TextBlock Classes="body" Text="{Binding CommunitySummary}" TextWrapping="Wrap" />
+                                                <TextBlock Classes="caption" Text="{Binding InstallPreflightSummary}" TextWrapping="Wrap" />
+                                                <TextBlock Classes="caption" Text="{Binding LaunchReadinessSummary}" TextWrapping="Wrap" />
+                                            </StackPanel>
+
+                                            <Border Grid.Column="1" Background="#FFF8F0" BorderBrush="#E0C1A2" BorderThickness="1" CornerRadius="14" Padding="14">
+                                                <StackPanel Spacing="8">
+                                                    <TextBlock Classes="kicker" Text="Watchboard" />
+                                                    <TextBlock Classes="caption" Text="{Binding WorkshopSummary}" TextWrapping="Wrap" />
+                                                    <TextBlock Classes="caption" Text="{Binding LastBackup}" TextWrapping="Wrap" />
+                                                    <TextBlock Classes="caption" Text="{Binding BackupSafetySummary}" TextWrapping="Wrap" />
+                                                </StackPanel>
+                                            </Border>
+                                        </Grid>
                                     </Border>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
 
-                        <TextBlock Classes="caption"
-                                   Foreground="#CCBBA8"
-                                   Text="{Binding PublicOpenWithoutSafetyCount, StringFormat='Public + open without safety: {0}'}"
-                                   TextWrapping="Wrap" />
+                        <Border Background="#1F1D1B"
+                                CornerRadius="16"
+                                Padding="18"
+                                IsVisible="{Binding HasNoProfiles}">
+                            <StackPanel Spacing="10">
+                                <TextBlock Classes="kicker" Foreground="#E5A26B" Text="No Fleet Yet" />
+                                <TextBlock Classes="panel-title" FontSize="22" Foreground="#F7F0E7" Text="Create the first managed server" />
+                                <TextBlock Classes="body"
+                                           Foreground="#D3C8BA"
+                                           Text="The dashboard becomes a real fleet board once the first server profile exists. Start by creating a profile or scanning local installs."
+                                           TextWrapping="Wrap" />
+                                <WrapPanel Orientation="Horizontal" ItemWidth="146" ItemHeight="36">
+                                    <Button Classes="action-primary" Command="{Binding Legacy.CreateStarterProfileCommand}" Content="Create Profile" />
+                                    <Button Classes="action-secondary" Command="{Binding Legacy.DiscoverImportsCommand}" Content="Scan Imports" />
+                                </WrapPanel>
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
-                </Grid>
-            </Border>
+                </Border>
+            </StackPanel>
 
-            <Grid Grid.Column="1" RowDefinitions="Auto,*" RowSpacing="18">
+            <StackPanel Grid.Column="1" Spacing="16">
                 <Border Classes="card" Padding="18">
-                    <StackPanel Spacing="8">
+                    <StackPanel Spacing="10">
                         <TextBlock Classes="kicker" Text="Import Intake" />
                         <TextBlock Classes="panel-title" FontSize="22" Text="{Binding ImportSummary}" TextWrapping="Wrap" />
-                        <TextBlock Classes="caption" Text="Use discovery to turn existing local Zomboid servers into managed profiles." />
+                        <TextBlock Classes="body"
+                                   Text="Use discovery to turn existing local Zomboid servers into managed profiles without rebuilding them from scratch."
+                                   TextWrapping="Wrap" />
+
+                        <ItemsControl ItemsSource="{Binding Legacy.ImportCandidates}" IsVisible="{Binding HasImportCandidates}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:ImportCandidateViewModel">
+                                    <Border Background="#F6EFE6" CornerRadius="14" Padding="14" Margin="0,0,0,10">
+                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="14">
+                                            <StackPanel Spacing="4">
+                                                <TextBlock Classes="panel-title" FontSize="18" Text="{Binding DisplayName}" />
+                                                <TextBlock Classes="caption" Text="{Binding ServerName}" />
+                                                <TextBlock Classes="caption"
+                                                           FontFamily="Cascadia Code,Consolas,monospace"
+                                                           Text="{Binding CacheDirectory}"
+                                                           TextWrapping="Wrap" />
+                                            </StackPanel>
+                                            <Button Classes="action-primary"
+                                                    Command="{Binding #DashboardRoot.DataContext.Legacy.ImportCandidateCommand}"
+                                                    CommandParameter="{Binding .}"
+                                                    Content="{Binding ImportActionLabel}"
+                                                    IsEnabled="{Binding CanImport}" />
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <Border Background="#F6EFE6"
+                                CornerRadius="14"
+                                Padding="14"
+                                IsVisible="{Binding HasNoImportCandidates}">
+                            <StackPanel Spacing="8">
+                                <TextBlock Classes="body"
+                                           Text="No import candidates are loaded right now. Run discovery to scan the local Zomboid directories."
+                                           TextWrapping="Wrap" />
+                                <Button Classes="action-secondary"
+                                        HorizontalAlignment="Left"
+                                        Command="{Binding Legacy.DiscoverImportsCommand}"
+                                        Content="Run Discovery" />
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
                 </Border>
 
-                <Border Grid.Row="1" Classes="card" Padding="18">
+                <Border Classes="card" Padding="18">
                     <StackPanel Spacing="10">
                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                             <StackPanel Spacing="4">
@@ -187,7 +294,7 @@
                             </Border>
                         </Grid>
 
-                        <ItemsControl ItemsSource="{Binding Legacy.RecentJobs}">
+                        <ItemsControl ItemsSource="{Binding Legacy.RecentJobs}" IsVisible="{Binding HasRecentJobs}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="vm:ShellItemViewModel">
                                     <Border Background="#F6EFE6" CornerRadius="14" Padding="14" Margin="0,0,0,8">
@@ -199,123 +306,18 @@
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
-                        <TextBlock Classes="body"
-                                   IsVisible="{Binding HasNoRecentJobs}"
-                                   Text="No recent host jobs have been recorded yet."
-                                   TextWrapping="Wrap" />
+
+                        <Border Background="#F6EFE6"
+                                CornerRadius="14"
+                                Padding="14"
+                                IsVisible="{Binding HasNoRecentJobs}">
+                            <TextBlock Classes="body"
+                                       Text="No recent host jobs have been recorded yet. Install, update, start, or back up a server to populate this feed."
+                                       TextWrapping="Wrap" />
+                        </Border>
                     </StackPanel>
                 </Border>
-            </Grid>
-        </Grid>
-
-        <Grid Grid.Row="3" ColumnDefinitions="1.35*,.95*" ColumnSpacing="18">
-            <Border Classes="card" Padding="20">
-                <StackPanel Spacing="12">
-                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                        <StackPanel Spacing="4">
-                            <TextBlock Classes="kicker" Text="Server Roster" />
-                            <TextBlock Classes="panel-title" FontSize="24" Text="Fleet posture by profile" />
-                            <TextBlock Classes="body" Text="{Binding FleetSummary}" TextWrapping="Wrap" />
-                        </StackPanel>
-                        <Border Background="#2A2927" CornerRadius="999" Padding="10,5" VerticalAlignment="Top">
-                            <TextBlock Foreground="#F7F0E7" FontSize="11" Text="{Binding ProfileCount}" />
-                        </Border>
-                    </Grid>
-
-                    <ItemsControl ItemsSource="{Binding Legacy.Profiles}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate x:DataType="vm:ProfileCardViewModel">
-                                <Border Background="#F6EFE6" CornerRadius="16" Padding="16" Margin="0,0,0,10">
-                                    <Grid ColumnDefinitions="*,220" ColumnSpacing="16">
-                                        <StackPanel Spacing="8">
-                                            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
-                                                <TextBlock Classes="panel-title" FontSize="18" Text="{Binding DisplayName}" />
-                                                <Border Grid.Column="1" Background="#2A2927" CornerRadius="999" Padding="10,4">
-                                                    <TextBlock Foreground="#F7F0E7" FontSize="11" Text="{Binding Branch}" />
-                                                </Border>
-                                                <Border Grid.Column="2" Background="#2A2927" CornerRadius="999" Padding="10,4">
-                                                    <TextBlock Foreground="#F7F0E7" FontSize="11" Text="{Binding RuntimeState}" />
-                                                </Border>
-                                            </Grid>
-
-                                            <WrapPanel Orientation="Horizontal" ItemHeight="24">
-                                                <Border Background="#2A2927" CornerRadius="999" Padding="8,3" Margin="0,0,6,6">
-                                                    <TextBlock Foreground="#F7F0E7" FontSize="11" Text="{Binding InstallSignal}" />
-                                                </Border>
-                                                <Border Background="#2A2927" CornerRadius="999" Padding="8,3" Margin="0,0,6,6">
-                                                    <TextBlock Foreground="#F7F0E7" FontSize="11" Text="{Binding LaunchModeLabel}" />
-                                                </Border>
-                                                <Border Background="#2A2927" CornerRadius="999" Padding="8,3" Margin="0,0,6,6">
-                                                    <TextBlock Foreground="#F7F0E7" FontSize="11" Text="{Binding RecoveryStateHeadline}" />
-                                                </Border>
-                                            </WrapPanel>
-
-                                            <TextBlock Classes="body" Text="{Binding CommunitySummary}" TextWrapping="Wrap" />
-                                            <TextBlock Classes="caption" Text="{Binding InstallPreflightSummary}" TextWrapping="Wrap" />
-                                            <TextBlock Classes="caption" Text="{Binding LaunchReadinessSummary}" TextWrapping="Wrap" />
-                                        </StackPanel>
-
-                                        <Border Grid.Column="1" Background="#FFF8F0" BorderBrush="#E0C1A2" BorderThickness="1" CornerRadius="14" Padding="14">
-                                            <StackPanel Spacing="8">
-                                                <TextBlock Classes="kicker" Text="Watchboard" />
-                                                <TextBlock Classes="caption" Text="{Binding WorkshopSummary}" TextWrapping="Wrap" />
-                                                <TextBlock Classes="caption" Text="{Binding LastBackup}" TextWrapping="Wrap" />
-                                                <TextBlock Classes="caption" Text="{Binding BackupSafetySummary}" TextWrapping="Wrap" />
-                                            </StackPanel>
-                                        </Border>
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-
-                    <TextBlock Classes="body"
-                               IsVisible="{Binding HasNoProfiles}"
-                               Text="No profiles are available yet. Create or import a server to start building the fleet."
-                               TextWrapping="Wrap" />
-                </StackPanel>
-            </Border>
-
-            <Border Grid.Column="1" Classes="card" Padding="20">
-                <StackPanel Spacing="10">
-                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                        <StackPanel Spacing="4">
-                            <TextBlock Classes="kicker" Text="Import Candidates" />
-                            <TextBlock Classes="panel-title" FontSize="22" Text="Local servers waiting for intake" />
-                            <TextBlock Classes="body" Text="Scan local Zomboid directories and turn existing installs into managed profiles." TextWrapping="Wrap" />
-                        </StackPanel>
-                        <Border Background="#2A2927" CornerRadius="999" Padding="10,5" VerticalAlignment="Top">
-                            <TextBlock Foreground="#F7F0E7" FontSize="11" Text="{Binding ImportCandidateCount}" />
-                        </Border>
-                    </Grid>
-
-                    <ItemsControl ItemsSource="{Binding Legacy.ImportCandidates}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate x:DataType="vm:ImportCandidateViewModel">
-                                <Border Background="#F6EFE6" CornerRadius="14" Padding="14" Margin="0,0,0,10">
-                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="14">
-                                        <StackPanel Spacing="4">
-                                            <TextBlock Classes="panel-title" FontSize="18" Text="{Binding DisplayName}" />
-                                            <TextBlock Classes="caption" Text="{Binding ServerName}" />
-                                            <TextBlock Classes="caption" FontFamily="Cascadia Code,Consolas,monospace" Text="{Binding CacheDirectory}" />
-                                            <TextBlock Classes="caption" FontFamily="Cascadia Code,Consolas,monospace" Text="{Binding InstallDirectory}" />
-                                            <TextBlock Classes="body" Text="{Binding Notes}" TextWrapping="Wrap" />
-                                        </StackPanel>
-                                        <Button Command="{Binding #DashboardRoot.DataContext.Legacy.ImportCandidateCommand}"
-                                                CommandParameter="{Binding .}"
-                                                Content="{Binding ImportActionLabel}"
-                                                IsEnabled="{Binding CanImport}" />
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                    <TextBlock Classes="body"
-                               IsVisible="{Binding HasNoImportCandidates}"
-                               Text="No local import candidates are currently loaded. Run discovery to scan the local Zomboid directories."
-                               TextWrapping="Wrap" />
-                </StackPanel>
-            </Border>
+            </StackPanel>
         </Grid>
     </Grid>
 </UserControl>

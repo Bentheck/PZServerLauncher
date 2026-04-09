@@ -84,6 +84,10 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
         ? "No profiles"
         : $"{Legacy.Profiles.Count} profile(s) available";
 
+    public bool HasProfiles => Legacy.Profiles.Count > 0;
+
+    public bool HasNoProfiles => !HasProfiles;
+
     public IReadOnlyList<WorkspaceNavigationItemViewModel> SectionItems { get; }
 
     public IReadOnlyList<ProfileCardViewModel> Profiles => Legacy.Profiles;
@@ -155,6 +159,10 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
         : Directory.Exists(SelectedProfile.InstallDirectory)
             ? "The profile appears installed. Start in Overview, then move to Install & Update or General depending on what needs attention."
             : "The profile is not installed yet. Use Install & Update first, then return here to continue configuration.";
+
+    public bool HasSelectedProfile => SelectedProfile is not null;
+
+    public bool HasNoSelectedProfile => !HasSelectedProfile;
 
     public bool HasUnsavedChanges => CurrentSection is IWorkspaceDirtyState dirtyState && dirtyState.HasUnsavedChanges;
 
@@ -325,6 +333,11 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
 
     partial void OnSelectedProfileChanged(ProfileCardViewModel? value)
     {
+        foreach (var profile in Legacy.Profiles)
+        {
+            profile.IsSelected = ReferenceEquals(profile, value);
+        }
+
         OnPropertyChanged(nameof(SelectedProfileSummary));
         OnPropertyChanged(nameof(SelectedProfileBranchSummary));
         OnPropertyChanged(nameof(SelectedProfileRuntimeSummary));
@@ -341,6 +354,8 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
         OnPropertyChanged(nameof(SelectedWorkspaceAction));
         OnPropertyChanged(nameof(WorkspaceHeadline));
         OnPropertyChanged(nameof(WorkspaceGuidance));
+        OnPropertyChanged(nameof(HasSelectedProfile));
+        OnPropertyChanged(nameof(HasNoSelectedProfile));
 
         foreach (var page in _sections.Values.OfType<IProfileWorkspacePage>())
         {
@@ -350,7 +365,14 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
 
     private void OnProfilesChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
+        foreach (var profile in Legacy.Profiles)
+        {
+            profile.IsSelected = ReferenceEquals(profile, SelectedProfile);
+        }
+
         OnPropertyChanged(nameof(ProfileCountSummary));
+        OnPropertyChanged(nameof(HasProfiles));
+        OnPropertyChanged(nameof(HasNoProfiles));
         OnPropertyChanged(nameof(InstalledProfileCount));
         OnPropertyChanged(nameof(RecoveryReadyProfileCount));
         OnPropertyChanged(nameof(DirectJavaReadyProfileCount));
