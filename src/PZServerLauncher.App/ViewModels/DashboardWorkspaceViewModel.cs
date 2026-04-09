@@ -1,5 +1,6 @@
 using System.Collections.Specialized;
 using System.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using PZServerLauncher.Contracts.Profiles;
 using PZServerLauncher.Core.Settings;
 
@@ -9,7 +10,10 @@ public sealed class DashboardWorkspaceViewModel : WorkspacePageViewModelBase
 {
     private ProjectZomboidFleetAccessPostureSummary _fleetAccessPosture = ProjectZomboidFleetAccessPostureSummaryBuilder.Build(Array.Empty<ProjectZomboidProfilePostureSummary>(), remoteAccessEnabled: false);
 
-    public DashboardWorkspaceViewModel(MainWindowViewModel legacy)
+    public DashboardWorkspaceViewModel(
+        MainWindowViewModel legacy,
+        Action openProfilesWorkspace,
+        Action openUsersWorkspace)
         : base(
             "Dashboard",
             "Host status, import discovery, and recent operational activity for the local Project Zomboid environment.",
@@ -27,10 +31,16 @@ public sealed class DashboardWorkspaceViewModel : WorkspacePageViewModelBase
             profile.PropertyChanged += OnProfilePropertyChanged;
         }
 
+        OpenProfilesWorkspaceCommand = new RelayCommand(openProfilesWorkspace);
+        OpenUsersWorkspaceCommand = new RelayCommand(openUsersWorkspace);
         RefreshFleetAccessPosture();
     }
 
     public MainWindowViewModel Legacy { get; }
+
+    public IRelayCommand OpenProfilesWorkspaceCommand { get; }
+
+    public IRelayCommand OpenUsersWorkspaceCommand { get; }
 
     public string HostStateSummary => Legacy.HostSummary;
 
@@ -53,6 +63,26 @@ public sealed class DashboardWorkspaceViewModel : WorkspacePageViewModelBase
         : HasProfiles
             ? "Review the fleet posture below, then jump into Profiles or Overview to tune the next server."
             : "Refresh the host, then discover local imports so the panel can surface existing Zomboid servers.";
+
+    public string SetupModeHeadline => OwnerBootstrapPending
+        ? "Finish the owner account, then bring the first server under management."
+        : HasImportCandidates
+            ? "Adopt an existing local server or start a new managed one."
+            : "Start with a new managed server or adopt a local one.";
+
+    public string SetupModeSummary => OwnerBootstrapPending
+        ? "Desktop control is already available, but the optional web admin surface should not be treated as production-ready until an owner account exists."
+        : HasImportCandidates
+            ? "A local Project Zomboid footprint is already on this machine. Import it if you want to keep existing files, or create a clean managed server instead."
+            : "No managed servers exist yet. Create a starter profile for a clean setup, or scan the machine to adopt an existing local host.";
+
+    public string SetupPrimaryActionLabel => "New Managed Server";
+
+    public string SetupSecondaryActionLabel => HasImportCandidates ? "Scan Again" : "Scan Local Servers";
+
+    public bool ShowOwnerSetupAction => OwnerBootstrapPending;
+
+    public bool ShowFleetMode => HasProfiles;
 
     public bool OwnerBootstrapPending => Legacy.OwnerBootstrapRequired;
 
@@ -248,6 +278,12 @@ public sealed class DashboardWorkspaceViewModel : WorkspacePageViewModelBase
         OnPropertyChanged(nameof(ImportSummary));
         OnPropertyChanged(nameof(RecentJobSummary));
         OnPropertyChanged(nameof(NextActionSummary));
+        OnPropertyChanged(nameof(SetupModeHeadline));
+        OnPropertyChanged(nameof(SetupModeSummary));
+        OnPropertyChanged(nameof(SetupPrimaryActionLabel));
+        OnPropertyChanged(nameof(SetupSecondaryActionLabel));
+        OnPropertyChanged(nameof(ShowOwnerSetupAction));
+        OnPropertyChanged(nameof(ShowFleetMode));
         OnPropertyChanged(nameof(OwnerBootstrapPending));
         OnPropertyChanged(nameof(HasGuidedLaunchPad));
         OnPropertyChanged(nameof(IsFirstRun));

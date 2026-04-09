@@ -334,6 +334,8 @@ public sealed class ProjectZomboidSettingsCatalogResolver : ISettingsCatalogReso
                         Field($"{branchPrefix}.network.steam-vac", "Steam VAC", StructuredValueKind.Boolean, ConfigFileKind.Ini, "SteamVAC", defaultValue: "true", helpText: "Enable Valve Anti-Cheat integration for Steam clients."),
                         Field($"{branchPrefix}.network.kick-fast-players", "Kick Fast Players", StructuredValueKind.Boolean, ConfigFileKind.Ini, "KickFastPlayers", defaultValue: "false", helpText: "Kick players whose movement looks too fast for the simulation."),
                         Field($"{branchPrefix}.network.deny-login-overloaded", "Deny Login When Overloaded", StructuredValueKind.Boolean, ConfigFileKind.Ini, "DenyLoginOnOverloadedServer", defaultValue: "true", helpText: "Reject new logins while the server is under heavy load."),
+                        Field($"{branchPrefix}.network.client-command-filter", "Client Command Filter", StructuredValueKind.Text, ConfigFileKind.Ini, "ClientCommandFilter", helpText: "Optional Lua client command allow/deny filter string."),
+                        Field($"{branchPrefix}.network.save-world-every-minutes", "Save World Every Minutes", StructuredValueKind.Integer, ConfigFileKind.Ini, "SaveWorldEveryMinutes", defaultValue: "0", helpText: "How often the world is saved to disk. Use 0 to keep the current server default."),
                     }),
                 new StructuredSectionDefinition(
                     $"{branchPrefix}.network.identity-and-safety",
@@ -349,6 +351,8 @@ public sealed class ProjectZomboidSettingsCatalogResolver : ISettingsCatalogReso
                         Field($"{branchPrefix}.network.max-accounts-per-user", "Max Accounts Per User", StructuredValueKind.Integer, ConfigFileKind.Ini, "MaxAccountsPerUser", defaultValue: "0", helpText: "Limit how many different server accounts a single Steam user may create. Use 0 for unlimited."),
                         Field($"{branchPrefix}.network.allow-non-ascii-username", "Allow Non-ASCII Usernames", StructuredValueKind.Boolean, ConfigFileKind.Ini, "AllowNonAsciiUsername", defaultValue: "false", helpText: "Permit usernames that contain non-ASCII characters."),
                         Field($"{branchPrefix}.network.player-save-on-damage", "Save Player On Damage", StructuredValueKind.Boolean, ConfigFileKind.Ini, "PlayerSaveOnDamage", defaultValue: "true", helpText: "Persist character state when damage is taken to reduce rollback after crashes."),
+                        Field($"{branchPrefix}.network.server-tag", "Server Tag", StructuredValueKind.Text, ConfigFileKind.Ini, "Tag", helpText: "Optional short tag shown with the server identity."),
+                        Field($"{branchPrefix}.network.reset-id", "Reset ID", StructuredValueKind.Integer, ConfigFileKind.Ini, "ResetID", defaultValue: "0", helpText: "Project Zomboid reset marker used when resetting world/player state."),
                     }),
                 new StructuredSectionDefinition(
                     $"{branchPrefix}.network.player-presence",
@@ -358,6 +362,8 @@ public sealed class ProjectZomboidSettingsCatalogResolver : ISettingsCatalogReso
                         Field($"{branchPrefix}.network.mouse-over-display-name", "Mouse Over To See Display Name", StructuredValueKind.Boolean, ConfigFileKind.Ini, "MouseOverToSeeDisplayName", defaultValue: "true", helpText: "Show player display names when hovered in the world."),
                         Field($"{branchPrefix}.network.hide-players-behind-you", "Hide Players Behind You", StructuredValueKind.Boolean, ConfigFileKind.Ini, "HidePlayersBehindYou", defaultValue: "true", helpText: "Hide player models when they are directly behind the camera to reduce clutter."),
                         Field($"{branchPrefix}.network.player-bump-player", "Player Bump Player", StructuredValueKind.Boolean, ConfigFileKind.Ini, "PlayerBumpPlayer", defaultValue: "false", helpText: "Allow survivors to physically bump into one another."),
+                        Field($"{branchPrefix}.network.map-remote-player-visibility", "Remote Map Player Visibility", StructuredValueKind.Integer, ConfigFileKind.Ini, "MapRemotePlayerVisibility", defaultValue: "1", helpText: "How much remote player position data is exposed on the world map."),
+                        Field($"{branchPrefix}.network.use-tcp-for-map-traffic", "Use TCP For Map Traffic", StructuredValueKind.Boolean, ConfigFileKind.Ini, "UseTCPForMapTraffic", defaultValue: "false", helpText: "Send map traffic over TCP instead of the normal transport path."),
                     }),
                 new StructuredSectionDefinition(
                     $"{branchPrefix}.network.voice",
@@ -368,6 +374,7 @@ public sealed class ProjectZomboidSettingsCatalogResolver : ISettingsCatalogReso
                         Field($"{branchPrefix}.network.voice-3d", "3D Voice", StructuredValueKind.Boolean, ConfigFileKind.Ini, "Voice3D", defaultValue: "true", helpText: "Attenuate voice by distance and direction in-world."),
                         Field($"{branchPrefix}.network.voice-min-distance", "Voice Min Distance", StructuredValueKind.Integer, ConfigFileKind.Ini, "VoiceMinDistance", defaultValue: "10", helpText: "Distance in tiles before voice begins to attenuate."),
                         Field($"{branchPrefix}.network.voice-max-distance", "Voice Max Distance", StructuredValueKind.Integer, ConfigFileKind.Ini, "VoiceMaxDistance", defaultValue: "100", helpText: "Maximum voice range in tiles."),
+                        Field($"{branchPrefix}.network.minutes-per-page", "Minutes Per Page", StructuredValueKind.Integer, ConfigFileKind.Ini, "MinutesPerPage", defaultValue: "1", helpText: "How many in-game minutes survivors spend per page while reading."),
                     }),
                 new StructuredSectionDefinition(
                     $"{branchPrefix}.network.bootstrap",

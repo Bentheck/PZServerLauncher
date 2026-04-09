@@ -95,22 +95,29 @@ public sealed class StructuredSettingsServiceTests : IDisposable
             SteamVAC=true
             KickFastPlayers=false
             DenyLoginOnOverloadedServer=false
+            ClientCommandFilter=SafehouseOnly
+            SaveWorldEveryMinutes=15
             PlayerSaveOnDamage=false
             DisplayUserName=true
             ShowFirstAndLastName=false
             MouseOverToSeeDisplayName=true
             HidePlayersBehindYou=true
             PlayerBumpPlayer=false
+            MapRemotePlayerVisibility=2
+            UseTCPForMapTraffic=true
             SafetySystem=true
             ShowSafety=false
             SafetyToggleTimer=3
             SafetyCooldownTimer=15
             MaxAccountsPerUser=2
             AllowNonAsciiUsername=true
+            Tag=ROLEPLAY
+            ResetID=4
             VoiceEnable=true
             Voice3D=true
             VoiceMinDistance=10
             VoiceMaxDistance=55
+            MinutesPerPage=3
             """);
 
         await using var dbContext = TestDatabaseFactory.Create(Path.Combine(_tempRoot, "settings.db"));
@@ -182,22 +189,29 @@ public sealed class StructuredSettingsServiceTests : IDisposable
         Assert.Equal("true", networkValues.Values[$"{branchPrefix}.network.steam-vac"]);
         Assert.Equal("false", networkValues.Values[$"{branchPrefix}.network.kick-fast-players"]);
         Assert.Equal("false", networkValues.Values[$"{branchPrefix}.network.deny-login-overloaded"]);
+        Assert.Equal("SafehouseOnly", networkValues.Values[$"{branchPrefix}.network.client-command-filter"]);
+        Assert.Equal("15", networkValues.Values[$"{branchPrefix}.network.save-world-every-minutes"]);
         Assert.Equal("false", networkValues.Values[$"{branchPrefix}.network.player-save-on-damage"]);
         Assert.Equal("true", networkValues.Values[$"{branchPrefix}.network.display-user-name"]);
         Assert.Equal("false", networkValues.Values[$"{branchPrefix}.network.show-first-last-name"]);
         Assert.Equal("true", networkValues.Values[$"{branchPrefix}.network.mouse-over-display-name"]);
         Assert.Equal("true", networkValues.Values[$"{branchPrefix}.network.hide-players-behind-you"]);
         Assert.Equal("false", networkValues.Values[$"{branchPrefix}.network.player-bump-player"]);
+        Assert.Equal("2", networkValues.Values[$"{branchPrefix}.network.map-remote-player-visibility"]);
+        Assert.Equal("true", networkValues.Values[$"{branchPrefix}.network.use-tcp-for-map-traffic"]);
         Assert.Equal("true", networkValues.Values[$"{branchPrefix}.network.safety-system"]);
         Assert.Equal("false", networkValues.Values[$"{branchPrefix}.network.show-safety"]);
         Assert.Equal("3", networkValues.Values[$"{branchPrefix}.network.safety-toggle-timer"]);
         Assert.Equal("15", networkValues.Values[$"{branchPrefix}.network.safety-cooldown-timer"]);
         Assert.Equal("2", networkValues.Values[$"{branchPrefix}.network.max-accounts-per-user"]);
         Assert.Equal("true", networkValues.Values[$"{branchPrefix}.network.allow-non-ascii-username"]);
+        Assert.Equal("ROLEPLAY", networkValues.Values[$"{branchPrefix}.network.server-tag"]);
+        Assert.Equal("4", networkValues.Values[$"{branchPrefix}.network.reset-id"]);
         Assert.Equal("true", networkValues.Values[$"{branchPrefix}.network.voice-enabled"]);
         Assert.Equal("true", networkValues.Values[$"{branchPrefix}.network.voice-3d"]);
         Assert.Equal("10", networkValues.Values[$"{branchPrefix}.network.voice-min-distance"]);
         Assert.Equal("55", networkValues.Values[$"{branchPrefix}.network.voice-max-distance"]);
+        Assert.Equal("3", networkValues.Values[$"{branchPrefix}.network.minutes-per-page"]);
         Assert.Equal(profile.AdminUsername, networkValues.Values[$"{branchPrefix}.network.admin-user"]);
         Assert.Equal(string.Empty, networkValues.Values[$"{branchPrefix}.network.admin-password"]);
         Assert.False(generalValues.RequiresAdvancedFilesFallback);
@@ -275,22 +289,29 @@ public sealed class StructuredSettingsServiceTests : IDisposable
             SteamVAC=true
             KickFastPlayers=false
             DenyLoginOnOverloadedServer=true
+            ClientCommandFilter=
+            SaveWorldEveryMinutes=0
             PlayerSaveOnDamage=true
             DisplayUserName=true
             ShowFirstAndLastName=false
             MouseOverToSeeDisplayName=false
             HidePlayersBehindYou=false
             PlayerBumpPlayer=true
+            MapRemotePlayerVisibility=1
+            UseTCPForMapTraffic=false
             SafetySystem=true
             ShowSafety=true
             SafetyToggleTimer=2
             SafetyCooldownTimer=10
             MaxAccountsPerUser=0
             AllowNonAsciiUsername=false
+            Tag=
+            ResetID=0
             VoiceEnable=true
             Voice3D=true
             VoiceMinDistance=8
             VoiceMaxDistance=45
+            MinutesPerPage=1
             """);
 
         await using var dbContext = TestDatabaseFactory.Create(Path.Combine(_tempRoot, "save.db"));
@@ -359,22 +380,29 @@ public sealed class StructuredSettingsServiceTests : IDisposable
             ["b42.network.steam-vac"] = "false",
             ["b42.network.kick-fast-players"] = "true",
             ["b42.network.deny-login-overloaded"] = "false",
+            ["b42.network.client-command-filter"] = "SafehouseOnly",
+            ["b42.network.save-world-every-minutes"] = "20",
             ["b42.network.player-save-on-damage"] = "false",
             ["b42.network.display-user-name"] = "false",
             ["b42.network.show-first-last-name"] = "true",
             ["b42.network.mouse-over-display-name"] = "true",
             ["b42.network.hide-players-behind-you"] = "true",
             ["b42.network.player-bump-player"] = "false",
+            ["b42.network.map-remote-player-visibility"] = "3",
+            ["b42.network.use-tcp-for-map-traffic"] = "true",
             ["b42.network.safety-system"] = "false",
             ["b42.network.show-safety"] = "true",
             ["b42.network.safety-toggle-timer"] = "6",
             ["b42.network.safety-cooldown-timer"] = "30",
             ["b42.network.max-accounts-per-user"] = "3",
             ["b42.network.allow-non-ascii-username"] = "true",
+            ["b42.network.server-tag"] = "COOP42",
+            ["b42.network.reset-id"] = "7",
             ["b42.network.voice-enabled"] = "true",
             ["b42.network.voice-3d"] = "false",
             ["b42.network.voice-min-distance"] = "12",
             ["b42.network.voice-max-distance"] = "64",
+            ["b42.network.minutes-per-page"] = "5",
             ["b42.network.admin-user"] = "updated-admin",
             ["b42.network.admin-password"] = "updated-secret",
         });
@@ -433,22 +461,29 @@ public sealed class StructuredSettingsServiceTests : IDisposable
         Assert.Contains("SteamVAC=false", iniText);
         Assert.Contains("KickFastPlayers=true", iniText);
         Assert.Contains("DenyLoginOnOverloadedServer=false", iniText);
+        Assert.Contains("ClientCommandFilter=SafehouseOnly", iniText);
+        Assert.Contains("SaveWorldEveryMinutes=20", iniText);
         Assert.Contains("PlayerSaveOnDamage=false", iniText);
         Assert.Contains("DisplayUserName=false", iniText);
         Assert.Contains("ShowFirstAndLastName=true", iniText);
         Assert.Contains("MouseOverToSeeDisplayName=true", iniText);
         Assert.Contains("HidePlayersBehindYou=true", iniText);
         Assert.Contains("PlayerBumpPlayer=false", iniText);
+        Assert.Contains("MapRemotePlayerVisibility=3", iniText);
+        Assert.Contains("UseTCPForMapTraffic=true", iniText);
         Assert.Contains("SafetySystem=false", iniText);
         Assert.Contains("ShowSafety=true", iniText);
         Assert.Contains("SafetyToggleTimer=6", iniText);
         Assert.Contains("SafetyCooldownTimer=30", iniText);
         Assert.Contains("MaxAccountsPerUser=3", iniText);
         Assert.Contains("AllowNonAsciiUsername=true", iniText);
+        Assert.Contains("Tag=COOP42", iniText);
+        Assert.Contains("ResetID=7", iniText);
         Assert.Contains("VoiceEnable=true", iniText);
         Assert.Contains("Voice3D=false", iniText);
         Assert.Contains("VoiceMinDistance=12", iniText);
         Assert.Contains("VoiceMaxDistance=64", iniText);
+        Assert.Contains("MinutesPerPage=5", iniText);
 
         Assert.Equal(16270, updatedProfile!.DefaultPort);
         Assert.Equal(16273, updatedProfile.UdpPort);
@@ -600,6 +635,112 @@ public sealed class StructuredSettingsServiceTests : IDisposable
 
         Assert.False(validation.IsValid);
         Assert.Contains("Voice maximum distance must be greater than or equal to the minimum distance.", validation.FieldErrors["b42.network.voice-max-distance"]);
+    }
+
+    [Fact]
+    public async Task Validate_ReturnsFieldErrorsForExpandedNetworkValues()
+    {
+        Directory.CreateDirectory(_tempRoot);
+        var profile = ServerProfileFactory.CreateStarterProfile() with
+        {
+            ProfileId = "profile-network-expanded-validate",
+            DisplayName = "Profile Network Expanded Validate",
+            ServerName = "profile-server",
+            InstallDirectory = Path.Combine(_tempRoot, "install"),
+            CacheDirectory = Path.Combine(_tempRoot, "cache"),
+        };
+
+        var planner = new ProjectZomboidServerPlanner();
+        var paths = planner.ResolvePaths(profile);
+        Directory.CreateDirectory(Path.GetDirectoryName(paths.IniFilePath)!);
+        File.WriteAllText(paths.IniFilePath, """
+            BindIP=
+            Password=
+            RCONPassword=
+            AutoCreateUserInWhiteList=false
+            DoLuaChecksum=true
+            UPnP=true
+            PingLimit=100
+            SteamVAC=true
+            KickFastPlayers=false
+            DenyLoginOnOverloadedServer=true
+            ClientCommandFilter=
+            SaveWorldEveryMinutes=15
+            PlayerSaveOnDamage=true
+            DisplayUserName=true
+            ShowFirstAndLastName=false
+            MouseOverToSeeDisplayName=true
+            HidePlayersBehindYou=true
+            PlayerBumpPlayer=false
+            MapRemotePlayerVisibility=1
+            UseTCPForMapTraffic=false
+            SafetySystem=true
+            ShowSafety=true
+            SafetyToggleTimer=2
+            SafetyCooldownTimer=10
+            MaxAccountsPerUser=0
+            AllowNonAsciiUsername=false
+            Tag=
+            ResetID=0
+            VoiceEnable=true
+            Voice3D=true
+            VoiceMinDistance=10
+            VoiceMaxDistance=20
+            MinutesPerPage=1
+            """);
+
+        await using var dbContext = TestDatabaseFactory.Create(Path.Combine(_tempRoot, "network-expanded-validate.db"));
+        var profileStore = new ProfileStore(dbContext);
+        await profileStore.UpsertAsync(profile);
+
+        var service = CreateService(profileStore, planner);
+        var validation = service.Validate(profile, ProfileWorkspacePageIds.NetworkAndAdmin, new Dictionary<string, string?>
+        {
+            ["b42.network.bind-ip"] = string.Empty,
+            ["b42.network.server-password"] = string.Empty,
+            ["b42.network.rcon-password"] = string.Empty,
+            ["b42.network.auto-whitelist"] = "false",
+            ["b42.network.do-lua-checksum"] = "true",
+            ["b42.network.upnp"] = "true",
+            ["b42.network.ping-limit"] = "100",
+            ["b42.network.steam-vac"] = "true",
+            ["b42.network.kick-fast-players"] = "false",
+            ["b42.network.deny-login-overloaded"] = "true",
+            ["b42.network.client-command-filter"] = new string('a', 257),
+            ["b42.network.save-world-every-minutes"] = "-1",
+            ["b42.network.player-save-on-damage"] = "true",
+            ["b42.network.display-user-name"] = "true",
+            ["b42.network.show-first-last-name"] = "false",
+            ["b42.network.mouse-over-display-name"] = "true",
+            ["b42.network.hide-players-behind-you"] = "true",
+            ["b42.network.player-bump-player"] = "false",
+            ["b42.network.map-remote-player-visibility"] = "-1",
+            ["b42.network.use-tcp-for-map-traffic"] = "sometimes",
+            ["b42.network.safety-system"] = "true",
+            ["b42.network.show-safety"] = "true",
+            ["b42.network.safety-toggle-timer"] = "2",
+            ["b42.network.safety-cooldown-timer"] = "10",
+            ["b42.network.max-accounts-per-user"] = "0",
+            ["b42.network.allow-non-ascii-username"] = "false",
+            ["b42.network.server-tag"] = new string('x', 33),
+            ["b42.network.reset-id"] = "-3",
+            ["b42.network.voice-enabled"] = "true",
+            ["b42.network.voice-3d"] = "true",
+            ["b42.network.voice-min-distance"] = "10",
+            ["b42.network.voice-max-distance"] = "20",
+            ["b42.network.minutes-per-page"] = "-5",
+            ["b42.network.admin-user"] = "admin",
+            ["b42.network.admin-password"] = string.Empty,
+        });
+
+        Assert.False(validation.IsValid);
+        Assert.Contains("Client command filter must stay under 256 characters.", validation.FieldErrors["b42.network.client-command-filter"]);
+        Assert.Contains("Save world every minutes must be zero or greater.", validation.FieldErrors["b42.network.save-world-every-minutes"]);
+        Assert.Contains("Remote map player visibility must be zero or greater.", validation.FieldErrors["b42.network.map-remote-player-visibility"]);
+        Assert.Contains("Use TCP for map traffic must be true or false.", validation.FieldErrors["b42.network.use-tcp-for-map-traffic"]);
+        Assert.Contains("Server tag must stay under 32 characters.", validation.FieldErrors["b42.network.server-tag"]);
+        Assert.Contains("Reset ID must be zero or greater.", validation.FieldErrors["b42.network.reset-id"]);
+        Assert.Contains("Minutes per page must be zero or greater.", validation.FieldErrors["b42.network.minutes-per-page"]);
     }
 
     [Fact]

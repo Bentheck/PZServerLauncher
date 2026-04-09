@@ -297,22 +297,29 @@ public sealed class StructuredSettingsService(
                         ["SteamVAC"] = ParseBool(values, $"{branchPrefix}.network.steam-vac").ToString().ToLowerInvariant(),
                         ["KickFastPlayers"] = ParseBool(values, $"{branchPrefix}.network.kick-fast-players").ToString().ToLowerInvariant(),
                         ["DenyLoginOnOverloadedServer"] = ParseBool(values, $"{branchPrefix}.network.deny-login-overloaded").ToString().ToLowerInvariant(),
+                        ["ClientCommandFilter"] = NormalizeOptional(values, $"{branchPrefix}.network.client-command-filter"),
+                        ["SaveWorldEveryMinutes"] = ParseInt(values, $"{branchPrefix}.network.save-world-every-minutes").ToString(),
                         ["PlayerSaveOnDamage"] = ParseBool(values, $"{branchPrefix}.network.player-save-on-damage").ToString().ToLowerInvariant(),
                         ["DisplayUserName"] = ParseBool(values, $"{branchPrefix}.network.display-user-name").ToString().ToLowerInvariant(),
                         ["ShowFirstAndLastName"] = ParseBool(values, $"{branchPrefix}.network.show-first-last-name").ToString().ToLowerInvariant(),
                         ["MouseOverToSeeDisplayName"] = ParseBool(values, $"{branchPrefix}.network.mouse-over-display-name").ToString().ToLowerInvariant(),
                         ["HidePlayersBehindYou"] = ParseBool(values, $"{branchPrefix}.network.hide-players-behind-you").ToString().ToLowerInvariant(),
                         ["PlayerBumpPlayer"] = ParseBool(values, $"{branchPrefix}.network.player-bump-player").ToString().ToLowerInvariant(),
+                        ["MapRemotePlayerVisibility"] = ParseInt(values, $"{branchPrefix}.network.map-remote-player-visibility").ToString(),
+                        ["UseTCPForMapTraffic"] = ParseBool(values, $"{branchPrefix}.network.use-tcp-for-map-traffic").ToString().ToLowerInvariant(),
                         ["SafetySystem"] = ParseBool(values, $"{branchPrefix}.network.safety-system").ToString().ToLowerInvariant(),
                         ["ShowSafety"] = ParseBool(values, $"{branchPrefix}.network.show-safety").ToString().ToLowerInvariant(),
                         ["SafetyToggleTimer"] = ParseInt(values, $"{branchPrefix}.network.safety-toggle-timer").ToString(),
                         ["SafetyCooldownTimer"] = ParseInt(values, $"{branchPrefix}.network.safety-cooldown-timer").ToString(),
                         ["MaxAccountsPerUser"] = ParseInt(values, $"{branchPrefix}.network.max-accounts-per-user").ToString(),
                         ["AllowNonAsciiUsername"] = ParseBool(values, $"{branchPrefix}.network.allow-non-ascii-username").ToString().ToLowerInvariant(),
+                        ["Tag"] = NormalizeOptional(values, $"{branchPrefix}.network.server-tag"),
+                        ["ResetID"] = ParseInt(values, $"{branchPrefix}.network.reset-id").ToString(),
                         ["VoiceEnable"] = ParseBool(values, $"{branchPrefix}.network.voice-enabled").ToString().ToLowerInvariant(),
                         ["Voice3D"] = ParseBool(values, $"{branchPrefix}.network.voice-3d").ToString().ToLowerInvariant(),
                         ["VoiceMinDistance"] = ParseInt(values, $"{branchPrefix}.network.voice-min-distance").ToString(),
                         ["VoiceMaxDistance"] = ParseInt(values, $"{branchPrefix}.network.voice-max-distance").ToString(),
+                        ["MinutesPerPage"] = ParseInt(values, $"{branchPrefix}.network.minutes-per-page").ToString(),
                     };
 
                     var updatedContent = iniDocumentService.ApplyValues(raw.Content, iniValues);
@@ -704,22 +711,29 @@ public sealed class StructuredSettingsService(
         ValidateBoolean(values, $"{branchPrefix}.network.steam-vac", "Steam VAC must be true or false.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.network.kick-fast-players", "Kick fast players must be true or false.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.network.deny-login-overloaded", "Deny login when overloaded must be true or false.", fieldErrors);
+        ValidateMaximumLength(values, $"{branchPrefix}.network.client-command-filter", 256, "Client command filter must stay under 256 characters.", fieldErrors);
+        ValidateMinimumInteger(values, $"{branchPrefix}.network.save-world-every-minutes", 0, "Save world every minutes must be zero or greater.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.network.player-save-on-damage", "Player save on damage must be true or false.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.network.display-user-name", "Display username must be true or false.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.network.show-first-last-name", "Show first and last name must be true or false.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.network.mouse-over-display-name", "Mouse-over display names must be true or false.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.network.hide-players-behind-you", "Hide players behind you must be true or false.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.network.player-bump-player", "Player bump player must be true or false.", fieldErrors);
+        ValidateMinimumInteger(values, $"{branchPrefix}.network.map-remote-player-visibility", 0, "Remote map player visibility must be zero or greater.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.network.use-tcp-for-map-traffic", "Use TCP for map traffic must be true or false.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.network.safety-system", "Safety system must be true or false.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.network.show-safety", "Show safety icon must be true or false.", fieldErrors);
         ValidateMinimumInteger(values, $"{branchPrefix}.network.safety-toggle-timer", 0, "Safety toggle timer must be zero or greater.", fieldErrors);
         ValidateMinimumInteger(values, $"{branchPrefix}.network.safety-cooldown-timer", 0, "Safety cooldown timer must be zero or greater.", fieldErrors);
         ValidateMinimumInteger(values, $"{branchPrefix}.network.max-accounts-per-user", 0, "Max accounts per user must be zero or greater.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.network.allow-non-ascii-username", "Allow non-ASCII usernames must be true or false.", fieldErrors);
+        ValidateMaximumLength(values, $"{branchPrefix}.network.server-tag", 32, "Server tag must stay under 32 characters.", fieldErrors);
+        ValidateMinimumInteger(values, $"{branchPrefix}.network.reset-id", 0, "Reset ID must be zero or greater.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.network.voice-enabled", "Voice chat enabled must be true or false.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.network.voice-3d", "3D voice must be true or false.", fieldErrors);
         ValidateMinimumInteger(values, $"{branchPrefix}.network.voice-min-distance", 0, "Voice minimum distance must be zero or greater.", fieldErrors);
         ValidateMinimumInteger(values, $"{branchPrefix}.network.voice-max-distance", 0, "Voice maximum distance must be zero or greater.", fieldErrors);
+        ValidateMinimumInteger(values, $"{branchPrefix}.network.minutes-per-page", 0, "Minutes per page must be zero or greater.", fieldErrors);
 
         var voiceMinKey = $"{branchPrefix}.network.voice-min-distance";
         var voiceMaxKey = $"{branchPrefix}.network.voice-max-distance";

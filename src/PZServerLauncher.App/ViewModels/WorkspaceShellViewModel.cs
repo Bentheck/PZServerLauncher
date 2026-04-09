@@ -28,8 +28,12 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
         _desktopShellService = desktopShellService;
         Legacy.Profiles.CollectionChanged += OnLegacyCollectionChanged;
         Legacy.RecentJobs.CollectionChanged += OnLegacyCollectionChanged;
+        Legacy.WorkspaceNavigationRequested += OnWorkspaceNavigationRequested;
 
-        Dashboard = new DashboardWorkspaceViewModel(legacy);
+        Dashboard = new DashboardWorkspaceViewModel(
+            legacy,
+            () => SelectGlobalPageByKey(WorkspacePageIds.Profiles),
+            () => SelectGlobalPageByKey(WorkspacePageIds.Users));
         Host = new HostWorkspaceViewModel(legacy);
         RemoteAccess = new RemoteAccessWorkspaceViewModel(legacy);
         Users = new UsersWorkspaceViewModel(legacy, hostApiClient);
@@ -300,6 +304,24 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
     {
         OnPropertyChanged(nameof(ProfileCountSummary));
         OnPropertyChanged(nameof(RecentActivitySummary));
+    }
+
+    private void OnWorkspaceNavigationRequested(object? sender, WorkspaceNavigationRequest request)
+    {
+        if (string.Equals(request.GlobalPageId, WorkspacePageIds.Profiles, StringComparison.Ordinal))
+        {
+            SelectGlobalPageByKey(WorkspacePageIds.Profiles);
+            if (!string.IsNullOrWhiteSpace(request.ProfileId))
+            {
+                Profiles.NavigateToProfile(
+                    request.ProfileId,
+                    request.ProfilePageId ?? ProfileWorkspacePageIds.Overview);
+            }
+
+            return;
+        }
+
+        SelectGlobalPageByKey(request.GlobalPageId);
     }
 
     private void ClearPendingNavigation()

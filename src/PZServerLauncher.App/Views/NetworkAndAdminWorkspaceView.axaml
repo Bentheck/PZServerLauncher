@@ -136,9 +136,19 @@
                                     <CheckBox Content="Save Player State On Damage" IsChecked="{Binding PlayerSaveOnDamage}" />
                                     <CheckBox Content="Enable UPnP" IsChecked="{Binding UpnpEnabled}" />
                                     <StackPanel Spacing="4">
+                                        <TextBlock Classes="body" Text="Client Command Filter" />
+                                        <TextBox Text="{Binding ClientCommandFilter}" />
+                                        <TextBlock Classes="caption" Text="Optional filter for client-issued Lua command traffic." />
+                                    </StackPanel>
+                                    <StackPanel Spacing="4">
                                         <TextBlock Classes="body" Text="Ping Limit" />
                                         <TextBox Text="{Binding PingLimit}" />
                                         <TextBlock Classes="caption" Text="Players consistently above this limit can be kicked. Use 100 to disable the check." />
+                                    </StackPanel>
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Classes="body" Text="Save World Every Minutes" />
+                                        <TextBox Text="{Binding SaveWorldEveryMinutes}" />
+                                        <TextBlock Classes="caption" Text="How often the world is flushed to disk. Use 0 to keep the current server default." />
                                     </StackPanel>
                                 </StackPanel>
                             </Border>
@@ -151,6 +161,27 @@
                                     <CheckBox Content="Mouse Over To See Display Name" IsChecked="{Binding MouseOverDisplayName}" />
                                     <CheckBox Content="Hide Players Behind You" IsChecked="{Binding HidePlayersBehindYou}" />
                                     <CheckBox Content="Player Bump Player" IsChecked="{Binding PlayerBumpPlayer}" />
+                                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Classes="body" Text="Server Tag" />
+                                            <TextBox Text="{Binding ServerTag}" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1" Spacing="4">
+                                            <TextBlock Classes="body" Text="Reset ID" />
+                                            <TextBox Text="{Binding ResetId}" />
+                                        </StackPanel>
+                                    </Grid>
+                                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Classes="body" Text="Remote Map Visibility" />
+                                            <TextBox Text="{Binding MapRemotePlayerVisibility}" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1" Spacing="4">
+                                            <CheckBox Margin="0,24,0,0"
+                                                      Content="Use TCP For Map Traffic"
+                                                      IsChecked="{Binding UseTcpForMapTraffic}" />
+                                        </StackPanel>
+                                    </Grid>
                                     <CheckBox Content="Enable Safety System" IsChecked="{Binding SafetySystem}" />
                                     <CheckBox Content="Show Safety Icon" IsChecked="{Binding ShowSafety}" />
                                     <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
@@ -195,6 +226,11 @@
                                             <TextBox Text="{Binding VoiceMaxDistance}" />
                                         </StackPanel>
                                     </Grid>
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Classes="body" Text="Minutes Per Page" />
+                                        <TextBox Text="{Binding MinutesPerPage}" />
+                                        <TextBlock Classes="caption" Text="Controls how fast survivors move through books and magazines." />
+                                    </StackPanel>
                                 </StackPanel>
                             </Border>
 

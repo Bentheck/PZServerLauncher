@@ -234,6 +234,24 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
         }
     }
 
+    public void NavigateToProfile(string profileId, string pageId)
+    {
+        if (Legacy.Profiles.Count == 0)
+        {
+            return;
+        }
+
+        var targetProfile = Legacy.Profiles.FirstOrDefault(profile => string.Equals(profile.ProfileId, profileId, StringComparison.Ordinal))
+            ?? Legacy.Profiles[0];
+        SelectedProfile = targetProfile;
+
+        var targetSection = SectionItems.FirstOrDefault(item => string.Equals(item.Key, pageId, StringComparison.Ordinal) && item.IsEnabled)
+            ?? SectionItems.FirstOrDefault(item => string.Equals(item.Key, ProfileWorkspacePageIds.Overview, StringComparison.Ordinal))
+            ?? SectionItems.First();
+
+        SelectSection(targetSection);
+    }
+
     public async Task SaveDraftAsync()
     {
         if (CurrentSection is IWorkspaceDirtyState dirtyState)

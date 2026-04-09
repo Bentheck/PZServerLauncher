@@ -19,6 +19,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly RuntimeEventStream _runtimeEventStream;
     private readonly DesktopShellService _desktopShellService;
     private HostSettings? _loadedHostSettings;
+    private bool _attemptedInitialImportDiscovery;
 
     public MainWindowViewModel()
         : this(new LocalHostApiClient(), new RuntimeEventStream(new LocalHostApiClient()), new DesktopShellService())
@@ -190,6 +191,8 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public IRelayCommand ExitDesktopCommand { get; }
 
+    public event EventHandler<WorkspaceNavigationRequest>? WorkspaceNavigationRequested;
+
     private async Task InitializeAsync()
     {
         await RefreshAsync();
@@ -270,8 +273,16 @@ public partial class MainWindowViewModel : ViewModelBase
                     job.Detail ?? job.Summary));
             }
 
+            if (Profiles.Count == 0 && ImportCandidates.Count == 0 && !_attemptedInitialImportDiscovery)
+            {
+                _attemptedInitialImportDiscovery = true;
+                await DiscoverImportsCoreAsync(updateStatusMessage: false);
+            }
+
             StatusMessage = Profiles.Count == 0
-                ? "Host is online. Create or import a profile to begin."
+                ? ImportCandidates.Count > 0
+                    ? $"Found {ImportCandidates.Count} local server candidate(s). Adopt one or create a new managed server."
+                    : "Host is online. Create a managed server or scan the machine for an existing local host."
                 : $"Loaded {Profiles.Count} profile(s).";
 
             try
@@ -292,6 +303,7 @@ public partial class MainWindowViewModel : ViewModelBase
             await _hostApiClient.CreateStarterProfileAsync();
             await RefreshAsync();
             StatusMessage = "Starter profile created.";
+            RequestProfileNavigation(ServerProfileFactory.CreateStarterProfile().ProfileId);
         }, "Creating starter profile...");
     }
 
@@ -299,25 +311,7 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         await RunBusyAsync(async () =>
         {
-            var candidates = await _hostApiClient.DiscoverLocalImportsAsync(CancellationToken.None) ?? [];
-            ImportCandidates.Clear();
-
-            foreach (var candidate in candidates)
-            {
-                ImportCandidates.Add(new ImportCandidateViewModel(
-                    candidate.CandidateId,
-                    candidate.DisplayName,
-                    candidate.ServerName,
-                    candidate.CacheDirectory,
-                    candidate.InstallDirectory ?? "No install detected",
-                    candidate.Branch.ToString(),
-                    candidate.Diagnostics.Count == 0 ? "Ready to import." : string.Join(" ", candidate.Diagnostics),
-                    candidate.IsAlreadyImported));
-            }
-
-            StatusMessage = ImportCandidates.Count == 0
-                ? "No existing local Zomboid server configs were found."
-                : $"Found {ImportCandidates.Count} import candidate(s).";
+            await DiscoverImportsCoreAsync(updateStatusMessage: true);
         }, "Scanning for existing local servers...");
     }
 
@@ -349,10 +343,14 @@ public partial class MainWindowViewModel : ViewModelBase
 
         await RunBusyAsync(async () =>
         {
-            await _hostApiClient.ImportLocalCandidateAsync(candidate.CandidateId, CancellationToken.None);
+            var importedProfile = await _hostApiClient.ImportLocalCandidateAsync(candidate.CandidateId, CancellationToken.None);
             await RefreshAsync();
-            await DiscoverImportsAsync();
+            await DiscoverImportsCoreAsync(updateStatusMessage: false);
             StatusMessage = $"Imported {candidate.DisplayName}.";
+            if (importedProfile is not null)
+            {
+                RequestProfileNavigation(importedProfile.ProfileId);
+            }
         }, $"Importing {candidate.DisplayName}...");
     }
 
@@ -702,6 +700,54 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             IsBusy = false;
         }
+    }
+
+    private async Task DiscoverImportsCoreAsync(bool updateStatusMessage)
+    {
+        var candidates = await _hostApiClient.DiscoverLocalImportsAsync(CancellationToken.None) ?? [];
+        ImportCandidates.Clear();
+
+        foreach (var candidate in candidates)
+        {
+            ImportCandidates.Add(new ImportCandidateViewModel(
+                candidate.CandidateId,
+                candidate.DisplayName,
+                candidate.ServerName,
+                candidate.CacheDirectory,
+                candidate.InstallDirectory ?? "No install detected",
+                candidate.Branch.ToString(),
+                candidate.Diagnostics.Count == 0 ? "Ready to import." : string.Join(" ", candidate.Diagnostics),
+                candidate.IsAlreadyImported));
+        }
+
+        if (!updateStatusMessage)
+        {
+            return;
+        }
+
+        StatusMessage = ImportCandidates.Count == 0
+            ? "No existing local Zomboid server configs were found."
+            : $"Found {ImportCandidates.Count} import candidate(s).";
+    }
+
+    private void RequestProfileNavigation(string profileId)
+    {
+        var profile = Profiles.FirstOrDefault(candidate => string.Equals(candidate.ProfileId, profileId, StringComparison.Ordinal));
+        if (profile is null)
+        {
+            return;
+        }
+
+        var nextProfilePage = profile.IsInstallDetected
+            ? ProfileWorkspacePageIds.Overview
+            : ProfileWorkspacePageIds.InstallAndUpdate;
+
+        WorkspaceNavigationRequested?.Invoke(
+            this,
+            new WorkspaceNavigationRequest(
+                WorkspacePageIds.Profiles,
+                profile.ProfileId,
+                nextProfilePage));
     }
 
     private static string FormatWorkshopSummary(WorkshopPreset preset) =>

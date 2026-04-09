@@ -125,6 +125,12 @@ public partial class NetworkAndAdminWorkspaceViewModel : ProfileWorkspacePageVie
     private bool denyLoginWhenOverloaded;
 
     [ObservableProperty]
+    private string clientCommandFilter = string.Empty;
+
+    [ObservableProperty]
+    private string saveWorldEveryMinutes = string.Empty;
+
+    [ObservableProperty]
     private bool playerSaveOnDamage;
 
     [ObservableProperty]
@@ -141,6 +147,12 @@ public partial class NetworkAndAdminWorkspaceViewModel : ProfileWorkspacePageVie
 
     [ObservableProperty]
     private bool playerBumpPlayer;
+
+    [ObservableProperty]
+    private string mapRemotePlayerVisibility = string.Empty;
+
+    [ObservableProperty]
+    private bool useTcpForMapTraffic;
 
     [ObservableProperty]
     private bool safetySystem;
@@ -161,6 +173,12 @@ public partial class NetworkAndAdminWorkspaceViewModel : ProfileWorkspacePageVie
     private bool allowNonAsciiUsername;
 
     [ObservableProperty]
+    private string serverTag = string.Empty;
+
+    [ObservableProperty]
+    private string resetId = string.Empty;
+
+    [ObservableProperty]
     private bool voiceEnabled;
 
     [ObservableProperty]
@@ -171,6 +189,9 @@ public partial class NetworkAndAdminWorkspaceViewModel : ProfileWorkspacePageVie
 
     [ObservableProperty]
     private string voiceMaxDistance = string.Empty;
+
+    [ObservableProperty]
+    private string minutesPerPage = string.Empty;
 
     [ObservableProperty]
     private string adminUsername = string.Empty;
@@ -308,22 +329,29 @@ public partial class NetworkAndAdminWorkspaceViewModel : ProfileWorkspacePageVie
             SteamVacEnabled = bool.TryParse(GetValue(values, ".network.steam-vac"), out var steamVacEnabled) && steamVacEnabled;
             KickFastPlayers = bool.TryParse(GetValue(values, ".network.kick-fast-players"), out var kickFastPlayers) && kickFastPlayers;
             DenyLoginWhenOverloaded = bool.TryParse(GetValue(values, ".network.deny-login-overloaded"), out var denyLoginWhenOverloaded) && denyLoginWhenOverloaded;
+            ClientCommandFilter = GetValue(values, ".network.client-command-filter");
+            SaveWorldEveryMinutes = GetValue(values, ".network.save-world-every-minutes");
             PlayerSaveOnDamage = bool.TryParse(GetValue(values, ".network.player-save-on-damage"), out var playerSaveOnDamage) && playerSaveOnDamage;
             DisplayUserName = bool.TryParse(GetValue(values, ".network.display-user-name"), out var displayUserName) && displayUserName;
             ShowFirstAndLastName = bool.TryParse(GetValue(values, ".network.show-first-last-name"), out var showFirstAndLastName) && showFirstAndLastName;
             MouseOverDisplayName = bool.TryParse(GetValue(values, ".network.mouse-over-display-name"), out var mouseOverDisplayName) && mouseOverDisplayName;
             HidePlayersBehindYou = bool.TryParse(GetValue(values, ".network.hide-players-behind-you"), out var hidePlayersBehindYou) && hidePlayersBehindYou;
             PlayerBumpPlayer = bool.TryParse(GetValue(values, ".network.player-bump-player"), out var playerBumpPlayer) && playerBumpPlayer;
+            MapRemotePlayerVisibility = GetValue(values, ".network.map-remote-player-visibility");
+            UseTcpForMapTraffic = bool.TryParse(GetValue(values, ".network.use-tcp-for-map-traffic"), out var useTcpForMapTraffic) && useTcpForMapTraffic;
             SafetySystem = bool.TryParse(GetValue(values, ".network.safety-system"), out var safetySystem) && safetySystem;
             ShowSafety = bool.TryParse(GetValue(values, ".network.show-safety"), out var showSafety) && showSafety;
             SafetyToggleTimer = GetValue(values, ".network.safety-toggle-timer");
             SafetyCooldownTimer = GetValue(values, ".network.safety-cooldown-timer");
             MaxAccountsPerUser = GetValue(values, ".network.max-accounts-per-user");
             AllowNonAsciiUsername = bool.TryParse(GetValue(values, ".network.allow-non-ascii-username"), out var allowNonAsciiUsername) && allowNonAsciiUsername;
+            ServerTag = GetValue(values, ".network.server-tag");
+            ResetId = GetValue(values, ".network.reset-id");
             VoiceEnabled = bool.TryParse(GetValue(values, ".network.voice-enabled"), out var voiceEnabled) && voiceEnabled;
             Voice3d = bool.TryParse(GetValue(values, ".network.voice-3d"), out var voice3d) && voice3d;
             VoiceMinDistance = GetValue(values, ".network.voice-min-distance");
             VoiceMaxDistance = GetValue(values, ".network.voice-max-distance");
+            MinutesPerPage = GetValue(values, ".network.minutes-per-page");
             AdminUsername = GetValue(values, ".network.admin-user");
             AdminPassword = string.Empty;
         }
@@ -348,22 +376,29 @@ public partial class NetworkAndAdminWorkspaceViewModel : ProfileWorkspacePageVie
             [$"{prefix}.network.steam-vac"] = SteamVacEnabled.ToString(),
             [$"{prefix}.network.kick-fast-players"] = KickFastPlayers.ToString(),
             [$"{prefix}.network.deny-login-overloaded"] = DenyLoginWhenOverloaded.ToString(),
+            [$"{prefix}.network.client-command-filter"] = ClientCommandFilter,
+            [$"{prefix}.network.save-world-every-minutes"] = SaveWorldEveryMinutes,
             [$"{prefix}.network.player-save-on-damage"] = PlayerSaveOnDamage.ToString(),
             [$"{prefix}.network.display-user-name"] = DisplayUserName.ToString(),
             [$"{prefix}.network.show-first-last-name"] = ShowFirstAndLastName.ToString(),
             [$"{prefix}.network.mouse-over-display-name"] = MouseOverDisplayName.ToString(),
             [$"{prefix}.network.hide-players-behind-you"] = HidePlayersBehindYou.ToString(),
             [$"{prefix}.network.player-bump-player"] = PlayerBumpPlayer.ToString(),
+            [$"{prefix}.network.map-remote-player-visibility"] = MapRemotePlayerVisibility,
+            [$"{prefix}.network.use-tcp-for-map-traffic"] = UseTcpForMapTraffic.ToString(),
             [$"{prefix}.network.safety-system"] = SafetySystem.ToString(),
             [$"{prefix}.network.show-safety"] = ShowSafety.ToString(),
             [$"{prefix}.network.safety-toggle-timer"] = SafetyToggleTimer,
             [$"{prefix}.network.safety-cooldown-timer"] = SafetyCooldownTimer,
             [$"{prefix}.network.max-accounts-per-user"] = MaxAccountsPerUser,
             [$"{prefix}.network.allow-non-ascii-username"] = AllowNonAsciiUsername.ToString(),
+            [$"{prefix}.network.server-tag"] = ServerTag,
+            [$"{prefix}.network.reset-id"] = ResetId,
             [$"{prefix}.network.voice-enabled"] = VoiceEnabled.ToString(),
             [$"{prefix}.network.voice-3d"] = Voice3d.ToString(),
             [$"{prefix}.network.voice-min-distance"] = VoiceMinDistance,
             [$"{prefix}.network.voice-max-distance"] = VoiceMaxDistance,
+            [$"{prefix}.network.minutes-per-page"] = MinutesPerPage,
             [$"{prefix}.network.admin-user"] = AdminUsername,
             [$"{prefix}.network.admin-password"] = AdminPassword,
         };
@@ -420,22 +455,29 @@ public partial class NetworkAndAdminWorkspaceViewModel : ProfileWorkspacePageVie
             SteamVacEnabled = false;
             KickFastPlayers = false;
             DenyLoginWhenOverloaded = false;
+            ClientCommandFilter = string.Empty;
+            SaveWorldEveryMinutes = string.Empty;
             PlayerSaveOnDamage = false;
             DisplayUserName = false;
             ShowFirstAndLastName = false;
             MouseOverDisplayName = false;
             HidePlayersBehindYou = false;
             PlayerBumpPlayer = false;
+            MapRemotePlayerVisibility = string.Empty;
+            UseTcpForMapTraffic = false;
             SafetySystem = false;
             ShowSafety = false;
             SafetyToggleTimer = string.Empty;
             SafetyCooldownTimer = string.Empty;
             MaxAccountsPerUser = string.Empty;
             AllowNonAsciiUsername = false;
+            ServerTag = string.Empty;
+            ResetId = string.Empty;
             VoiceEnabled = false;
             Voice3d = false;
             VoiceMinDistance = string.Empty;
             VoiceMaxDistance = string.Empty;
+            MinutesPerPage = string.Empty;
             AdminUsername = string.Empty;
             AdminPassword = string.Empty;
         }
@@ -458,22 +500,29 @@ public partial class NetworkAndAdminWorkspaceViewModel : ProfileWorkspacePageVie
     partial void OnSteamVacEnabledChanged(bool value) => NotifyFieldEdited();
     partial void OnKickFastPlayersChanged(bool value) => NotifyFieldEdited();
     partial void OnDenyLoginWhenOverloadedChanged(bool value) => NotifyFieldEdited();
+    partial void OnClientCommandFilterChanged(string value) => NotifyFieldEdited();
+    partial void OnSaveWorldEveryMinutesChanged(string value) => NotifyFieldEdited();
     partial void OnPlayerSaveOnDamageChanged(bool value) => NotifyFieldEdited();
     partial void OnDisplayUserNameChanged(bool value) => NotifyFieldEdited();
     partial void OnShowFirstAndLastNameChanged(bool value) => NotifyFieldEdited();
     partial void OnMouseOverDisplayNameChanged(bool value) => NotifyFieldEdited();
     partial void OnHidePlayersBehindYouChanged(bool value) => NotifyFieldEdited();
     partial void OnPlayerBumpPlayerChanged(bool value) => NotifyFieldEdited();
+    partial void OnMapRemotePlayerVisibilityChanged(string value) => NotifyFieldEdited();
+    partial void OnUseTcpForMapTrafficChanged(bool value) => NotifyFieldEdited();
     partial void OnSafetySystemChanged(bool value) => NotifyFieldEdited();
     partial void OnShowSafetyChanged(bool value) => NotifyFieldEdited();
     partial void OnSafetyToggleTimerChanged(string value) => NotifyFieldEdited();
     partial void OnSafetyCooldownTimerChanged(string value) => NotifyFieldEdited();
     partial void OnMaxAccountsPerUserChanged(string value) => NotifyFieldEdited();
     partial void OnAllowNonAsciiUsernameChanged(bool value) => NotifyFieldEdited();
+    partial void OnServerTagChanged(string value) => NotifyFieldEdited();
+    partial void OnResetIdChanged(string value) => NotifyFieldEdited();
     partial void OnVoiceEnabledChanged(bool value) => NotifyFieldEdited();
     partial void OnVoice3dChanged(bool value) => NotifyFieldEdited();
     partial void OnVoiceMinDistanceChanged(string value) => NotifyFieldEdited();
     partial void OnVoiceMaxDistanceChanged(string value) => NotifyFieldEdited();
+    partial void OnMinutesPerPageChanged(string value) => NotifyFieldEdited();
     partial void OnAdminUsernameChanged(string value) => NotifyFieldEdited();
     partial void OnAdminPasswordChanged(string value) => NotifyFieldEdited();
 
