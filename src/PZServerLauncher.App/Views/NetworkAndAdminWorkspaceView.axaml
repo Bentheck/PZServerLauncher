@@ -9,333 +9,261 @@
              x:Class="PZServerLauncher.App.Views.NetworkAndAdminWorkspaceView"
              x:DataType="vm:NetworkAndAdminWorkspaceViewModel">
     <ScrollViewer>
-        <Border Classes="card" Padding="24">
-            <StackPanel Spacing="18">
-                <Border Background="#201E1A" CornerRadius="18" Padding="22">
+        <Grid RowDefinitions="Auto,Auto,*" RowSpacing="18">
+            <Grid ColumnDefinitions="1.42*,340" ColumnSpacing="18">
+                <Border Classes="card" Padding="26">
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18">
                         <StackPanel Spacing="8">
-                            <TextBlock Classes="kicker" Foreground="#D7A36A" Text="Network &amp; Admin" />
-                            <TextBlock FontSize="30"
-                                       FontWeight="SemiBold"
-                                       Foreground="#F7F0E7"
-                                       Text="{Binding ProfileDisplayName}" />
+                            <TextBlock Classes="kicker" Text="Trust &amp; Access Console" />
+                            <TextBlock Classes="panel-title" FontSize="30" Text="{Binding ProfileDisplayName}" />
                             <TextBlock Classes="body"
-                                       Foreground="#D7CCBE"
+                                       FontSize="16"
+                                       Foreground="#45382E"
                                        Text="{Binding WorkspaceSummary}"
                                        TextWrapping="Wrap" />
+                            <TextBlock Classes="caption" Text="{Binding ActionSummary}" TextWrapping="Wrap" />
+                            <WrapPanel Margin="0,8,0,0" Orientation="Horizontal" ItemHeight="30">
+                                <Border Background="#2A2927" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                    <TextBlock Foreground="#F7F0E7" FontSize="11" Text="{Binding Branch}" />
+                                </Border>
+                                <Border Background="#EAD6BF" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                    <TextBlock Foreground="#5A4330" FontSize="11" Text="{Binding AccessHeadline}" />
+                                </Border>
+                                <Border Background="#EAD6BF" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                    <TextBlock Foreground="#5A4330" FontSize="11" Text="{Binding TrustHeadline}" />
+                                </Border>
+                            </WrapPanel>
                         </StackPanel>
-                        <Border Grid.Column="1"
-                                Background="#2C2926"
-                                CornerRadius="999"
-                                Padding="14,8"
-                                VerticalAlignment="Top">
-                            <TextBlock Foreground="#F7F0E7"
-                                       FontWeight="SemiBold"
-                                       Text="{Binding Branch}" />
+                        <Border Grid.Column="1" Classes="metric-card" Padding="16" Width="220">
+                            <StackPanel Spacing="6">
+                                <TextBlock Classes="kicker" Text="Recovery" />
+                                <TextBlock Classes="body" FontWeight="SemiBold" Text="{Binding RecoveryHeadline}" TextWrapping="Wrap" />
+                            </StackPanel>
                         </Border>
                     </Grid>
                 </Border>
 
-                <Grid ColumnDefinitions="*,*" ColumnSpacing="14">
-                    <Border Background="#F6EFE6" CornerRadius="14" Padding="16">
-                        <StackPanel Spacing="6">
-                            <TextBlock Classes="kicker" Text="Catalog" />
-                            <TextBlock Classes="body" Text="{Binding CatalogSummary}" TextWrapping="Wrap" />
-                            <TextBlock Classes="body" Text="{Binding LoadStatus}" TextWrapping="Wrap" />
-                        </StackPanel>
-                    </Border>
-                    <Border Grid.Column="1" Background="#F6EFE6" CornerRadius="14" Padding="16">
-                        <StackPanel Spacing="6">
-                            <TextBlock Classes="kicker" Text="Operator Guidance" />
-                            <TextBlock Classes="body" Text="{Binding ActionSummary}" TextWrapping="Wrap" />
-                        </StackPanel>
-                    </Border>
-                </Grid>
-
-                <Border Background="#FFF8F1"
-                        CornerRadius="14"
-                        Padding="16"
-                        IsVisible="{Binding RequiresAdvancedFilesFallback}">
-                    <StackPanel Spacing="6">
-                        <TextBlock Classes="kicker" Text="Fallback Required" />
-                        <TextBlock Classes="body" Text="{Binding FallbackReason}" TextWrapping="Wrap" />
-                        <TextBlock Classes="body"
-                                   Text="Use Advanced Files if this server's network settings can't be represented safely in the structured editor."
-                                   TextWrapping="Wrap" />
+                <Border Grid.Column="1" Classes="surface-dark" Padding="18">
+                    <StackPanel Spacing="10">
+                        <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Security Watch" />
+                        <TextBlock FontSize="22" FontWeight="SemiBold" Foreground="#F7F0E7" Text="{Binding OperatorSummary}" TextWrapping="Wrap" />
+                        <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding IdentityAndSafetyHeadline}" TextWrapping="Wrap" />
+                        <TextBlock Classes="caption" Foreground="#CCB9A8" Text="{Binding VoiceHeadline}" TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
+            </Grid>
 
-                <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="14">
-                    <Border Background="#F6EFE6" CornerRadius="14" Padding="16">
-                        <StackPanel Spacing="8">
-                            <TextBlock Classes="kicker" Text="Access Envelope" />
-                            <TextBlock FontSize="18"
-                                       FontWeight="SemiBold"
-                                       Text="{Binding AccessHeadline}"
-                                       TextWrapping="Wrap" />
-                            <TextBlock Classes="body"
-                                       Text="Bind behavior, account limits, whitelist posture, and username policy."
-                                       TextWrapping="Wrap" />
-                        </StackPanel>
-                    </Border>
-                    <Border Grid.Column="1" Background="#F6EFE6" CornerRadius="14" Padding="16">
-                        <StackPanel Spacing="8">
-                            <TextBlock Classes="kicker" Text="Trust Controls" />
-                            <TextBlock FontSize="18"
-                                       FontWeight="SemiBold"
-                                       Text="{Binding TrustHeadline}"
-                                       TextWrapping="Wrap" />
-                            <TextBlock Classes="body"
-                                       Text="Anti-cheat, login pressure, and compatibility checks that shape how much the server trusts connecting clients."
-                                       TextWrapping="Wrap" />
-                        </StackPanel>
-                    </Border>
-                    <Border Grid.Column="2" Background="#F6EFE6" CornerRadius="14" Padding="16">
-                        <StackPanel Spacing="8">
-                            <TextBlock Classes="kicker" Text="Identity &amp; Safety" />
-                            <TextBlock FontSize="18"
-                                       FontWeight="SemiBold"
-                                       Text="{Binding IdentityAndSafetyHeadline}"
-                                       TextWrapping="Wrap" />
-                            <TextBlock Classes="body"
-                                       Text="Nameplates, rear visibility, collision, and PvP safety signaling for public communities."
-                                       TextWrapping="Wrap" />
-                        </StackPanel>
-                    </Border>
-                    <Border Grid.Column="3" Background="#F6EFE6" CornerRadius="14" Padding="16">
-                        <StackPanel Spacing="8">
-                            <TextBlock Classes="kicker" Text="Voice &amp; Recovery" />
-                            <TextBlock FontSize="18"
-                                       FontWeight="SemiBold"
-                                       Text="{Binding VoiceHeadline}"
-                                       TextWrapping="Wrap" />
-                            <TextBlock Classes="body"
-                                       Text="{Binding RecoveryHeadline}"
-                                       TextWrapping="Wrap" />
-                        </StackPanel>
-                    </Border>
-                </Grid>
+            <Grid Grid.Row="1" ColumnDefinitions="*,*,*,*" ColumnSpacing="14">
+                <Border Classes="metric-card" Padding="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Access" />
+                        <TextBlock Classes="panel-title" FontSize="22" Text="{Binding AccessHeadline}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="1" Classes="metric-card" Padding="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Trust" />
+                        <TextBlock Classes="panel-title" FontSize="22" Text="{Binding TrustHeadline}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="2" Classes="metric-card" Padding="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Identity" />
+                        <TextBlock Classes="panel-title" FontSize="22" Text="{Binding IdentityAndSafetyHeadline}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="3" Classes="metric-card" Padding="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Voice" />
+                        <TextBlock Classes="panel-title" FontSize="22" Text="{Binding VoiceHeadline}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+            </Grid>
 
-                <Grid ColumnDefinitions="1.2*,.8*" ColumnSpacing="14">
-                    <Border Background="#FFF8F1" CornerRadius="14" Padding="16">
-                        <StackPanel Spacing="8">
-                            <TextBlock Classes="kicker" Text="Operator Summary" />
-                            <TextBlock FontSize="18"
-                                       FontWeight="SemiBold"
-                                       Text="{Binding OperatorSummary}"
-                                       TextWrapping="Wrap" />
-                            <TextBlock Classes="body"
-                                       Text="{Binding RecoveryHeadline}"
-                                       TextWrapping="Wrap" />
-                        </StackPanel>
-                    </Border>
-                    <Border Grid.Column="1" Background="#FFF8F1" CornerRadius="14" Padding="16">
-                        <StackPanel Spacing="8">
-                            <TextBlock Classes="kicker" Text="Operator Checklist" />
-                            <ItemsControl ItemsSource="{Binding NetworkChecklist}">
+            <Grid Grid.Row="2" ColumnDefinitions="1.22*,.78*" ColumnSpacing="18">
+                <StackPanel Spacing="18">
+                    <Border Classes="surface-dark" Padding="22">
+                        <Grid ColumnDefinitions="1.08*,.92*" ColumnSpacing="18">
+                            <StackPanel Spacing="10">
+                                <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Trust Situation" />
+                                <TextBlock FontSize="26" FontWeight="SemiBold" Foreground="#F7F0E7" Text="{Binding AccessHeadline}" TextWrapping="Wrap" />
+                                <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding TrustHeadline}" TextWrapping="Wrap" />
+                                <TextBlock Classes="caption" Foreground="#CCB9A8" Text="{Binding RecoveryHeadline}" TextWrapping="Wrap" />
+                            </StackPanel>
+                            <ItemsControl Grid.Column="1" ItemsSource="{Binding NetworkChecklist}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <TextBlock Classes="body"
-                                                   Margin="0,0,0,6"
-                                                   Text="{Binding .}"
-                                                   TextWrapping="Wrap" />
+                                        <Border Background="#F0E2D0" CornerRadius="14" Padding="12" Margin="0,0,0,8">
+                                            <TextBlock Classes="caption" Foreground="#5E4735" Text="{Binding .}" TextWrapping="Wrap" />
+                                        </Border>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
-                        </StackPanel>
+                        </Grid>
                     </Border>
-                </Grid>
 
-                <Grid ColumnDefinitions="1.15*,.85*" ColumnSpacing="16" IsEnabled="{Binding CanEdit}">
-                    <StackPanel Spacing="16">
-                        <Border Classes="card" Padding="18">
-                            <StackPanel Spacing="14">
-                                <TextBlock Classes="kicker" Text="Access &amp; Passwords" />
-                                <StackPanel Spacing="4">
-                                    <TextBlock Classes="body" Text="Bind IP" />
-                                    <TextBox Text="{Binding BindIp}" />
-                                    <TextBlock Classes="body"
-                                               FontSize="12"
-                                               Text="Leave empty to let the server bind normally, or set a specific IPv4/IPv6 address."
-                                               TextWrapping="Wrap" />
-                                </StackPanel>
-                                <StackPanel Spacing="4">
-                                    <TextBlock Classes="body" Text="Server Password" />
-                                    <TextBox PasswordChar="*" Text="{Binding ServerPassword}" />
-                                    <TextBlock Classes="body"
-                                               FontSize="12"
-                                               Text="Write-only. Leave blank to keep the existing join password."
-                                               TextWrapping="Wrap" />
-                                </StackPanel>
-                                <StackPanel Spacing="4">
-                                    <TextBlock Classes="body" Text="RCON Password" />
-                                    <TextBox PasswordChar="*" Text="{Binding RconPassword}" />
-                                    <TextBlock Classes="body"
-                                               FontSize="12"
-                                               Text="Write-only. Leave blank to keep the existing remote console password."
-                                               TextWrapping="Wrap" />
-                                </StackPanel>
-                            </StackPanel>
-                        </Border>
-
-                        <Border Classes="card" Padding="18">
-                            <StackPanel Spacing="14">
-                                <TextBlock Classes="kicker" Text="Compatibility &amp; Discovery" />
-                                <CheckBox Content="Auto Create Whitelist Users" IsChecked="{Binding AutoCreateWhitelistUsers}" />
-                                <CheckBox Content="Enforce Lua Checksum" IsChecked="{Binding DoLuaChecksum}" />
-                                <CheckBox Content="Steam VAC" IsChecked="{Binding SteamVacEnabled}" />
-                                <CheckBox Content="Kick Fast Players" IsChecked="{Binding KickFastPlayers}" />
-                                <CheckBox Content="Deny Login When Overloaded" IsChecked="{Binding DenyLoginWhenOverloaded}" />
-                                <CheckBox Content="Save Player State On Damage" IsChecked="{Binding PlayerSaveOnDamage}" />
-                                <CheckBox Content="Enable UPnP" IsChecked="{Binding UpnpEnabled}" />
-                                <StackPanel Spacing="4">
-                                    <TextBlock Classes="body" Text="Ping Limit" />
-                                    <TextBox Text="{Binding PingLimit}" />
-                                    <TextBlock Classes="body"
-                                               FontSize="12"
-                                               Text="Players consistently above this limit can be kicked. Use 100 to disable the check."
-                                               TextWrapping="Wrap" />
-                                </StackPanel>
-                                <TextBlock Classes="body"
-                                           FontSize="12"
-                                           Text="Steam VAC, movement checks, Lua checksum, and whitelist creation all shape how strictly the server trusts connecting players."
-                                           TextWrapping="Wrap" />
-                            </StackPanel>
-                        </Border>
-
-                        <Border Classes="card" Padding="18">
-                            <StackPanel Spacing="14">
-                                <TextBlock Classes="kicker" Text="Identity &amp; PvP Safety" />
-                                <CheckBox Content="Display Username" IsChecked="{Binding DisplayUserName}" />
-                                <CheckBox Content="Show First &amp; Last Name" IsChecked="{Binding ShowFirstAndLastName}" />
-                                <CheckBox Content="Mouse Over To See Display Name" IsChecked="{Binding MouseOverDisplayName}" />
-                                <CheckBox Content="Hide Players Behind You" IsChecked="{Binding HidePlayersBehindYou}" />
-                                <CheckBox Content="Player Bump Player" IsChecked="{Binding PlayerBumpPlayer}" />
-                                <CheckBox Content="Enable Safety System" IsChecked="{Binding SafetySystem}" />
-                                <CheckBox Content="Show Safety Icon" IsChecked="{Binding ShowSafety}" />
-                                <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                    <Grid ColumnDefinitions="1.05*,.95*" ColumnSpacing="16" IsEnabled="{Binding CanEdit}">
+                        <StackPanel Spacing="16">
+                            <Border Classes="card" Padding="18">
+                                <StackPanel Spacing="14">
+                                    <TextBlock Classes="kicker" Text="Access &amp; Passwords" />
                                     <StackPanel Spacing="4">
-                                        <TextBlock Classes="body" Text="Safety Toggle Timer" />
-                                        <TextBox Text="{Binding SafetyToggleTimer}" />
-                                        <TextBlock Classes="body"
-                                                   FontSize="12"
-                                                   Text="Delay before players can toggle PvP safety."
-                                                   TextWrapping="Wrap" />
+                                        <TextBlock Classes="body" Text="Bind IP" />
+                                        <TextBox Text="{Binding BindIp}" />
+                                        <TextBlock Classes="caption" Text="Leave empty for default binding, or set a specific IPv4/IPv6 address." />
                                     </StackPanel>
-                                    <StackPanel Grid.Column="1" Spacing="4">
-                                        <TextBlock Classes="body" Text="Safety Cooldown Timer" />
-                                        <TextBox Text="{Binding SafetyCooldownTimer}" />
-                                        <TextBlock Classes="body"
-                                                   FontSize="12"
-                                                   Text="Cooldown before players can toggle safety again."
-                                                   TextWrapping="Wrap" />
-                                    </StackPanel>
-                                </Grid>
-                                <TextBlock Classes="body"
-                                           FontSize="12"
-                                           Text="These identity, visibility, collision, and safety rules shape nameplates, close-quarters readability, PvP signaling, and grief-prevention on public communities."
-                                           TextWrapping="Wrap" />
-                            </StackPanel>
-                        </Border>
-                    </StackPanel>
-
-                    <StackPanel Grid.Column="1" Spacing="16">
-                        <Border Classes="card" Padding="18">
-                            <StackPanel Spacing="14">
-                                <TextBlock Classes="kicker" Text="Account Policy" />
-                                <StackPanel Spacing="4">
-                                    <TextBlock Classes="body" Text="Max Accounts Per User" />
-                                    <TextBox Text="{Binding MaxAccountsPerUser}" />
-                                    <TextBlock Classes="body"
-                                               FontSize="12"
-                                               Text="Use 0 for unlimited. Higher values allow multiple server accounts per Steam user."
-                                               TextWrapping="Wrap" />
-                                </StackPanel>
-                                <CheckBox Content="Allow Non-ASCII Usernames" IsChecked="{Binding AllowNonAsciiUsername}" />
-                                <TextBlock Classes="body"
-                                           FontSize="12"
-                                           Text="Enable this when your community needs non-Latin usernames. Leave it off for stricter naming rules."
-                                           TextWrapping="Wrap" />
-                            </StackPanel>
-                        </Border>
-
-                        <Border Classes="card" Padding="18">
-                            <StackPanel Spacing="14">
-                                <TextBlock Classes="kicker" Text="Voice Chat" />
-                                <CheckBox Content="Enable Voice Chat" IsChecked="{Binding VoiceEnabled}" />
-                                <CheckBox Content="Use 3D Voice" IsChecked="{Binding Voice3d}" />
-                                <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
                                     <StackPanel Spacing="4">
-                                        <TextBlock Classes="body" Text="Voice Min Distance" />
-                                        <TextBox Text="{Binding VoiceMinDistance}" />
-                                        <TextBlock Classes="body"
-                                                   FontSize="12"
-                                                   Text="Range where nearby players hear full volume."
-                                                   TextWrapping="Wrap" />
+                                        <TextBlock Classes="body" Text="Server Password" />
+                                        <TextBox PasswordChar="*" Text="{Binding ServerPassword}" />
+                                        <TextBlock Classes="caption" Text="Write-only. Leave blank to keep the existing join password." />
                                     </StackPanel>
-                                    <StackPanel Grid.Column="1" Spacing="4">
-                                        <TextBlock Classes="body" Text="Voice Max Distance" />
-                                        <TextBox Text="{Binding VoiceMaxDistance}" />
-                                        <TextBlock Classes="body"
-                                                   FontSize="12"
-                                                   Text="Maximum range before voice is fully attenuated."
-                                                   TextWrapping="Wrap" />
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Classes="body" Text="RCON Password" />
+                                        <TextBox PasswordChar="*" Text="{Binding RconPassword}" />
+                                        <TextBlock Classes="caption" Text="Write-only. Leave blank to keep the existing remote console password." />
                                     </StackPanel>
-                                </Grid>
-                                <TextBlock Classes="body"
-                                           FontSize="12"
-                                           Text="Voice settings let you decide whether the server behaves like a private comms channel or an in-world proximity radio."
-                                           TextWrapping="Wrap" />
-                            </StackPanel>
-                        </Border>
-
-                        <Border Classes="card" Padding="18">
-                            <StackPanel Spacing="14">
-                                <TextBlock Classes="kicker" Text="Launcher Admin Bootstrap" />
-                                <StackPanel Spacing="4">
-                                    <TextBlock Classes="body" Text="Admin Username" />
-                                    <TextBox Text="{Binding AdminUsername}" />
-                                    <TextBlock Classes="body"
-                                               FontSize="12"
-                                               Text="Used by launcher-managed startup arguments when the server needs to bootstrap an admin account."
-                                               TextWrapping="Wrap" />
                                 </StackPanel>
-                                <StackPanel Spacing="4">
-                                    <TextBlock Classes="body" Text="Admin Password" />
-                                    <TextBox PasswordChar="*" Text="{Binding AdminPassword}" />
-                                    <TextBlock Classes="body"
-                                               FontSize="12"
-                                               Text="Write-only. Leave blank to keep the existing bootstrap admin password."
-                                               TextWrapping="Wrap" />
+                            </Border>
+
+                            <Border Classes="card" Padding="18">
+                                <StackPanel Spacing="14">
+                                    <TextBlock Classes="kicker" Text="Compatibility &amp; Discovery" />
+                                    <CheckBox Content="Auto Create Whitelist Users" IsChecked="{Binding AutoCreateWhitelistUsers}" />
+                                    <CheckBox Content="Enforce Lua Checksum" IsChecked="{Binding DoLuaChecksum}" />
+                                    <CheckBox Content="Steam VAC" IsChecked="{Binding SteamVacEnabled}" />
+                                    <CheckBox Content="Kick Fast Players" IsChecked="{Binding KickFastPlayers}" />
+                                    <CheckBox Content="Deny Login When Overloaded" IsChecked="{Binding DenyLoginWhenOverloaded}" />
+                                    <CheckBox Content="Save Player State On Damage" IsChecked="{Binding PlayerSaveOnDamage}" />
+                                    <CheckBox Content="Enable UPnP" IsChecked="{Binding UpnpEnabled}" />
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Classes="body" Text="Ping Limit" />
+                                        <TextBox Text="{Binding PingLimit}" />
+                                        <TextBlock Classes="caption" Text="Players consistently above this limit can be kicked. Use 100 to disable the check." />
+                                    </StackPanel>
                                 </StackPanel>
-                            </StackPanel>
-                        </Border>
+                            </Border>
 
-                        <Border Background="#F6EFE6" CornerRadius="12" Padding="12" IsVisible="{Binding DraftsDisabled}">
-                            <TextBlock Classes="body"
-                                       Text="Drafts are intentionally disabled on this page so passwords are never persisted in workspace draft storage."
-                                       TextWrapping="Wrap" />
-                        </Border>
-                    </StackPanel>
-                </Grid>
+                            <Border Classes="card" Padding="18">
+                                <StackPanel Spacing="14">
+                                    <TextBlock Classes="kicker" Text="Identity &amp; PvP Safety" />
+                                    <CheckBox Content="Display Username" IsChecked="{Binding DisplayUserName}" />
+                                    <CheckBox Content="Show First &amp; Last Name" IsChecked="{Binding ShowFirstAndLastName}" />
+                                    <CheckBox Content="Mouse Over To See Display Name" IsChecked="{Binding MouseOverDisplayName}" />
+                                    <CheckBox Content="Hide Players Behind You" IsChecked="{Binding HidePlayersBehindYou}" />
+                                    <CheckBox Content="Player Bump Player" IsChecked="{Binding PlayerBumpPlayer}" />
+                                    <CheckBox Content="Enable Safety System" IsChecked="{Binding SafetySystem}" />
+                                    <CheckBox Content="Show Safety Icon" IsChecked="{Binding ShowSafety}" />
+                                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Classes="body" Text="Safety Toggle Timer" />
+                                            <TextBox Text="{Binding SafetyToggleTimer}" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1" Spacing="4">
+                                            <TextBlock Classes="body" Text="Safety Cooldown Timer" />
+                                            <TextBox Text="{Binding SafetyCooldownTimer}" />
+                                        </StackPanel>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
 
-                <WrapPanel Orientation="Horizontal" ItemWidth="152" ItemHeight="36">
-                    <Button Command="{Binding SaveSettingsCommand}" Content="Apply Settings" IsEnabled="{Binding CanEdit}" />
-                    <Button Command="{Binding DiscardDraftCommand}" Content="Reload" />
-                    <Button Command="{Binding ReloadCommand}" Content="Reload From Host" />
-                </WrapPanel>
+                        <StackPanel Grid.Column="1" Spacing="16">
+                            <Border Classes="card" Padding="18">
+                                <StackPanel Spacing="14">
+                                    <TextBlock Classes="kicker" Text="Account Policy" />
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Classes="body" Text="Max Accounts Per User" />
+                                        <TextBox Text="{Binding MaxAccountsPerUser}" />
+                                        <TextBlock Classes="caption" Text="Use 0 for unlimited. Higher values allow multiple server accounts per Steam user." />
+                                    </StackPanel>
+                                    <CheckBox Content="Allow Non-ASCII Usernames" IsChecked="{Binding AllowNonAsciiUsername}" />
+                                </StackPanel>
+                            </Border>
 
-                <StackPanel Spacing="8" IsVisible="{Binding HasFieldErrors}">
-                    <TextBlock Classes="kicker" Text="Validation" />
-                    <ItemsControl ItemsSource="{Binding FieldErrors}">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <TextBlock Classes="body" Text="{Binding .}" TextWrapping="Wrap" />
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                            <Border Classes="card" Padding="18">
+                                <StackPanel Spacing="14">
+                                    <TextBlock Classes="kicker" Text="Voice Chat" />
+                                    <CheckBox Content="Enable Voice Chat" IsChecked="{Binding VoiceEnabled}" />
+                                    <CheckBox Content="Use 3D Voice" IsChecked="{Binding Voice3d}" />
+                                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Classes="body" Text="Voice Min Distance" />
+                                            <TextBox Text="{Binding VoiceMinDistance}" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1" Spacing="4">
+                                            <TextBlock Classes="body" Text="Voice Max Distance" />
+                                            <TextBox Text="{Binding VoiceMaxDistance}" />
+                                        </StackPanel>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Classes="card" Padding="18">
+                                <StackPanel Spacing="14">
+                                    <TextBlock Classes="kicker" Text="Launcher Admin Bootstrap" />
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Classes="body" Text="Admin Username" />
+                                        <TextBox Text="{Binding AdminUsername}" />
+                                    </StackPanel>
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Classes="body" Text="Admin Password" />
+                                        <TextBox PasswordChar="*" Text="{Binding AdminPassword}" />
+                                        <TextBlock Classes="caption" Text="Write-only. Leave blank to keep the existing bootstrap admin password." />
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Background="#F6EFE6" CornerRadius="12" Padding="12" IsVisible="{Binding DraftsDisabled}">
+                                <TextBlock Classes="caption" Text="Drafts are intentionally disabled on this page so passwords are never persisted in workspace draft storage." TextWrapping="Wrap" />
+                            </Border>
+                        </StackPanel>
+                    </Grid>
                 </StackPanel>
-            </StackPanel>
-        </Border>
+
+                <Border Grid.Column="1" Classes="surface-dark" Padding="18">
+                    <StackPanel Spacing="14">
+                        <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Command Tower" />
+                        <TextBlock FontSize="24" FontWeight="SemiBold" Foreground="#F7F0E7" Text="{Binding OperatorSummary}" TextWrapping="Wrap" />
+                        <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding RecoveryHeadline}" TextWrapping="Wrap" />
+
+                        <Border Background="#2B221C" CornerRadius="16" Padding="14">
+                            <StackPanel Spacing="8">
+                                <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Actions" />
+                                <WrapPanel Orientation="Horizontal" ItemWidth="152" ItemHeight="36">
+                                    <Button Command="{Binding SaveSettingsCommand}" Content="Apply Settings" IsEnabled="{Binding CanEdit}" />
+                                    <Button Command="{Binding DiscardDraftCommand}" Content="Reload" />
+                                    <Button Command="{Binding ReloadCommand}" Content="Reload From Host" />
+                                </WrapPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Background="#F0E2D0" CornerRadius="16" Padding="14">
+                            <StackPanel Spacing="8">
+                                <TextBlock Classes="kicker" Text="Current Signals" />
+                                <TextBlock Classes="body" Text="{Binding CatalogSummary}" TextWrapping="Wrap" />
+                                <TextBlock Classes="caption" Text="{Binding LoadStatus}" TextWrapping="Wrap" />
+                                <TextBlock Classes="caption" Text="{Binding ActionSummary}" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Background="#F0E2D0" CornerRadius="16" Padding="14">
+                            <StackPanel Spacing="8">
+                                <TextBlock Classes="kicker" Text="Validation" />
+                                <StackPanel Spacing="6" IsVisible="{Binding HasFieldErrors}">
+                                    <ItemsControl ItemsSource="{Binding FieldErrors}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Classes="caption" Text="{Binding .}" TextWrapping="Wrap" Margin="0,0,0,6" />
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                                <TextBlock Classes="caption" IsVisible="{Binding RequiresAdvancedFilesFallback}" Text="{Binding FallbackReason}" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Grid>
     </ScrollViewer>
 </UserControl>

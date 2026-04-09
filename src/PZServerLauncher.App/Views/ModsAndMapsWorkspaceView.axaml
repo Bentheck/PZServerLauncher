@@ -11,395 +11,205 @@
              x:Name="ModsRoot"
              x:DataType="vm:ModsAndMapsWorkspaceViewModel">
     <ScrollViewer>
-        <Border Classes="card" Padding="24">
-            <StackPanel Spacing="18">
-                <Border Background="#1F1E1B" CornerRadius="18" Padding="22">
+        <Grid RowDefinitions="Auto,Auto,*" RowSpacing="18">
+            <Grid ColumnDefinitions="1.4*,340" ColumnSpacing="18">
+                <Border Classes="card" Padding="26">
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18">
                         <StackPanel Spacing="8">
-                            <TextBlock Classes="kicker" Foreground="#D7A36A" Text="Mods &amp; Maps" />
-                            <TextBlock FontSize="30"
-                                       FontWeight="SemiBold"
-                                       Foreground="#F7F0E7"
-                                       Text="{Binding ProfileDisplayName}" />
-                            <TextBlock Classes="body"
-                                       Foreground="#D7CCBE"
-                                       Text="{Binding WorkspaceSummary}"
-                                       TextWrapping="Wrap" />
+                            <TextBlock Classes="kicker" Text="Loadout Control Deck" />
+                            <TextBlock Classes="panel-title" FontSize="30" Text="{Binding ProfileDisplayName}" />
+                            <TextBlock Classes="body" FontSize="16" Foreground="#45382E" Text="{Binding WorkspaceSummary}" TextWrapping="Wrap" />
+                            <TextBlock Classes="caption" Text="{Binding ModsNextStepSummary}" TextWrapping="Wrap" />
+                            <WrapPanel Margin="0,8,0,0" Orientation="Horizontal" ItemHeight="30">
+                                <Border Background="#2A2927" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                    <TextBlock Foreground="#F7F0E7" FontSize="11" Text="{Binding Branch}" />
+                                </Border>
+                                <Border Background="#EAD6BF" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                    <TextBlock Foreground="#5A4330" FontSize="11" Text="{Binding LoadoutHeadline}" />
+                                </Border>
+                                <Border Background="#EAD6BF" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                    <TextBlock Foreground="#5A4330" FontSize="11" Text="{Binding ValidationHeadline}" />
+                                </Border>
+                            </WrapPanel>
                         </StackPanel>
-                        <Border Grid.Column="1"
-                                Background="#2C2926"
-                                CornerRadius="999"
-                                Padding="14,8"
-                                VerticalAlignment="Top">
-                            <TextBlock Foreground="#F7F0E7"
-                                       FontWeight="SemiBold"
-                                       Text="{Binding Branch}" />
+                        <Border Grid.Column="1" Classes="metric-card" Padding="16" Width="220">
+                            <StackPanel Spacing="6">
+                                <TextBlock Classes="kicker" Text="Rollback" />
+                                <TextBlock Classes="body" FontWeight="SemiBold" Text="{Binding RecoverySummary}" TextWrapping="Wrap" />
+                            </StackPanel>
                         </Border>
                     </Grid>
                 </Border>
 
-                <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="14">
-                    <Border Background="#F6EFE6" CornerRadius="14" Padding="16">
-                        <StackPanel Spacing="6">
-                            <TextBlock Classes="kicker" Text="Live Stack" />
-                            <TextBlock FontSize="18"
-                                       FontWeight="SemiBold"
-                                       Text="{Binding LoadoutHeadline}"
-                                       TextWrapping="Wrap" />
-                            <TextBlock Classes="body"
-                                       Text="{Binding WorkshopSummary}"
-                                       TextWrapping="Wrap" />
-                        </StackPanel>
-                    </Border>
-                    <Border Grid.Column="1" Background="#F6EFE6" CornerRadius="14" Padding="16">
-                        <StackPanel Spacing="6">
-                            <TextBlock Classes="kicker" Text="Validation" />
-                            <TextBlock FontSize="18"
-                                       FontWeight="SemiBold"
-                                       Text="{Binding ValidationHeadline}"
-                                       TextWrapping="Wrap" />
-                            <TextBlock Classes="body"
-                                       Text="{Binding ScannerSummary}"
-                                       TextWrapping="Wrap" />
-                        </StackPanel>
-                    </Border>
-                    <Border Grid.Column="2" Background="#F6EFE6" CornerRadius="14" Padding="16">
-                        <StackPanel Spacing="6">
-                            <TextBlock Classes="kicker" Text="Fallbacks" />
-                            <TextBlock FontSize="18"
-                                       FontWeight="SemiBold"
-                                       Text="{Binding PresetLibraryHeadline}"
-                                       TextWrapping="Wrap" />
-                            <TextBlock Classes="body"
-                                       Text="{Binding RecoverySummary}"
-                                       TextWrapping="Wrap" />
-                        </StackPanel>
-                    </Border>
-                    <Border Grid.Column="3" Background="#F6EFE6" CornerRadius="14" Padding="16">
-                        <StackPanel Spacing="6">
-                            <TextBlock Classes="kicker" Text="Map Chain" />
-                            <TextBlock FontSize="18"
-                                       FontWeight="SemiBold"
-                                       Text="{Binding MapChainHeadline}"
-                                       TextWrapping="Wrap" />
-                            <TextBlock Classes="body"
-                                       Text="{Binding MapOrderSummary}"
-                                       TextWrapping="Wrap" />
-                        </StackPanel>
-                    </Border>
-                </Grid>
-
-                <Grid ColumnDefinitions="1.25*,.75*" ColumnSpacing="16">
-                    <StackPanel Spacing="16">
-                        <Border Classes="card" Padding="18">
-                            <StackPanel Spacing="12">
-                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                                    <StackPanel Spacing="4">
-                                        <TextBlock Classes="panel-title" FontSize="20" Text="Ordered Preset Manager" />
-                                        <TextBlock Classes="body"
-                                                   Text="Shape the live workshop, mod, and map order here. The queue editor is now the operator surface, while bulk paste remains the fast lane for large reshuffles."
-                                                   TextWrapping="Wrap" />
-                                    </StackPanel>
-                                    <Button Grid.Column="1"
-                                            VerticalAlignment="Top"
-                                            Command="{Binding ReloadCommand}"
-                                            Content="Reload From Host" />
-                                </Grid>
-
-                                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="12">
-                                    <Border Background="#FBF7F1" CornerRadius="14" Padding="14">
-                                        <StackPanel Spacing="10">
-                                            <TextBlock Classes="kicker" Text="Workshop Items" />
-                                            <TextBlock Classes="body"
-                                                       Text="Seed the live stack with workshop IDs or URLs, then let the scanner normalize them against the local cache."
-                                                       TextWrapping="Wrap" />
-                                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                                                <TextBox Text="{Binding NewWorkshopEntry}"
-                                                         Watermark="Paste a workshop URL or numeric ID" />
-                                                <Button Grid.Column="1"
-                                                        Command="{Binding AddWorkshopEntryCommand}"
-                                                        Content="Add"
-                                                        IsEnabled="{Binding CanAddWorkshopEntry}" />
-                                            </Grid>
-                                            <ItemsControl ItemsSource="{Binding WorkshopEntries}" IsVisible="{Binding HasWorkshopEntries}">
-                                                <ItemsControl.ItemTemplate>
-                                                    <DataTemplate x:DataType="vm:ModsAndMapsWorkspaceViewModel+PresetEntryViewModel">
-                                                        <Border Background="#F6EFE6" CornerRadius="12" Padding="10" Margin="0,0,0,8">
-                                                            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="8">
-                                                                <Border Background="#E9DDCF" CornerRadius="999" Padding="8,4">
-                                                                    <TextBlock Classes="kicker" Text="{Binding OrderLabel}" />
-                                                                </Border>
-                                                                <TextBlock Grid.Column="1"
-                                                                           Classes="body"
-                                                                           Text="{Binding Value}"
-                                                                           TextWrapping="Wrap"
-                                                                           VerticalAlignment="Center" />
-                                                                <Button Grid.Column="2"
-                                                                        Command="{Binding #ModsRoot.DataContext.MoveEntryUpCommand}"
-                                                                        CommandParameter="{Binding .}"
-                                                                        Content="Up" />
-                                                                <Button Grid.Column="3"
-                                                                        Command="{Binding #ModsRoot.DataContext.MoveEntryDownCommand}"
-                                                                        CommandParameter="{Binding .}"
-                                                                        Content="Down" />
-                                                                <Button Grid.Column="4"
-                                                                        Command="{Binding #ModsRoot.DataContext.RemoveEntryCommand}"
-                                                                        CommandParameter="{Binding .}"
-                                                                        Content="Remove" />
-                                                            </Grid>
-                                                        </Border>
-                                                    </DataTemplate>
-                                                </ItemsControl.ItemTemplate>
-                                            </ItemsControl>
-                                            <TextBlock Classes="body"
-                                                       IsVisible="{Binding HasNoWorkshopEntries}"
-                                                       Text="No workshop entries yet. Add one ID or URL to start building the preset."
-                                                       TextWrapping="Wrap" />
-                                        </StackPanel>
-                                    </Border>
-
-                                    <Border Grid.Column="1" Background="#FBF7F1" CornerRadius="14" Padding="14">
-                                        <StackPanel Spacing="10">
-                                            <TextBlock Classes="kicker" Text="Enabled Mods" />
-                                            <TextBlock Classes="body"
-                                                       Text="Mirror the exact mod IDs the server should load once the workshop items are installed."
-                                                       TextWrapping="Wrap" />
-                                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                                                <TextBox Text="{Binding NewEnabledModEntry}"
-                                                         Watermark="Paste a mod ID" />
-                                                <Button Grid.Column="1"
-                                                        Command="{Binding AddEnabledModEntryCommand}"
-                                                        Content="Add"
-                                                        IsEnabled="{Binding CanAddEnabledModEntry}" />
-                                            </Grid>
-                                            <ItemsControl ItemsSource="{Binding EnabledModEntries}" IsVisible="{Binding HasEnabledModEntries}">
-                                                <ItemsControl.ItemTemplate>
-                                                    <DataTemplate x:DataType="vm:ModsAndMapsWorkspaceViewModel+PresetEntryViewModel">
-                                                        <Border Background="#F6EFE6" CornerRadius="12" Padding="10" Margin="0,0,0,8">
-                                                            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="8">
-                                                                <Border Background="#E9DDCF" CornerRadius="999" Padding="8,4">
-                                                                    <TextBlock Classes="kicker" Text="{Binding OrderLabel}" />
-                                                                </Border>
-                                                                <TextBlock Grid.Column="1"
-                                                                           Classes="body"
-                                                                           Text="{Binding Value}"
-                                                                           TextWrapping="Wrap"
-                                                                           VerticalAlignment="Center" />
-                                                                <Button Grid.Column="2"
-                                                                        Command="{Binding #ModsRoot.DataContext.MoveEntryUpCommand}"
-                                                                        CommandParameter="{Binding .}"
-                                                                        Content="Up" />
-                                                                <Button Grid.Column="3"
-                                                                        Command="{Binding #ModsRoot.DataContext.MoveEntryDownCommand}"
-                                                                        CommandParameter="{Binding .}"
-                                                                        Content="Down" />
-                                                                <Button Grid.Column="4"
-                                                                        Command="{Binding #ModsRoot.DataContext.RemoveEntryCommand}"
-                                                                        CommandParameter="{Binding .}"
-                                                                        Content="Remove" />
-                                                            </Grid>
-                                                        </Border>
-                                                    </DataTemplate>
-                                                </ItemsControl.ItemTemplate>
-                                            </ItemsControl>
-                                            <TextBlock Classes="body"
-                                                       IsVisible="{Binding HasNoEnabledModEntries}"
-                                                       Text="No mod IDs yet. Add exact IDs in the same order the server should load them."
-                                                       TextWrapping="Wrap" />
-                                        </StackPanel>
-                                    </Border>
-
-                                    <Border Grid.Column="2" Background="#FBF7F1" CornerRadius="14" Padding="14">
-                                        <StackPanel Spacing="10">
-                                            <TextBlock Classes="kicker" Text="Map Folders" />
-                                            <TextBlock Classes="body"
-                                                       Text="Keep custom map folders in the same order the server should bootstrap them at runtime."
-                                                       TextWrapping="Wrap" />
-                                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                                                <TextBox Text="{Binding NewMapEntry}"
-                                                         Watermark="Paste a map folder" />
-                                                <Button Grid.Column="1"
-                                                        Command="{Binding AddMapEntryCommand}"
-                                                        Content="Add"
-                                                        IsEnabled="{Binding CanAddMapEntry}" />
-                                            </Grid>
-                                            <ItemsControl ItemsSource="{Binding MapEntries}" IsVisible="{Binding HasMapEntries}">
-                                                <ItemsControl.ItemTemplate>
-                                                    <DataTemplate x:DataType="vm:ModsAndMapsWorkspaceViewModel+PresetEntryViewModel">
-                                                        <Border Background="#F6EFE6" CornerRadius="12" Padding="10" Margin="0,0,0,8">
-                                                            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="8">
-                                                                <Border Background="#E9DDCF" CornerRadius="999" Padding="8,4">
-                                                                    <TextBlock Classes="kicker" Text="{Binding OrderLabel}" />
-                                                                </Border>
-                                                                <TextBlock Grid.Column="1"
-                                                                           Classes="body"
-                                                                           Text="{Binding Value}"
-                                                                           TextWrapping="Wrap"
-                                                                           VerticalAlignment="Center" />
-                                                                <Button Grid.Column="2"
-                                                                        Command="{Binding #ModsRoot.DataContext.MoveEntryUpCommand}"
-                                                                        CommandParameter="{Binding .}"
-                                                                        Content="Up" />
-                                                                <Button Grid.Column="3"
-                                                                        Command="{Binding #ModsRoot.DataContext.MoveEntryDownCommand}"
-                                                                        CommandParameter="{Binding .}"
-                                                                        Content="Down" />
-                                                                <Button Grid.Column="4"
-                                                                        Command="{Binding #ModsRoot.DataContext.RemoveEntryCommand}"
-                                                                        CommandParameter="{Binding .}"
-                                                                        Content="Remove" />
-                                                            </Grid>
-                                                        </Border>
-                                                    </DataTemplate>
-                                                </ItemsControl.ItemTemplate>
-                                            </ItemsControl>
-                                            <TextBlock Classes="body"
-                                                       IsVisible="{Binding HasNoMapEntries}"
-                                                       Text="No custom map folders yet. Add them only when the server actually needs map load order."
-                                                       TextWrapping="Wrap" />
-                                        </StackPanel>
-                                    </Border>
-                                </Grid>
-                            </StackPanel>
-                        </Border>
-
-                        <Border Classes="card" Padding="18">
-                            <StackPanel Spacing="12">
-                                <TextBlock Classes="kicker" Text="Bulk Paste &amp; Export" />
-                                <TextBlock Classes="body"
-                                           Text="Paste or export the raw ordered lists here when you need speed. The queue editor above and the operator posture on the right both track these values."
-                                           TextWrapping="Wrap" />
-                                <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
-                                    <StackPanel Spacing="8">
-                                        <TextBlock Classes="kicker" Text="Workshop Item IDs Or URLs" />
-                                        <TextBox MinHeight="180"
-                                                 AcceptsReturn="True"
-                                                 Text="{Binding WorkshopItemIdsText}"
-                                                 VerticalContentAlignment="Top"
-                                                 TextWrapping="NoWrap" />
-                                    </StackPanel>
-                                    <StackPanel Grid.Column="1" Spacing="8">
-                                        <TextBlock Classes="kicker" Text="Enabled Mod IDs" />
-                                        <TextBox MinHeight="180"
-                                                 AcceptsReturn="True"
-                                                 Text="{Binding EnabledModIdsText}"
-                                                 VerticalContentAlignment="Top"
-                                                 TextWrapping="NoWrap" />
-                                    </StackPanel>
-                                </Grid>
-                                <StackPanel Spacing="8">
-                                    <TextBlock Classes="kicker" Text="Map Folders" />
-                                    <TextBox MinHeight="120"
-                                             AcceptsReturn="True"
-                                             Text="{Binding MapFoldersText}"
-                                             VerticalContentAlignment="Top"
-                                             TextWrapping="NoWrap" />
-                                </StackPanel>
-                            </StackPanel>
-                        </Border>
+                <Border Grid.Column="1" Classes="surface-dark" Padding="18">
+                    <StackPanel Spacing="10">
+                        <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Scanner Watch" />
+                        <TextBlock FontSize="22" FontWeight="SemiBold" Foreground="#F7F0E7" Text="{Binding ScannerSummary}" TextWrapping="Wrap" />
+                        <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding ScanReadinessSummary}" TextWrapping="Wrap" />
+                        <TextBlock Classes="caption" Foreground="#CCB9A8" Text="{Binding QueueIntegritySummary}" TextWrapping="Wrap" />
                     </StackPanel>
+                </Border>
+            </Grid>
 
-                    <StackPanel Grid.Column="1" Spacing="16">
-                        <Border Background="#F6EFE6" CornerRadius="14" Padding="16">
-                            <StackPanel Spacing="6">
-                                <TextBlock Classes="kicker" Text="Catalog" />
-                                <TextBlock Classes="body" Text="{Binding CatalogSummary}" TextWrapping="Wrap" />
-                                <TextBlock Classes="body" Text="{Binding LoadStatus}" TextWrapping="Wrap" />
-                            </StackPanel>
-                        </Border>
+            <Grid Grid.Row="1" ColumnDefinitions="*,*,*,*" ColumnSpacing="14">
+                <Border Classes="metric-card" Padding="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Live Stack" />
+                        <TextBlock Classes="panel-title" FontSize="22" Text="{Binding LoadoutHeadline}" TextWrapping="Wrap" />
+                        <TextBlock Classes="caption" Text="{Binding WorkshopSummary}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="1" Classes="metric-card" Padding="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Validation" />
+                        <TextBlock Classes="panel-title" FontSize="22" Text="{Binding ValidationHeadline}" TextWrapping="Wrap" />
+                        <TextBlock Classes="caption" Text="{Binding ScannerSummary}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="2" Classes="metric-card" Padding="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Preset Library" />
+                        <TextBlock Classes="panel-title" FontSize="22" Text="{Binding PresetLibraryHeadline}" TextWrapping="Wrap" />
+                        <TextBlock Classes="caption" Text="{Binding SavedPresetSummary}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="3" Classes="metric-card" Padding="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Map Chain" />
+                        <TextBlock Classes="panel-title" FontSize="22" Text="{Binding MapChainHeadline}" TextWrapping="Wrap" />
+                        <TextBlock Classes="caption" Text="{Binding MapOrderSummary}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+            </Grid>
 
-                        <Border Background="#FFF8F1" CornerRadius="14" Padding="16">
+            <Grid Grid.Row="2" ColumnDefinitions="1.22*,.78*" ColumnSpacing="18">
+                <StackPanel Spacing="18">
+                    <Border Classes="surface-dark" Padding="22">
+                        <StackPanel Spacing="10">
+                            <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Loadout Situation" />
+                            <TextBlock FontSize="26" FontWeight="SemiBold" Foreground="#F7F0E7" Text="{Binding QueueIntegritySummary}" TextWrapping="Wrap" />
+                            <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding MapOrderSummary}" TextWrapping="Wrap" />
+                            <TextBlock Classes="caption" Foreground="#CCB9A8" Text="{Binding RecoverySummary}" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Classes="card" Padding="18">
+                        <StackPanel Spacing="12">
+                            <TextBlock Classes="panel-title" FontSize="22" Text="Ordered preset manager" />
+                            <TextBlock Classes="body" Text="Shape the live workshop, mod, and map order here. The queue editor is the operational surface for keeping the active server loadout clean." TextWrapping="Wrap" />
+
+                            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="12">
+                                <Border Background="#FBF7F1" CornerRadius="14" Padding="14">
+                                    <StackPanel Spacing="10">
+                                        <TextBlock Classes="kicker" Text="Workshop Intake" />
+                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                            <TextBox Text="{Binding NewWorkshopEntry}" PlaceholderText="Paste a workshop URL or numeric ID" />
+                                            <Button Grid.Column="1" Command="{Binding AddWorkshopEntryCommand}" Content="Add" IsEnabled="{Binding CanAddWorkshopEntry}" />
+                                        </Grid>
+                                        <ItemsControl ItemsSource="{Binding WorkshopEntries}" IsVisible="{Binding HasWorkshopEntries}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="vm:ModsAndMapsWorkspaceViewModel+PresetEntryViewModel">
+                                                    <Border Background="#F6EFE6" CornerRadius="12" Padding="10" Margin="0,0,0,8">
+                                                        <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="8">
+                                                            <Border Background="#E9DDCF" CornerRadius="999" Padding="8,4"><TextBlock Classes="kicker" Text="{Binding OrderLabel}" /></Border>
+                                                            <TextBlock Grid.Column="1" Classes="body" Text="{Binding Value}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                                                            <Button Grid.Column="2" Command="{Binding #ModsRoot.DataContext.MoveEntryUpCommand}" CommandParameter="{Binding .}" Content="Up" />
+                                                            <Button Grid.Column="3" Command="{Binding #ModsRoot.DataContext.MoveEntryDownCommand}" CommandParameter="{Binding .}" Content="Down" />
+                                                            <Button Grid.Column="4" Command="{Binding #ModsRoot.DataContext.RemoveEntryCommand}" CommandParameter="{Binding .}" Content="Remove" />
+                                                        </Grid>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                        <TextBlock Classes="caption" IsVisible="{Binding HasNoWorkshopEntries}" Text="No workshop entries yet." />
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Grid.Column="1" Background="#FBF7F1" CornerRadius="14" Padding="14">
+                                    <StackPanel Spacing="10">
+                                        <TextBlock Classes="kicker" Text="Enabled Mods" />
+                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                            <TextBox Text="{Binding NewEnabledModEntry}" PlaceholderText="Paste a mod ID" />
+                                            <Button Grid.Column="1" Command="{Binding AddEnabledModEntryCommand}" Content="Add" IsEnabled="{Binding CanAddEnabledModEntry}" />
+                                        </Grid>
+                                        <ItemsControl ItemsSource="{Binding EnabledModEntries}" IsVisible="{Binding HasEnabledModEntries}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="vm:ModsAndMapsWorkspaceViewModel+PresetEntryViewModel">
+                                                    <Border Background="#F6EFE6" CornerRadius="12" Padding="10" Margin="0,0,0,8">
+                                                        <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="8">
+                                                            <Border Background="#E9DDCF" CornerRadius="999" Padding="8,4"><TextBlock Classes="kicker" Text="{Binding OrderLabel}" /></Border>
+                                                            <TextBlock Grid.Column="1" Classes="body" Text="{Binding Value}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                                                            <Button Grid.Column="2" Command="{Binding #ModsRoot.DataContext.MoveEntryUpCommand}" CommandParameter="{Binding .}" Content="Up" />
+                                                            <Button Grid.Column="3" Command="{Binding #ModsRoot.DataContext.MoveEntryDownCommand}" CommandParameter="{Binding .}" Content="Down" />
+                                                            <Button Grid.Column="4" Command="{Binding #ModsRoot.DataContext.RemoveEntryCommand}" CommandParameter="{Binding .}" Content="Remove" />
+                                                        </Grid>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                        <TextBlock Classes="caption" IsVisible="{Binding HasNoEnabledModEntries}" Text="No mod IDs yet." />
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Grid.Column="2" Background="#FBF7F1" CornerRadius="14" Padding="14">
+                                    <StackPanel Spacing="10">
+                                        <TextBlock Classes="kicker" Text="Map Chain" />
+                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                            <TextBox Text="{Binding NewMapEntry}" PlaceholderText="Paste a map folder" />
+                                            <Button Grid.Column="1" Command="{Binding AddMapEntryCommand}" Content="Add" IsEnabled="{Binding CanAddMapEntry}" />
+                                        </Grid>
+                                        <ItemsControl ItemsSource="{Binding MapEntries}" IsVisible="{Binding HasMapEntries}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="vm:ModsAndMapsWorkspaceViewModel+PresetEntryViewModel">
+                                                    <Border Background="#F6EFE6" CornerRadius="12" Padding="10" Margin="0,0,0,8">
+                                                        <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="8">
+                                                            <Border Background="#E9DDCF" CornerRadius="999" Padding="8,4"><TextBlock Classes="kicker" Text="{Binding OrderLabel}" /></Border>
+                                                            <TextBlock Grid.Column="1" Classes="body" Text="{Binding Value}" TextWrapping="Wrap" VerticalAlignment="Center" />
+                                                            <Button Grid.Column="2" Command="{Binding #ModsRoot.DataContext.MoveEntryUpCommand}" CommandParameter="{Binding .}" Content="Up" />
+                                                            <Button Grid.Column="3" Command="{Binding #ModsRoot.DataContext.MoveEntryDownCommand}" CommandParameter="{Binding .}" Content="Down" />
+                                                            <Button Grid.Column="4" Command="{Binding #ModsRoot.DataContext.RemoveEntryCommand}" CommandParameter="{Binding .}" Content="Remove" />
+                                                        </Grid>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                        <TextBlock Classes="caption" IsVisible="{Binding HasNoMapEntries}" Text="No custom map folders yet." />
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Classes="card" Padding="18">
+                        <StackPanel Spacing="12">
+                            <TextBlock Classes="kicker" Text="Bulk Paste &amp; Export" />
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                                <StackPanel Spacing="8">
+                                    <TextBlock Classes="kicker" Text="Workshop Item IDs Or URLs" />
+                                    <TextBox MinHeight="180" AcceptsReturn="True" Text="{Binding WorkshopItemIdsText}" VerticalContentAlignment="Top" TextWrapping="NoWrap" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Spacing="8">
+                                    <TextBlock Classes="kicker" Text="Enabled Mod IDs" />
+                                    <TextBox MinHeight="180" AcceptsReturn="True" Text="{Binding EnabledModIdsText}" VerticalContentAlignment="Top" TextWrapping="NoWrap" />
+                                </StackPanel>
+                            </Grid>
                             <StackPanel Spacing="8">
-                                <TextBlock Classes="kicker" Text="Operator Lane" />
-                                <TextBlock FontSize="18"
-                                           FontWeight="SemiBold"
-                                           Text="{Binding ModsNextStepSummary}"
-                                           TextWrapping="Wrap" />
-                                <TextBlock Classes="body"
-                                           Text="{Binding QueueIntegritySummary}"
-                                           TextWrapping="Wrap" />
+                                <TextBlock Classes="kicker" Text="Map Folders" />
+                                <TextBox MinHeight="120" AcceptsReturn="True" Text="{Binding MapFoldersText}" VerticalContentAlignment="Top" TextWrapping="NoWrap" />
                             </StackPanel>
-                        </Border>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
 
-                        <Border Background="#F6EFE6" CornerRadius="14" Padding="16">
+                <Border Grid.Column="1" Classes="surface-dark" Padding="18">
+                    <StackPanel Spacing="14">
+                        <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Command Tower" />
+                        <TextBlock FontSize="24" FontWeight="SemiBold" Foreground="#F7F0E7" Text="{Binding ValidationHeadline}" TextWrapping="Wrap" />
+                        <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding QueueIntegritySummary}" TextWrapping="Wrap" />
+
+                        <Border Background="#2B221C" CornerRadius="16" Padding="14">
                             <StackPanel Spacing="8">
-                                <TextBlock Classes="kicker" Text="Scanner Posture" />
-                                <TextBlock Classes="body" Text="{Binding ScannerSummary}" TextWrapping="Wrap" />
-                                <TextBlock Classes="body" Text="{Binding ScanReadinessSummary}" TextWrapping="Wrap" />
-                            </StackPanel>
-                        </Border>
-
-                        <Border Background="#FBF7F1" CornerRadius="14" Padding="16">
-                            <StackPanel Spacing="8">
-                                <TextBlock Classes="kicker" Text="Rollback Coverage" />
-                                <TextBlock Classes="body" Text="{Binding RecoverySummary}" TextWrapping="Wrap" />
-                                <TextBlock FontWeight="SemiBold"
-                                           IsVisible="{Binding HasLatestSavedPreset}"
-                                           Text="{Binding LatestSavedPresetHeadline}"
-                                           TextWrapping="Wrap" />
-                                <TextBlock Classes="body"
-                                           Text="{Binding LatestSavedPresetComposition}"
-                                           TextWrapping="Wrap" />
-                            </StackPanel>
-                        </Border>
-
-                        <Border Classes="card" Padding="18">
-                            <StackPanel Spacing="12">
-                                <TextBlock Classes="kicker" Text="Named Presets" />
-                                <TextBlock Classes="body"
-                                           Text="{Binding SavedPresetSummary}"
-                                           TextWrapping="Wrap" />
-                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                                    <TextBox Text="{Binding NewPresetName}" Watermark="Preset name" />
-                                    <Button Grid.Column="1"
-                                            Command="{Binding SaveNamedPresetCommand}"
-                                            Content="Capture Fallback"
-                                            IsEnabled="{Binding CanSaveNamedPreset}" />
-                                </Grid>
-                                <ItemsControl ItemsSource="{Binding SavedPresets}" IsVisible="{Binding HasSavedPresets}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate x:DataType="vm:ModsAndMapsWorkspaceViewModel+SavedPresetViewModel">
-                                            <Border Background="#F6EFE6" CornerRadius="12" Padding="10" Margin="0,0,0,8">
-                                                <StackPanel Spacing="6">
-                                                    <TextBlock FontWeight="SemiBold" Text="{Binding Name}" />
-                                                    <TextBlock Classes="body" Text="{Binding CompositionSummary}" TextWrapping="Wrap" />
-                                                    <TextBlock Classes="body" Text="{Binding UpdatedLabel}" />
-                                                    <WrapPanel Orientation="Horizontal" ItemWidth="120" ItemHeight="34">
-                                                        <Button Command="{Binding #ModsRoot.DataContext.LoadNamedPresetCommand}"
-                                                                CommandParameter="{Binding .}"
-                                                                Content="Load To Editor" />
-                                                        <Button Command="{Binding #ModsRoot.DataContext.DeleteNamedPresetCommand}"
-                                                                CommandParameter="{Binding .}"
-                                                                Content="Delete" />
-                                                    </WrapPanel>
-                                                </StackPanel>
-                                            </Border>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                                <TextBlock Classes="body"
-                                           IsVisible="{Binding HasNoSavedPresets}"
-                                           Text="Capture the current loadout once it looks right so you always have a known-good stack to reload later."
-                                           TextWrapping="Wrap" />
-                            </StackPanel>
-                        </Border>
-
-                        <Border Background="#FFF8F1" CornerRadius="14" Padding="16">
-                            <StackPanel Spacing="8">
-                                <TextBlock Classes="kicker" Text="Latest Scan Snapshot" />
-                                <TextBlock FontWeight="SemiBold"
-                                           Text="{Binding ScanPreviewHeadline}"
-                                           TextWrapping="Wrap" />
-                                <TextBlock Classes="body"
-                                           IsVisible="{Binding HasNoScanPreview}"
-                                           Text="Run Scan after any install change or queue rewrite to refresh the normalized local-content snapshot."
-                                           TextWrapping="Wrap" />
-                            </StackPanel>
-                        </Border>
-
-                        <Border Classes="card" Padding="18">
-                            <StackPanel Spacing="12">
-                                <TextBlock Classes="kicker" Text="Actions" />
+                                <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Actions" />
                                 <WrapPanel Orientation="Horizontal" ItemWidth="152" ItemHeight="36">
                                     <Button Command="{Binding SaveSettingsCommand}" Content="Apply Settings" />
                                     <Button Command="{Binding SaveDraftCommand}" Content="Save Draft" />
@@ -409,37 +219,46 @@
                             </StackPanel>
                         </Border>
 
-                        <Border Background="#FBF7F1" CornerRadius="14" Padding="16">
+                        <Border Background="#2B221C" CornerRadius="16" Padding="14">
                             <StackPanel Spacing="8">
-                                <TextBlock Classes="kicker" Text="Operator Checklist" />
-                                <ItemsControl ItemsSource="{Binding ModsChecklist}">
+                                <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Named Presets" />
+                                <TextBlock Classes="body" Foreground="#F0E7DC" Text="{Binding SavedPresetSummary}" TextWrapping="Wrap" />
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                    <TextBox Text="{Binding NewPresetName}" PlaceholderText="Preset name" />
+                                    <Button Grid.Column="1" Command="{Binding SaveNamedPresetCommand}" Content="Capture" IsEnabled="{Binding CanSaveNamedPreset}" />
+                                </Grid>
+                                <ItemsControl ItemsSource="{Binding SavedPresets}" IsVisible="{Binding HasSavedPresets}">
                                     <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <TextBlock Classes="body"
-                                                       Margin="0,0,0,6"
-                                                       Text="{Binding .}"
-                                                       TextWrapping="Wrap" />
+                                        <DataTemplate x:DataType="vm:ModsAndMapsWorkspaceViewModel+SavedPresetViewModel">
+                                            <Border Background="#F0E2D0" CornerRadius="12" Padding="10" Margin="0,0,0,8">
+                                                <StackPanel Spacing="6">
+                                                    <TextBlock FontWeight="SemiBold" Foreground="#1C1713" Text="{Binding Name}" />
+                                                    <TextBlock Classes="caption" Foreground="#5C4838" Text="{Binding CompositionSummary}" TextWrapping="Wrap" />
+                                                    <TextBlock Classes="caption" Foreground="#5C4838" Text="{Binding UpdatedLabel}" />
+                                                    <WrapPanel Orientation="Horizontal" ItemWidth="116" ItemHeight="34">
+                                                        <Button Command="{Binding #ModsRoot.DataContext.LoadNamedPresetCommand}" CommandParameter="{Binding .}" Content="Load" />
+                                                        <Button Command="{Binding #ModsRoot.DataContext.DeleteNamedPresetCommand}" CommandParameter="{Binding .}" Content="Delete" />
+                                                    </WrapPanel>
+                                                </StackPanel>
+                                            </Border>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
+                                <TextBlock Classes="caption" IsVisible="{Binding HasNoSavedPresets}" Foreground="#CCBBA8" Text="Capture the current loadout once it looks right." TextWrapping="Wrap" />
                             </StackPanel>
                         </Border>
 
-                        <Border Background="#FBF7F1" CornerRadius="14" Padding="16">
+                        <Border Background="#F0E2D0" CornerRadius="16" Padding="14">
                             <StackPanel Spacing="8">
                                 <TextBlock Classes="kicker" Text="Diagnostics" />
                                 <ItemsControl ItemsSource="{Binding DiagnosticBuckets}" IsVisible="{Binding HasDiagnosticBuckets}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate x:DataType="settings:ProjectZomboidModsAndMapsDiagnosticBucket">
-                                            <Border Background="#F6EFE6" CornerRadius="12" Padding="10" Margin="0,0,0,8">
+                                            <Border Background="#FFF8F0" CornerRadius="12" Padding="10" Margin="0,0,0,8">
                                                 <StackPanel Spacing="4">
-                                                    <TextBlock FontWeight="SemiBold"
-                                                               Text="{Binding Title}" />
-                                                    <TextBlock Classes="body"
-                                                               Text="{Binding Summary}"
-                                                               TextWrapping="Wrap" />
-                                                    <TextBlock Classes="kicker"
-                                                               Text="{Binding Count, StringFormat='{}{0} issue(s)'}" />
+                                                    <TextBlock FontWeight="SemiBold" Text="{Binding Title}" />
+                                                    <TextBlock Classes="caption" Text="{Binding Summary}" TextWrapping="Wrap" />
+                                                    <TextBlock Classes="kicker" Text="{Binding Count, StringFormat='{}{0} issue(s)'}" />
                                                 </StackPanel>
                                             </Border>
                                         </DataTemplate>
@@ -448,19 +267,16 @@
                                 <ItemsControl ItemsSource="{Binding Diagnostics}" IsVisible="{Binding HasDiagnostics}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <TextBlock Classes="body" Text="{Binding .}" TextWrapping="Wrap" />
+                                            <TextBlock Classes="caption" Text="{Binding .}" TextWrapping="Wrap" Margin="0,0,0,6" />
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
-                                <TextBlock Classes="body"
-                                           IsVisible="{Binding HasNoDiagnosticBuckets}"
-                                           Text="No categorized scan issues yet. Apply settings and run a scan to validate the local cache."
-                                           TextWrapping="Wrap" />
+                                <TextBlock Classes="caption" IsVisible="{Binding HasNoDiagnosticBuckets}" Text="No categorized scan issues yet. Apply settings and run a scan to validate the local cache." TextWrapping="Wrap" />
                             </StackPanel>
                         </Border>
                     </StackPanel>
-                </Grid>
-            </StackPanel>
-        </Border>
+                </Border>
+            </Grid>
+        </Grid>
     </ScrollViewer>
 </UserControl>

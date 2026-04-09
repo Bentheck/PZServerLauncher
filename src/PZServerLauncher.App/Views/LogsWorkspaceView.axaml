@@ -9,274 +9,155 @@
              x:Class="PZServerLauncher.App.Views.LogsWorkspaceView"
              x:Name="LogsRoot"
              x:DataType="vm:LogsWorkspaceViewModel">
-    <Border Classes="card" Padding="24">
-        <StackPanel Spacing="18">
-            <StackPanel Spacing="4">
-                <TextBlock Classes="panel-title" FontSize="24" Text="{Binding PageTitle}" />
-                <TextBlock Classes="body" Text="{Binding PageSummary}" TextWrapping="Wrap" />
+    <Grid RowDefinitions="Auto,Auto,*" RowSpacing="18">
+        <Grid ColumnDefinitions="1.42*,340" ColumnSpacing="18">
+            <Border Classes="card" Padding="26">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18">
+                    <StackPanel Spacing="8">
+                        <TextBlock Classes="kicker" Text="Live Operations Console" />
+                        <TextBlock Classes="panel-title" FontSize="30" Text="{Binding ConsoleHeroTitle}" />
+                        <TextBlock Classes="body" FontSize="16" Foreground="#45382E" Text="{Binding ConsoleHeroCopy}" TextWrapping="Wrap" />
+                        <TextBlock Classes="caption" Text="{Binding LiveOpsOperatorSummary}" TextWrapping="Wrap" />
+                        <WrapPanel Margin="0,8,0,0" Orientation="Horizontal" ItemHeight="30">
+                            <Border Background="#2A2927" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                <TextBlock Foreground="#F7F0E7" FontSize="11" Text="{Binding Branch}" />
+                            </Border>
+                            <Border Background="#EAD6BF" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                <TextBlock Foreground="#5A4330" FontSize="11" Text="{Binding ConsoleStatusSummary}" />
+                            </Border>
+                            <Border Background="#EAD6BF" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                <TextBlock Foreground="#5A4330" FontSize="11" Text="{Binding ConsoleModeSummary}" />
+                            </Border>
+                        </WrapPanel>
+                    </StackPanel>
+                    <Button Grid.Column="1" VerticalAlignment="Top" Command="{Binding ReloadCommand}" Content="Reload" />
+                </Grid>
+            </Border>
+
+            <Border Grid.Column="1" Classes="surface-dark" Padding="18">
+                <StackPanel Spacing="10">
+                    <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Live Watch" />
+                    <TextBlock FontSize="22" FontWeight="SemiBold" Foreground="#F7F0E7" Text="{Binding FeedHealthHeadline}" TextWrapping="Wrap" />
+                    <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding IncidentHeadline}" TextWrapping="Wrap" />
+                    <TextBlock Classes="caption" Foreground="#CCB9A8" Text="{Binding LoadStatus}" TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <Grid Grid.Row="1" ColumnDefinitions="*,*,*,*" ColumnSpacing="14">
+            <Border Classes="metric-card" Padding="16">
+                <StackPanel Spacing="6">
+                    <TextBlock Classes="kicker" Text="Runtime" />
+                    <TextBlock Classes="panel-title" FontSize="22" Text="{Binding LatestRuntimeState}" />
+                    <TextBlock Classes="caption" Text="{Binding RuntimeWindowSummary}" TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+            <Border Grid.Column="1" Classes="metric-card" Padding="16">
+                <StackPanel Spacing="6">
+                    <TextBlock Classes="kicker" Text="Players Online" />
+                    <TextBlock Classes="panel-title" FontSize="22" Text="{Binding PlayerActivityHeadline}" TextWrapping="Wrap" />
+                    <TextBlock Classes="caption" Text="{Binding ActivePlayerCountSummary}" TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+            <Border Grid.Column="2" Classes="metric-card" Padding="16">
+                <StackPanel Spacing="6">
+                    <TextBlock Classes="kicker" Text="Latest Signal" />
+                    <TextBlock Classes="panel-title" FontSize="22" Text="{Binding LatestSignalLabel}" TextWrapping="Wrap" />
+                    <TextBlock Classes="caption" Text="{Binding SignalCountSummary}" TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+            <Border Grid.Column="3" Classes="metric-card" Padding="16">
+                <StackPanel Spacing="6">
+                    <TextBlock Classes="kicker" Text="Operator Posture" />
+                    <TextBlock Classes="panel-title" FontSize="22" Text="{Binding OperatorActionHeadline}" TextWrapping="Wrap" />
+                    <TextBlock Classes="caption" Text="{Binding OperatorCommandPosture}" TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <Grid Grid.Row="2" ColumnDefinitions="330,*,300" ColumnSpacing="16">
+            <StackPanel Spacing="16">
+                <Border Classes="surface-dark" Padding="16">
+                    <StackPanel Spacing="8">
+                        <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Triage" />
+                        <TextBlock FontSize="22" FontWeight="SemiBold" Foreground="#F7F0E7" Text="{Binding FeedPostureSummary}" TextWrapping="Wrap" />
+                        <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding LiveOpsTriageSummary}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+
+                <Border Classes="card" Padding="16">
+                    <StackPanel Spacing="10">
+                        <TextBlock Classes="kicker" Text="Players &amp; Ops" />
+                        <TextBlock Classes="body" Text="{Binding BroadcastGuidance}" TextWrapping="Wrap" />
+                        <TextBlock Classes="caption" Text="{Binding PlayerModerationSummary}" TextWrapping="Wrap" />
+
+                        <StackPanel Spacing="6">
+                            <TextBlock FontWeight="SemiBold" Text="Broadcast Message" />
+                            <TextBox Text="{Binding BroadcastMessage}" PlaceholderText="servermsg text" />
+                            <Button Command="{Binding SendBroadcastCommand}" Content="Send Broadcast" IsEnabled="{Binding CanSendCommands}" />
+                        </StackPanel>
+
+                        <StackPanel Spacing="6">
+                            <TextBlock FontWeight="SemiBold" Text="Raw Console Command" />
+                            <TextBox Text="{Binding RawConsoleCommand}" PlaceholderText="adduser / kickuser / save" />
+                            <Button Command="{Binding SendConsoleCommand}" Content="Send Console Command" IsEnabled="{Binding CanSendCommands}" />
+                            <WrapPanel Orientation="Horizontal">
+                                <Button Command="{Binding ListPlayersCommand}" Content="Request Player List" IsEnabled="{Binding CanSendCommands}" Margin="0,8,10,0" />
+                                <Button Command="{Binding SaveWorldCommand}" Content="Save World" IsEnabled="{Binding CanSendCommands}" Margin="0,8,10,0" />
+                                <Button Command="{Binding ReloadOptionsCommand}" Content="Reload Options" IsEnabled="{Binding CanSendCommands}" Margin="0,8,0,0" />
+                            </WrapPanel>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <Border Classes="card" Padding="16">
+                    <StackPanel Spacing="8">
+                        <TextBlock Classes="kicker" Text="Connected Players" />
+                        <ItemsControl ItemsSource="{Binding ConnectedPlayers}" IsVisible="{Binding HasConnectedPlayers}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:LogsWorkspaceViewModel+ConnectedPlayerRowViewModel">
+                                    <Border Background="#F5E8DA" CornerRadius="12" Padding="12" Margin="0,0,0,8">
+                                        <StackPanel Spacing="8">
+                                            <StackPanel Spacing="4">
+                                                <TextBlock FontSize="16" FontWeight="SemiBold" Text="{Binding UserName}" />
+                                                <TextBlock Classes="caption" Text="{Binding JoinedSummary}" TextWrapping="Wrap" />
+                                                <TextBlock Classes="caption" Text="{Binding LastSeenSummary}" TextWrapping="Wrap" />
+                                            </StackPanel>
+                                            <WrapPanel Orientation="Horizontal" ItemHeight="34">
+                                                <Button Command="{Binding #LogsRoot.DataContext.KickPlayerCommand}" CommandParameter="{Binding .}" Content="Kick" IsEnabled="{Binding #LogsRoot.DataContext.CanSendCommands}" Margin="0,0,8,0" />
+                                                <Button Command="{Binding #LogsRoot.DataContext.BanPlayerCommand}" CommandParameter="{Binding .}" Content="Ban" IsEnabled="{Binding #LogsRoot.DataContext.CanSendCommands}" Margin="0,0,8,0" />
+                                                <Button Command="{Binding #LogsRoot.DataContext.WhitelistPlayerCommand}" CommandParameter="{Binding .}" Content="Whitelist" IsEnabled="{Binding #LogsRoot.DataContext.CanSendCommands}" />
+                                            </WrapPanel>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock Classes="caption" IsVisible="{Binding HasNoConnectedPlayers}" Text="No connected players have been inferred yet. Keep the console open during joins or request the player list while the server is live." TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
             </StackPanel>
 
-            <Border Background="#1F1D1B" CornerRadius="16" Padding="18">
-                <StackPanel Spacing="12">
-                    <StackPanel Spacing="6">
-                        <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Live Console" />
-                        <TextBlock Foreground="#F7F0E7" FontSize="28" FontWeight="SemiBold" Text="{Binding ConsoleHeroTitle}" />
-                        <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding ConsoleHeroCopy}" TextWrapping="Wrap" />
-                    </StackPanel>
-                    <WrapPanel Orientation="Horizontal">
-                        <Border Background="#2A2927" CornerRadius="999" Padding="14,8" Margin="0,0,10,0">
-                            <TextBlock Foreground="#F7F0E7" FontWeight="SemiBold" Text="{Binding Branch}" />
+            <Border Grid.Column="1" Classes="surface-dark" Padding="16">
+                <Grid RowDefinitions="Auto,*" RowSpacing="12">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                        <StackPanel Spacing="4">
+                            <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Live Stream" />
+                            <TextBlock FontSize="22" FontWeight="SemiBold" Foreground="#F7F0E7" Text="{Binding LogStreamSummary}" TextWrapping="Wrap" />
+                        </StackPanel>
+                        <Border Grid.Column="1" Background="#2A2927" CornerRadius="999" Padding="10,5" VerticalAlignment="Top">
+                            <TextBlock Foreground="#F7F0E7" FontSize="11" Text="{Binding ConsoleStatusSummary}" />
                         </Border>
-                        <Border Background="#2A2927" CornerRadius="999" Padding="14,8" Margin="0,0,10,0">
-                            <TextBlock Foreground="#F7F0E7" Text="{Binding ConsoleStatusSummary}" />
-                        </Border>
-                        <Border Background="#2A2927" CornerRadius="999" Padding="14,8" Margin="0,0,10,0">
-                            <TextBlock Foreground="#F7F0E7" Text="{Binding ConsoleModeSummary}" />
-                        </Border>
-                        <Button Command="{Binding ReloadCommand}" Content="Reload" />
-                    </WrapPanel>
-                </StackPanel>
-            </Border>
+                    </Grid>
 
-            <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="14">
-                <Border Background="#F6EFE6" CornerRadius="14" Padding="16">
-                    <StackPanel Spacing="6">
-                        <TextBlock Classes="kicker" Text="Runtime State" />
-                        <TextBlock FontSize="20" FontWeight="SemiBold" Text="{Binding LatestRuntimeState}" />
-                        <TextBlock Classes="body" Text="{Binding FeedHealthHeadline}" TextWrapping="Wrap" />
-                        <TextBlock Classes="body" Text="{Binding LogStreamSummary}" TextWrapping="Wrap" />
-                        <TextBlock Classes="body" Text="{Binding RuntimeWindowSummary}" TextWrapping="Wrap" />
-                    </StackPanel>
-                </Border>
-                <Border Grid.Column="1" Background="#F6EFE6" CornerRadius="14" Padding="16">
-                    <StackPanel Spacing="6">
-                        <TextBlock Classes="kicker" Text="Players Online" />
-                        <TextBlock FontSize="20" FontWeight="SemiBold" Text="{Binding PlayerActivityHeadline}" />
-                        <TextBlock Classes="body" Text="{Binding ActivePlayerCountSummary}" TextWrapping="Wrap" />
-                        <TextBlock Classes="body" Text="{Binding RosterPostureSummary}" TextWrapping="Wrap" />
-                        <TextBlock Classes="body" Text="{Binding PlayerSignalCountSummary}" TextWrapping="Wrap" />
-                    </StackPanel>
-                </Border>
-                <Border Grid.Column="2" Background="#F6EFE6" CornerRadius="14" Padding="16">
-                    <StackPanel Spacing="6">
-                        <TextBlock Classes="kicker" Text="Latest Signal" />
-                        <TextBlock Classes="body" Text="{Binding LatestSignalLabel}" TextWrapping="Wrap" />
-                        <TextBlock Classes="body" Text="{Binding SignalCountSummary}" TextWrapping="Wrap" />
-                    </StackPanel>
-                </Border>
-                <Border Grid.Column="3" Background="#F6EFE6" CornerRadius="14" Padding="16">
-                    <StackPanel Spacing="6">
-                        <TextBlock Classes="kicker" Text="Operator Posture" />
-                        <TextBlock FontSize="20" FontWeight="SemiBold" Text="{Binding OperatorActionHeadline}" />
-                        <TextBlock Classes="body" Text="{Binding OperatorCommandPosture}" TextWrapping="Wrap" />
-                        <TextBlock Classes="body" Text="{Binding OperatorActionCountSummary}" TextWrapping="Wrap" />
-                    </StackPanel>
-                </Border>
-            </Grid>
-
-            <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="14">
-                <Border Background="#FFF8F1" CornerRadius="14" Padding="16">
-                    <StackPanel Spacing="8">
-                        <TextBlock Classes="kicker" Text="Feed Briefing" />
-                        <TextBlock FontSize="18"
-                                   FontWeight="SemiBold"
-                                   Text="{Binding FeedHealthHeadline}"
-                                   TextWrapping="Wrap" />
-                        <TextBlock Classes="body"
-                                   Text="{Binding FeedPostureSummary}"
-                                   TextWrapping="Wrap" />
-                    </StackPanel>
-                </Border>
-                <Border Grid.Column="1" Background="#FFF8F1" CornerRadius="14" Padding="16">
-                    <StackPanel Spacing="8">
-                        <TextBlock Classes="kicker" Text="Incident Triage" />
-                        <TextBlock FontSize="18"
-                                   FontWeight="SemiBold"
-                                   Text="{Binding IncidentHeadline}"
-                                   TextWrapping="Wrap" />
-                        <TextBlock Classes="body"
-                                   Text="{Binding LiveOpsTriageSummary}"
-                                   TextWrapping="Wrap" />
-                    </StackPanel>
-                </Border>
-                <Border Grid.Column="2" Background="#FFF8F1" CornerRadius="14" Padding="16">
-                    <StackPanel Spacing="8">
-                        <TextBlock Classes="kicker" Text="Roster Briefing" />
-                        <TextBlock FontSize="18"
-                                   FontWeight="SemiBold"
-                                   Text="{Binding PlayerActivityHeadline}"
-                                   TextWrapping="Wrap" />
-                        <TextBlock Classes="body"
-                                   Text="{Binding ActivePlayerCountSummary}"
-                                   TextWrapping="Wrap" />
-                        <TextBlock Classes="body"
-                                   Text="{Binding RosterPostureSummary}"
-                                   TextWrapping="Wrap" />
-                    </StackPanel>
-                </Border>
-                <Border Grid.Column="3" Background="#FFF8F1" CornerRadius="14" Padding="16">
-                    <StackPanel Spacing="8">
-                        <TextBlock Classes="kicker" Text="Command Briefing" />
-                        <TextBlock FontSize="18"
-                                   FontWeight="SemiBold"
-                                   Text="{Binding OperatorActionHeadline}"
-                                   TextWrapping="Wrap" />
-                        <TextBlock Classes="body"
-                                   Text="{Binding OperatorCommandPosture}"
-                                   TextWrapping="Wrap" />
-                        <TextBlock Classes="body"
-                                   Text="{Binding OperatorActionCountSummary}"
-                                   TextWrapping="Wrap" />
-                    </StackPanel>
-                </Border>
-            </Grid>
-
-            <Border Background="#FFF8F1" CornerRadius="14" Padding="16">
-                <StackPanel Spacing="10">
-                    <TextBlock Classes="kicker" Text="Host Feed" />
-                    <TextBlock Classes="body" Text="{Binding LoadStatus}" TextWrapping="Wrap" />
-                    <TextBlock Classes="body" Text="{Binding LiveOpsOperatorSummary}" TextWrapping="Wrap" />
-                    <TextBlock Classes="body" Text="{Binding BroadcastGuidance}" TextWrapping="Wrap" />
-                </StackPanel>
-            </Border>
-
-            <Grid ColumnDefinitions="330,*" ColumnSpacing="16">
-                <StackPanel Spacing="16">
-                    <Border Background="#FFF8F1" CornerRadius="14" Padding="16">
-                        <StackPanel Spacing="10">
-                            <TextBlock Classes="kicker" Text="Players &amp; Ops" />
-                            <TextBlock Classes="body" Text="{Binding BroadcastGuidance}" TextWrapping="Wrap" />
-                            <TextBlock Classes="body" Text="{Binding PlayerModerationSummary}" TextWrapping="Wrap" />
-
-                            <StackPanel Spacing="6">
-                                <TextBlock FontWeight="SemiBold" Text="Broadcast Message" />
-                                <TextBox Text="{Binding BroadcastMessage}" Watermark="servermsg text" />
-                                <Button Command="{Binding SendBroadcastCommand}" Content="Send Broadcast" IsEnabled="{Binding CanSendCommands}" />
-                            </StackPanel>
-
-                            <StackPanel Spacing="6">
-                                <TextBlock FontWeight="SemiBold" Text="Raw Console Command" />
-                                <TextBox Text="{Binding RawConsoleCommand}" Watermark="adduser / kickuser / save" />
-                                <Button Command="{Binding SendConsoleCommand}" Content="Send Console Command" IsEnabled="{Binding CanSendCommands}" />
-                                <WrapPanel Orientation="Horizontal">
-                                    <Button Command="{Binding ListPlayersCommand}"
-                                            Content="Request Player List"
-                                            IsEnabled="{Binding CanSendCommands}"
-                                            Margin="0,8,10,0" />
-                                    <Button Command="{Binding SaveWorldCommand}"
-                                            Content="Save World"
-                                            IsEnabled="{Binding CanSendCommands}"
-                                            Margin="0,8,10,0" />
-                                    <Button Command="{Binding ReloadOptionsCommand}"
-                                            Content="Reload Options"
-                                            IsEnabled="{Binding CanSendCommands}"
-                                            Margin="0,8,0,0" />
-                                </WrapPanel>
-                            </StackPanel>
-                        </StackPanel>
-                    </Border>
-
-                    <Border Background="#F6EFE6" CornerRadius="14" Padding="16">
-                        <StackPanel Spacing="8">
-                            <TextBlock Classes="kicker" Text="Connected Players" />
-                            <ItemsControl ItemsSource="{Binding ConnectedPlayers}" IsVisible="{Binding HasConnectedPlayers}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="vm:LogsWorkspaceViewModel+ConnectedPlayerRowViewModel">
-                                        <Border Background="#FFF8F1" CornerRadius="12" Padding="12" Margin="0,0,0,8">
-                                            <StackPanel Spacing="8">
-                                                <StackPanel Spacing="4">
-                                                    <TextBlock FontSize="16" FontWeight="SemiBold" Text="{Binding UserName}" />
-                                                    <TextBlock Classes="body" Text="{Binding JoinedSummary}" TextWrapping="Wrap" />
-                                                    <TextBlock Classes="body" Text="{Binding LastSeenSummary}" TextWrapping="Wrap" />
-                                                </StackPanel>
-                                                <WrapPanel Orientation="Horizontal" ItemHeight="34">
-                                                    <Button Command="{Binding #LogsRoot.DataContext.KickPlayerCommand}"
-                                                            CommandParameter="{Binding .}"
-                                                            Content="Kick"
-                                                            IsEnabled="{Binding #LogsRoot.DataContext.CanSendCommands}"
-                                                            Margin="0,0,8,0" />
-                                                    <Button Command="{Binding #LogsRoot.DataContext.BanPlayerCommand}"
-                                                            CommandParameter="{Binding .}"
-                                                            Content="Ban"
-                                                            IsEnabled="{Binding #LogsRoot.DataContext.CanSendCommands}"
-                                                            Margin="0,0,8,0" />
-                                                    <Button Command="{Binding #LogsRoot.DataContext.WhitelistPlayerCommand}"
-                                                            CommandParameter="{Binding .}"
-                                                            Content="Whitelist"
-                                                            IsEnabled="{Binding #LogsRoot.DataContext.CanSendCommands}" />
-                                                </WrapPanel>
-                                            </StackPanel>
-                                        </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                            <TextBlock Classes="body"
-                                       Text="No connected players have been inferred yet. Keep the console open during joins or request the player list while the server is live."
-                                       TextWrapping="Wrap"
-                                       IsVisible="{Binding HasNoConnectedPlayers}" />
-                        </StackPanel>
-                    </Border>
-
-                    <Border Background="#F6EFE6" CornerRadius="14" Padding="16">
-                        <StackPanel Spacing="8">
-                            <TextBlock Classes="kicker" Text="Recent Player Signals" />
-                            <ItemsControl ItemsSource="{Binding RecentPlayerSignals}" IsVisible="{Binding HasPlayerSignals}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Classes="body" Text="{Binding .}" TextWrapping="Wrap" Margin="0,0,0,6" />
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                            <TextBlock Classes="body"
-                                       Text="Player join and leave signals will appear here when the host can infer them from runtime logs or launcher-issued roster commands."
-                                       TextWrapping="Wrap"
-                                       IsVisible="{Binding HasNoPlayerSignals}" />
-                        </StackPanel>
-                    </Border>
-
-                    <Border Background="#F6EFE6" CornerRadius="14" Padding="16">
-                        <StackPanel Spacing="8">
-                            <TextBlock Classes="kicker" Text="Recent Operator Actions" />
-                            <ItemsControl ItemsSource="{Binding RecentOperatorActions}" IsVisible="{Binding HasOperatorActions}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Classes="body" Text="{Binding .}" TextWrapping="Wrap" Margin="0,0,0,6" />
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                            <TextBlock Classes="body"
-                                       Text="Broadcasts and raw console commands sent from the launcher will appear here as soon as the runtime is live."
-                                       TextWrapping="Wrap"
-                                       IsVisible="{Binding HasNoOperatorActions}" />
-                        </StackPanel>
-                    </Border>
-
-                    <Border Background="#F1E6D7" CornerRadius="14" Padding="16">
-                        <StackPanel Spacing="8">
-                            <TextBlock Classes="kicker" Text="Live Ops Checklist" />
-                            <ItemsControl ItemsSource="{Binding LiveOpsChecklist}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Classes="body"
-                                                   Text="{Binding .}"
-                                                   TextWrapping="Wrap"
-                                                   Margin="0,4,0,0" />
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </StackPanel>
-                    </Border>
-                </StackPanel>
-
-                <Border Grid.Column="1" Classes="card" Padding="0">
-                    <Grid RowDefinitions="Auto,*">
-                        <TextBlock Margin="16,16,16,0" Classes="kicker" Text="Recent Output" />
-                        <ScrollViewer Grid.Row="1" Margin="16" VerticalScrollBarVisibility="Auto" MaxHeight="720">
+                    <Border Grid.Row="1" Background="#171310" CornerRadius="16" Padding="14">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="760">
                             <ItemsControl ItemsSource="{Binding LogLines}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
                                         <TextBlock Classes="body"
                                                    FontFamily="Cascadia Code,Consolas,monospace"
+                                                   Foreground="#E9DED2"
                                                    Text="{Binding .}"
                                                    TextWrapping="Wrap"
                                                    Margin="0,0,0,6" />
@@ -284,13 +165,67 @@
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
                         </ScrollViewer>
-                    </Grid>
-                </Border>
-            </Grid>
-
-            <Border Background="#F6EFE6" CornerRadius="14" Padding="16" IsVisible="{Binding HasNoLogs}">
-                <TextBlock Classes="body" Text="No buffered logs are available yet. Start or reload the profile, then return here to watch the live console fill with runtime output, roster changes, and operator commands." TextWrapping="Wrap" />
+                    </Border>
+                </Grid>
             </Border>
-        </StackPanel>
-    </Border>
+
+            <StackPanel Grid.Column="2" Spacing="16">
+                <Border Classes="card" Padding="16">
+                    <StackPanel Spacing="8">
+                        <TextBlock Classes="kicker" Text="Roster Briefing" />
+                        <TextBlock Classes="body" Text="{Binding ActivePlayerCountSummary}" TextWrapping="Wrap" />
+                        <TextBlock Classes="caption" Text="{Binding RosterPostureSummary}" TextWrapping="Wrap" />
+                        <TextBlock Classes="caption" Text="{Binding PlayerSignalCountSummary}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+
+                <Border Classes="card" Padding="16">
+                    <StackPanel Spacing="8">
+                        <TextBlock Classes="kicker" Text="Recent Player Signals" />
+                        <ItemsControl ItemsSource="{Binding RecentPlayerSignals}" IsVisible="{Binding HasPlayerSignals}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Classes="caption" Text="{Binding .}" TextWrapping="Wrap" Margin="0,0,0,6" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock Classes="caption" IsVisible="{Binding HasNoPlayerSignals}" Text="Player join and leave signals will appear here when the host can infer them from runtime logs or launcher-issued roster commands." TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+
+                <Border Classes="card" Padding="16">
+                    <StackPanel Spacing="8">
+                        <TextBlock Classes="kicker" Text="Recent Operator Actions" />
+                        <ItemsControl ItemsSource="{Binding RecentOperatorActions}" IsVisible="{Binding HasOperatorActions}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Classes="caption" Text="{Binding .}" TextWrapping="Wrap" Margin="0,0,0,6" />
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock Classes="caption" IsVisible="{Binding HasNoOperatorActions}" Text="Broadcasts and raw console commands sent from the launcher will appear here as soon as the runtime is live." TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+
+                <Border Classes="card" Padding="16">
+                    <StackPanel Spacing="8">
+                        <TextBlock Classes="kicker" Text="Live Ops Checklist" />
+                        <ItemsControl ItemsSource="{Binding LiveOpsChecklist}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="#F5E8DA" CornerRadius="12" Padding="10" Margin="0,0,0,8">
+                                        <TextBlock Classes="caption" Text="{Binding .}" TextWrapping="Wrap" />
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Grid>
+
+        <Border Grid.Row="2" Background="#F6EFE6" CornerRadius="14" Padding="16" IsVisible="{Binding HasNoLogs}">
+            <TextBlock Classes="body" Text="No buffered logs are available yet. Start or reload the profile, then return here to watch the live console fill with runtime output, roster changes, and operator commands." TextWrapping="Wrap" />
+        </Border>
+    </Grid>
 </UserControl>
