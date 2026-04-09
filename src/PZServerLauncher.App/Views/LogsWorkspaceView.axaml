@@ -74,11 +74,68 @@
                 </Border>
             </Grid>
 
+            <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="14">
+                <Border Background="#FFF8F1" CornerRadius="14" Padding="16">
+                    <StackPanel Spacing="8">
+                        <TextBlock Classes="kicker" Text="Feed Briefing" />
+                        <TextBlock FontSize="18"
+                                   FontWeight="SemiBold"
+                                   Text="{Binding FeedHealthHeadline}"
+                                   TextWrapping="Wrap" />
+                        <TextBlock Classes="body"
+                                   Text="{Binding FeedPostureSummary}"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="1" Background="#FFF8F1" CornerRadius="14" Padding="16">
+                    <StackPanel Spacing="8">
+                        <TextBlock Classes="kicker" Text="Incident Triage" />
+                        <TextBlock FontSize="18"
+                                   FontWeight="SemiBold"
+                                   Text="{Binding IncidentHeadline}"
+                                   TextWrapping="Wrap" />
+                        <TextBlock Classes="body"
+                                   Text="{Binding LiveOpsTriageSummary}"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="2" Background="#FFF8F1" CornerRadius="14" Padding="16">
+                    <StackPanel Spacing="8">
+                        <TextBlock Classes="kicker" Text="Roster Briefing" />
+                        <TextBlock FontSize="18"
+                                   FontWeight="SemiBold"
+                                   Text="{Binding PlayerActivityHeadline}"
+                                   TextWrapping="Wrap" />
+                        <TextBlock Classes="body"
+                                   Text="{Binding ActivePlayerCountSummary}"
+                                   TextWrapping="Wrap" />
+                        <TextBlock Classes="body"
+                                   Text="{Binding RosterPostureSummary}"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="3" Background="#FFF8F1" CornerRadius="14" Padding="16">
+                    <StackPanel Spacing="8">
+                        <TextBlock Classes="kicker" Text="Command Briefing" />
+                        <TextBlock FontSize="18"
+                                   FontWeight="SemiBold"
+                                   Text="{Binding OperatorActionHeadline}"
+                                   TextWrapping="Wrap" />
+                        <TextBlock Classes="body"
+                                   Text="{Binding OperatorCommandPosture}"
+                                   TextWrapping="Wrap" />
+                        <TextBlock Classes="body"
+                                   Text="{Binding OperatorActionCountSummary}"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
             <Border Background="#FFF8F1" CornerRadius="14" Padding="16">
                 <StackPanel Spacing="10">
                     <TextBlock Classes="kicker" Text="Host Feed" />
                     <TextBlock Classes="body" Text="{Binding LoadStatus}" TextWrapping="Wrap" />
-                    <TextBlock Classes="body" Text="{Binding OperatorNextStep}" TextWrapping="Wrap" />
+                    <TextBlock Classes="body" Text="{Binding LiveOpsOperatorSummary}" TextWrapping="Wrap" />
                     <TextBlock Classes="body" Text="{Binding BroadcastGuidance}" TextWrapping="Wrap" />
                 </StackPanel>
             </Border>

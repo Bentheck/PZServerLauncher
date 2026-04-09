@@ -6,6 +6,7 @@
 @inject RuntimeStateStore RuntimeStateStore
 @inject ServerBackupService BackupService
 @inject ServerProcessSupervisor ProcessSupervisor
+@using PZServerLauncher.Contracts.Profiles
 @using PZServerLauncher.Core.Planning
 @using PZServerLauncher.Infrastructure.Planning
 
@@ -42,7 +43,7 @@ else
                     <div class="hero-copy">
                         <p class="eyebrow">Recovery Center</p>
                         <h1>@_profile.DisplayName</h1>
-                        <p class="muted-text">Manual recovery points, pre-update safety nets, and scheduled snapshots all converge here so you can recover confidently before risky admin work. The page now favors restore-risk triage first and archive browsing second.</p>
+                        <p class="muted-text">Manual recovery points, pre-update safety nets, and scheduled snapshots converge here so you can recover confidently before risky admin work. The page now favors restore-risk triage first and archive browsing second.</p>
                     </div>
                     <div class="hero-pills">
                         <span class="pill">@_profile.Branch</span>
@@ -56,38 +57,34 @@ else
 
             <div class="cards cards--four">
                 <section class="card">
-                    <h2>Recovery Coverage</h2>
-                    <p class="muted-text">@CoverageCallout</p>
+                    <h2>Coverage</h2>
+                    <p class="muted-text">@(_recoverySummary?.CoverageHeadline ?? "Recovery coverage is unavailable.")</p>
                 </section>
                 <section class="card">
                     <h2>Latest Known-Good</h2>
-                    <p class="muted-text">@LatestKnownGoodCallout</p>
+                    <p class="muted-text">@(_recoverySummary?.LatestKnownGoodHeadline ?? "Latest known-good is unavailable.")</p>
                 </section>
                 <section class="card">
                     <h2>Restore Risk</h2>
-                    <p class="muted-text">@RestoreRiskSummary</p>
+                    <p class="muted-text">@(_recoverySummary?.RestoreRiskHeadline ?? "Restore risk is unavailable.")</p>
                 </section>
                 <section class="card">
-                    <h2>Operator Guidance</h2>
-                    <p class="muted-text">@OperatorGuidanceSummary</p>
+                    <h2>Retention</h2>
+                    <p class="muted-text">@(_recoverySummary?.RetentionHeadline ?? "Retention posture is unavailable.")</p>
                 </section>
             </div>
 
             <div class="cards cards--four">
                 <section class="card">
-                    <h2>Coverage</h2>
                     <p class="muted-text">@(_backupSummary?.CoverageSummary ?? "Recovery coverage is unavailable.")</p>
                 </section>
                 <section class="card">
-                    <h2>Retention</h2>
                     <p class="muted-text">@(_backupSummary?.RetentionSummary ?? "Retention posture is unavailable.")</p>
                 </section>
                 <section class="card">
-                    <h2>Restore Safety</h2>
-                    <p class="muted-text">@BuildRestoreSafetyCopy()</p>
+                    <p class="muted-text">@(_recoverySummary?.SelectionSummary ?? "Selected archive summary is unavailable.")</p>
                 </section>
                 <section class="card">
-                    <h2>Continuity</h2>
                     <p class="muted-text">@(_backupSummary?.ContinuitySummary ?? "Recovery continuity is unavailable.")</p>
                 </section>
             </div>
@@ -202,12 +199,25 @@ else
                             <input type="checkbox" @bind="_restartAfterRestore" @bind:after="RefreshBackupSummary" disabled="@_busy" />
                             Restart server after restore
                         </label>
-                        <p class="muted-text">@LatestKnownGoodCallout</p>
+                        <p class="muted-text">@(_recoverySummary?.OperatorSummary ?? "Recovery guidance is unavailable.")</p>
                         <p class="muted-text">@BuildRestoreModeSummary()</p>
+                        <p class="muted-text">@BuildRestoreSafetyCopy()</p>
                         <p class="muted-text">@RestoreRiskSummary</p>
                     </div>
                 </section>
             </div>
+
+            <section class="card">
+                <h2>Recovery Briefing</h2>
+                <p class="muted-text">@(_recoverySummary?.OperatorSummary ?? "Recovery guidance is unavailable.")</p>
+                <p class="muted-text">@(_recoverySummary?.SelectionSummary ?? "No recovery selection summary is available.")</p>
+                <ul>
+                    @foreach (var item in _recoverySummary?.Checklist ?? Array.Empty<string>())
+                    {
+                        <li>@item</li>
+                    }
+                </ul>
+            </section>
 
             <p class="muted-text">@_statusMessage</p>
         </ChildContent>
@@ -230,6 +240,7 @@ else
     private BackupArchiveRow? _selectedBackupEntry;
     private bool _restartAfterRestore = true;
     private ProjectZomboidBackupPostureSummary? _backupSummary;
+    private ProjectZomboidRecoveryConsoleSummary? _recoverySummary;
 
     private static readonly Regex BackupPattern = new(
         "-(manual|preupdate|scheduled)-(\\d{8}-\\d{6})\\.zip$",
@@ -395,6 +406,14 @@ else
             _backups,
             _selectedBackup,
             _runtimeStatus?.State.ToString() ?? "Stopped");
+        _recoverySummary = ProjectZomboidRecoveryConsoleSummaryBuilder.Build(
+            _backupSummary,
+            _runtimeStatus?.State.ToString() ?? "Stopped",
+            _installDetected,
+            _cacheDetected,
+            _restartAfterRestore,
+            _selectedBackup,
+            string.Equals(_selectedBackup, _latestBackup, StringComparison.Ordinal));
     }
 
     private void SelectBackup(string backupFileName)

@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PZServerLauncher.App.Services;
+using PZServerLauncher.Contracts.Profiles;
 using PZServerLauncher.Contracts.Runtime;
 using PZServerLauncher.Core.Planning;
 using PZServerLauncher.Core.Profiles;
@@ -94,21 +95,11 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
     public string CoverageHeadline => SelectedProfile is null
         ? "No profile"
-        : CurrentSummary.TotalBackupCount == 0
-            ? "No recovery point"
-            : CurrentSummary.HasManualBackups && CurrentSummary.HasPreUpdateBackups
-                ? "Layered coverage"
-                : CurrentSummary.HasManualBackups
-                    ? "Manual-only coverage"
-                    : "Automated-only coverage";
+        : CurrentConsoleSummary.CoverageHeadline;
 
     public string LatestKnownGoodHeadline => SelectedProfile is null
         ? "No profile"
-        : SelectedBackupArchive is not null
-            ? "Selected restore point"
-            : HasBackups
-                ? "Latest known-good"
-                : "No known-good archive";
+        : CurrentConsoleSummary.LatestKnownGoodHeadline;
 
     public string RestoreWindowHeadline => SelectedProfile is null
         ? "No profile"
@@ -118,11 +109,19 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
     public string RetentionHeadline => SelectedProfile is null
         ? "No policy"
-        : SelectedProfile.BackupPolicy.KeepManualBackupsForever && SelectedProfile.BackupPolicy.PreUpdateBackupEnabled && SelectedProfile.BackupPolicy.ScheduledBackupsEnabled
-            ? "Layered retention"
-            : SelectedProfile.BackupPolicy.KeepManualBackupsForever
-                ? "Manual-first retention"
-                : "Finite retention";
+        : CurrentConsoleSummary.RetentionHeadline;
+
+    public string RestoreRiskHeadline => SelectedProfile is null
+        ? "No restore posture"
+        : CurrentConsoleSummary.RestoreRiskHeadline;
+
+    public string RecoveryOperatorSummary => SelectedProfile is null
+        ? "Select a profile to review recovery posture."
+        : CurrentConsoleSummary.OperatorSummary;
+
+    public string RecoverySelectionSummary => SelectedProfile is null
+        ? "No recovery point selected yet."
+        : CurrentConsoleSummary.SelectionSummary;
 
     public string RecoveryGuidance => SelectedProfile is null
         ? "Choose a profile to review restore guidance."
@@ -156,25 +155,11 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
     public string OperatorNextStep => SelectedProfile is null
         ? "Select a profile to begin recovery work."
-        : CurrentSummary.ContinuitySummary;
+        : $"{CurrentSummary.ContinuitySummary} {CurrentConsoleSummary.OperatorSummary}";
 
     public IReadOnlyList<string> RecoveryChecklist => SelectedProfile is null
         ? []
-        :
-        [
-            CurrentSummary.TotalBackupCount == 0
-                ? "Capture a manual backup before any risky config or update work."
-                : "Choose the archive that represents your latest known-good state.",
-            string.Equals(SelectedProfile.RuntimeState, "Running", StringComparison.OrdinalIgnoreCase)
-                ? "Expect the host to stop the live server before restore begins."
-                : "The server is already idle, so restore can proceed immediately.",
-            RestartAfterRestore
-                ? "Restart-after-restore is enabled, so the host will request a runtime relaunch."
-                : "Restart-after-restore is disabled, so the world stays offline for inspection.",
-            CurrentSummary.HasPreUpdateBackups
-                ? "A pre-update safety net exists if you need to roll back from a bad patch cycle."
-                : "No pre-update archive exists yet; future updates should create one automatically."
-        ];
+        : CurrentConsoleSummary.Checklist;
 
     public IAsyncRelayCommand CreateBackupCommand { get; }
 
@@ -350,6 +335,9 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         OnPropertyChanged(nameof(LatestKnownGoodHeadline));
         OnPropertyChanged(nameof(RestoreWindowHeadline));
         OnPropertyChanged(nameof(RetentionHeadline));
+        OnPropertyChanged(nameof(RestoreRiskHeadline));
+        OnPropertyChanged(nameof(RecoveryOperatorSummary));
+        OnPropertyChanged(nameof(RecoverySelectionSummary));
         OnPropertyChanged(nameof(RecoveryGuidance));
         OnPropertyChanged(nameof(LatestBackupSummary));
         OnPropertyChanged(nameof(SelectedBackupHeadline));
@@ -372,6 +360,18 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
                 BackupEntries.Select(entry => entry.ArchiveFileName).ToList(),
                 SelectedBackup,
                 SelectedProfile.RuntimeState);
+
+    private ProjectZomboidRecoveryConsoleSummary CurrentConsoleSummary =>
+        SelectedProfile is null
+            ? ProjectZomboidRecoveryConsoleSummaryBuilder.Empty()
+            : ProjectZomboidRecoveryConsoleSummaryBuilder.Build(
+                CurrentSummary,
+                SelectedProfile.RuntimeState,
+                installDetected: SelectedProfile.IsInstallDetected,
+                cacheDetected: SelectedProfile.CacheDetected,
+                restartAfterRestore: RestartAfterRestore,
+                SelectedBackupArchive?.ArchiveFileName,
+                SelectedBackupArchive?.IsLatest ?? false);
 
     private static BackupArchiveRowViewModel ParseBackupEntry(string archiveFileName, bool isLatest)
     {

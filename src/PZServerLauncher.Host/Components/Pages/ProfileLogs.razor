@@ -4,6 +4,7 @@
 @inject RuntimeStateStore RuntimeStateStore
 @inject ServerProcessSupervisor ProcessSupervisor
 @inject AuditStore AuditStore
+@using PZServerLauncher.Contracts.Profiles
 @using PZServerLauncher.Core.Runtime
 @using PZServerLauncher.Core.Planning
 @using PZServerLauncher.Infrastructure.Planning
@@ -52,6 +53,25 @@ else
                     </div>
                 </div>
             </section>
+
+            <div class="cards cards--four">
+                <section class="card">
+                    <h2>Feed Health</h2>
+                    <p class="muted-text">@(_consoleSummary?.FeedHeadline ?? "Feed health is unavailable.")</p>
+                </section>
+                <section class="card">
+                    <h2>Incident Triage</h2>
+                    <p class="muted-text">@(_consoleSummary?.IncidentHeadline ?? "Incident triage is unavailable.")</p>
+                </section>
+                <section class="card">
+                    <h2>Roster Posture</h2>
+                    <p class="muted-text">@(_consoleSummary?.RosterHeadline ?? "Roster posture is unavailable.")</p>
+                </section>
+                <section class="card">
+                    <h2>Command Posture</h2>
+                    <p class="muted-text">@(_consoleSummary?.CommandHeadline ?? "Command posture is unavailable.")</p>
+                </section>
+            </div>
 
             <div class="cards cards--four">
                 <section class="card">
@@ -253,10 +273,17 @@ else
 
             <section class="card">
                 <h2>Operator Focus</h2>
-                <p class="muted-text">@(_logSummary?.OperatorFocusSummary ?? "Operator guidance is unavailable.")</p>
+                <p class="muted-text">@(_consoleSummary?.OperatorSummary ?? _logSummary?.OperatorFocusSummary ?? "Operator guidance is unavailable.")</p>
+                <p class="muted-text">@(_consoleSummary?.TriageSummary ?? SignalTriageSummary)</p>
                 <p class="muted-text">@RuntimePostureHeadline</p>
                 <p class="muted-text">@SignalTriageSummary</p>
                 <p class="muted-text">@_statusMessage</p>
+                <ul>
+                    @foreach (var item in _consoleSummary?.Checklist ?? Array.Empty<string>())
+                    {
+                        <li>@item</li>
+                    }
+                </ul>
             </section>
 
         </ChildContent>
@@ -274,6 +301,7 @@ else
     private bool _installDetected;
     private bool _cacheDetected;
     private ProjectZomboidLogPostureSummary? _logSummary;
+    private ProjectZomboidLiveOpsConsoleSummary? _consoleSummary;
     private ProfileLiveOperationsSnapshot? _liveOperations;
     private string _broadcastMessage = string.Empty;
     private string _rawCommand = string.Empty;
@@ -298,6 +326,7 @@ else
         _installDetected = Directory.Exists(_profile.InstallDirectory);
         _cacheDetected = Directory.Exists(_profile.CacheDirectory);
         _logSummary = ProjectZomboidLogPostureSummaryBuilder.Build(_runtimeStatus, _logLines);
+        RefreshConsoleSummary();
         _statusMessage = _logLines.Count == 0
             ? "No buffered logs are available yet."
             : $"Loaded {_logLines.Count} recent log line(s).";
@@ -385,6 +414,7 @@ else
             _runtimeStatus = RuntimeStateStore.GetOrDefault(_profile.ProfileId);
             await AuditStore.WriteAsync("runtime.broadcast.sent", _profile.ProfileId, "web", $"Broadcasted message: {message}", cancellationToken: CancellationToken.None);
             _statusMessage = $"Broadcasted message: {message}";
+            RefreshConsoleSummary();
         }
         catch (Exception ex)
         {
@@ -410,6 +440,7 @@ else
             _runtimeStatus = RuntimeStateStore.GetOrDefault(_profile.ProfileId);
             await AuditStore.WriteAsync("runtime.command.sent", _profile.ProfileId, "web", statusMessage, cancellationToken: CancellationToken.None);
             _statusMessage = statusMessage;
+            RefreshConsoleSummary();
         }
         catch (Exception ex)
         {
@@ -428,4 +459,35 @@ else
         $"\"{value.Replace("\"", "'", StringComparison.Ordinal).Trim()}\"";
 
     private string OverviewHref => $"/profiles/{Uri.EscapeDataString(ProfileId)}/overview";
+
+    private void RefreshConsoleSummary()
+    {
+        var runtimeState = _runtimeStatus?.State.ToString() ?? "Stopped";
+        var rosterCount = _liveOperations?.ConnectedPlayers.Count ?? _logSummary?.ConnectedPlayerCount ?? 0;
+        var operatorActionCount = _liveOperations?.RecentOperatorActions.Count ?? _logSummary?.OperatorCommandCount ?? 0;
+        _consoleSummary = ProjectZomboidLiveOpsConsoleSummaryBuilder.Build(
+            _logSummary ?? new ProjectZomboidLogPostureSummary(
+                "No buffered lines are available yet. Select a profile to inspect runtime output.",
+                "Latest signal: no runtime output captured yet.",
+                "No runtime signals are buffered yet.",
+                "Pick a profile, then start or reload to watch runtime output.",
+                "Runtime window: no status is available yet.",
+                "No player activity is available yet.",
+                "No operator commands have been recorded yet.",
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                false,
+                false,
+                false,
+                [],
+                []),
+            runtimeState,
+            string.Equals(runtimeState, ServerRuntimeState.Running.ToString(), StringComparison.OrdinalIgnoreCase),
+            rosterCount,
+            operatorActionCount);
+    }
 }

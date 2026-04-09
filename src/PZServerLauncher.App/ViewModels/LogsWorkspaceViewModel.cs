@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PZServerLauncher.App.Services;
+using PZServerLauncher.Contracts.Profiles;
 using PZServerLauncher.Contracts.Runtime;
 using PZServerLauncher.Core.Planning;
 using PZServerLauncher.Core.Runtime;
@@ -116,13 +117,7 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
 
     public string FeedHealthHeadline => SelectedProfile is null
         ? "No profile"
-        : CurrentSummary.BufferedLineCount == 0
-            ? "No runtime feed"
-            : CurrentSummary.HasErrorSignals
-                ? "Errors buffered"
-                : CurrentSummary.HasWarningSignals
-                    ? "Warnings buffered"
-                    : "Feed looks clean";
+        : CurrentConsoleSummary.FeedHeadline;
 
     public string FeedPostureSummary => SelectedProfile is null
         ? "No live feed is available yet."
@@ -136,7 +131,7 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
 
     public string RuntimeGuidance => SelectedProfile is null
         ? "No runtime guidance available."
-        : CurrentSummary.OperatorFocusSummary;
+        : CurrentConsoleSummary.OperatorSummary;
 
     public string LatestLineSummary => CurrentSummary.LatestSignalSummary;
 
@@ -158,11 +153,7 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
 
     public string PlayerActivityHeadline => _liveOperations is null
         ? "No roster sample"
-        : _liveOperations.ConnectedPlayers.Count > 0
-            ? "Live roster active"
-            : _liveOperations.RecentPlayerSignals.Count > 0
-                ? "Signals only"
-                : "No player activity";
+        : CurrentConsoleSummary.RosterHeadline;
 
     public string ActivePlayerCountSummary => _liveOperations is null
         ? "No live roster sampled"
@@ -204,9 +195,7 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
 
     public string OperatorActionHeadline => SelectedProfile is null
         ? "No profile"
-        : CanSendCommands
-            ? "Live control"
-            : "Monitor only";
+        : CurrentConsoleSummary.CommandHeadline;
 
     public string OperatorActionCountSummary => _liveOperations is null
         ? "No operator commands yet."
@@ -217,6 +206,18 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
     public string OperatorCommandPosture => string.IsNullOrWhiteSpace(_runtimeStatus?.LastOperatorCommandSummary)
         ? "No recent launcher-driven broadcast or console command has been recorded."
         : _runtimeStatus.LastOperatorCommandSummary!;
+
+    public string IncidentHeadline => SelectedProfile is null
+        ? "No incident posture"
+        : CurrentConsoleSummary.IncidentHeadline;
+
+    public string LiveOpsOperatorSummary => SelectedProfile is null
+        ? "Select a profile to review live operations."
+        : CurrentConsoleSummary.OperatorSummary;
+
+    public string LiveOpsTriageSummary => SelectedProfile is null
+        ? "No triage guidance loaded."
+        : CurrentConsoleSummary.TriageSummary;
 
     public string RosterSignalSummary => _liveOperations is null
         ? "No roster signal available."
@@ -238,21 +239,7 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
 
     public IReadOnlyList<string> LiveOpsChecklist => SelectedProfile is null
         ? []
-        :
-        [
-            CurrentSummary.BufferedLineCount == 0
-                ? "Start or reload the server so the host can buffer fresh runtime output."
-                : "Watch the latest signal and the warning/error count before taking moderation or reload actions.",
-            _liveOperations?.ConnectedPlayers.Count > 0
-                ? "Use the inferred roster for targeted moderation only when you recognize the current live players."
-                : "Request the player list during live runtime if you need a fresher roster sample.",
-            CanSendCommands
-                ? "Broadcast, save, and raw console actions are unlocked because the runtime is live."
-                : "The page is in monitor-only mode until the runtime reaches Running.",
-            CurrentSummary.HasModSignals
-                ? "Recent output contains workshop or mod chatter, so keep an eye out for map and checksum failures."
-                : "No recent workshop or mod chatter is buffered right now."
-        ];
+        : CurrentConsoleSummary.Checklist;
 
     public bool CanSendCommands => SelectedProfile is not null &&
         string.Equals(LatestRuntimeState, ServerRuntimeState.Running.ToString(), StringComparison.OrdinalIgnoreCase);
@@ -514,6 +501,7 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
         OnPropertyChanged(nameof(LogStreamSummary));
         OnPropertyChanged(nameof(FeedPostureSummary));
         OnPropertyChanged(nameof(FeedHealthHeadline));
+        OnPropertyChanged(nameof(IncidentHeadline));
         OnPropertyChanged(nameof(RuntimeGuidance));
         OnPropertyChanged(nameof(LatestLineSummary));
         OnPropertyChanged(nameof(LatestSignalLabel));
@@ -534,6 +522,8 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
         OnPropertyChanged(nameof(OperatorActionSummary));
         OnPropertyChanged(nameof(OperatorActionCountSummary));
         OnPropertyChanged(nameof(OperatorCommandPosture));
+        OnPropertyChanged(nameof(LiveOpsOperatorSummary));
+        OnPropertyChanged(nameof(LiveOpsTriageSummary));
         OnPropertyChanged(nameof(BroadcastGuidance));
         OnPropertyChanged(nameof(RosterSignalSummary));
         OnPropertyChanged(nameof(ConsoleModeSummary));
@@ -548,6 +538,16 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
         SelectedProfile is null
             ? EmptySummary
             : ProjectZomboidLogPostureSummaryBuilder.Build(_runtimeStatus, LogLines.ToList());
+
+    private ProjectZomboidLiveOpsConsoleSummary CurrentConsoleSummary =>
+        SelectedProfile is null
+            ? ProjectZomboidLiveOpsConsoleSummaryBuilder.Empty()
+            : ProjectZomboidLiveOpsConsoleSummaryBuilder.Build(
+                CurrentSummary,
+                LatestRuntimeState,
+                CanSendCommands,
+                ConnectedPlayers.Count,
+                RecentOperatorActions.Count);
 
     public sealed record ConnectedPlayerRowViewModel(
         string UserName,
