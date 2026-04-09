@@ -1,5 +1,6 @@
 @page "/remote"
 @attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Owner,Admin")]
+@using PZServerLauncher.Contracts.Profiles
 @using PZServerLauncher.Contracts.Runtime
 @using PZServerLauncher.Core.Runtime
 @using PZServerLauncher.Host.Services
@@ -15,16 +16,17 @@
             <p class="eyebrow">Web Admin</p>
             <h1>Remote Access</h1>
             <p class="muted-text">Configure the optional HTTPS listener for remote administration. The host checks certificate details, bind posture, and owner 2FA readiness before you turn it on, so the exposed surface stays intentional.</p>
-            <p class="muted-text">@BuildRemoteModeSummary()</p>
+            <p class="muted-text">@_rolloutSummary.ModeHeadline</p>
+            <p class="muted-text">@_rolloutSummary.OperatorSummary</p>
         </div>
 
         @if (_currentRemoteAccess is not null)
         {
             <div class="workspace-actions">
-                <span class="pill">@(_currentRemoteAccess.IsEnabled ? "Enabled" : "Disabled")</span>
-                <span class="pill">@_currentRemoteAccess.HttpsPort</span>
-                <span class="pill">@(_ownerAccountsWithTwoFactor > 0 ? "2FA ready" : "Needs 2FA")</span>
-                <span class="pill">@(_currentRemoteAccess.CreateFirewallRule ? "Firewall intent on" : "Firewall intent off")</span>
+                <span class="pill">@_rolloutSummary.EndpointHeadline</span>
+                <span class="pill">@_rolloutSummary.ReadinessHeadline</span>
+                <span class="pill">@_rolloutSummary.CertificateHeadline</span>
+                <span class="pill">@_rolloutSummary.FirewallHeadline</span>
             </div>
         }
     </section>
@@ -40,79 +42,79 @@
         <article class="metric-card">
             <span class="metric-label">Remote Listener</span>
             <strong class="metric-value">@(_currentRemoteAccess?.IsEnabled == true ? "Enabled" : "Disabled")</strong>
-            <span class="metric-note">@(_currentRemoteAccess?.IsEnabled == true ? $"https://{(_currentRemoteAccess.PublicHostname ?? _currentRemoteAccess.BindAddress)}:{_currentRemoteAccess.HttpsPort}" : "Loopback-only until you enable it")</span>
+            <span class="metric-note">@_rolloutSummary.EndpointHeadline</span>
         </article>
         <article class="metric-card">
-            <span class="metric-label">Owner Accounts with 2FA</span>
-            <strong class="metric-value">@_ownerAccountsWithTwoFactor</strong>
-            <span class="metric-note">Required before web admin can be enabled</span>
+            <span class="metric-label">Readiness</span>
+            <strong class="metric-value">@_rolloutSummary.ReadinessHeadline</strong>
+            <span class="metric-note">Owner 2FA and rollout prereqs for the optional listener.</span>
         </article>
         <article class="metric-card">
-            <span class="metric-label">Local 2FA Link</span>
-            <strong class="metric-value">Ready</strong>
+            <span class="metric-label">Certificate</span>
+            <strong class="metric-value">@_rolloutSummary.CertificateHeadline</strong>
             <span class="metric-note">@_localTwoFactorPath</span>
         </article>
         <article class="metric-card">
-            <span class="metric-label">Restart Requirement</span>
-            <strong class="metric-value">Host restart</strong>
-            <span class="metric-note">HTTPS binding changes apply after restart</span>
+            <span class="metric-label">Firewall</span>
+            <strong class="metric-value">@_rolloutSummary.FirewallHeadline</strong>
+            <span class="metric-note">HTTPS binding changes apply after restart.</span>
         </article>
     </section>
 
     <div class="cards cards--wide">
         <section class="card">
-            <div class="card-heading">
-                <div>
-                    <p class="eyebrow">Remote Listener</p>
-                    <h2>Exposure</h2>
+                <div class="card-heading">
+                    <div>
+                        <p class="eyebrow">Remote Listener</p>
+                        <h2>Exposure</h2>
+                    </div>
+                    <span class="pill">@(_currentRemoteAccess?.IsEnabled == true ? "Enabled" : "Disabled")</span>
                 </div>
-                <span class="pill">@(_currentRemoteAccess?.IsEnabled == true ? "Enabled" : "Disabled")</span>
-            </div>
 
-            <div class="info-grid">
-                <div class="info-item">
-                    <span class="info-label">Endpoint</span>
-                    <span class="info-value">@(_currentRemoteAccess?.IsEnabled == true ? $"https://{(_currentRemoteAccess.PublicHostname ?? _currentRemoteAccess.BindAddress)}:{_currentRemoteAccess.HttpsPort}" : "Not exposed")</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Bind address</span>
-                    <span class="info-value">@(_currentRemoteAccess?.BindAddress ?? "Not configured")</span>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">Endpoint</span>
+                        <span class="info-value">@_rolloutSummary.EndpointHeadline</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Bind address</span>
+                        <span class="info-value">@(_currentRemoteAccess?.BindAddress ?? "Not configured")</span>
                 </div>
                 <div class="info-item">
                     <span class="info-label">HTTPS port</span>
                     <span class="info-value">@(_currentRemoteAccess?.HttpsPort.ToString() ?? "Not configured")</span>
                 </div>
-                <div class="info-item">
-                    <span class="info-label">Firewall intent</span>
-                    <span class="info-value">@(_currentRemoteAccess?.CreateFirewallRule == true ? "Remembered" : "Not set")</span>
+                    <div class="info-item">
+                        <span class="info-label">Firewall intent</span>
+                        <span class="info-value">@_rolloutSummary.FirewallHeadline</span>
+                    </div>
                 </div>
-            </div>
 
-            <div class="status-banner">
-                <strong>Local setup link</strong>
-                <p><code>@_localTwoFactorPath</code></p>
-                <p>Use the local authenticator page first, then return here to enable the remote HTTPS listener with confidence.</p>
-                <p>@BuildExposureSummary()</p>
-            </div>
-        </section>
-
-        <section class="card">
-            <div class="card-heading">
-                <div>
-                    <p class="eyebrow">Readiness</p>
-                    <h2>Security Preconditions</h2>
+                <div class="status-banner">
+                    <strong>Local setup link</strong>
+                    <p><code>@_localTwoFactorPath</code></p>
+                    <p>Use the local authenticator page first, then return here to enable the remote HTTPS listener with confidence.</p>
+                    <p>@_rolloutSummary.OperatorSummary</p>
                 </div>
-            </div>
+            </section>
 
-            <div class="status-banner status-banner--warm">
-                <strong>Owner account readiness</strong>
-                <p>Owner accounts with 2FA: @_ownerAccountsWithTwoFactor</p>
-                <p>@BuildReadinessSummary()</p>
-            </div>
+            <section class="card">
+                <div class="card-heading">
+                    <div>
+                        <p class="eyebrow">Readiness</p>
+                        <h2>Security Preconditions</h2>
+                    </div>
+                </div>
 
-            <p class="muted-text">If this is 0, remote access should stay disabled. Set up TOTP locally first at <a href="/Account/Manage/EnableAuthenticator">Enable Authenticator</a>, then come back to expose HTTPS.</p>
-        </section>
-    </div>
+                <div class="status-banner status-banner--warm">
+                    <strong>Owner account readiness</strong>
+                    <p>Owner accounts with 2FA: @_ownerAccountsWithTwoFactor</p>
+                    <p>@_rolloutSummary.ReadinessHeadline</p>
+                </div>
+
+                <p class="muted-text">If this is 0, remote access should stay disabled. Set up TOTP locally first at <a href="/Account/Manage/EnableAuthenticator">Enable Authenticator</a>, then come back to expose HTTPS.</p>
+            </section>
+        </div>
 
     <section class="card">
         <div class="card-heading">
@@ -162,7 +164,7 @@
 
         <section class="status-banner">
             <strong>Recommended next step</strong>
-            <p>@BuildNextStepSummary()</p>
+            <p>@_rolloutSummary.NextStepSummary</p>
         </section>
 
         <section class="status-banner status-banner--warm">
@@ -182,7 +184,7 @@
 
         <p class="muted-text">Treat remote access as a staged rollout: keep the listener local until each prerequisite is intentional.</p>
 
-        @if (RemoteChecklistSteps.Count == 0)
+        @if (_rolloutSummary.Checklist.Count == 0)
         {
             <div class="empty-state">
                 <p>Run the local self-test after saving your HTTPS settings to turn this panel into a rollout checklist.</p>
@@ -199,7 +201,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var check in RemoteChecklistSteps)
+                        @foreach (var check in _rolloutSummary.Checklist)
                         {
                             <tr>
                                 <td>@check.StatusLabel</td>
@@ -219,6 +221,7 @@
     private string _localTwoFactorPath = string.Empty;
     private int _ownerAccountsWithTwoFactor;
     private string? _statusMessage;
+    private ProjectZomboidRemoteAccessRolloutSummary _rolloutSummary = ProjectZomboidRemoteAccessRolloutSummaryBuilder.Empty();
 
     [CascadingParameter]
     private HttpContext HttpContext { get; set; } = default!;
@@ -239,6 +242,10 @@
         _ownerAccountsWithTwoFactor = users.Count(user =>
             user.TwoFactorEnabled &&
             user.Roles.Contains(UserRole.Owner));
+        _rolloutSummary = ProjectZomboidRemoteAccessRolloutSummaryBuilder.Build(
+            _currentRemoteAccess,
+            _ownerAccountsWithTwoFactor,
+            BuildSelfTestMessages());
     }
 
     private async Task SaveAsync()
@@ -288,45 +295,6 @@
     private static string? NullIfWhiteSpace(string value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
-    private string BuildNextStepSummary()
-    {
-        if (_currentRemoteAccess?.IsEnabled != true)
-        {
-            return "Keep remote access disabled until the bind address, certificate path, and owner 2FA checks all look good.";
-        }
-
-        if (_ownerAccountsWithTwoFactor == 0)
-        {
-            return "Finish owner 2FA enrollment before exposing HTTPS, even if the certificate and endpoint settings are already present.";
-        }
-
-        return _currentRemoteAccess.CreateFirewallRule
-            ? "Save the settings, restart the host, and verify the firewall rule before exposing the endpoint to the network."
-            : "Save the settings, restart the host, and consider whether you want this endpoint to stay loopback-only or become publicly reachable.";
-    }
-
-    private string BuildRemoteModeSummary() =>
-        _currentRemoteAccess?.IsEnabled == true
-            ? "The listener is staged for exposure, so every change should be treated like a rollout decision."
-            : "The listener is still local-only, which is the safest starting point for desktop-first administration.";
-
-    private string BuildExposureSummary() =>
-        _currentRemoteAccess?.IsEnabled == true
-            ? "Review the endpoint, certificate path, and firewall posture together before you expose HTTPS beyond the host."
-            : "Nothing is exposed yet, so you still have time to stage the certificate and choose whether firewall intent belongs in the rollout.";
-
-    private string BuildReadinessSummary()
-    {
-        if (_ownerAccountsWithTwoFactor == 0)
-        {
-            return "Owner TOTP is still missing, so this should remain loopback-only.";
-        }
-
-        return _currentRemoteAccess?.IsEnabled == true
-            ? "Owner 2FA is ready, so the remaining concerns are certificate, bind address, and firewall posture."
-            : "Owner 2FA is ready, so the remaining concerns are certificate, bind address, and whether you actually want to expose HTTPS.";
-    }
-
     private string BuildLocalOnlyGuidance() =>
         _currentRemoteAccess?.IsEnabled == true
             ? "The listener is no longer local-only. Keep it staged until the certificate and firewall checks both pass."
@@ -334,33 +302,49 @@
 
     private string BuildChecklistStats()
     {
-        if (RemoteChecklistSteps.Count == 0)
+        if (_rolloutSummary.Checklist.Count == 0)
         {
             return "No self-test yet";
         }
 
-        var blocking = RemoteChecklistSteps.Count(check => check.IsBlocking);
-        var followUp = RemoteChecklistSteps.Count(check => check.IsFollowUp);
-        return $"{RemoteChecklistSteps.Count} checks | {blocking} blocking | {followUp} follow-up";
+        var blocking = _rolloutSummary.Checklist.Count(check => check.IsBlocking);
+        var followUp = _rolloutSummary.Checklist.Count(check => check.IsFollowUp);
+        return $"{_rolloutSummary.Checklist.Count} checks | {blocking} blocking | {followUp} follow-up";
     }
 
-    private IReadOnlyList<RemoteChecklistStep> RemoteChecklistSteps =>
-    [
-        _ownerAccountsWithTwoFactor == 0
-            ? new RemoteChecklistStep("Blocking", "Finish owner TOTP enrollment before you trust remote sign-in.", true, false)
-            : new RemoteChecklistStep("Healthy", "Owner TOTP readiness is in place for remote administration.", false, false),
-        string.IsNullOrWhiteSpace(_model.CertificatePath)
-            ? new RemoteChecklistStep("Blocking", "Choose a PFX certificate path so the host can validate HTTPS binding.", true, false)
-            : new RemoteChecklistStep("Healthy", "A certificate path is staged for host validation.", false, false),
-        _model.IsEnabled
-            ? new RemoteChecklistStep("Follow-up", $"Remote HTTPS is enabled for {_model.BindAddress}:{_model.HttpsPort}. Restart the host after saving.", false, true)
-            : new RemoteChecklistStep("Healthy", "Remote HTTPS is still disabled, so the host remains local-only while you stage the rollout.", false, false),
-        _model.CreateFirewallRule
-            ? new RemoteChecklistStep("Follow-up", "Firewall intent is enabled. Apply or verify the inbound rule only after the local checks pass.", false, true)
-            : new RemoteChecklistStep("Follow-up", "Firewall intent is off. Manual inbound access will still be required if you expose the listener later.", false, true),
-    ];
+    private IReadOnlyList<string> BuildSelfTestMessages()
+    {
+        var messages = new List<string>();
 
-    private sealed record RemoteChecklistStep(string StatusLabel, string Message, bool IsBlocking, bool IsFollowUp);
+        messages.Add(_currentRemoteAccess?.IsEnabled == true
+            ? $"Remote HTTPS is enabled for {_currentRemoteAccess.BindAddress}:{_currentRemoteAccess.HttpsPort}."
+            : "Remote HTTPS is disabled, so the host remains local-only.");
+
+        if (string.IsNullOrWhiteSpace(_model.CertificatePath))
+        {
+            messages.Add("PFX certificate path is missing.");
+        }
+        else
+        {
+            messages.Add("Certificate path staged for validation.");
+        }
+
+        if (_ownerAccountsWithTwoFactor == 0)
+        {
+            messages.Add("Owner TOTP is still missing.");
+        }
+        else
+        {
+            messages.Add("Owner TOTP readiness is in place.");
+        }
+
+        if (_model.CreateFirewallRule)
+        {
+            messages.Add("Firewall rule intent is enabled.");
+        }
+
+        return messages;
+    }
 
     private sealed class RemoteAccessInput
     {

@@ -1,9 +1,13 @@
 @page "/host"
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@using PZServerLauncher.Contracts.Profiles
 @using PZServerLauncher.Core.Profiles
+@using PZServerLauncher.Core.Runtime
 @using PZServerLauncher.Host.Services
 @inject HostSettingsStore HostSettingsStore
 @inject ProfileStore ProfileStore
+@inject RuntimeStateStore RuntimeStateStore
+@inject ServerBackupService BackupService
 
 <PageTitle>Host</PageTitle>
 
@@ -13,15 +17,15 @@
             <p class="eyebrow">Workspace</p>
             <h1>Host</h1>
             <p class="muted-text">This is the control plane for the local launcher host: startup policy, loopback control, remote exposure, and owner bootstrap readiness all converge here.</p>
+            <p class="muted-text">@(_summary?.OperatorSummary ?? "Load host posture to see the fleet briefing.")</p>
         </div>
 
         @if (_settings is not null)
         {
             <div class="workspace-actions">
-                <span class="pill">Loopback @_settings.LoopbackPort</span>
-                <span class="pill">@(_settings.StartHostWithWindows ? "Windows startup on" : "Windows startup off")</span>
-                <span class="pill">@(_settings.RemoteAccess.IsEnabled ? "Remote access enabled" : "Loopback-only")</span>
-                <span class="pill">@(_settings.OwnerBootstrap.IsConfigured ? "Owner bootstrap complete" : "Owner bootstrap pending")</span>
+                <span class="pill">@(_summary?.LifecycleHeadline ?? $"Loopback {_settings.LoopbackPort}")</span>
+                <span class="pill">@(_summary?.ExposureHeadline ?? (_settings.RemoteAccess.IsEnabled ? "Remote access enabled" : "Loopback-only"))</span>
+                <span class="pill">@(_summary?.SecurityHeadline ?? (_settings.OwnerBootstrap.IsConfigured ? "Owner bootstrap complete" : "Owner bootstrap pending"))</span>
             </div>
         }
     </section>
@@ -36,47 +40,47 @@
     {
         <section class="metric-grid metric-grid--host">
             <article class="metric-card">
-                <span class="metric-label">Loopback Port</span>
-                <strong class="metric-value">@_settings.LoopbackPort</strong>
-                <span class="metric-note">Private control channel used by the desktop app</span>
+                <span class="metric-label">Lifecycle</span>
+                <strong class="metric-value">@_summary.LifecycleHeadline</strong>
+                <span class="metric-note">The host control plane and Windows startup posture for this machine.</span>
             </article>
             <article class="metric-card">
-                <span class="metric-label">Startup</span>
-                <strong class="metric-value">@(_settings.StartHostWithWindows ? "On" : "Off")</strong>
-                <span class="metric-note">Whether the host comes up automatically at sign-in</span>
+                <span class="metric-label">Fleet</span>
+                <strong class="metric-value">@_summary.FleetHeadline</strong>
+                <span class="metric-note">Profiles currently under host supervision.</span>
             </article>
             <article class="metric-card">
-                <span class="metric-label">Remote Access</span>
-                <strong class="metric-value">@(_settings.RemoteAccess.IsEnabled ? "Enabled" : "Disabled")</strong>
-                <span class="metric-note">@(_settings.RemoteAccess.IsEnabled ? $"https://{(_settings.RemoteAccess.PublicHostname ?? _settings.RemoteAccess.BindAddress)}:{_settings.RemoteAccess.HttpsPort}" : "Not exposed beyond loopback")</span>
+                <span class="metric-label">Exposure</span>
+                <strong class="metric-value">@_summary.ExposureHeadline</strong>
+                <span class="metric-note">How much of the host is intentionally reachable from outside the desktop.</span>
             </article>
             <article class="metric-card">
-                <span class="metric-label">Owner Bootstrap</span>
-                <strong class="metric-value">@(_settings.OwnerBootstrap.IsConfigured ? "Configured" : "Pending")</strong>
-                <span class="metric-note">@(_settings.OwnerBootstrap.OwnerUserName ?? "No owner assigned yet")</span>
+                <span class="metric-label">Security</span>
+                <strong class="metric-value">@_summary.SecurityHeadline</strong>
+                <span class="metric-note">Owner bootstrap and access posture for the local host.</span>
             </article>
         </section>
 
         <section class="metric-grid metric-grid--host">
             <article class="metric-card">
                 <span class="metric-label">Startup Roster</span>
-                <strong class="metric-value">@_profiles.Count(profile => profile.StartWithHost)</strong>
-                <span class="metric-note">@BuildStartupCoverageSummary()</span>
+                <strong class="metric-value">@_summary.StartupHeadline</strong>
+                <span class="metric-note">What will come online automatically when the host starts.</span>
             </article>
             <article class="metric-card">
-                <span class="metric-label">Crash Recovery</span>
-                <strong class="metric-value">@_profiles.Count(profile => profile.AutoRestartOnCrash)</strong>
-                <span class="metric-note">@BuildAutomationCoverageSummary()</span>
+                <span class="metric-label">Recovery</span>
+                <strong class="metric-value">@_summary.RecoveryHeadline</strong>
+                <span class="metric-note">The current archive posture and rollback readiness.</span>
             </article>
             <article class="metric-card">
-                <span class="metric-label">Installed Profiles</span>
-                <strong class="metric-value">@_profiles.Count(profile => Directory.Exists(profile.InstallDirectory) || Directory.Exists(Path.Combine(profile.InstallDirectory, "server")))</strong>
-                <span class="metric-note">Profiles that currently show an install root</span>
+                <span class="metric-label">Automation</span>
+                <strong class="metric-value">@_summary.AutomationHeadline</strong>
+                <span class="metric-note">Crash recovery and unattended restart posture.</span>
             </article>
             <article class="metric-card">
-                <span class="metric-label">Fleet Guidance</span>
-                <strong class="metric-value">@BuildFleetRiskHeadline()</strong>
-                <span class="metric-note">@BuildFleetRiskSummary()</span>
+                <span class="metric-label">Risk</span>
+                <strong class="metric-value">@_summary.RiskHeadline</strong>
+                <span class="metric-note">The strongest operator warning on this page.</span>
             </article>
         </section>
 
@@ -96,7 +100,8 @@
             }
             else
             {
-                <p class="muted-text">@_profiles.Count profile(s) loaded | @_profiles.Count(profile => profile.StartWithHost) set to start with host | @_profiles.Count(profile => profile.AutoRestartOnCrash) set to auto-restart on crash.</p>
+                <p class="muted-text">@_summary.FleetHeadline</p>
+                <p class="muted-text">@_summary.OperatorSummary</p>
 
                 <div class="field-grid">
                     @foreach (var profile in _profiles)
@@ -108,6 +113,7 @@
                             <span>Start with host: @(profile.StartWithHost ? "On" : "Off")</span>
                             <span>Auto-restart: @(profile.AutoRestartOnCrash ? "On" : "Off")</span>
                             <span>Install root: @profile.InstallDirectory</span>
+                            <span>Ports: @BuildPortSummary(profile)</span>
                         </div>
                     }
                 </div>
@@ -118,46 +124,46 @@
             <section class="card">
                 <div class="card-heading">
                     <div>
-                        <p class="eyebrow">Startup</p>
-                        <h2>Host Control Plane</h2>
+                        <p class="eyebrow">Host Control</p>
+                        <h2>Control Plane</h2>
                     </div>
                 </div>
 
                 <div class="info-grid">
                     <div class="info-item">
-                        <span class="info-label">Loopback port</span>
+                        <span class="info-label">Loopback Port</span>
                         <span class="info-value">@_settings.LoopbackPort</span>
                     </div>
                     <div class="info-item">
-                        <span class="info-label">Windows start</span>
+                        <span class="info-label">Windows Startup</span>
                         <span class="info-value">@(_settings.StartHostWithWindows ? "On" : "Off")</span>
                     </div>
                     <div class="info-item">
-                        <span class="info-label">Remote access</span>
+                        <span class="info-label">Remote Access</span>
                         <span class="info-value">@(_settings.RemoteAccess.IsEnabled ? "Enabled" : "Disabled")</span>
                     </div>
                     <div class="info-item">
-                        <span class="info-label">Remote endpoint</span>
+                        <span class="info-label">Remote Endpoint</span>
                         <span class="info-value">@(_settings.RemoteAccess.IsEnabled ? $"https://{(_settings.RemoteAccess.PublicHostname ?? _settings.RemoteAccess.BindAddress)}:{_settings.RemoteAccess.HttpsPort}" : "Loopback-only")</span>
                     </div>
                 </div>
 
                 <div class="status-banner">
                     <strong>Operator note</strong>
-                    <p>@(_settings.StartHostWithWindows ? "The host is configured like a persistent control service. Use this when the machine should behave like a dedicated server controller." : "The host stays manual until you opt in, which is a safer default while you are still setting up profiles and remote access.")</p>
+                    <p>@_summary.OperatorSummary</p>
                 </div>
 
                 <div class="status-banner status-banner--warm">
-                    <strong>Fleet risk</strong>
-                    <p>@BuildFleetRiskSummary()</p>
+                    <strong>Next step</strong>
+                    <p>@_summary.NextStepSummary</p>
                 </div>
             </section>
 
             <section class="card">
                 <div class="card-heading">
                     <div>
-                        <p class="eyebrow">Owner Bootstrap</p>
-                        <h2>Security Setup</h2>
+                        <p class="eyebrow">Security Setup</p>
+                        <h2>Owner Bootstrap</h2>
                     </div>
                 </div>
 
@@ -172,14 +178,14 @@
                         <span class="info-value">@(_settings.OwnerBootstrap.IsConfigured ? "Configured" : "Pending")</span>
                     </div>
                     <div class="info-item">
-                        <span class="info-label">Remote access ready</span>
+                        <span class="info-label">Remote Access Ready</span>
                         <span class="info-value">@(_settings.OwnerBootstrap.IsConfigured ? "Can enable web admin" : "Needs bootstrap first")</span>
                     </div>
                 </div>
 
                 <div class="status-banner status-banner--warm">
                     <strong>Security posture</strong>
-                    <p>@(_settings.OwnerBootstrap.IsConfigured ? "The owner account exists, so you can move on to 2FA and remote access hardening." : "Bootstrap the owner account first so web admin and remote exposure can be secured properly.")</p>
+                    <p>@_summary.SecurityHeadline</p>
                 </div>
             </section>
 
@@ -200,18 +206,41 @@
 
                 <div class="status-banner">
                     <strong>Recommended next step</strong>
-                    <p>@(_settings.RemoteAccess.IsEnabled ? "Review the remote endpoint, then verify user roles and 2FA readiness before exposing the host more broadly." : "Open Remote Access to add certificate details and validate the endpoint before enabling public exposure.")</p>
+                    <p>@_summary.NextStepSummary</p>
                 </div>
             </section>
         </div>
 
         <section class="card callout-card">
-            <h2>Recommended Next Steps</h2>
-            <ol>
-                <li>Configure an authenticator app for your owner account under <a href="/Account/Manage/TwoFactorAuthentication">2FA</a>.</li>
-                <li>Open <a href="/remote">Remote Access</a> and add your HTTPS certificate details.</li>
-                <li>Create additional operators or viewers under <a href="/users">Users</a> if you want shared administration.</li>
-            </ol>
+            <div class="card-heading">
+                <div>
+                    <p class="eyebrow">Operator Checklist</p>
+                    <h2>Host Rollout</h2>
+                </div>
+                <span class="pill">@($"{_summary.Checklist.Count} item(s)")</span>
+            </div>
+
+            <p class="muted-text">Use this checklist to decide whether the host should stay local-only, become a persistent controller, or expose the optional web surface.</p>
+
+            <div class="users-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th>Check</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in _summary.Checklist)
+                        {
+                            <tr>
+                                <td>@item.StatusLabel</td>
+                                <td>@item.Message</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
         </section>
     }
 </div>
@@ -219,75 +248,42 @@
 @code {
     private PZServerLauncher.Core.Runtime.HostSettings? _settings;
     private IReadOnlyList<ServerProfile> _profiles = [];
+    private ProjectZomboidHostOperatorSummary _summary = ProjectZomboidHostOperatorSummaryBuilder.Empty();
 
     protected override async Task OnInitializedAsync()
     {
         _settings = await HostSettingsStore.GetAsync();
         _profiles = await ProfileStore.ListAsync();
+        _summary = BuildSummary();
     }
 
-    private string BuildStartupCoverageSummary()
+    private ProjectZomboidHostOperatorSummary BuildSummary()
     {
-        if (_profiles.Count == 0)
-        {
-            return "No profiles are available yet.";
-        }
-
-        var startupCount = _profiles.Count(profile => profile.StartWithHost);
-        return startupCount == 0
-            ? "Everything still starts manually."
-            : $"{startupCount} profile(s) will come online with the host.";
+        var settings = _settings ?? new PZServerLauncher.Core.Runtime.HostSettings();
+        return ProjectZomboidHostOperatorSummaryBuilder.Build(settings, BuildManagedProfiles());
     }
 
-    private string BuildAutomationCoverageSummary()
+    private IReadOnlyCollection<ProjectZomboidHostManagedProfileSnapshot> BuildManagedProfiles()
     {
-        if (_profiles.Count == 0)
-        {
-            return "Automation appears after the first profile exists.";
-        }
-
-        var autoRestartCount = _profiles.Count(profile => profile.AutoRestartOnCrash);
-        return autoRestartCount == 0
-            ? "Crashes currently need operator intervention."
-            : $"{autoRestartCount} profile(s) restart after a crash.";
+        return _profiles
+            .OrderBy(profile => profile.DisplayName, StringComparer.OrdinalIgnoreCase)
+            .Select(profile =>
+            {
+                var runtimeStatus = RuntimeStateStore.GetOrDefault(profile.ProfileId);
+                var installDetected = Directory.Exists(profile.InstallDirectory) || Directory.Exists(Path.Combine(profile.InstallDirectory, "server"));
+                var hasBackup = BackupService.ListBackups(profile.ProfileId).Count > 0;
+                return new ProjectZomboidHostManagedProfileSnapshot(
+                    profile.DisplayName,
+                    profile.Branch.ToString(),
+                    runtimeStatus.State.ToString(),
+                    profile.StartWithHost,
+                    profile.AutoRestartOnCrash,
+                    hasBackup,
+                    installDetected,
+                    BuildPortSummary(profile));
+            })
+            .ToArray();
     }
-
-    private string BuildFleetRiskHeadline()
-    {
-        if (_profiles.Count == 0)
-        {
-            return "No fleet";
-        }
-
-        return HasStartupInstallMismatch() || _profiles.Count(profile => profile.AutoRestartOnCrash) == 0
-            ? "Needs review"
-            : "Steady";
-    }
-
-    private string BuildFleetRiskSummary()
-    {
-        if (_profiles.Count == 0)
-        {
-            return "Create or import the first server profile before the host becomes an always-on controller.";
-        }
-
-        if (HasStartupInstallMismatch())
-        {
-            return "At least one profile is marked to start with the host but does not currently show an install root.";
-        }
-
-        if (_settings?.RemoteAccess.IsEnabled == true && !_settings.OwnerBootstrap.IsConfigured)
-        {
-            return "Remote exposure is configured before owner bootstrap is complete. Finish the owner and 2FA path first.";
-        }
-
-        return "Startup, exposure, and restart posture are aligned for the currently loaded fleet.";
-    }
-
-    private bool HasStartupInstallMismatch() =>
-        _profiles.Any(profile =>
-            profile.StartWithHost &&
-            !(Directory.Exists(profile.InstallDirectory) || Directory.Exists(Path.Combine(profile.InstallDirectory, "server"))));
 
     private static string BuildRosterSummary(ServerProfile profile)
     {
@@ -295,8 +291,12 @@
         {
             profile.StartWithHost ? "Starts with host" : "Manual start",
             profile.AutoRestartOnCrash ? "Auto-restart" : "Manual recovery",
+            profile.BackupPolicy.ScheduledBackupsEnabled ? "Scheduled backups" : "Manual backups",
         };
 
         return string.Join(" | ", notes);
     }
+
+    private static string BuildPortSummary(ServerProfile profile) =>
+        $"Game {profile.DefaultPort} | UDP {profile.UdpPort} | RCON {profile.RconPort}";
 }

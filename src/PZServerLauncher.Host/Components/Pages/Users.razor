@@ -1,12 +1,18 @@
 @page "/users"
 @attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Owner,Admin")]
+@using PZServerLauncher.Contracts.Profiles
 @using PZServerLauncher.Contracts.Runtime
 @using PZServerLauncher.Core.Runtime
 @using PZServerLauncher.Host.Services
 @inject AuditStore AuditStore
+@inject HostSettingsStore HostSettingsStore
 @inject UserManagementService UserManagementService
 
 <PageTitle>User Management</PageTitle>
+
+@{
+    var summary = Summary;
+}
 
 <div class="home-shell">
     <section class="workspace-panel hero-panel">
@@ -14,14 +20,15 @@
             <p class="eyebrow">Web Admin</p>
             <h1>User Management</h1>
             <p class="muted-text">Create local accounts, shape role coverage, and verify which privileged users still need an authenticator app before the optional remote surface is trusted. This page mirrors the desktop guardrails so the same access rules stay visible everywhere.</p>
+            <p class="muted-text">@summary.RosterHeadline</p>
+            <p class="muted-text">@summary.SecurityHeadline</p>
         </div>
 
         <div class="workspace-actions">
-            <span class="pill">Users @_users.Count</span>
-            <span class="pill">Owners @_users.Count(user => string.Equals(user.RoleName, nameof(UserRole.Owner), StringComparison.Ordinal))</span>
-            <span class="pill">Admins @_users.Count(user => string.Equals(user.RoleName, nameof(UserRole.Admin), StringComparison.Ordinal))</span>
-            <span class="pill">Operators @_users.Count(user => string.Equals(user.RoleName, nameof(UserRole.Operator), StringComparison.Ordinal))</span>
+            <span class="pill">@summary.OwnerHeadline</span>
+            <span class="pill">@summary.RoleCoverageHeadline</span>
             <span class="pill">@BuildPendingTwoFactorSummary()</span>
+            <span class="pill">@summary.CreateRoleHeadline</span>
         </div>
     </section>
 
@@ -36,22 +43,22 @@
         <article class="metric-card">
             <span class="metric-label">Users</span>
             <strong class="metric-value">@_users.Count</strong>
-            <span class="metric-note">Local accounts in the web admin</span>
+            <span class="metric-note">@summary.RosterHeadline</span>
         </article>
         <article class="metric-card">
             <span class="metric-label">Privileged Accounts</span>
             <strong class="metric-value">@_users.Count(user => string.Equals(user.RoleName, nameof(UserRole.Owner), StringComparison.Ordinal) || string.Equals(user.RoleName, nameof(UserRole.Admin), StringComparison.Ordinal))</strong>
-            <span class="metric-note">Owners and admins with elevated access</span>
+            <span class="metric-note">@summary.SecurityHeadline</span>
         </article>
         <article class="metric-card">
             <span class="metric-label">2FA Enabled</span>
             <strong class="metric-value">@_users.Count(user => user.TwoFactorEnabled)</strong>
-            <span class="metric-note">Accounts protected by authenticator apps</span>
+            <span class="metric-note">@summary.ReviewHeadline</span>
         </article>
         <article class="metric-card">
             <span class="metric-label">2FA Required</span>
             <strong class="metric-value">@_users.Count(user => user.RequiresTwoFactor)</strong>
-            <span class="metric-note">Accounts that must finish setup before sign-in</span>
+            <span class="metric-note">@summary.CreateRoleGuardrailHeadline</span>
         </article>
     </section>
 
@@ -64,8 +71,8 @@
                 </div>
             </div>
 
-            <p class="muted-text">@BuildSecurityPostureSummary()</p>
-            <p class="muted-text">@BuildOwnerGuardrailSummary()</p>
+            <p class="muted-text">@summary.OperatorSummary</p>
+            <p class="muted-text">@summary.NextStepSummary</p>
         </section>
 
         <section class="card">
@@ -76,7 +83,7 @@
                 </div>
             </div>
 
-            <p class="muted-text">@BuildRoleCoverageSummary()</p>
+            <p class="muted-text">@summary.RoleCoverageHeadline</p>
         </section>
 
         <section class="card">
@@ -87,8 +94,9 @@
                 </div>
             </div>
 
-            <p class="muted-text">@BuildUsersNextStepSummary()</p>
-            <p class="muted-text">@BuildPendingChangeSummary()</p>
+            <p class="muted-text">@summary.ReviewHeadline</p>
+            <p class="muted-text">@summary.CreateRoleHeadline</p>
+            <p class="muted-text">@summary.CreateRoleGuardrailHeadline</p>
         </section>
 
         <section class="card">
@@ -99,10 +107,51 @@
                 </div>
             </div>
 
-            <p class="muted-text">@BuildCreateRoleSummary()</p>
-            <p class="muted-text">@BuildCreateRoleGuardrailSummary()</p>
+            <p class="muted-text">@summary.CreateRoleHeadline</p>
+            <p class="muted-text">@summary.CreateRoleGuardrailHeadline</p>
         </section>
     </div>
+
+    <section class="card">
+        <div class="card-heading">
+            <div>
+                <p class="eyebrow">Operator Checklist</p>
+                <h2>Access Review</h2>
+            </div>
+            <span class="pill">@($"{summary.Checklist.Count} item(s)")</span>
+        </div>
+
+        <p class="muted-text">Use this checklist to decide whether the user roster is still owner-only, ready for shared administration, or still waiting on TOTP before the remote surface can be trusted.</p>
+
+        @if (summary.Checklist.Count == 0)
+        {
+            <div class="empty-state">
+                <p>No checklist items are available yet.</p>
+            </div>
+        }
+        else
+        {
+            <div class="users-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th>Check</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in summary.Checklist)
+                        {
+                            <tr>
+                                <td>@item.StatusLabel</td>
+                                <td>@item.Message</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
 
     <section class="card">
         <div class="card-heading">
@@ -114,8 +163,8 @@
         </div>
 
         <p class="muted-text">Owner and Admin accounts must configure TOTP before they can sign in to the web admin.</p>
-        <p class="muted-text">@BuildCreateRoleSummary()</p>
-        <p class="muted-text">@BuildCreateRoleGuardrailSummary()</p>
+        <p class="muted-text">@summary.CreateRoleHeadline</p>
+        <p class="muted-text">@summary.CreateRoleGuardrailHeadline</p>
 
         <div class="admin-grid">
             <label>
@@ -157,7 +206,7 @@
         </div>
 
         <p class="muted-text">This view assigns one application role per account and keeps the important guardrails visible while you edit.</p>
-        <p class="muted-text">@BuildRosterSummary()</p>
+        <p class="muted-text">@summary.RosterHeadline</p>
 
         @if (_users.Count == 0)
         {
@@ -221,6 +270,7 @@
 
     private readonly CreateUserInput _createUser = new();
     private readonly List<EditableUserRow> _users = [];
+    private bool _ownerBootstrapConfigured;
     private string? _statusMessage;
 
     [CascadingParameter]
@@ -231,8 +281,21 @@
         await ReloadAsync();
     }
 
+    private ProjectZomboidUserAccessSummary Summary =>
+        ProjectZomboidUserAccessSummaryBuilder.Build(
+            _ownerBootstrapConfigured,
+            _users.Select(row => new UserAccountDto(
+                row.UserId,
+                row.UserName,
+                row.Email,
+                [Enum.Parse<UserRole>(row.RoleName, ignoreCase: true)],
+                row.TwoFactorEnabled)).ToArray(),
+            _createUser.RoleName);
+
     private async Task ReloadAsync()
     {
+        var settings = await HostSettingsStore.GetAsync();
+        _ownerBootstrapConfigured = settings.OwnerBootstrap.IsConfigured;
         var users = await UserManagementService.ListAsync();
         _users.Clear();
         _users.AddRange(users.Select(MapRow));
@@ -318,85 +381,6 @@
             ? "Privileged 2FA ready"
             : $"{pending} privileged user(s) need 2FA";
     }
-
-    private string BuildRosterSummary()
-    {
-        if (_users.Count == 0)
-        {
-            return "No managed accounts exist yet. Keep the surface owner-only until you need more operators.";
-        }
-
-        return $"{_users.Count} account(s) total: {_users.Count(user => string.Equals(user.RoleName, nameof(UserRole.Owner), StringComparison.Ordinal))} owner, {_users.Count(user => string.Equals(user.RoleName, nameof(UserRole.Admin), StringComparison.Ordinal))} admin, {_users.Count(user => string.Equals(user.RoleName, nameof(UserRole.Operator), StringComparison.Ordinal))} operator, and {_users.Count(user => string.Equals(user.RoleName, nameof(UserRole.Viewer), StringComparison.Ordinal))} viewer.";
-    }
-
-    private string BuildSecurityPostureSummary()
-    {
-        if (_users.Count == 0)
-        {
-            return "No shared web-admin accounts exist yet. Keep the surface owner-only until you really need more operators.";
-        }
-
-        var pending = _users.Count(user => user.RequiresTwoFactor && !user.TwoFactorEnabled);
-        return pending == 0
-            ? "Every privileged account shown here has 2FA enabled."
-            : $"{pending} privileged account(s) still need TOTP before web sign-in is safe.";
-    }
-
-    private string BuildOwnerGuardrailSummary()
-    {
-        var owners = _users.Count(user => string.Equals(user.RoleName, nameof(UserRole.Owner), StringComparison.Ordinal));
-        if (owners == 0)
-        {
-            return "No owner accounts exist yet. That should only happen briefly while the first bootstrap is in progress.";
-        }
-
-        return owners == 1
-            ? "One owner account protects the host. Keep it paired with TOTP and avoid adding a second owner unless you truly need it."
-            : $"{owners} owner accounts exist. Keep at least one reserved for emergency recovery.";
-    }
-
-    private string BuildRoleCoverageSummary() =>
-        $"{_users.Count(user => string.Equals(user.RoleName, nameof(UserRole.Owner), StringComparison.Ordinal))} owner | {_users.Count(user => string.Equals(user.RoleName, nameof(UserRole.Admin), StringComparison.Ordinal))} admin | {_users.Count(user => string.Equals(user.RoleName, nameof(UserRole.Operator), StringComparison.Ordinal))} operator | {_users.Count(user => string.Equals(user.RoleName, nameof(UserRole.Viewer), StringComparison.Ordinal))} viewer.";
-
-    private string BuildUsersNextStepSummary()
-    {
-        if (_users.Count == 0)
-        {
-            return "Create the first operator or viewer account only if you truly need shared administration.";
-        }
-
-        return _users.Any(user => user.RequiresTwoFactor && !user.TwoFactorEnabled)
-            ? "Finish TOTP enrollment for privileged users before you rely on remote web administration."
-            : "Review whether every admin and operator still needs their current role, and keep elevated access as small as possible.";
-    }
-
-    private string BuildPendingChangeSummary()
-    {
-        var privilegedPending = _users.Count(user => user.RequiresTwoFactor && !user.TwoFactorEnabled);
-        if (privilegedPending == 0)
-        {
-            return "No urgent account risk is visible right now.";
-        }
-
-        return $"{privilegedPending} privileged account(s) still need TOTP before remote access should be trusted.";
-    }
-
-    private static string BuildCreateRoleSummary(string roleName) =>
-        roleName switch
-        {
-            nameof(UserRole.Owner) => "Owner is full control and should stay rare. It needs TOTP before the optional web admin will trust it.",
-            nameof(UserRole.Admin) => "Admin can manage configuration and remote access, so keep the role narrow and pair it with TOTP.",
-            nameof(UserRole.Operator) => "Operator can handle lifecycle, backups, and day-to-day maintenance without ownership transfer.",
-            nameof(UserRole.Viewer) => "Viewer is read-only and is safest when someone only needs visibility into the host.",
-            _ => "Custom role selection.",
-        };
-
-    private string BuildCreateRoleSummary() => BuildCreateRoleSummary(_createUser.RoleName);
-
-    private string BuildCreateRoleGuardrailSummary() =>
-        _createUser.RoleName is nameof(UserRole.Owner) or nameof(UserRole.Admin)
-            ? "This is a privileged role. The account will require TOTP before web sign-in is considered safe."
-            : "This role is intentionally lower risk and does not require TOTP by policy.";
 
     private static string BuildRowRoleSummary(EditableUserRow row) =>
         row.RoleName switch

@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:PZServerLauncher.App.ViewModels"
+             xmlns:profiles="using:PZServerLauncher.Contracts.Profiles"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d"
@@ -67,6 +68,30 @@
                     </StackPanel>
                 </Border>
             </Grid>
+
+            <Border Background="#FFF8F1" CornerRadius="14" Padding="16">
+                <StackPanel Spacing="12">
+                    <StackPanel Spacing="4">
+                        <TextBlock Classes="kicker" Text="Access Checklist" />
+                        <TextBlock Classes="body" Text="{Binding ReviewSummary}" TextWrapping="Wrap" />
+                        <TextBlock Classes="body" Text="{Binding UserNextStepSummary}" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <ItemsControl ItemsSource="{Binding AccessChecklist}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="profiles:ProjectZomboidOperatorChecklistItem">
+                                <Border Background="#F6EFE6" CornerRadius="12" Padding="12" Margin="0,0,0,8">
+                                    <StackPanel Spacing="4">
+                                        <Border Background="#2A2927" CornerRadius="999" Padding="8,3" HorizontalAlignment="Left">
+                                            <TextBlock Foreground="#F7F0E7" FontSize="11" FontWeight="SemiBold" Text="{Binding StatusLabel}" />
+                                        </Border>
+                                        <TextBlock Classes="body" Text="{Binding Message}" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
 
             <Border Background="#FFF8F1"
                     CornerRadius="14"

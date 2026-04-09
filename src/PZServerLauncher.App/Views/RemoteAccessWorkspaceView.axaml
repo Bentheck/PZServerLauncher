@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:PZServerLauncher.App.ViewModels"
+             xmlns:profiles="using:PZServerLauncher.Contracts.Profiles"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d"
@@ -121,7 +122,7 @@
                             <TextBlock Classes="kicker" Text="Latest Self-Test Checks" />
                             <ItemsControl ItemsSource="{Binding RemoteSelfTestChecks}">
                                 <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="vm:RemoteAccessWorkspaceViewModel+RemoteSelfTestCheckViewModel">
+                                    <DataTemplate x:DataType="profiles:ProjectZomboidOperatorChecklistItem">
                                         <Border Background="#FFF8F1" CornerRadius="12" Padding="12" Margin="0,0,0,8">
                                             <StackPanel Spacing="4">
                                                 <Border Background="#2A2927" CornerRadius="999" Padding="8,3" HorizontalAlignment="Left">

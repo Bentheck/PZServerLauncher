@@ -4,6 +4,7 @@ using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PZServerLauncher.App.Services;
+using PZServerLauncher.Contracts.Profiles;
 using PZServerLauncher.Contracts.Runtime;
 using PZServerLauncher.Core.Runtime;
 
@@ -45,103 +46,37 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
 
     public string OwnerSummary => Legacy.OwnerSummary;
 
-    public string UsersPageSummary => OwnerBootstrapConfigured
-        ? "Desktop account management is now active. Create operators, viewers, or admins before you expose the optional web admin."
-        : "Create the initial owner account first, then return here to manage local web-admin users.";
+    public string UsersPageSummary => CurrentSummary.OperatorSummary;
 
-    public string RosterSummary => OwnerBootstrapConfigured
-        ? $"{Users.Count} managed account(s) across {OwnerCount} owner(s), {AdminCount} admin(s), {OperatorCount} operator(s), and {ViewerCount} viewer(s)."
-        : "No managed user accounts yet. Finish owner bootstrap before opening shared administration.";
+    public string RosterSummary => CurrentSummary.RosterHeadline;
 
     public string UserCountSummary => OwnerBootstrapConfigured
         ? $"{Users.Count} managed account(s) are currently registered."
         : "No managed user accounts yet.";
 
-    public string TwoFactorSummary => OwnerBootstrapConfigured
-        ? $"{PrivilegedAccountCount} privileged account(s) require TOTP, and {PendingTwoFactorCount} still need enrollment."
-        : "TOTP enforcement applies after the owner account is created.";
+    public string TwoFactorSummary => CurrentSummary.SecurityHeadline;
 
-    public string ActionSummary => OwnerBootstrapConfigured
-        ? "Create an account above, then save or remove individual rows below as you tighten access."
-        : "Use Owner Bootstrap first so the account manager can become active.";
+    public string ActionSummary => CurrentSummary.OperatorSummary;
 
     public string OwnerBootstrapLabel => OwnerBootstrapConfigured
         ? "Configured: On"
         : "Configured: Off";
 
-    public string RoleCoverageSummary => OwnerBootstrapConfigured
-        ? $"{OwnerCount} owner(s), {AdminCount} admin(s), {OperatorCount} operator(s), and {ViewerCount} viewer(s)."
-        : "Role coverage appears after the owner account is created.";
+    public string RoleCoverageSummary => CurrentSummary.RoleCoverageHeadline;
 
-    public string SecurityPostureSummary
-    {
-        get
-        {
-            if (!OwnerBootstrapConfigured)
-            {
-                return "Owner bootstrap must finish before the desktop can evaluate user security posture.";
-            }
+    public string SecurityPostureSummary => CurrentSummary.SecurityHeadline;
 
-            if (PrivilegedAccountCount == 0)
-            {
-                return "No privileged users exist yet. Keep elevated access limited until you really need it.";
-            }
+    public string UserNextStepSummary => CurrentSummary.NextStepSummary;
 
-            return PendingTwoFactorCount == 0
-                ? $"Every privileged account currently shown has 2FA enabled. {OwnerCount} owner(s) and {AdminCount} admin(s) are covered."
-                : $"{PendingTwoFactorCount} privileged account(s) still need TOTP before web sign-in is safe.";
-        }
-    }
-
-    public string UserNextStepSummary
-    {
-        get
-        {
-            if (!OwnerBootstrapConfigured)
-            {
-                return "Create the owner account first, then come back here to invite operators or admins.";
-            }
-
-            if (Users.Count == 0)
-            {
-                return "Create the first operator or viewer account if you want shared administration.";
-            }
-
-            if (PendingTwoFactorCount > 0)
-            {
-                return "Finish 2FA enrollment for privileged users before you rely on the optional web admin.";
-            }
-
-            return "Review roles and keep elevated access limited to the smallest set of accounts you actually need.";
-        }
-    }
-
-    public string OwnerProtectionSummary => OwnerBootstrapConfigured
-        ? OwnerCount == 1
-            ? "One owner account protects the host. Keep it paired with TOTP and avoid creating extra owners unless you need them."
-            : $"{OwnerCount} owner accounts exist. Keep at least one owner reserved for emergency recovery."
-        : "Owner protection appears after bootstrap finishes.";
+    public string OwnerProtectionSummary => CurrentSummary.OwnerHeadline;
 
     public string CreateFormSummary => OwnerBootstrapConfigured
         ? $"The selected {CreateRoleName} role will be created as a local account and edited from this page after it appears in the roster."
         : "Bootstrap the owner account first, then return here to add operators, admins, or viewers.";
 
-    public string CreateRoleSummary => OwnerBootstrapConfigured
-        ? CreateRoleName switch
-        {
-            nameof(UserRole.Owner) => "Owner is full control and should be rare. It needs TOTP before the optional web admin will trust it.",
-            nameof(UserRole.Admin) => "Admin can manage configuration and remote access, so keep the role narrow and pair it with TOTP.",
-            nameof(UserRole.Operator) => "Operator can handle lifecycle, backups, and day-to-day maintenance without ownership transfer.",
-            nameof(UserRole.Viewer) => "Viewer is read-only and is safest when someone only needs visibility into the host.",
-            _ => "Custom role selection.",
-        }
-        : "Role guidance becomes available after bootstrap.";
+    public string CreateRoleSummary => CurrentSummary.CreateRoleHeadline;
 
-    public string CreateRoleGuardrailSummary => OwnerBootstrapConfigured
-        ? RequiresTwoFactorForSelectedRole(CreateRoleName)
-            ? "This is a privileged role. The account will require TOTP before web sign-in is considered safe."
-            : "This role is intentionally lower risk and does not require TOTP by policy."
-        : "Role guardrails appear after bootstrap.";
+    public string CreateRoleGuardrailSummary => CurrentSummary.CreateRoleGuardrailHeadline;
 
     public string PendingChangeSummary => OwnerBootstrapConfigured
         ? IsCreateFormDirty || Users.Any(user => user.IsDirty)
@@ -149,9 +84,9 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
             : "No unsaved user changes are pending."
         : "No user edits can be made until bootstrap completes.";
 
-    public string ReviewSummary => OwnerBootstrapConfigured
-        ? $"{PrivilegedAccountCount} privileged account(s), {TwoFactorEnabledCount} account(s) already protected by TOTP, and {PendingTwoFactorCount} still waiting on enrollment."
-        : "Security review is unavailable until bootstrap completes.";
+    public string ReviewSummary => CurrentSummary.ReviewHeadline;
+
+    public IReadOnlyList<ProjectZomboidOperatorChecklistItem> AccessChecklist => CurrentSummary.Checklist;
 
     public IReadOnlyList<string> RoleOptions { get; }
 
@@ -176,6 +111,12 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
     public bool HasUsers => Users.Count > 0;
 
     public bool HasNoUsers => Users.Count == 0;
+
+    private ProjectZomboidUserAccessSummary CurrentSummary =>
+        ProjectZomboidUserAccessSummaryBuilder.Build(
+            OwnerBootstrapConfigured,
+            Users.Select(MapUserAccount).ToArray(),
+            CreateRoleName);
 
     public bool CanCreateUser =>
         CanManageUsers &&
@@ -558,6 +499,14 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
             user.TwoFactorEnabled,
             user.Roles.Any(RoleRequiresTwoFactor));
 
+    private static UserAccountDto MapUserAccount(EditableUserRowViewModel row) =>
+        new(
+            row.UserId,
+            row.UserName,
+            row.Email,
+            [Enum.Parse<UserRole>(row.RoleName, ignoreCase: true)],
+            row.TwoFactorEnabled);
+
     private static string ResolveRoleName(UserAccountDto user)
     {
         var role = user.Roles.FirstOrDefault(candidate => candidate != UserRole.LocalSystem);
@@ -590,6 +539,7 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
         OnPropertyChanged(nameof(CreateRoleGuardrailSummary));
         OnPropertyChanged(nameof(PendingChangeSummary));
         OnPropertyChanged(nameof(ReviewSummary));
+        OnPropertyChanged(nameof(AccessChecklist));
         OnPropertyChanged(nameof(HasUsers));
         OnPropertyChanged(nameof(HasNoUsers));
         OnPropertyChanged(nameof(PrivilegedAccountCount));
