@@ -186,6 +186,9 @@ public sealed class StructuredSettingsService(
                         ["SafehouseAllowFire"] = ParseBool(values, $"{branchPrefix}.server.safehouse-allow-fire").ToString().ToLowerInvariant(),
                         ["SafehouseAllowLoot"] = ParseBool(values, $"{branchPrefix}.server.safehouse-allow-loot").ToString().ToLowerInvariant(),
                         ["SafehouseAllowRespawn"] = ParseBool(values, $"{branchPrefix}.server.safehouse-allow-respawn").ToString().ToLowerInvariant(),
+                        ["SafehouseAllowNonResidential"] = ParseBool(values, $"{branchPrefix}.server.safehouse-allow-non-residential").ToString().ToLowerInvariant(),
+                        ["DisableSafehouseWhenPlayerConnected"] = ParseBool(values, $"{branchPrefix}.server.disable-safehouse-when-player-connected").ToString().ToLowerInvariant(),
+                        ["DisableSafehouseWhenPlayerDisconnected"] = ParseBool(values, $"{branchPrefix}.server.disable-safehouse-when-player-disconnected").ToString().ToLowerInvariant(),
                         ["SafehouseDaySurvivedToClaim"] = ParseInt(values, $"{branchPrefix}.server.safehouse-days-to-claim").ToString(),
                         ["SafeHouseRemovalTime"] = ParseInt(values, $"{branchPrefix}.server.safehouse-removal-hours").ToString(),
                         ["Faction"] = ParseBool(values, $"{branchPrefix}.server.faction-enabled").ToString().ToLowerInvariant(),
@@ -574,6 +577,9 @@ public sealed class StructuredSettingsService(
         ValidateBoolean(values, $"{branchPrefix}.server.safehouse-allow-fire", "Allow fire damage must be true or false.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.server.safehouse-allow-loot", "Allow looting must be true or false.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.server.safehouse-allow-respawn", "Allow respawn must be true or false.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.server.safehouse-allow-non-residential", "Allow non-residential claiming must be true or false.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.server.disable-safehouse-when-player-connected", "Disable safehouse while owner is connected must be true or false.", fieldErrors);
+        ValidateBoolean(values, $"{branchPrefix}.server.disable-safehouse-when-player-disconnected", "Disable safehouse while owner is disconnected must be true or false.", fieldErrors);
         ValidateMinimumInteger(values, $"{branchPrefix}.server.safehouse-days-to-claim", 0, "Days to claim a safehouse must be zero or greater.", fieldErrors);
         ValidateMinimumInteger(values, $"{branchPrefix}.server.safehouse-removal-hours", 0, "Safehouse removal time must be zero or greater.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.server.faction-enabled", "Factions enabled must be true or false.", fieldErrors);

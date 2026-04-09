@@ -149,6 +149,15 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
     private bool safehouseAllowRespawn;
 
     [ObservableProperty]
+    private bool safehouseAllowNonResidential;
+
+    [ObservableProperty]
+    private bool disableSafehouseWhenPlayerConnected;
+
+    [ObservableProperty]
+    private bool disableSafehouseWhenPlayerDisconnected;
+
+    [ObservableProperty]
     private string safehouseDaysToClaim = string.Empty;
 
     [ObservableProperty]
@@ -402,6 +411,9 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             SafehouseAllowFire = bool.TryParse(GetValue(values, ".server.safehouse-allow-fire"), out var safehouseAllowFire) && safehouseAllowFire;
             SafehouseAllowLoot = bool.TryParse(GetValue(values, ".server.safehouse-allow-loot"), out var safehouseAllowLoot) && safehouseAllowLoot;
             SafehouseAllowRespawn = bool.TryParse(GetValue(values, ".server.safehouse-allow-respawn"), out var safehouseAllowRespawn) && safehouseAllowRespawn;
+            SafehouseAllowNonResidential = bool.TryParse(GetValue(values, ".server.safehouse-allow-non-residential"), out var safehouseAllowNonResidential) && safehouseAllowNonResidential;
+            DisableSafehouseWhenPlayerConnected = bool.TryParse(GetValue(values, ".server.disable-safehouse-when-player-connected"), out var disableSafehouseWhenPlayerConnected) && disableSafehouseWhenPlayerConnected;
+            DisableSafehouseWhenPlayerDisconnected = bool.TryParse(GetValue(values, ".server.disable-safehouse-when-player-disconnected"), out var disableSafehouseWhenPlayerDisconnected) && disableSafehouseWhenPlayerDisconnected;
             SafehouseDaysToClaim = GetValue(values, ".server.safehouse-days-to-claim");
             SafehouseRemovalHours = GetValue(values, ".server.safehouse-removal-hours");
             FactionEnabled = bool.TryParse(GetValue(values, ".server.faction-enabled"), out var factionEnabled) && factionEnabled;
@@ -455,6 +467,9 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             [$"{prefix}.server.safehouse-allow-fire"] = SafehouseAllowFire.ToString(),
             [$"{prefix}.server.safehouse-allow-loot"] = SafehouseAllowLoot.ToString(),
             [$"{prefix}.server.safehouse-allow-respawn"] = SafehouseAllowRespawn.ToString(),
+            [$"{prefix}.server.safehouse-allow-non-residential"] = SafehouseAllowNonResidential.ToString(),
+            [$"{prefix}.server.disable-safehouse-when-player-connected"] = DisableSafehouseWhenPlayerConnected.ToString(),
+            [$"{prefix}.server.disable-safehouse-when-player-disconnected"] = DisableSafehouseWhenPlayerDisconnected.ToString(),
             [$"{prefix}.server.safehouse-days-to-claim"] = SafehouseDaysToClaim,
             [$"{prefix}.server.safehouse-removal-hours"] = SafehouseRemovalHours,
             [$"{prefix}.server.faction-enabled"] = FactionEnabled.ToString(),
@@ -537,6 +552,9 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             SafehouseAllowFire = false;
             SafehouseAllowLoot = false;
             SafehouseAllowRespawn = false;
+            SafehouseAllowNonResidential = false;
+            DisableSafehouseWhenPlayerConnected = false;
+            DisableSafehouseWhenPlayerDisconnected = false;
             SafehouseDaysToClaim = string.Empty;
             SafehouseRemovalHours = string.Empty;
             FactionEnabled = false;
@@ -588,6 +606,9 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
     partial void OnSafehouseAllowFireChanged(bool value) => NotifyFieldEdited();
     partial void OnSafehouseAllowLootChanged(bool value) => NotifyFieldEdited();
     partial void OnSafehouseAllowRespawnChanged(bool value) => NotifyFieldEdited();
+    partial void OnSafehouseAllowNonResidentialChanged(bool value) => NotifyFieldEdited();
+    partial void OnDisableSafehouseWhenPlayerConnectedChanged(bool value) => NotifyFieldEdited();
+    partial void OnDisableSafehouseWhenPlayerDisconnectedChanged(bool value) => NotifyFieldEdited();
     partial void OnSafehouseDaysToClaimChanged(string value) => NotifyFieldEdited();
     partial void OnSafehouseRemovalHoursChanged(string value) => NotifyFieldEdited();
     partial void OnFactionEnabledChanged(bool value) => NotifyFieldEdited();

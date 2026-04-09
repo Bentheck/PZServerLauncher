@@ -223,18 +223,21 @@
                             <TextBlock Classes="body"
                                        Text="Use this block to define who can claim, enter, damage, and respawn around safehouse territory."
                                        TextWrapping="Wrap" />
-                            <Grid ColumnDefinitions="*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="10">
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="10">
                                 <CheckBox Content="Player Safehouses" IsChecked="{Binding PlayerSafehouse}" />
                                 <CheckBox Grid.Column="1" Content="Admin Safehouses" IsChecked="{Binding AdminSafehouse}" />
                                 <CheckBox Grid.Row="1" Content="Allow Trespass" IsChecked="{Binding SafehouseAllowTrespass}" />
                                 <CheckBox Grid.Row="1" Grid.Column="1" Content="Allow Fire Damage" IsChecked="{Binding SafehouseAllowFire}" />
                                 <CheckBox Grid.Row="2" Content="Allow Looting" IsChecked="{Binding SafehouseAllowLoot}" />
                                 <CheckBox Grid.Row="2" Grid.Column="1" Content="Allow Respawn" IsChecked="{Binding SafehouseAllowRespawn}" />
-                                <StackPanel Grid.Row="3" Spacing="4">
+                                <CheckBox Grid.Row="3" Content="Allow Non-Residential Claiming" IsChecked="{Binding SafehouseAllowNonResidential}" />
+                                <CheckBox Grid.Row="3" Grid.Column="1" Content="Disable While Owner Connected" IsChecked="{Binding DisableSafehouseWhenPlayerConnected}" />
+                                <CheckBox Grid.Row="4" Content="Disable While Owner Disconnected" IsChecked="{Binding DisableSafehouseWhenPlayerDisconnected}" />
+                                <StackPanel Grid.Row="5" Spacing="4">
                                     <TextBlock Classes="body" Text="Days To Claim" />
                                     <TextBox Text="{Binding SafehouseDaysToClaim}" />
                                 </StackPanel>
-                                <StackPanel Grid.Row="3" Grid.Column="1" Spacing="4">
+                                <StackPanel Grid.Row="5" Grid.Column="1" Spacing="4">
                                     <TextBlock Classes="body" Text="Removal Time (Hours)" />
                                     <TextBox Text="{Binding SafehouseRemovalHours}" />
                                 </StackPanel>

@@ -1,5 +1,6 @@
 using PZServerLauncher.Contracts.Profiles;
 using PZServerLauncher.Contracts.Runtime;
+using PZServerLauncher.Core.Planning;
 using PZServerLauncher.Core.Profiles;
 using PZServerLauncher.Core.Runtime;
 using PZServerLauncher.Host.Services;
@@ -66,6 +67,9 @@ public sealed class StructuredSettingsServiceTests : IDisposable
             SafehouseAllowFire=false
             SafehouseAllowLoot=false
             SafehouseAllowRespawn=true
+            SafehouseAllowNonResidential=true
+            DisableSafehouseWhenPlayerConnected=false
+            DisableSafehouseWhenPlayerDisconnected=true
             SafehouseDaySurvivedToClaim=14
             SafeHouseRemovalTime=240
             Faction=true
@@ -166,6 +170,9 @@ public sealed class StructuredSettingsServiceTests : IDisposable
         Assert.Equal("false", generalValues.Values[$"{branchPrefix}.server.safehouse-allow-fire"]);
         Assert.Equal("false", generalValues.Values[$"{branchPrefix}.server.safehouse-allow-loot"]);
         Assert.Equal("true", generalValues.Values[$"{branchPrefix}.server.safehouse-allow-respawn"]);
+        Assert.Equal("true", generalValues.Values[$"{branchPrefix}.server.safehouse-allow-non-residential"]);
+        Assert.Equal("false", generalValues.Values[$"{branchPrefix}.server.disable-safehouse-when-player-connected"]);
+        Assert.Equal("true", generalValues.Values[$"{branchPrefix}.server.disable-safehouse-when-player-disconnected"]);
         Assert.Equal("14", generalValues.Values[$"{branchPrefix}.server.safehouse-days-to-claim"]);
         Assert.Equal("240", generalValues.Values[$"{branchPrefix}.server.safehouse-removal-hours"]);
         Assert.Equal("true", generalValues.Values[$"{branchPrefix}.server.faction-enabled"]);
@@ -271,6 +278,9 @@ public sealed class StructuredSettingsServiceTests : IDisposable
             SafehouseAllowFire=true
             SafehouseAllowLoot=true
             SafehouseAllowRespawn=false
+            SafehouseAllowNonResidential=false
+            DisableSafehouseWhenPlayerConnected=false
+            DisableSafehouseWhenPlayerDisconnected=false
             SafehouseDaySurvivedToClaim=0
             SafeHouseRemovalTime=144
             Faction=true
@@ -351,6 +361,9 @@ public sealed class StructuredSettingsServiceTests : IDisposable
             ["b42.server.safehouse-allow-fire"] = "false",
             ["b42.server.safehouse-allow-loot"] = "false",
             ["b42.server.safehouse-allow-respawn"] = "true",
+            ["b42.server.safehouse-allow-non-residential"] = "true",
+            ["b42.server.disable-safehouse-when-player-connected"] = "true",
+            ["b42.server.disable-safehouse-when-player-disconnected"] = "false",
             ["b42.server.safehouse-days-to-claim"] = "10",
             ["b42.server.safehouse-removal-hours"] = "96",
             ["b42.server.faction-enabled"] = "false",
@@ -443,6 +456,9 @@ public sealed class StructuredSettingsServiceTests : IDisposable
         Assert.Contains("SafehouseAllowFire=false", iniText);
         Assert.Contains("SafehouseAllowLoot=false", iniText);
         Assert.Contains("SafehouseAllowRespawn=true", iniText);
+        Assert.Contains("SafehouseAllowNonResidential=true", iniText);
+        Assert.Contains("DisableSafehouseWhenPlayerConnected=true", iniText);
+        Assert.Contains("DisableSafehouseWhenPlayerDisconnected=false", iniText);
         Assert.Contains("SafehouseDaySurvivedToClaim=10", iniText);
         Assert.Contains("SafeHouseRemovalTime=96", iniText);
         Assert.Contains("Faction=false", iniText);
@@ -1090,6 +1106,240 @@ public sealed class StructuredSettingsServiceTests : IDisposable
         Assert.Contains("RallyGroupRadius = 5", sandboxText);
     }
 
+    [Fact]
+    public async Task ImportEditAndLaunchPlanAsync_RoundTripsRealServerWorkflow()
+    {
+        var cacheRoot = Path.Combine(_tempRoot, "Zomboid");
+        var serverDirectory = Path.Combine(cacheRoot, "Server");
+        Directory.CreateDirectory(serverDirectory);
+
+        File.WriteAllText(
+            Path.Combine(serverDirectory, "servertest.ini"),
+            """
+            PublicName=Community Nights
+            PublicDescription=Vanilla and relaxed
+            Public=true
+            Open=true
+            MaxPlayers=16
+            PVP=false
+            PauseEmpty=true
+            SleepAllowed=true
+            SleepNeeded=false
+            PlayerSafehouse=true
+            SafehouseAllowTrepass=true
+            SafehouseAllowFire=false
+            SafehouseAllowLoot=false
+            SafehouseAllowRespawn=true
+            SafehouseAllowNonResidential=false
+            DisableSafehouseWhenPlayerConnected=false
+            DisableSafehouseWhenPlayerDisconnected=true
+            SafehouseDaySurvivedToClaim=7
+            SafeHouseRemovalTime=144
+            DefaultPort=17261
+            UDPPort=17262
+            RCONPort=28015
+            BindIP=127.0.0.1
+            Password=
+            RCONPassword=
+            AdminUsername=admin
+            AutoCreateUserInWhiteList=false
+            ClientCommandFilter=
+            SaveWorldEveryMinutes=0
+            MapRemotePlayerVisibility=1
+            UseTCPForMapTraffic=false
+            VoiceEnable=true
+            Voice3D=true
+            VoiceMinDistance=8
+            VoiceMaxDistance=45
+            WorkshopItems=1234567890
+            Mods=ExampleMod
+            Map=RavenCreek
+            """);
+
+        File.WriteAllText(
+            Path.Combine(serverDirectory, "servertest_SandboxVars.lua"),
+            """
+            SandboxVars = {
+                VERSION = 4,
+                Zombies = 4,
+                Distribution = 1,
+                DayLength = 3,
+                StartYear = 1,
+                StartMonth = 4,
+                StartDay = 1,
+                StartTime = 2,
+                WaterShutModifier = 500,
+                ElecShutModifier = 480,
+                ErosionSpeed = 5,
+                LootRespawn = 2,
+                Helicopter = 2,
+                MultiHit = false,
+            }
+            """);
+
+        var installDirectory = CreateInstallDirectory(
+            """
+            @echo off
+            setlocal
+            set "JAVA_HOME=%~dp0jre64"
+            "%JAVA_HOME%\bin\java.exe" ^
+              -Dzomboid.steam=1 ^
+              -Djava.awt.headless=true ^
+              -Xms2048m ^
+              -Xmx2048m ^
+              -cp "%~dp0zombie.jar;%~dp0lib\*" ^
+              zombie.network.GameServer ^
+              -cachedir "%UserProfile%\Zomboid" ^
+              -servername servertest
+            """);
+
+        try
+        {
+            var workshopModDirectory = Path.Combine(installDirectory, "steamapps", "workshop", "content", "108600", "1234567890", "mods", "ExampleMod");
+            Directory.CreateDirectory(workshopModDirectory);
+            File.WriteAllText(Path.Combine(workshopModDirectory, "mod.info"), "id=ExampleMod\nmap=RavenCreek");
+            Directory.CreateDirectory(Path.Combine(workshopModDirectory, "media", "maps", "RavenCreek"));
+
+            await using var dbContext = TestDatabaseFactory.Create(Path.Combine(_tempRoot, "workflow.db"));
+            var profileStore = new ProfileStore(dbContext);
+            var workshopScannerService = new WorkshopPresetScannerService();
+            var importer = new LocalServerImportService(
+                profileStore,
+                workshopScannerService,
+                cacheRoot,
+                installDirectory,
+                ProjectZomboidBranch.Unstable42);
+            var planner = new ProjectZomboidServerPlanner();
+            var structuredSettings = new StructuredSettingsService(
+                profileStore,
+                new ConfigFileService(planner),
+                new ProjectZomboidSettingsCatalogResolver(),
+                new IniDocumentService(),
+                new SandboxVarsDocumentService(),
+                workshopScannerService);
+
+            var candidate = Assert.Single(await importer.DiscoverAsync());
+            Assert.False(candidate.IsAlreadyImported);
+            Assert.Equal(ProjectZomboidBranch.Unstable42, candidate.Branch);
+            Assert.Equal(["1234567890"], candidate.WorkshopPreset.WorkshopItemIds);
+            Assert.Equal(["ExampleMod"], candidate.WorkshopPreset.EnabledModIds);
+            Assert.Equal(["RavenCreek"], candidate.WorkshopPreset.MapFolders);
+
+            var importedProfile = await importer.ImportAsync(candidate.CandidateId);
+
+            var generalValues = new Dictionary<string, string?>(
+                structuredSettings.GetPage(importedProfile, ProfileWorkspacePageIds.General).Values,
+                StringComparer.Ordinal);
+            generalValues["b42.server.public-name"] = "Night Watch";
+            generalValues["b42.server.public-description"] = "Hard nights only";
+            generalValues["b42.server.max-players"] = "24";
+            generalValues["b42.server.safehouse-allow-non-residential"] = "true";
+            generalValues["b42.server.disable-safehouse-when-player-connected"] = "true";
+            generalValues["b42.server.disable-safehouse-when-player-disconnected"] = "false";
+            generalValues["b42.server.safehouse-days-to-claim"] = "3";
+            generalValues["b42.runtime.memory"] = "10";
+            generalValues["b42.runtime.start-with-host"] = "true";
+
+            var generalSave = await structuredSettings.SaveAsync(importedProfile, ProfileWorkspacePageIds.General, generalValues);
+            Assert.True(generalSave.Validation.IsValid);
+
+            importedProfile = (await profileStore.GetAsync(importedProfile.ProfileId))!;
+
+            var networkValues = new Dictionary<string, string?>(
+                structuredSettings.GetPage(importedProfile, ProfileWorkspacePageIds.NetworkAndAdmin).Values,
+                StringComparer.Ordinal);
+            networkValues["b42.network.bind-ip"] = "10.10.0.8";
+            networkValues["b42.network.server-password"] = "join-pass";
+            networkValues["b42.network.rcon-password"] = "rcon-pass";
+            networkValues["b42.network.client-command-filter"] = "SafehouseOnly";
+            networkValues["b42.network.save-world-every-minutes"] = "20";
+            networkValues["b42.network.map-remote-player-visibility"] = "2";
+            networkValues["b42.network.use-tcp-for-map-traffic"] = "true";
+            networkValues["b42.network.voice-enabled"] = "false";
+            networkValues["b42.network.voice-3d"] = "false";
+            networkValues["b42.network.voice-min-distance"] = "12";
+            networkValues["b42.network.voice-max-distance"] = "30";
+            networkValues["b42.network.admin-user"] = "warden";
+            networkValues["b42.network.admin-password"] = "fresh-secret";
+
+            var networkSave = await structuredSettings.SaveAsync(importedProfile, ProfileWorkspacePageIds.NetworkAndAdmin, networkValues);
+            Assert.True(networkSave.Validation.IsValid);
+
+            importedProfile = (await profileStore.GetAsync(importedProfile.ProfileId))!;
+
+            var sandboxValues = new Dictionary<string, string?>(
+                structuredSettings.GetPage(importedProfile, ProfileWorkspacePageIds.Sandbox).Values,
+                StringComparer.Ordinal);
+            sandboxValues["b42.sandbox.erosion-speed"] = "2";
+            sandboxValues["b42.sandbox.loot-respawn"] = "4";
+            sandboxValues["b42.sandbox.helicopter"] = "4";
+            sandboxValues["b42.sandbox.multi-hit"] = "true";
+
+            var sandboxSave = await structuredSettings.SaveAsync(importedProfile, ProfileWorkspacePageIds.Sandbox, sandboxValues);
+            Assert.True(sandboxSave.Validation.IsValid);
+
+            importedProfile = (await profileStore.GetAsync(importedProfile.ProfileId))!;
+
+            var paths = planner.ResolvePaths(importedProfile);
+            var iniText = File.ReadAllText(paths.IniFilePath);
+            var sandboxText = File.ReadAllText(paths.SandboxVarsFilePath);
+
+            Assert.Contains("PublicName=Night Watch", iniText);
+            Assert.Contains("PublicDescription=Hard nights only", iniText);
+            Assert.Contains("MaxPlayers=24", iniText);
+            Assert.Contains("SafehouseAllowNonResidential=true", iniText);
+            Assert.Contains("DisableSafehouseWhenPlayerConnected=true", iniText);
+            Assert.Contains("DisableSafehouseWhenPlayerDisconnected=false", iniText);
+            Assert.Contains("SafehouseDaySurvivedToClaim=3", iniText);
+            Assert.Contains("BindIP=10.10.0.8", iniText);
+            Assert.Contains("Password=join-pass", iniText);
+            Assert.Contains("RCONPassword=rcon-pass", iniText);
+            Assert.Contains("ClientCommandFilter=SafehouseOnly", iniText);
+            Assert.Contains("SaveWorldEveryMinutes=20", iniText);
+            Assert.Contains("MapRemotePlayerVisibility=2", iniText);
+            Assert.Contains("UseTCPForMapTraffic=true", iniText);
+            Assert.Contains("VoiceEnable=false", iniText);
+            Assert.Contains("Voice3D=false", iniText);
+            Assert.Contains("VoiceMinDistance=12", iniText);
+            Assert.Contains("VoiceMaxDistance=30", iniText);
+
+            Assert.Contains("ErosionSpeed = 2", sandboxText);
+            Assert.Contains("LootRespawn = 4", sandboxText);
+            Assert.Contains("Helicopter = 4", sandboxText);
+            Assert.Contains("MultiHit = true", sandboxText);
+
+            Assert.Equal("warden", importedProfile.AdminUsername);
+            Assert.Equal("fresh-secret", importedProfile.AdminPassword);
+            Assert.Equal("10.10.0.8", importedProfile.BindIp);
+            Assert.Equal(10, importedProfile.PreferredMemoryInGigabytes);
+            Assert.True(importedProfile.StartWithHost);
+
+            var launchPlan = planner.CreateLaunchPlan(importedProfile);
+
+            Assert.Equal(ServerLaunchStrategy.DirectJavaTemplate, launchPlan.Strategy);
+            Assert.EndsWith(Path.Combine("jre64", "bin", "java.exe"), launchPlan.LauncherPath, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("-Xms10g", launchPlan.Arguments);
+            Assert.Contains("-Xmx10g", launchPlan.Arguments);
+            Assert.Contains("-cachedir", launchPlan.Arguments);
+            Assert.Contains(cacheRoot, launchPlan.Arguments);
+            Assert.Contains("-servername", launchPlan.Arguments);
+            Assert.Contains("servertest", launchPlan.Arguments);
+            Assert.Contains("-adminusername", launchPlan.Arguments);
+            Assert.Contains("warden", launchPlan.Arguments);
+            Assert.Contains("-adminpassword", launchPlan.Arguments);
+            Assert.Contains("fresh-secret", launchPlan.Arguments);
+            Assert.Contains("-ip", launchPlan.Arguments);
+            Assert.Contains("10.10.0.8", launchPlan.Arguments);
+        }
+        finally
+        {
+            if (Directory.Exists(installDirectory))
+            {
+                Directory.Delete(installDirectory, recursive: true);
+            }
+        }
+    }
+
     private static StructuredSettingsService CreateService(ProfileStore profileStore, ProjectZomboidServerPlanner planner) =>
         new(
             profileStore,
@@ -1098,6 +1348,16 @@ public sealed class StructuredSettingsServiceTests : IDisposable
             new IniDocumentService(),
             new SandboxVarsDocumentService(),
             new WorkshopPresetScannerService());
+
+    private static string CreateInstallDirectory(string batchFileContent)
+    {
+        var installDirectory = Path.Combine(Path.GetTempPath(), $"pz-workflow-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(installDirectory);
+        Directory.CreateDirectory(Path.Combine(installDirectory, "jre64", "bin"));
+        File.WriteAllText(Path.Combine(installDirectory, "jre64", "bin", "java.exe"), string.Empty);
+        File.WriteAllText(Path.Combine(installDirectory, "StartServer64.bat"), batchFileContent);
+        return installDirectory;
+    }
 
     public void Dispose()
     {
