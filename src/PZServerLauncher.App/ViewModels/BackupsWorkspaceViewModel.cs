@@ -92,6 +92,38 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         ? "Choose a profile to inspect archive history."
         : CurrentSummary.ArchiveMixSummary;
 
+    public string CoverageHeadline => SelectedProfile is null
+        ? "No profile"
+        : CurrentSummary.TotalBackupCount == 0
+            ? "No recovery point"
+            : CurrentSummary.HasManualBackups && CurrentSummary.HasPreUpdateBackups
+                ? "Layered coverage"
+                : CurrentSummary.HasManualBackups
+                    ? "Manual-only coverage"
+                    : "Automated-only coverage";
+
+    public string LatestKnownGoodHeadline => SelectedProfile is null
+        ? "No profile"
+        : SelectedBackupArchive is not null
+            ? "Selected restore point"
+            : HasBackups
+                ? "Latest known-good"
+                : "No known-good archive";
+
+    public string RestoreWindowHeadline => SelectedProfile is null
+        ? "No profile"
+        : string.Equals(SelectedProfile.RuntimeState, "Running", StringComparison.OrdinalIgnoreCase)
+            ? "Live server restore"
+            : "Idle restore window";
+
+    public string RetentionHeadline => SelectedProfile is null
+        ? "No policy"
+        : SelectedProfile.BackupPolicy.KeepManualBackupsForever && SelectedProfile.BackupPolicy.PreUpdateBackupEnabled && SelectedProfile.BackupPolicy.ScheduledBackupsEnabled
+            ? "Layered retention"
+            : SelectedProfile.BackupPolicy.KeepManualBackupsForever
+                ? "Manual-first retention"
+                : "Finite retention";
+
     public string RecoveryGuidance => SelectedProfile is null
         ? "Choose a profile to review restore guidance."
         : $"{CurrentSummary.RestoreSafetySummary} {(RestartAfterRestore
@@ -103,6 +135,14 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
     public string SelectedBackupHeadline => SelectedBackupArchive?.Title ?? "No recovery point selected";
 
     public string SelectedBackupDetails => CurrentSummary.SelectedArchiveSummary;
+
+    public string SelectedBackupKindSummary => SelectedBackupArchive is null
+        ? "Pick an archive to inspect its recovery role."
+        : $"{SelectedBackupArchive.KindLabel} archive | {SelectedBackupArchive.TimestampLabel}";
+
+    public string RecoveryModeHeadline => RestartAfterRestore
+        ? "Restore and restart"
+        : "Restore and inspect";
 
     public string PolicySummary => SelectedProfile is null
         ? "No recovery policy loaded."
@@ -117,6 +157,24 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
     public string OperatorNextStep => SelectedProfile is null
         ? "Select a profile to begin recovery work."
         : CurrentSummary.ContinuitySummary;
+
+    public IReadOnlyList<string> RecoveryChecklist => SelectedProfile is null
+        ? []
+        :
+        [
+            CurrentSummary.TotalBackupCount == 0
+                ? "Capture a manual backup before any risky config or update work."
+                : "Choose the archive that represents your latest known-good state.",
+            string.Equals(SelectedProfile.RuntimeState, "Running", StringComparison.OrdinalIgnoreCase)
+                ? "Expect the host to stop the live server before restore begins."
+                : "The server is already idle, so restore can proceed immediately.",
+            RestartAfterRestore
+                ? "Restart-after-restore is enabled, so the host will request a runtime relaunch."
+                : "Restart-after-restore is disabled, so the world stays offline for inspection.",
+            CurrentSummary.HasPreUpdateBackups
+                ? "A pre-update safety net exists if you need to roll back from a bad patch cycle."
+                : "No pre-update archive exists yet; future updates should create one automatically."
+        ];
 
     public IAsyncRelayCommand CreateBackupCommand { get; }
 
@@ -271,7 +329,9 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
     partial void OnRestartAfterRestoreChanged(bool value)
     {
         OnPropertyChanged(nameof(RecoveryGuidance));
+        OnPropertyChanged(nameof(RecoveryModeHeadline));
         OnPropertyChanged(nameof(RestoreModeSummary));
+        OnPropertyChanged(nameof(RecoveryChecklist));
     }
 
     private void NotifyComputedState()
@@ -286,13 +346,20 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         OnPropertyChanged(nameof(BackupCountSummary));
         OnPropertyChanged(nameof(BackupPosture));
         OnPropertyChanged(nameof(BackupInventorySummary));
+        OnPropertyChanged(nameof(CoverageHeadline));
+        OnPropertyChanged(nameof(LatestKnownGoodHeadline));
+        OnPropertyChanged(nameof(RestoreWindowHeadline));
+        OnPropertyChanged(nameof(RetentionHeadline));
         OnPropertyChanged(nameof(RecoveryGuidance));
         OnPropertyChanged(nameof(LatestBackupSummary));
         OnPropertyChanged(nameof(SelectedBackupHeadline));
         OnPropertyChanged(nameof(SelectedBackupDetails));
+        OnPropertyChanged(nameof(SelectedBackupKindSummary));
+        OnPropertyChanged(nameof(RecoveryModeHeadline));
         OnPropertyChanged(nameof(PolicySummary));
         OnPropertyChanged(nameof(RestoreModeSummary));
         OnPropertyChanged(nameof(OperatorNextStep));
+        OnPropertyChanged(nameof(RecoveryChecklist));
         OnPropertyChanged(nameof(RecoveryHeroTitle));
         OnPropertyChanged(nameof(RecoveryHeroCopy));
     }
