@@ -1,5 +1,6 @@
 @page "/profiles/{ProfileId}/network-admin"
 @attribute [Authorize(Roles="Owner,Admin")]
+@using PZServerLauncher.Contracts.Profiles
 @inject ProfileStore ProfileStore
 @inject StructuredSettingsService StructuredSettingsService
 @inject RuntimeStateStore RuntimeStateStore
@@ -70,6 +71,40 @@ else
                     <strong class="metric-value">@(_valueSet?.RequiresAdvancedFilesFallback == true ? "Required" : "Not needed")</strong>
                     <span class="metric-note">@(_valueSet?.FallbackReason ?? "Structured editing is ready")</span>
                 </article>
+            </section>
+
+            <section class="metric-grid metric-grid--host">
+                <article class="metric-card">
+                    <span class="metric-label">Access Briefing</span>
+                    <strong class="metric-value">Bind and whitelist posture</strong>
+                    <span class="metric-note">@_postureSummary.AccessHeadline</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Trust Briefing</span>
+                    <strong class="metric-value">VAC and checksum posture</strong>
+                    <span class="metric-note">@_postureSummary.TrustHeadline</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Identity &amp; Safety</span>
+                    <strong class="metric-value">Names and PvP posture</strong>
+                    <span class="metric-note">@_postureSummary.IdentityAndSafetyHeadline</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Voice Briefing</span>
+                    <strong class="metric-value">Proximity comms</strong>
+                    <span class="metric-note">@_postureSummary.VoiceHeadline</span>
+                </article>
+            </section>
+
+            <section class="status-banner status-banner--warm">
+                <strong>Operator Briefing</strong>
+                <p>@_postureSummary.OperatorSummary</p>
+                <ul>
+                    @foreach (var item in _postureSummary.Checklist)
+                    {
+                        <li>@item</li>
+                    }
+                </ul>
             </section>
 
             <div class="cards cards--wide">
@@ -266,6 +301,7 @@ else
     private Dictionary<string, string?> _values = new(StringComparer.Ordinal);
     private Dictionary<string, IReadOnlyList<string>> _fieldErrors = new(StringComparer.Ordinal);
     private bool _busy;
+    private bool _hasUnsavedChanges;
     private string? _statusMessage;
     private bool _installDetected;
     private bool _cacheDetected;
@@ -273,6 +309,7 @@ else
     private bool _pageSupportsDrafts;
     private string? _catalogSummary;
     private string? _sourceSha256;
+    private ProjectZomboidNetworkAndAdminPostureSummary _postureSummary = ProjectZomboidNetworkAndAdminPostureSummaryBuilder.Build(new Dictionary<string, string?>(StringComparer.Ordinal), false, false, 0);
 
     protected override async Task OnParametersSetAsync()
     {
@@ -309,10 +346,12 @@ else
 
         _sourceSha256 = _valueSet.SourceSha256;
         _values = new Dictionary<string, string?>(_valueSet.Values, StringComparer.Ordinal);
+        _hasUnsavedChanges = false;
 
         _statusMessage = _valueSet.RequiresAdvancedFilesFallback
             ? _valueSet.FallbackReason ?? "Structured network/admin editing is not available yet."
             : "Network and admin settings loaded.";
+        RefreshPostureSummary();
     }
 
     private async Task ValidateAsync()
@@ -330,6 +369,7 @@ else
             _statusMessage = _pageValidation.IsValid
                 ? "Network and admin validation completed successfully."
                 : _pageValidation.FallbackReason ?? "Network and admin validation reported issues.";
+            RefreshPostureSummary();
         }
         finally
         {
@@ -352,6 +392,7 @@ else
             _statusMessage = _pageValidation.IsValid
                 ? "Network and admin draft saved locally."
                 : _pageValidation.FallbackReason ?? "Network and admin draft could not be saved.";
+            RefreshPostureSummary();
         }
         finally
         {
@@ -372,9 +413,14 @@ else
             var result = await StructuredSettingsService.SaveAsync(_profile, "network-admin", _values);
             _pageValidation = result.Validation;
             _fieldErrors = new Dictionary<string, IReadOnlyList<string>>(result.Validation.FieldErrors, StringComparer.Ordinal);
+            if (result.Validation.IsValid && !result.Validation.RequiresAdvancedFilesFallback)
+            {
+                _hasUnsavedChanges = false;
+            }
             _statusMessage = result.Validation.IsValid && !result.Validation.RequiresAdvancedFilesFallback
                 ? "Network and admin settings saved."
                 : result.Validation.FallbackReason ?? "Network and admin settings require Advanced Files.";
+            RefreshPostureSummary();
         }
         finally
         {
@@ -471,12 +517,27 @@ else
 
     private void SetValue(string fieldId, string? value)
     {
+        if (!string.Equals(GetFieldValue(fieldId), value ?? string.Empty, StringComparison.Ordinal))
+        {
+            _hasUnsavedChanges = true;
+        }
+
         _values[fieldId] = value;
         _statusMessage = null;
+        RefreshPostureSummary();
     }
 
     private string GetFieldValue(string fieldId) =>
         _values.TryGetValue(fieldId, out var currentValue) ? currentValue ?? string.Empty : string.Empty;
+
+    private void RefreshPostureSummary()
+    {
+        _postureSummary = ProjectZomboidNetworkAndAdminPostureSummaryBuilder.Build(
+            _values,
+            _valueSet?.RequiresAdvancedFilesFallback == true,
+            _hasUnsavedChanges,
+            _fieldErrors.Count);
+    }
 
     private string OverviewHref => $"/profiles/{Uri.EscapeDataString(ProfileId)}/overview";
 

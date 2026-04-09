@@ -1,6 +1,8 @@
 @page "/"
 @page "/dashboard"
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@using PZServerLauncher.Contracts.Profiles
+@using PZServerLauncher.Core.Settings
 @using PZServerLauncher.Infrastructure.Planning
 @using PZServerLauncher.Host.Services
 @inject HostSettingsStore HostSettingsStore
@@ -8,6 +10,7 @@
 @inject RuntimeStateStore RuntimeStateStore
 @inject UserManagementService UserManagementService
 @inject ServerBackupService BackupService
+@inject StructuredSettingsService StructuredSettingsService
 
 <PageTitle>PZ Server Launcher Host</PageTitle>
 
@@ -16,7 +19,7 @@
         <div class="workspace-panel__copy">
             <p class="eyebrow">Host Dashboard</p>
             <h1>PZServerLauncher Host</h1>
-            <p class="muted-text">The orchestration host is running and ready to manage Project Zomboid server profiles, web admin access, and shared operator tasks.</p>
+            <p class="muted-text">The orchestration host is running and ready to manage Project Zomboid server profiles, web admin access, and shared operator tasks. The fleet posture below summarizes access, trust, and recovery so you can spot risk fast.</p>
         </div>
 
         @if (_settings is null)
@@ -59,9 +62,9 @@
                 <span class="metric-note">@ProfilesMissingBackupCount profile(s) still missing a backup archive</span>
             </article>
             <article class="metric-card">
-                <span class="metric-label">Direct Java</span>
-                <strong class="metric-value">@DirectJavaReadyCount</strong>
-                <span class="metric-note">@FallbackLaunchCount profile(s) still on batch fallback</span>
+                <span class="metric-label">Fleet Access</span>
+                <strong class="metric-value">@_fleetAccessSummary.PublicOpenCount public/open</strong>
+                <span class="metric-note">@_fleetAccessSummary.AccessHeadline</span>
             </article>
         </section>
 
@@ -69,11 +72,22 @@
             <div class="card-heading">
                 <div>
                     <p class="eyebrow">Fleet Posture</p>
-                    <h2>Deployment And Recovery Snapshot</h2>
+                    <h2>Access, Trust, And Recovery Snapshot</h2>
                 </div>
             </div>
             <p>@FleetSummary</p>
             <p>@FleetRiskSummary</p>
+            <p>@_fleetAccessSummary.OperatorSummary</p>
+            <div class="workspace-actions">
+                <span class="pill">@_fleetAccessSummary.TrustHeadline</span>
+                <span class="pill">@_fleetAccessSummary.CommunicationHeadline</span>
+            </div>
+            <ul>
+                @foreach (var item in _fleetAccessSummary.Checklist)
+                {
+                    <li>@item</li>
+                }
+            </ul>
         </section>
 
         <div class="cards cards--wide">
@@ -148,7 +162,7 @@
                     </div>
                 </div>
 
-                <p class="muted-text">Use Remote Access to expose the HTTPS endpoint and Users to manage roles for operators, admins, and viewers.</p>
+                <p class="muted-text">Use Remote Access to expose the HTTPS endpoint and Users to manage roles for operators, admins, and viewers. The current fleet posture is @_fleetAccessSummary.CommunicationHeadline.</p>
 
                 <div class="workspace-actions">
                     <a class="nav-button secondary-button" href="/remote">Remote Access</a>
@@ -197,8 +211,9 @@
                             <th>Branch</th>
                             <th>Ports</th>
                             <th>Runtime</th>
-                            <th>Deploy</th>
-                            <th>Launch</th>
+                            <th>Access</th>
+                            <th>Trust</th>
+                            <th>Voice</th>
                             <th>Recovery</th>
                             <th>Workspace</th>
                         </tr>
@@ -213,8 +228,9 @@
                                 <td>@profile.Branch</td>
                                 <td>@profile.DefaultPort / @profile.UdpPort / @profile.RconPort</td>
                                 <td>@runtime.State</td>
-                                <td>@(row.InstallDetected ? "Installed" : "Missing install")</td>
-                                <td>@(row.UsesDirectJavaTemplate ? "Direct Java" : row.LauncherDetected ? "Batch fallback" : "Launcher missing")</td>
+                                <td>@row.Posture.CommunitySummary</td>
+                                <td>@row.Posture.NetworkSummary</td>
+                                <td>@(row.Posture.IsVoiceEnabled ? "Voice on" : "Voice off")</td>
                                 <td>@(row.HasBackup ? "Protected" : "Needs backup")</td>
                                 <td>
                                     <div class="actions-cell">
@@ -244,6 +260,7 @@
     private IReadOnlyList<PZServerLauncher.Core.Profiles.ServerProfile> _profiles = [];
     private IReadOnlyList<PZServerLauncher.Contracts.Runtime.UserAccountDto> _users = [];
     private IReadOnlyList<HomeProfileRow> _rows = [];
+    private ProjectZomboidFleetAccessPostureSummary _fleetAccessSummary = ProjectZomboidFleetAccessPostureSummaryBuilder.Build(Array.Empty<ProjectZomboidProfilePostureSummary>(), false);
 
     private int RunningProfileCount => _rows.Count(row => row.Runtime.State == PZServerLauncher.Core.Runtime.ServerRuntimeState.Running);
 
@@ -259,7 +276,7 @@
 
     private string FleetSummary => _rows.Count == 0
         ? "No fleet posture is available until the first server profile exists."
-        : $"{_rows.Count - ProfilesMissingInstallCount}/{_rows.Count} installed | {RecoveryReadyCount} recovery-ready | {DirectJavaReadyCount} direct-Java | {FallbackLaunchCount} fallback launch.";
+        : $"{_rows.Count - ProfilesMissingInstallCount}/{_rows.Count} installed | {RecoveryReadyCount} recovery-ready | {_fleetAccessSummary.PublicProfileCount} public | {_fleetAccessSummary.OpenAccessCount} open access.";
 
     private string FleetRiskSummary => _rows.Count == 0
         ? "Create or import a profile from the desktop app to start building the fleet."
@@ -269,7 +286,9 @@
                 ? $"{ProfilesMissingInstallCount} profile(s) still need a detected install footprint."
                 : FallbackLaunchCount > 0
                     ? $"{FallbackLaunchCount} installed profile(s) are still falling back to the vendor batch launcher."
-                    : "Install, recovery, and launch posture look healthy across the current fleet.";
+                    : _fleetAccessSummary.PublicOpenWithoutSafetyCount > 0
+                        ? $"{_fleetAccessSummary.PublicOpenWithoutSafetyCount} public/open profile(s) still need PvP safety coverage."
+                        : "Install, recovery, and fleet access posture look healthy across the current server group.";
 
     protected override async Task OnInitializedAsync()
     {
@@ -281,7 +300,11 @@
         {
             var runtime = RuntimeStateStore.GetOrDefault(profile.ProfileId);
             var backups = BackupService.ListBackups(profile.ProfileId);
-            var posture = ProjectZomboidInstallPostureSummaryBuilder.Build(
+            var generalValues = StructuredSettingsService.GetPage(profile, "general").Values;
+            var networkValues = StructuredSettingsService.GetPage(profile, "network-admin").Values;
+            var sandboxValues = StructuredSettingsService.GetPage(profile, "sandbox").Values;
+            var posture = ProjectZomboidProfilePostureSummaryBuilder.Build(profile.DisplayName, generalValues, networkValues, sandboxValues);
+            var installPosture = ProjectZomboidInstallPostureSummaryBuilder.Build(
                 profile,
                 runtime.State.ToString(),
                 backups.Count > 0,
@@ -291,10 +314,15 @@
                 profile,
                 runtime,
                 backups.Count > 0,
-                posture.InstallDetected,
-                posture.LauncherDetected,
-                posture.UsesDirectJavaTemplate);
+                installPosture.InstallDetected,
+                installPosture.LauncherDetected,
+                installPosture.UsesDirectJavaTemplate,
+                posture);
         }).ToArray();
+
+        _fleetAccessSummary = ProjectZomboidFleetAccessPostureSummaryBuilder.Build(
+            _rows.Select(row => row.Posture).ToArray(),
+            _settings.RemoteAccess.IsEnabled);
     }
 
     private static string BuildProfileHref(string profileId, string page) =>
@@ -306,5 +334,6 @@
         bool HasBackup,
         bool InstallDetected,
         bool LauncherDetected,
-        bool UsesDirectJavaTemplate);
+        bool UsesDirectJavaTemplate,
+        ProjectZomboidProfilePostureSummary Posture);
 }

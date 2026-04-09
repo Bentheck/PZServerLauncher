@@ -13,6 +13,7 @@ public partial class NetworkAndAdminWorkspaceViewModel : ProfileWorkspacePageVie
     private SettingsCatalogDto? _catalog;
     private string? _sourceSha256;
     private bool _isApplyingState;
+    private ProjectZomboidNetworkAndAdminPostureSummary _postureSummary = ProjectZomboidNetworkAndAdminPostureSummaryBuilder.Empty();
 
     public NetworkAndAdminWorkspaceViewModel(MainWindowViewModel legacy, LocalHostApiClient hostApiClient)
         : base(
@@ -51,6 +52,20 @@ public partial class NetworkAndAdminWorkspaceViewModel : ProfileWorkspacePageVie
     public ObservableCollection<string> FieldErrors { get; } = [];
 
     public bool HasFieldErrors => FieldErrors.Count > 0;
+
+    public string AccessHeadline => _postureSummary.AccessHeadline;
+
+    public string TrustHeadline => _postureSummary.TrustHeadline;
+
+    public string IdentityAndSafetyHeadline => _postureSummary.IdentityAndSafetyHeadline;
+
+    public string VoiceHeadline => _postureSummary.VoiceHeadline;
+
+    public string RecoveryHeadline => _postureSummary.RecoveryHeadline;
+
+    public string OperatorSummary => _postureSummary.OperatorSummary;
+
+    public IReadOnlyList<string> NetworkChecklist => _postureSummary.Checklist;
 
     public IAsyncRelayCommand SaveSettingsCommand { get; }
 
@@ -481,6 +496,7 @@ public partial class NetworkAndAdminWorkspaceViewModel : ProfileWorkspacePageVie
 
     private void NotifyComputedState()
     {
+        RefreshPosture();
         OnPropertyChanged(nameof(PageSummary));
         OnPropertyChanged(nameof(ProfileDisplayName));
         OnPropertyChanged(nameof(Branch));
@@ -489,5 +505,21 @@ public partial class NetworkAndAdminWorkspaceViewModel : ProfileWorkspacePageVie
         OnPropertyChanged(nameof(DraftsDisabled));
         OnPropertyChanged(nameof(CanEdit));
         OnPropertyChanged(nameof(RequiresAdvancedFilesFallback));
+        OnPropertyChanged(nameof(AccessHeadline));
+        OnPropertyChanged(nameof(TrustHeadline));
+        OnPropertyChanged(nameof(IdentityAndSafetyHeadline));
+        OnPropertyChanged(nameof(VoiceHeadline));
+        OnPropertyChanged(nameof(RecoveryHeadline));
+        OnPropertyChanged(nameof(OperatorSummary));
+        OnPropertyChanged(nameof(NetworkChecklist));
+    }
+
+    private void RefreshPosture()
+    {
+        _postureSummary = ProjectZomboidNetworkAndAdminPostureSummaryBuilder.Build(
+            BuildValues(),
+            RequiresAdvancedFilesFallback,
+            HasUnsavedChanges,
+            FieldErrors.Count);
     }
 }

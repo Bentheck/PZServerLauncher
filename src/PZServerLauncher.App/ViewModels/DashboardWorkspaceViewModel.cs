@@ -1,9 +1,14 @@
 using System.Collections.Specialized;
+using System.ComponentModel;
+using PZServerLauncher.Contracts.Profiles;
+using PZServerLauncher.Core.Settings;
 
 namespace PZServerLauncher.App.ViewModels;
 
 public sealed class DashboardWorkspaceViewModel : WorkspacePageViewModelBase
 {
+    private ProjectZomboidFleetAccessPostureSummary _fleetAccessPosture = ProjectZomboidFleetAccessPostureSummaryBuilder.Build(Array.Empty<ProjectZomboidProfilePostureSummary>(), remoteAccessEnabled: false);
+
     public DashboardWorkspaceViewModel(MainWindowViewModel legacy)
         : base(
             "Dashboard",
@@ -12,9 +17,17 @@ public sealed class DashboardWorkspaceViewModel : WorkspacePageViewModelBase
             ["Host summary", "Import candidates", "Recent jobs", "Quick actions"])
     {
         Legacy = legacy;
-        Legacy.Profiles.CollectionChanged += OnCollectionChanged;
+        Legacy.PropertyChanged += OnLegacyPropertyChanged;
+        Legacy.Profiles.CollectionChanged += OnProfilesCollectionChanged;
         Legacy.ImportCandidates.CollectionChanged += OnCollectionChanged;
         Legacy.RecentJobs.CollectionChanged += OnCollectionChanged;
+
+        foreach (var profile in Legacy.Profiles)
+        {
+            profile.PropertyChanged += OnProfilePropertyChanged;
+        }
+
+        RefreshFleetAccessPosture();
     }
 
     public MainWindowViewModel Legacy { get; }
@@ -91,6 +104,26 @@ public sealed class DashboardWorkspaceViewModel : WorkspacePageViewModelBase
                 ? "Review the modded profiles next so Workshop, Mods, and Map order still match the local cache."
                 : "The fleet looks clean. The next useful move is tuning Sandbox or General settings on the profile you plan to launch next.";
 
+    public string FleetAccessHeadline => _fleetAccessPosture.AccessHeadline;
+
+    public string FleetTrustHeadline => _fleetAccessPosture.TrustHeadline;
+
+    public string FleetCommunicationHeadline => _fleetAccessPosture.CommunicationHeadline;
+
+    public string FleetAccessOperatorSummary => _fleetAccessPosture.OperatorSummary;
+
+    public IReadOnlyList<string> FleetAccessChecklist => _fleetAccessPosture.Checklist;
+
+    public int PublicProfileCount => _fleetAccessPosture.PublicProfileCount;
+
+    public int OpenAccessCount => _fleetAccessPosture.OpenAccessCount;
+
+    public int SafetyEnabledCount => _fleetAccessPosture.SafetyEnabledCount;
+
+    public int VoiceEnabledCount => _fleetAccessPosture.VoiceEnabledCount;
+
+    public int PublicOpenWithoutSafetyCount => _fleetAccessPosture.PublicOpenWithoutSafetyCount;
+
     public bool HasImportCandidates => Legacy.ImportCandidates.Count > 0;
 
     public bool HasNoImportCandidates => Legacy.ImportCandidates.Count == 0;
@@ -103,8 +136,53 @@ public sealed class DashboardWorkspaceViewModel : WorkspacePageViewModelBase
 
     public int RecentJobCount => Legacy.RecentJobs.Count;
 
+    private void OnProfilesCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        if (e.OldItems is not null)
+        {
+            foreach (ProfileCardViewModel profile in e.OldItems)
+            {
+                profile.PropertyChanged -= OnProfilePropertyChanged;
+            }
+        }
+
+        if (e.NewItems is not null)
+        {
+            foreach (ProfileCardViewModel profile in e.NewItems)
+            {
+                profile.PropertyChanged += OnProfilePropertyChanged;
+            }
+        }
+
+        OnCollectionChanged(sender, e);
+    }
+
+    private void OnProfilePropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        RefreshAll();
+    }
+
+    private void OnLegacyPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (string.IsNullOrEmpty(e.PropertyName)
+            || e.PropertyName is nameof(MainWindowViewModel.HostSummary)
+            or nameof(MainWindowViewModel.RemoteSummary)
+            or nameof(MainWindowViewModel.OwnerSummary)
+            or nameof(MainWindowViewModel.StatusMessage)
+            or nameof(MainWindowViewModel.RemoteAccessEnabled))
+        {
+            RefreshAll();
+        }
+    }
+
     private void OnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
+        RefreshAll();
+    }
+
+    private void RefreshAll()
+    {
+        RefreshFleetAccessPosture();
         OnPropertyChanged(nameof(HostStateSummary));
         OnPropertyChanged(nameof(RemoteAccessSummary));
         OnPropertyChanged(nameof(OwnerSummary));
@@ -126,11 +204,28 @@ public sealed class DashboardWorkspaceViewModel : WorkspacePageViewModelBase
         OnPropertyChanged(nameof(FleetSummary));
         OnPropertyChanged(nameof(FleetRiskSummary));
         OnPropertyChanged(nameof(FleetNextStepSummary));
+        OnPropertyChanged(nameof(FleetAccessHeadline));
+        OnPropertyChanged(nameof(FleetTrustHeadline));
+        OnPropertyChanged(nameof(FleetCommunicationHeadline));
+        OnPropertyChanged(nameof(FleetAccessOperatorSummary));
+        OnPropertyChanged(nameof(FleetAccessChecklist));
+        OnPropertyChanged(nameof(PublicProfileCount));
+        OnPropertyChanged(nameof(OpenAccessCount));
+        OnPropertyChanged(nameof(SafetyEnabledCount));
+        OnPropertyChanged(nameof(VoiceEnabledCount));
+        OnPropertyChanged(nameof(PublicOpenWithoutSafetyCount));
         OnPropertyChanged(nameof(ImportCandidateCount));
         OnPropertyChanged(nameof(RecentJobCount));
         OnPropertyChanged(nameof(HasImportCandidates));
         OnPropertyChanged(nameof(HasNoImportCandidates));
         OnPropertyChanged(nameof(HasRecentJobs));
         OnPropertyChanged(nameof(HasNoRecentJobs));
+    }
+
+    private void RefreshFleetAccessPosture()
+    {
+        _fleetAccessPosture = ProjectZomboidFleetAccessPostureSummaryBuilder.Build(
+            Legacy.Profiles.Select(profile => profile.Posture).ToArray(),
+            Legacy.RemoteAccessEnabled);
     }
 }

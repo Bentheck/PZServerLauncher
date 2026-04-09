@@ -20,6 +20,7 @@ public sealed class OverviewWorkspaceViewModel : ProfileWorkspacePageViewModelBa
     private string _welcomeMessageSummary = "No welcome message configured yet.";
     private int _namedPresetCount;
     private ProfileLiveOperationsSnapshot? _liveOperations;
+    private ProjectZomboidNetworkAndAdminPostureSummary _networkAdminPosture = ProjectZomboidNetworkAndAdminPostureSummaryBuilder.Empty();
 
     public OverviewWorkspaceViewModel(MainWindowViewModel legacy, LocalHostApiClient hostApiClient, RuntimeEventStream runtimeEventStream)
         : base(
@@ -132,6 +133,20 @@ public sealed class OverviewWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
     public string NetworkPostureSummary => _networkPostureSummary;
 
+    public string NetworkAccessHeadline => _networkAdminPosture.AccessHeadline;
+
+    public string NetworkTrustHeadline => _networkAdminPosture.TrustHeadline;
+
+    public string IdentityAndSafetyHeadline => _networkAdminPosture.IdentityAndSafetyHeadline;
+
+    public string VoicePostureHeadline => _networkAdminPosture.VoiceHeadline;
+
+    public string NetworkRecoveryHeadline => _networkAdminPosture.RecoveryHeadline;
+
+    public string NetworkOperatorSummary => _networkAdminPosture.OperatorSummary;
+
+    public IReadOnlyList<string> NetworkChecklist => _networkAdminPosture.Checklist;
+
     public string WorldSnapshotSummary => _worldSnapshotSummary;
 
     public string SandboxTuningSummary => _sandboxTuningSummary;
@@ -180,6 +195,7 @@ public sealed class OverviewWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
         if (profile is null)
         {
+            _networkAdminPosture = ProjectZomboidNetworkAndAdminPostureSummaryBuilder.Empty();
             SetStructuredSummaries(
                 "Select a profile to load community posture.",
                 "No server rules loaded.",
@@ -187,6 +203,13 @@ public sealed class OverviewWorkspaceViewModel : ProfileWorkspacePageViewModelBa
                 "No world snapshot loaded.",
                 "No sandbox tuning loaded.",
                 "No welcome message configured yet.");
+            OnPropertyChanged(nameof(NetworkAccessHeadline));
+            OnPropertyChanged(nameof(NetworkTrustHeadline));
+            OnPropertyChanged(nameof(IdentityAndSafetyHeadline));
+            OnPropertyChanged(nameof(VoicePostureHeadline));
+            OnPropertyChanged(nameof(NetworkRecoveryHeadline));
+            OnPropertyChanged(nameof(NetworkOperatorSummary));
+            OnPropertyChanged(nameof(NetworkChecklist));
             return;
         }
 
@@ -224,6 +247,11 @@ public sealed class OverviewWorkspaceViewModel : ProfileWorkspacePageViewModelBa
                 generalValues,
                 networkValues,
                 sandboxValues);
+            _networkAdminPosture = ProjectZomboidNetworkAndAdminPostureSummaryBuilder.Build(
+                networkValues,
+                networkTask.Result?.RequiresAdvancedFilesFallback == true,
+                hasUnsavedChanges: false,
+                fieldErrorCount: 0);
 
             SetStructuredSummaries(
                 posture.CommunitySummary,
@@ -238,6 +266,13 @@ public sealed class OverviewWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             OnPropertyChanged(nameof(OperatorActionSummary));
             OnPropertyChanged(nameof(InstallPostureSummary));
             OnPropertyChanged(nameof(NamedPresetSummary));
+            OnPropertyChanged(nameof(NetworkAccessHeadline));
+            OnPropertyChanged(nameof(NetworkTrustHeadline));
+            OnPropertyChanged(nameof(IdentityAndSafetyHeadline));
+            OnPropertyChanged(nameof(VoicePostureHeadline));
+            OnPropertyChanged(nameof(NetworkRecoveryHeadline));
+            OnPropertyChanged(nameof(NetworkOperatorSummary));
+            OnPropertyChanged(nameof(NetworkChecklist));
         }
         catch
         {
@@ -247,6 +282,7 @@ public sealed class OverviewWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             }
 
             _namedPresetCount = 0;
+            _networkAdminPosture = ProjectZomboidNetworkAndAdminPostureSummaryBuilder.Empty();
             SetStructuredSummaries(
                 "Structured community posture could not be loaded yet.",
                 "Server rules summary is temporarily unavailable.",
@@ -318,6 +354,13 @@ public sealed class OverviewWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         OnPropertyChanged(nameof(CommunitySummary));
         OnPropertyChanged(nameof(ServerRulesSummary));
         OnPropertyChanged(nameof(NetworkPostureSummary));
+        OnPropertyChanged(nameof(NetworkAccessHeadline));
+        OnPropertyChanged(nameof(NetworkTrustHeadline));
+        OnPropertyChanged(nameof(IdentityAndSafetyHeadline));
+        OnPropertyChanged(nameof(VoicePostureHeadline));
+        OnPropertyChanged(nameof(NetworkRecoveryHeadline));
+        OnPropertyChanged(nameof(NetworkOperatorSummary));
+        OnPropertyChanged(nameof(NetworkChecklist));
         OnPropertyChanged(nameof(WorldSnapshotSummary));
         OnPropertyChanged(nameof(SandboxTuningSummary));
         OnPropertyChanged(nameof(WelcomeMessageSummary));

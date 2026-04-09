@@ -1,5 +1,6 @@
 @page "/profiles/{ProfileId}/overview"
 @attribute [Authorize]
+@using PZServerLauncher.Contracts.Profiles
 @using PZServerLauncher.Core.Settings
 @using PZServerLauncher.Infrastructure.Planning
 @using PZServerLauncher.Host.Services
@@ -125,6 +126,40 @@ else
                     <strong class="metric-value">Backups</strong>
                     <span class="metric-note">@BackupHealth</span>
                 </article>
+            </section>
+
+            <section class="metric-grid">
+                <article class="metric-card">
+                    <span class="metric-label">Access Posture</span>
+                    <strong class="metric-value">Network &amp; Admin</strong>
+                    <span class="metric-note">@_networkAdminSummary.AccessHeadline</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Trust Posture</span>
+                    <strong class="metric-value">Anti-cheat</strong>
+                    <span class="metric-note">@_networkAdminSummary.TrustHeadline</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Identity &amp; Safety</span>
+                    <strong class="metric-value">Community Rules</strong>
+                    <span class="metric-note">@_networkAdminSummary.IdentityAndSafetyHeadline</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Voice Posture</span>
+                    <strong class="metric-value">Comms</strong>
+                    <span class="metric-note">@_networkAdminSummary.VoiceHeadline</span>
+                </article>
+            </section>
+
+            <section class="status-banner status-banner--warm">
+                <strong>Network And Admin Briefing</strong>
+                <p>@_networkAdminSummary.OperatorSummary</p>
+                <ul>
+                    @foreach (var item in _networkAdminSummary.Checklist)
+                    {
+                        <li>@item</li>
+                    }
+                </ul>
             </section>
 
             <section class="metric-grid">
@@ -295,6 +330,7 @@ else
     private string _welcomeSummary = "No welcome message configured yet.";
     private int _namedPresetCount;
     private ProfileLiveOperationsSnapshot? _liveOperations;
+    private ProjectZomboidNetworkAndAdminPostureSummary _networkAdminSummary = ProjectZomboidNetworkAndAdminPostureSummaryBuilder.Build(new Dictionary<string, string?>(StringComparer.Ordinal), false, false, 0);
 
     protected override async Task OnParametersSetAsync()
     {
@@ -323,6 +359,7 @@ else
         var generalValues = StructuredSettingsService.GetPage(_profile, "general").Values;
         var networkValues = StructuredSettingsService.GetPage(_profile, "network-admin").Values;
         var sandboxValues = StructuredSettingsService.GetPage(_profile, "sandbox").Values;
+        var networkValueSet = StructuredSettingsService.GetPage(_profile, "network-admin");
 
         var posture = ProjectZomboidProfilePostureSummaryBuilder.Build(_profile.DisplayName, generalValues, networkValues, sandboxValues);
         _communitySummary = posture.CommunitySummary;
@@ -331,6 +368,11 @@ else
         _sandboxSummary = posture.WorldSummary;
         _sandboxTuningSummary = posture.SandboxTuningSummary;
         _welcomeSummary = posture.WelcomeSummary;
+        _networkAdminSummary = ProjectZomboidNetworkAndAdminPostureSummaryBuilder.Build(
+            networkValueSet.Values,
+            networkValueSet.RequiresAdvancedFilesFallback,
+            hasUnsavedChanges: false,
+            fieldErrorCount: 0);
     }
 
     private string InstallPostureSummary => _profile is null

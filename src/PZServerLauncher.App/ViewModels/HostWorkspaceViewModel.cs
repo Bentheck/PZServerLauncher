@@ -38,7 +38,7 @@ public sealed class HostWorkspaceViewModel : WorkspacePageViewModelBase
 
     public string HostFleetSummary => Legacy.Profiles.Count == 0
         ? "No Project Zomboid server profiles are loaded yet."
-        : $"{Legacy.Profiles.Count} profile(s) loaded | {Legacy.Profiles.Count(profile => profile.IsInstallDetected)} installed | {Legacy.Profiles.Count(profile => string.Equals(profile.RuntimeState, \"Running\", StringComparison.OrdinalIgnoreCase))} running.";
+        : $"{Legacy.Profiles.Count} profile(s) loaded | {Legacy.Profiles.Count(profile => profile.IsInstallDetected)} installed | {Legacy.Profiles.Count(profile => string.Equals(profile.RuntimeState, "Running", StringComparison.OrdinalIgnoreCase))} running.";
 
     public int ManagedProfileCount => Legacy.Profiles.Count;
 

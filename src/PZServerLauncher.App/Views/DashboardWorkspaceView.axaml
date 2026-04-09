@@ -9,7 +9,7 @@
              x:Class="PZServerLauncher.App.Views.DashboardWorkspaceView"
              x:Name="DashboardRoot"
              x:DataType="vm:DashboardWorkspaceViewModel">
-    <Grid RowDefinitions="Auto,Auto,Auto,*" RowSpacing="18">
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,*" RowSpacing="18">
         <Border Classes="card" Padding="24">
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
                 <StackPanel Spacing="6">
@@ -55,7 +55,52 @@
             </Border>
         </Grid>
 
-        <StackPanel Grid.Row="2" Spacing="14">
+        <Grid Grid.Row="2" ColumnDefinitions="1.2*,.8*" ColumnSpacing="18">
+            <Border Classes="card" Padding="20">
+                <StackPanel Spacing="10">
+                    <TextBlock Classes="kicker" Text="Fleet Access &amp; Trust" />
+                    <TextBlock Classes="panel-title" FontSize="22" Text="{Binding FleetAccessHeadline}" TextWrapping="Wrap" />
+                    <TextBlock Classes="body" Text="{Binding FleetTrustHeadline}" TextWrapping="Wrap" />
+                    <TextBlock Classes="body" Text="{Binding FleetCommunicationHeadline}" TextWrapping="Wrap" />
+                    <WrapPanel Orientation="Horizontal" ItemHeight="28">
+                        <Border Background="#F1E6D7" CornerRadius="999" Padding="10,6" Margin="0,0,8,8">
+                            <TextBlock Classes="body" Text="{Binding PublicProfileCount, StringFormat='Public listed: {0}'}" TextWrapping="Wrap" />
+                        </Border>
+                        <Border Background="#F1E6D7" CornerRadius="999" Padding="10,6" Margin="0,0,8,8">
+                            <TextBlock Classes="body" Text="{Binding OpenAccessCount, StringFormat='Open access: {0}'}" TextWrapping="Wrap" />
+                        </Border>
+                        <Border Background="#F1E6D7" CornerRadius="999" Padding="10,6" Margin="0,0,8,8">
+                            <TextBlock Classes="body" Text="{Binding SafetyEnabledCount, StringFormat='Safety enabled: {0}'}" TextWrapping="Wrap" />
+                        </Border>
+                        <Border Background="#F1E6D7" CornerRadius="999" Padding="10,6" Margin="0,0,8,8">
+                            <TextBlock Classes="body" Text="{Binding VoiceEnabledCount, StringFormat='Voice enabled: {0}'}" TextWrapping="Wrap" />
+                        </Border>
+                    </WrapPanel>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="1" Classes="card" Padding="20">
+                <StackPanel Spacing="10">
+                    <TextBlock Classes="kicker" Text="Operator Focus" />
+                    <TextBlock Classes="panel-title" FontSize="20" Text="{Binding FleetAccessOperatorSummary}" TextWrapping="Wrap" />
+                    <ItemsControl ItemsSource="{Binding FleetAccessChecklist}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Classes="body"
+                                           Margin="0,0,0,6"
+                                           Text="{Binding .}"
+                                           TextWrapping="Wrap" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock Classes="body"
+                               Text="{Binding PublicOpenWithoutSafetyCount, StringFormat='Public + open without safety: {0}'}"
+                               TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <StackPanel Grid.Row="3" Spacing="14">
             <Grid ColumnDefinitions="*,*,*" ColumnSpacing="14">
                 <Border Classes="card" Padding="16">
                     <StackPanel Spacing="6">
@@ -105,7 +150,7 @@
             </Grid>
         </StackPanel>
 
-        <Border Grid.Row="3" Classes="card" Padding="20">
+        <Border Grid.Row="4" Classes="card" Padding="20">
             <StackPanel Spacing="12">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                     <StackPanel Spacing="4">
@@ -185,7 +230,7 @@
             </StackPanel>
         </Border>
 
-        <Grid Grid.Row="4" ColumnDefinitions="*,*" ColumnSpacing="18">
+        <Grid Grid.Row="5" ColumnDefinitions="*,*" ColumnSpacing="18">
             <Border Classes="card" Padding="20">
                 <StackPanel Spacing="10">
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">

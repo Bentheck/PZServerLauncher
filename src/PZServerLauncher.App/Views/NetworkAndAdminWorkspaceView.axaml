@@ -65,6 +65,87 @@
                     </StackPanel>
                 </Border>
 
+                <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="14">
+                    <Border Background="#F6EFE6" CornerRadius="14" Padding="16">
+                        <StackPanel Spacing="8">
+                            <TextBlock Classes="kicker" Text="Access Envelope" />
+                            <TextBlock FontSize="18"
+                                       FontWeight="SemiBold"
+                                       Text="{Binding AccessHeadline}"
+                                       TextWrapping="Wrap" />
+                            <TextBlock Classes="body"
+                                       Text="Bind behavior, account limits, whitelist posture, and username policy."
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Column="1" Background="#F6EFE6" CornerRadius="14" Padding="16">
+                        <StackPanel Spacing="8">
+                            <TextBlock Classes="kicker" Text="Trust Controls" />
+                            <TextBlock FontSize="18"
+                                       FontWeight="SemiBold"
+                                       Text="{Binding TrustHeadline}"
+                                       TextWrapping="Wrap" />
+                            <TextBlock Classes="body"
+                                       Text="Anti-cheat, login pressure, and compatibility checks that shape how much the server trusts connecting clients."
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Column="2" Background="#F6EFE6" CornerRadius="14" Padding="16">
+                        <StackPanel Spacing="8">
+                            <TextBlock Classes="kicker" Text="Identity &amp; Safety" />
+                            <TextBlock FontSize="18"
+                                       FontWeight="SemiBold"
+                                       Text="{Binding IdentityAndSafetyHeadline}"
+                                       TextWrapping="Wrap" />
+                            <TextBlock Classes="body"
+                                       Text="Nameplates, rear visibility, collision, and PvP safety signaling for public communities."
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Column="3" Background="#F6EFE6" CornerRadius="14" Padding="16">
+                        <StackPanel Spacing="8">
+                            <TextBlock Classes="kicker" Text="Voice &amp; Recovery" />
+                            <TextBlock FontSize="18"
+                                       FontWeight="SemiBold"
+                                       Text="{Binding VoiceHeadline}"
+                                       TextWrapping="Wrap" />
+                            <TextBlock Classes="body"
+                                       Text="{Binding RecoveryHeadline}"
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <Grid ColumnDefinitions="1.2*,.8*" ColumnSpacing="14">
+                    <Border Background="#FFF8F1" CornerRadius="14" Padding="16">
+                        <StackPanel Spacing="8">
+                            <TextBlock Classes="kicker" Text="Operator Summary" />
+                            <TextBlock FontSize="18"
+                                       FontWeight="SemiBold"
+                                       Text="{Binding OperatorSummary}"
+                                       TextWrapping="Wrap" />
+                            <TextBlock Classes="body"
+                                       Text="{Binding RecoveryHeadline}"
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Column="1" Background="#FFF8F1" CornerRadius="14" Padding="16">
+                        <StackPanel Spacing="8">
+                            <TextBlock Classes="kicker" Text="Operator Checklist" />
+                            <ItemsControl ItemsSource="{Binding NetworkChecklist}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Classes="body"
+                                                   Margin="0,0,0,6"
+                                                   Text="{Binding .}"
+                                                   TextWrapping="Wrap" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
                 <Grid ColumnDefinitions="1.15*,.85*" ColumnSpacing="16" IsEnabled="{Binding CanEdit}">
                     <StackPanel Spacing="16">
                         <Border Classes="card" Padding="18">
