@@ -54,29 +54,61 @@ public sealed class DashboardWorkspaceViewModel : WorkspacePageViewModelBase
             ? "Review the fleet posture below, then jump into Profiles or Overview to tune the next server."
             : "Refresh the host, then discover local imports so the panel can surface existing Zomboid servers.";
 
+    public bool OwnerBootstrapPending => Legacy.OwnerBootstrapRequired;
+
+    public bool HasGuidedLaunchPad => OwnerBootstrapPending || HasNoProfiles || HasImportCandidates;
+
     public bool IsFirstRun => !HasProfiles && !HasImportCandidates;
 
-    public string LaunchPadHeadline => HasImportCandidates
-        ? $"{ImportCandidateCount} local server candidate(s) are ready for intake."
+    public string LaunchPadHeadline => OwnerBootstrapPending
+        ? "Desktop control is ready, but privileged remote access still needs an owner account."
+        : HasImportCandidates
+            ? $"{ImportCandidateCount} local server candidate(s) are ready for intake."
+            : HasProfiles
+                ? "Your fleet is online. Use the board below to decide the next server action."
+                : "Create or import the first managed server.";
+
+    public string LaunchPadSummary => OwnerBootstrapPending
+        ? "You can keep using the desktop now, but finish owner bootstrap from Users before you treat the optional web surface as production-ready."
         : HasProfiles
-            ? "Your fleet is online. Use the board below to decide the next server action."
-            : "Create or import the first managed server.";
+            ? "This panel is now a true fleet board. Use it to decide what to launch, repair, or tighten next."
+            : HasImportCandidates
+                ? "Discovery already found local Zomboid footprints. Import one of them, verify install posture, then capture a first backup."
+                : "Start with Create Profile for a clean managed server, or scan the local machine if you already have a Zomboid host to adopt.";
 
-    public string FirstRunActionPlan => HasImportCandidates
-        ? "Bring one local server under management first, then verify install, backup, and launch posture before the first live boot."
-        : "The fastest path is create or import, install the server footprint, capture a first backup, then tune settings before launch.";
+    public string FirstRunActionPlan => OwnerBootstrapPending
+        ? "Bootstrap the owner account, bring the first server under management, then verify install and recovery posture before considering remote exposure."
+        : HasImportCandidates
+            ? "Bring one local server under management first, then verify install, backup, and launch posture before the first live boot."
+            : "The fastest path is create or import, install the server footprint, capture a first backup, then tune settings before launch.";
 
-    public string LaunchPadStepOne => HasImportCandidates
-        ? "Step 1: Review the local server candidates and import the one you want to manage first."
-        : "Step 1: Create a starter profile or scan the local Zomboid directories for an existing server.";
+    public string LaunchPadStepOne => OwnerBootstrapPending
+        ? "Step 1: Open Users and create the initial owner account."
+        : HasImportCandidates
+            ? "Step 1: Review the local server candidates and import the one you want to manage first."
+            : "Step 1: Create a starter profile or scan the local Zomboid directories for an existing server.";
 
-    public string LaunchPadStepTwo => HasImportCandidates
-        ? "Step 2: Open Profiles and confirm install, cache, and recovery posture for the imported server."
-        : "Step 2: Use Install & Update to create the dedicated server footprint and verify branch isolation.";
+    public string LaunchPadStepTwo => OwnerBootstrapPending
+        ? HasImportCandidates
+            ? "Step 2: Import the first discovered server so the managed roster starts with a real footprint."
+            : "Step 2: Create or import the first managed server profile."
+        : HasImportCandidates
+            ? "Step 2: Open Profiles and confirm install, cache, and recovery posture for the imported server."
+            : "Step 2: Use Install & Update to create the dedicated server footprint and verify branch isolation.";
 
-    public string LaunchPadStepThree => HasImportCandidates
-        ? "Step 3: Tune General, Sandbox, Mods & Maps, and Network before the first live launch."
-        : "Step 3: Tune the structured settings, capture a first backup, then launch from Overview.";
+    public string LaunchPadStepThree => OwnerBootstrapPending
+        ? "Step 3: Once the first profile exists, verify install/update posture and take a first backup."
+        : HasImportCandidates
+            ? "Step 3: Tune General, Sandbox, Mods & Maps, and Network before the first live launch."
+            : "Step 3: Tune the structured settings, capture a first backup, then launch from Overview.";
+
+    public string LaunchPadActionHint => OwnerBootstrapPending
+        ? "Users is the next stop if you plan to expose remote admin. Profiles is the next stop if you want to stay desktop-only and get the first server online."
+        : HasImportCandidates
+            ? "Import first if you already have a local footprint. Create first if you want a clean managed server."
+            : HasProfiles
+                ? "Move into Profiles to pick the next active server."
+                : "Create Profile starts from scratch. Scan Imports looks for local Zomboid footprints you can adopt.";
 
     public bool HasProfiles => Legacy.Profiles.Count > 0;
 
@@ -160,6 +192,8 @@ public sealed class DashboardWorkspaceViewModel : WorkspacePageViewModelBase
 
     public int RecentJobCount => Legacy.RecentJobs.Count;
 
+    public ImportCandidateViewModel? FirstImportCandidate => Legacy.ImportCandidates.FirstOrDefault();
+
     private void OnProfilesCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
         if (e.OldItems is not null)
@@ -214,12 +248,16 @@ public sealed class DashboardWorkspaceViewModel : WorkspacePageViewModelBase
         OnPropertyChanged(nameof(ImportSummary));
         OnPropertyChanged(nameof(RecentJobSummary));
         OnPropertyChanged(nameof(NextActionSummary));
+        OnPropertyChanged(nameof(OwnerBootstrapPending));
+        OnPropertyChanged(nameof(HasGuidedLaunchPad));
         OnPropertyChanged(nameof(IsFirstRun));
         OnPropertyChanged(nameof(LaunchPadHeadline));
+        OnPropertyChanged(nameof(LaunchPadSummary));
         OnPropertyChanged(nameof(FirstRunActionPlan));
         OnPropertyChanged(nameof(LaunchPadStepOne));
         OnPropertyChanged(nameof(LaunchPadStepTwo));
         OnPropertyChanged(nameof(LaunchPadStepThree));
+        OnPropertyChanged(nameof(LaunchPadActionHint));
         OnPropertyChanged(nameof(HasProfiles));
         OnPropertyChanged(nameof(HasNoProfiles));
         OnPropertyChanged(nameof(ProfileCount));
@@ -245,6 +283,7 @@ public sealed class DashboardWorkspaceViewModel : WorkspacePageViewModelBase
         OnPropertyChanged(nameof(VoiceEnabledCount));
         OnPropertyChanged(nameof(PublicOpenWithoutSafetyCount));
         OnPropertyChanged(nameof(ImportCandidateCount));
+        OnPropertyChanged(nameof(FirstImportCandidate));
         OnPropertyChanged(nameof(RecentJobCount));
         OnPropertyChanged(nameof(HasImportCandidates));
         OnPropertyChanged(nameof(HasNoImportCandidates));
