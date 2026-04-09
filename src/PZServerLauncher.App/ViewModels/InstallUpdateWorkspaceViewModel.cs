@@ -62,8 +62,8 @@ public sealed partial class InstallUpdateWorkspaceViewModel : ProfileWorkspacePa
     public IAsyncRelayCommand BrowseCacheDirectoryCommand { get; }
 
     public override string PageSummary => SelectedProfile is null
-        ? "Select a profile to install, update, and control its runtime."
-        : $"Install and lifecycle controls for {SelectedProfile.DisplayName}, with preflight context for branch, paths, and safety.";
+        ? "Select a server to choose folders, install it, and control its runtime."
+        : $"Install, update, and start {SelectedProfile.DisplayName} from one simple page.";
 
     public string ProfileDisplayName => SelectedProfile?.DisplayName ?? "No profile selected";
 
@@ -82,8 +82,8 @@ public sealed partial class InstallUpdateWorkspaceViewModel : ProfileWorkspacePa
     public string PathOverrideSummary => SelectedProfile is null
         ? "Select a profile before editing install and cache locations."
         : HasPathOverridesDirty
-            ? "Path changes are pending. Save them before installing or updating this profile."
-            : "Choose where the dedicated server binaries live and where this profile stores its Zomboid cache, saves, and config files.";
+            ? "Folder changes are pending. Save them before you install or update this server."
+            : "Choose where the server files go and where this profile keeps its Zomboid config, saves, and cache.";
 
     public IReadOnlyList<OperationJob> RecentProfileJobs => SelectedProfile is null
         ? []
@@ -111,8 +111,8 @@ public sealed partial class InstallUpdateWorkspaceViewModel : ProfileWorkspacePa
     public string BranchInstallStatus => SelectedProfile is null
         ? "No profile selected."
         : SelectedProfile.IsInstallDetected
-            ? $"Install detected for {SelectedProfile.Branch}."
-            : $"No install detected yet for {SelectedProfile.Branch}.";
+            ? $"{SelectedProfile.Branch} is already installed for this server."
+            : $"{SelectedProfile.Branch} is not installed yet for this server.";
 
     public string LaunchModeLabel => SelectedProfile is null
         ? "Unknown"
@@ -151,9 +151,9 @@ public sealed partial class InstallUpdateWorkspaceViewModel : ProfileWorkspacePa
             : "Idle deployment window";
 
     public string RuntimeActionSummary => SelectedProfile is null
-        ? "Choose a profile to see runtime and maintenance guidance."
+        ? "Choose a server to see runtime guidance."
         : string.Equals(SelectedProfile.RuntimeState, "Running", StringComparison.OrdinalIgnoreCase)
-            ? $"{SelectedProfile.RuntimePolicySummary} {SelectedProfile.BackupSafetySummary}"
+            ? $"The server is running. Stop or restart it here when you need a maintenance window. {SelectedProfile.BackupSafetySummary}"
             : $"{SelectedProfile.LaunchReadinessSummary} {SelectedProfile.BackupSafetySummary}";
 
     public string InstallPostureSummary => SelectedProfile?.InstallPosture.DeploymentPostureSummary ?? "No install posture available.";
@@ -283,10 +283,10 @@ public sealed partial class InstallUpdateWorkspaceViewModel : ProfileWorkspacePa
     public string NextRecommendedAction => SelectedProfile is null
         ? "Pick a profile to continue."
         : !SelectedProfile.IsInstallDetected
-            ? "Run Install first for this branch."
+            ? "Pick your folders, then install the server."
             : string.Equals(SelectedProfile.RuntimeState, "Running", StringComparison.OrdinalIgnoreCase)
-                ? "Use Update only when you are ready for a maintenance window, or stop/restart from this page."
-                : "The install looks ready. Start the server, or update it if you want to refresh the binaries before launch.";
+                ? "Use this page to stop or restart the server before running an update."
+                : "The server looks ready. Start it now, or update first if you want the latest files before launch.";
 
     public string LifecycleGuidance => SelectedProfile?.RuntimePolicySummary ?? "No runtime state available.";
 

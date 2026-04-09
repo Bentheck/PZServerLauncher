@@ -9,15 +9,15 @@
              x:Class="PZServerLauncher.App.Views.ProfilesWorkspaceView"
              x:Name="ProfilesRoot"
              x:DataType="vm:ProfilesWorkspaceViewModel">
-    <Grid ColumnDefinitions="360,*" ColumnSpacing="18">
+    <Grid ColumnDefinitions="330,*" ColumnSpacing="18">
         <Border Classes="surface-dark" Padding="18">
             <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" RowSpacing="16">
                 <StackPanel Spacing="6">
-                    <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Server Roster" />
+                    <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Servers" />
                     <TextBlock Classes="panel-title" FontSize="28" Foreground="#F7F0E7" Text="{Binding PageTitle}" />
                     <TextBlock Classes="body"
                                Foreground="#D3C8BA"
-                               Text="Choose a server, watch its posture, and jump into the full control stack without leaving the roster."
+                               Text="Pick a server on the left, then use the pages on the right to work through setup, settings, backups, and logs."
                                TextWrapping="Wrap" />
                 </StackPanel>
 
@@ -160,7 +160,7 @@
             <Border Classes="card" Padding="22">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18">
                     <StackPanel Spacing="8">
-                        <TextBlock Classes="kicker" Text="Active Server Cockpit" />
+                        <TextBlock Classes="kicker" Text="Selected Server" />
                         <TextBlock Classes="panel-title" FontSize="30" Text="{Binding WorkspaceHeadline}" />
                         <TextBlock Classes="body"
                                    FontSize="16"
@@ -183,7 +183,7 @@
             <Grid Grid.Row="1" ColumnDefinitions="*,*,*" ColumnSpacing="14" IsVisible="{Binding HasSelectedProfile}">
                 <Border Classes="metric-card" Padding="16">
                     <StackPanel Spacing="6">
-                        <TextBlock Classes="kicker" Text="Community" />
+                        <TextBlock Classes="kicker" Text="Player access" />
                         <TextBlock Classes="body" Text="{Binding SelectedCommunitySummary}" TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
@@ -203,8 +203,8 @@
 
             <Border Grid.Row="2" Classes="callout-card" Padding="22" IsVisible="{Binding HasNoSelectedProfile}">
                 <StackPanel Spacing="10">
-                    <TextBlock Classes="kicker" Text="No Active Server" />
-                    <TextBlock Classes="panel-title" FontSize="24" Text="Select a profile to open the cockpit" />
+                    <TextBlock Classes="kicker" Text="No Server Selected" />
+                    <TextBlock Classes="panel-title" FontSize="24" Text="Choose a profile to open its settings" />
                     <TextBlock Classes="body" Text="{Binding SelectedWorkspaceSummary}" TextWrapping="Wrap" />
                     <TextBlock Classes="caption" Text="{Binding SelectedWorkspaceAction}" TextWrapping="Wrap" />
                     <WrapPanel Orientation="Horizontal" ItemWidth="146" ItemHeight="36">
@@ -224,7 +224,7 @@
                 <Grid RowDefinitions="Auto,Auto,*" RowSpacing="16">
                     <Border Classes="surface-soft" Padding="16">
                         <StackPanel Spacing="6">
-                            <TextBlock Classes="kicker" Text="Server Briefing" />
+                            <TextBlock Classes="kicker" Text="Selected Server" />
                             <TextBlock Classes="body" Text="{Binding SelectedProfilePathSummary}" TextWrapping="Wrap" />
                             <TextBlock Classes="caption" Text="{Binding SelectedProfilePortsSummary}" />
                             <TextBlock Classes="caption" Text="{Binding SelectedRecoverySummary}" TextWrapping="Wrap" />
@@ -233,7 +233,7 @@
 
                     <Border Grid.Row="1" Classes="card" Padding="16" IsVisible="{Binding HasPendingSectionNavigation}">
                         <StackPanel Spacing="8">
-                            <TextBlock Classes="panel-title" Text="Unsaved Section Changes" />
+                            <TextBlock Classes="panel-title" Text="Unsaved changes" />
                             <TextBlock Classes="body" Text="{Binding PendingSectionNavigationMessage}" TextWrapping="Wrap" />
                             <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
                                 <Button Classes="action-primary" Command="{Binding ConfirmSectionNavigationSaveCommand}" Content="Save" />
@@ -245,10 +245,10 @@
 
                     <Border Grid.Row="2" Classes="surface-dark" Padding="16">
                         <StackPanel Spacing="10">
-                            <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Section Rail" />
+                            <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Sections" />
                             <TextBlock Classes="caption"
                                        Foreground="#CCB9A8"
-                                       Text="Move through the active server's control stack."
+                                       Text="Jump between the selected server's main pages."
                                        TextWrapping="Wrap" />
 
                             <ItemsControl ItemsSource="{Binding SectionItems}">

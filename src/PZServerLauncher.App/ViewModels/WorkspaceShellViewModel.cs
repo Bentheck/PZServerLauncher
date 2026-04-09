@@ -56,10 +56,10 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
 
         GlobalNavigation =
         [
-            new WorkspaceNavigationItemViewModel(WorkspacePageIds.Dashboard, "Dashboard", Dashboard.PageSummary),
-            new WorkspaceNavigationItemViewModel(WorkspacePageIds.Profiles, "Profiles", Profiles.PageSummary),
-            new WorkspaceNavigationItemViewModel(WorkspacePageIds.Host, "Host", Host.PageSummary),
-            new WorkspaceNavigationItemViewModel(WorkspacePageIds.RemoteAccess, "Remote Access", RemoteAccess.PageSummary),
+            new WorkspaceNavigationItemViewModel(WorkspacePageIds.Dashboard, "Home", Dashboard.PageSummary),
+            new WorkspaceNavigationItemViewModel(WorkspacePageIds.Profiles, "Servers", Profiles.PageSummary),
+            new WorkspaceNavigationItemViewModel(WorkspacePageIds.Host, "App", Host.PageSummary),
+            new WorkspaceNavigationItemViewModel(WorkspacePageIds.RemoteAccess, "Web Access", RemoteAccess.PageSummary),
             new WorkspaceNavigationItemViewModel(WorkspacePageIds.Users, "Users", Users.PageSummary),
         ];
 
@@ -82,9 +82,9 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
 
     public MainWindowViewModel Legacy { get; }
 
-    public string PageTitle => "Project Zomboid Workspace";
+    public string PageTitle => "Project Zomboid Server Manager";
 
-    public string PageSummary => "Workspace shell with dedicated dashboard, profiles, host, remote access, and users pages.";
+    public string PageSummary => "Create, configure, launch, and recover local servers from one desktop app.";
 
     public string CurrentPageTitle => CurrentPage is IWorkspacePageHeader header ? header.PageTitle : PageTitle;
 
@@ -92,21 +92,21 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
 
     public string WorkspaceGuidance => CurrentPage switch
     {
-        ProfilesWorkspaceViewModel => "Pick a server profile, then move through install, sandbox, mods, backups, logs, and advanced files without leaving the workspace.",
-        DashboardWorkspaceViewModel => "Use the dashboard as your local control room for imports, host posture, and recent activity.",
-        HostWorkspaceViewModel => "Host controls stay global so you can manage startup, runtime, and process posture without opening a specific server.",
-        RemoteAccessWorkspaceViewModel => "Remote access stays optional. Configure HTTPS exposure only when you are ready to operate the server from another device.",
-        UsersWorkspaceViewModel => "Use Users for owner bootstrap, operator creation, and role management when web administration is enabled.",
+        ProfilesWorkspaceViewModel => "Choose a server, then walk through install, settings, mods, backups, and logs without leaving the same area.",
+        DashboardWorkspaceViewModel => "Start here to create a new server, import an existing one, or jump back into the last thing you were doing.",
+        HostWorkspaceViewModel => "App settings live here so startup, background host behavior, and machine-wide controls stay in one place.",
+        RemoteAccessWorkspaceViewModel => "Web access is optional. Turn it on only when you want to use this machine from a browser.",
+        UsersWorkspaceViewModel => "Manage the owner account and any browser users here when web access is enabled.",
         _ => CurrentPageSummary,
     };
 
     public string ProfileCountSummary => Legacy.Profiles.Count == 0
-        ? "No profiles loaded yet."
-        : $"{Legacy.Profiles.Count} profile{(Legacy.Profiles.Count == 1 ? string.Empty : "s")} loaded in the launcher.";
+        ? "No servers yet"
+        : $"{Legacy.Profiles.Count} server{(Legacy.Profiles.Count == 1 ? string.Empty : "s")}";
 
     public string RecentActivitySummary => Legacy.RecentJobs.Count == 0
-        ? "No recent jobs have been recorded yet."
-        : $"{Legacy.RecentJobs.Count} recent host job{(Legacy.RecentJobs.Count == 1 ? string.Empty : "s")} available for quick review.";
+        ? "No recent activity"
+        : $"{Legacy.RecentJobs.Count} recent task{(Legacy.RecentJobs.Count == 1 ? string.Empty : "s")}";
 
     public string RemotePostureSummary => Legacy.RemoteSummary;
 

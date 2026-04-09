@@ -9,237 +9,146 @@
              x:Class="PZServerLauncher.App.Views.GeneralWorkspaceView"
              x:DataType="vm:GeneralWorkspaceViewModel">
     <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-        <Grid RowDefinitions="Auto,Auto,*" RowSpacing="18">
-            <Grid ColumnDefinitions="1.42*,340" ColumnSpacing="18">
-                <Border Classes="card" Padding="26">
-                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18">
-                        <StackPanel Spacing="8">
-                            <TextBlock Classes="kicker" Text="Server Configuration Console" />
-                            <TextBlock Classes="panel-title" FontSize="30" Text="{Binding ProfileDisplayName}" />
+        <Grid RowDefinitions="Auto,Auto,*,Auto,Auto" RowSpacing="16">
+            <Border Classes="card" Padding="22">
+                <Grid ColumnDefinitions="*,300" ColumnSpacing="18">
+                    <StackPanel Spacing="8">
+                        <TextBlock Classes="kicker" Text="Settings" />
+                        <TextBlock Classes="panel-title" FontSize="30" Text="{Binding ProfileDisplayName}" />
+                        <TextBlock Classes="body"
+                                   FontSize="16"
+                                   Foreground="#465255"
+                                   Text="{Binding WorkspaceSummary}"
+                                   TextWrapping="Wrap" />
+                        <WrapPanel Margin="0,8,0,0" Orientation="Horizontal" ItemHeight="28">
+                            <Border Background="#233238" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                <TextBlock Foreground="#F7F8F6" FontSize="11" Text="{Binding Branch}" />
+                            </Border>
+                            <Border Background="#EEF3EF" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                <TextBlock Foreground="#355B4C" FontSize="11" Text="{Binding CatalogSummary}" />
+                            </Border>
+                            <Border Background="#F4F0E8" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                <TextBlock Foreground="#5A656A" FontSize="11" Text="{Binding ProfileNamespace}" />
+                            </Border>
+                        </WrapPanel>
+                    </StackPanel>
+
+                    <Border Grid.Column="1" Classes="surface-soft" Padding="16">
+                        <StackPanel Spacing="6">
+                            <TextBlock Classes="kicker" Text="Editor Status" />
                             <TextBlock Classes="body"
-                                       FontSize="16"
-                                       Foreground="#45382E"
-                                       Text="{Binding WorkspaceSummary}"
+                                       FontWeight="SemiBold"
+                                       Foreground="#1F2A2E"
+                                       Text="{Binding LoadStatus}"
                                        TextWrapping="Wrap" />
-                            <TextBlock Classes="caption"
-                                       Text="{Binding ActionSummary}"
-                                       TextWrapping="Wrap" />
-
-                            <WrapPanel Margin="0,8,0,0" Orientation="Horizontal" ItemHeight="30">
-                                <Border Background="#2A2927" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
-                                    <TextBlock Foreground="#F7F0E7" FontSize="11" Text="{Binding Branch}" />
-                                </Border>
-                                <Border Background="#EAD6BF" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
-                                    <TextBlock Foreground="#5A4330" FontSize="11" Text="{Binding ProfileNamespace}" />
-                                </Border>
-                                <Border Background="#EAD6BF" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
-                                    <TextBlock Foreground="#5A4330" FontSize="11" Text="{Binding CatalogSummary}" TextWrapping="Wrap" />
-                                </Border>
-                            </WrapPanel>
+                            <TextBlock Classes="caption" Text="{Binding ActionSummary}" TextWrapping="Wrap" />
                         </StackPanel>
+                    </Border>
+                </Grid>
+            </Border>
 
-                        <Border Grid.Column="1" Classes="metric-card" Padding="16" Width="230">
-                            <StackPanel Spacing="6">
-                                <TextBlock Classes="kicker" Text="Editor Status" />
-                                <TextBlock Classes="body"
-                                           FontWeight="SemiBold"
-                                           Text="{Binding LoadStatus}"
-                                           TextWrapping="Wrap" />
-                                <TextBlock Classes="caption" Text="{Binding FallbackReason}" TextWrapping="Wrap" />
-                            </StackPanel>
-                        </Border>
-                    </Grid>
-                </Border>
-
-                <Border Grid.Column="1" Classes="surface-dark" Padding="18">
-                    <StackPanel Spacing="10">
-                        <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Operator Watch" />
-                        <TextBlock FontSize="22"
-                                   FontWeight="SemiBold"
-                                   Foreground="#F7F0E7"
-                                   Text="{Binding LoadStatus}" />
-                        <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding ActionSummary}" TextWrapping="Wrap" />
-                        <TextBlock Classes="caption" Foreground="#CCB9A8" Text="{Binding ProfileNamespace}" />
-                    </StackPanel>
-                </Border>
-            </Grid>
-
-            <Grid Grid.Row="1" ColumnDefinitions="*,*,*" ColumnSpacing="14">
-                <Border Classes="metric-card" Padding="16">
-                    <StackPanel Spacing="6">
-                        <TextBlock Classes="kicker" Text="Catalog" />
-                        <TextBlock Classes="panel-title" FontSize="22" Text="{Binding CatalogSummary}" TextWrapping="Wrap" />
-                    </StackPanel>
-                </Border>
-                <Border Grid.Column="1" Classes="metric-card" Padding="16">
-                    <StackPanel Spacing="6">
-                        <TextBlock Classes="kicker" Text="Status" />
-                        <TextBlock Classes="panel-title" FontSize="22" Text="{Binding LoadStatus}" TextWrapping="Wrap" />
-                    </StackPanel>
-                </Border>
-                <Border Grid.Column="2" Classes="metric-card" Padding="16">
-                    <StackPanel Spacing="6">
-                        <TextBlock Classes="kicker" Text="Operator Guidance" />
-                        <TextBlock Classes="panel-title" FontSize="22" Text="{Binding ActionSummary}" TextWrapping="Wrap" />
-                    </StackPanel>
-                </Border>
-            </Grid>
-
-            <Border Grid.Row="2"
-                    Background="#FFF8F1"
-                    CornerRadius="14"
+            <Border Grid.Row="1"
+                    Classes="callout-card"
                     Padding="16"
                     IsVisible="{Binding RequiresAdvancedFilesFallback}">
                 <StackPanel Spacing="6">
-                    <TextBlock Classes="kicker" Text="Fallback Required" />
+                    <TextBlock Classes="kicker" Text="Use Advanced Files Instead" />
                     <TextBlock Classes="body" Text="{Binding FallbackReason}" TextWrapping="Wrap" />
                     <TextBlock Classes="caption"
-                               Text="This page remains structured-first, but unsupported or dangerous files should fall back to Advanced Files instead of forcing a lossy editor."
+                               Text="The structured editor stays safe on purpose. If the file is unusual or unsupported, edit it from Advanced Files instead of forcing a risky rewrite."
                                TextWrapping="Wrap" />
                 </StackPanel>
             </Border>
 
-            <Grid Grid.Row="2" ColumnDefinitions="1.18*,.82*" ColumnSpacing="16" IsEnabled="{Binding CanEdit}">
+            <Grid Grid.Row="2" ColumnDefinitions="1.05*,.95*" ColumnSpacing="16" IsEnabled="{Binding CanEdit}">
                 <StackPanel Spacing="16">
-                    <Border Classes="surface-dark" Padding="20">
-                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18">
-                            <StackPanel Spacing="10">
-                                <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Identity" />
-                                <TextBlock FontSize="24"
-                                           FontWeight="SemiBold"
-                                           Foreground="#F7F0E7"
-                                           Text="Who the server is"
-                                           TextWrapping="Wrap" />
-                                <TextBlock Classes="body"
-                                           Foreground="#D3C8BA"
-                                           Text="Public name, description, listing posture, and player capacity."
-                                           TextWrapping="Wrap" />
-                            </StackPanel>
-                            <Border Grid.Column="1" Background="#2A211B" CornerRadius="18" Padding="14">
-                                <StackPanel Spacing="6">
-                                    <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Public Listing" />
-                                    <TextBlock Classes="body" Foreground="#F0E7DC" Text="{Binding IsPublic}" />
-                                    <TextBlock Classes="caption" Foreground="#CCBBA8" Text="{Binding IsOpen}" />
-                                </StackPanel>
-                            </Border>
-                        </Grid>
-                    </Border>
-
                     <Border Classes="card" Padding="18">
                         <StackPanel Spacing="12">
-                            <TextBlock Classes="kicker" Text="Server Browser Identity" />
+                            <TextBlock Classes="kicker" Text="Basic Server Info" />
+                            <TextBlock Classes="caption"
+                                       Text="These are the main things most hosts want to change first."
+                                       TextWrapping="Wrap" />
+
                             <StackPanel Spacing="4">
-                                <TextBlock Classes="body" Text="Public Server Name" />
+                                <TextBlock Classes="body" Text="Public server name" />
                                 <TextBox Text="{Binding PublicName}" />
                             </StackPanel>
+
                             <StackPanel Spacing="4">
-                                <TextBlock Classes="body" Text="Public Description" />
+                                <TextBlock Classes="body" Text="Public description" />
                                 <TextBox Text="{Binding PublicDescription}" />
                             </StackPanel>
+
                             <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
-                                <CheckBox Content="Public Listing Enabled" IsChecked="{Binding IsPublic}" />
-                                <CheckBox Grid.Column="1" Content="Open To New Accounts" IsChecked="{Binding IsOpen}" />
+                                <CheckBox Content="Show in the public server browser" IsChecked="{Binding IsPublic}" />
+                                <CheckBox Grid.Column="1" Content="Allow open sign-ups" IsChecked="{Binding IsOpen}" />
                             </Grid>
+
                             <StackPanel Spacing="4">
-                                <TextBlock Classes="body" Text="Max Players" />
+                                <TextBlock Classes="body" Text="Max players" />
                                 <TextBox Text="{Binding MaxPlayers}" />
                             </StackPanel>
+
+                            <StackPanel Spacing="4">
+                                <TextBlock Classes="body" Text="Welcome message" />
+                                <TextBox Text="{Binding WelcomeMessage}" AcceptsReturn="True" Height="120" TextWrapping="Wrap" />
+                                <TextBlock Classes="caption" Text="Line breaks are saved back using Project Zomboid's &lt;LINE&gt; format." TextWrapping="Wrap" />
+                            </StackPanel>
                         </StackPanel>
                     </Border>
 
                     <Border Classes="card" Padding="18">
                         <StackPanel Spacing="12">
-                            <TextBlock Classes="kicker" Text="World Rules" />
-                            <TextBlock Classes="body"
-                                       Text="PvP, global chat, and pause behavior shape how busy and forgiving the world feels while the server is running."
-                                       TextWrapping="Wrap" />
-                            <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
-                                <CheckBox Content="PvP Enabled" IsChecked="{Binding PvpEnabled}" />
-                                <CheckBox Grid.Column="1" Content="Pause When Empty" IsChecked="{Binding PauseWhenEmpty}" />
+                            <TextBlock Classes="kicker" Text="Gameplay Basics" />
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="10">
+                                <CheckBox Content="Enable PvP" IsChecked="{Binding PvpEnabled}" />
+                                <CheckBox Grid.Column="1" Content="Pause when empty" IsChecked="{Binding PauseWhenEmpty}" />
+                                <CheckBox Grid.Row="1" Content="Enable global chat" IsChecked="{Binding GlobalChatEnabled}" />
+                                <CheckBox Grid.Row="1" Grid.Column="1" Content="Allow sleep" IsChecked="{Binding SleepAllowed}" />
+                                <CheckBox Grid.Row="2" Content="Require sleep" IsChecked="{Binding SleepNeeded}" />
+                                <CheckBox Grid.Row="2" Grid.Column="1" Content="Disable fire spread" IsChecked="{Binding NoFire}" />
+                                <CheckBox Grid.Row="3" Content="Announce player deaths" IsChecked="{Binding AnnounceDeath}" />
+                                <CheckBox Grid.Row="3" Grid.Column="1" Content="Allow sledge destruction" IsChecked="{Binding AllowSledgehammerDestruction}" />
                             </Grid>
-                            <CheckBox Content="Global Chat Enabled" IsChecked="{Binding GlobalChatEnabled}" />
-                            <StackPanel Spacing="4">
-                                <TextBlock Classes="body" Text="Welcome Message" />
-                                <TextBox Text="{Binding WelcomeMessage}" AcceptsReturn="True" Height="130" TextWrapping="Wrap" />
-                                <TextBlock Classes="caption" Text="Line breaks will be converted to &lt;LINE&gt; markers for Project Zomboid." TextWrapping="Wrap" />
-                            </StackPanel>
                         </StackPanel>
                     </Border>
 
                     <Border Classes="card" Padding="18">
                         <StackPanel Spacing="12">
-                            <TextBlock Classes="kicker" Text="Spawn &amp; Loot Lifecycle" />
-                            <TextBlock Classes="body"
-                                       Text="Spawn lists and loot timing define how quickly a hosted world feels settled or scavenged."
-                                       TextWrapping="Wrap" />
+                            <TextBlock Classes="kicker" Text="Spawn, Loot, and Cleanup" />
+
                             <StackPanel Spacing="4">
-                                <TextBlock Classes="body" Text="Spawn Items" />
-                                <TextBox Text="{Binding SpawnItems}" AcceptsReturn="True" Height="108" TextWrapping="Wrap" />
-                                <TextBlock Classes="caption"
-                                           Text="Use one item per line. The launcher writes them back to SpawnItems as a comma-separated list."
-                                           TextWrapping="Wrap" />
+                                <TextBlock Classes="body" Text="Spawn items" />
+                                <TextBox Text="{Binding SpawnItems}" AcceptsReturn="True" Height="104" TextWrapping="Wrap" />
+                                <TextBlock Classes="caption" Text="Use one item per line. The launcher saves them back as a comma-separated list." TextWrapping="Wrap" />
                             </StackPanel>
+
                             <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
                                 <StackPanel Spacing="4">
-                                    <TextBlock Classes="body" Text="Loot Respawn Hours" />
+                                    <TextBlock Classes="body" Text="Loot respawn hours" />
                                     <TextBox Text="{Binding LootRespawnHours}" />
-                                    <TextBlock Classes="caption"
-                                               Text="In-game hours before loot can respawn. Use 0 to disable respawn."
-                                               TextWrapping="Wrap" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Spacing="4">
-                                    <TextBlock Classes="body" Text="Loot Respawn Max Items" />
+                                    <TextBlock Classes="body" Text="Loot respawn max items" />
                                     <TextBox Text="{Binding LootRespawnMaxItems}" />
-                                    <TextBlock Classes="caption"
-                                               Text="Containers only respawn if they have this many items or fewer."
-                                               TextWrapping="Wrap" />
                                 </StackPanel>
                             </Grid>
-                            <CheckBox Content="Construction Blocks Loot Respawn"
-                                      IsChecked="{Binding ConstructionPreventsLootRespawn}" />
-                        </StackPanel>
-                    </Border>
 
-                    <Border Classes="card" Padding="18">
-                        <StackPanel Spacing="12">
-                            <TextBlock Classes="kicker" Text="Survival Rules" />
-                            <TextBlock Classes="body"
-                                       Text="Survival rules govern whether players sleep, how deaths are announced, and how much roughness the server should tolerate."
-                                       TextWrapping="Wrap" />
-                            <Grid ColumnDefinitions="*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto,Auto" RowSpacing="10">
-                                <CheckBox Content="Sleep Allowed" IsChecked="{Binding SleepAllowed}" />
-                                <CheckBox Grid.Column="1" Content="Sleep Needed" IsChecked="{Binding SleepNeeded}" />
-                                <CheckBox Grid.Row="1" Content="Disable Fire" IsChecked="{Binding NoFire}" />
-                                <CheckBox Grid.Row="1" Grid.Column="1" Content="Announce Death" IsChecked="{Binding AnnounceDeath}" />
-                                <CheckBox Grid.Row="2" Content="Drop Whitelist On Death" IsChecked="{Binding DropWhitelistOnDeath}" />
-                                <CheckBox Grid.Row="2" Grid.Column="1" Content="Allow Sledgehammer Destruction" IsChecked="{Binding AllowSledgehammerDestruction}" />
+                            <CheckBox Content="Buildings prevent loot respawn" IsChecked="{Binding ConstructionPreventsLootRespawn}" />
+
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                                <CheckBox Content="Respawn at death location" IsChecked="{Binding RespawnWithSelf}" />
+                                <CheckBox Grid.Column="1" Content="Respawn with split-screen partner" IsChecked="{Binding RespawnWithOther}" />
                             </Grid>
-                        </StackPanel>
-                    </Border>
 
-                    <Border Classes="card" Padding="18">
-                        <StackPanel Spacing="12">
-                            <TextBlock Classes="kicker" Text="Safehouses" />
-                            <TextBlock Classes="body"
-                                       Text="Use this block to define who can claim, enter, damage, and respawn around safehouse territory."
-                                       TextWrapping="Wrap" />
-                            <Grid ColumnDefinitions="*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="10">
-                                <CheckBox Content="Player Safehouses" IsChecked="{Binding PlayerSafehouse}" />
-                                <CheckBox Grid.Column="1" Content="Admin Safehouses" IsChecked="{Binding AdminSafehouse}" />
-                                <CheckBox Grid.Row="1" Content="Allow Trespass" IsChecked="{Binding SafehouseAllowTrespass}" />
-                                <CheckBox Grid.Row="1" Grid.Column="1" Content="Allow Fire Damage" IsChecked="{Binding SafehouseAllowFire}" />
-                                <CheckBox Grid.Row="2" Content="Allow Looting" IsChecked="{Binding SafehouseAllowLoot}" />
-                                <CheckBox Grid.Row="2" Grid.Column="1" Content="Allow Respawn" IsChecked="{Binding SafehouseAllowRespawn}" />
-                                <CheckBox Grid.Row="3" Content="Allow Non-Residential Claiming" IsChecked="{Binding SafehouseAllowNonResidential}" />
-                                <CheckBox Grid.Row="3" Grid.Column="1" Content="Disable While Owner Connected" IsChecked="{Binding DisableSafehouseWhenPlayerConnected}" />
-                                <CheckBox Grid.Row="4" Content="Disable While Owner Disconnected" IsChecked="{Binding DisableSafehouseWhenPlayerDisconnected}" />
-                                <StackPanel Grid.Row="5" Spacing="4">
-                                    <TextBlock Classes="body" Text="Days To Claim" />
-                                    <TextBox Text="{Binding SafehouseDaysToClaim}" />
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="body" Text="Ground item cleanup hours" />
+                                    <TextBox Text="{Binding WorldItemRemovalHours}" />
                                 </StackPanel>
-                                <StackPanel Grid.Row="5" Grid.Column="1" Spacing="4">
-                                    <TextBlock Classes="body" Text="Removal Time (Hours)" />
-                                    <TextBox Text="{Binding SafehouseRemovalHours}" />
+                                <StackPanel Grid.Column="1" Spacing="4">
+                                    <TextBlock Classes="body" Text="Ground item cleanup list" />
+                                    <TextBox Text="{Binding WorldItemRemovalList}" AcceptsReturn="True" Height="104" TextWrapping="Wrap" />
                                 </StackPanel>
                             </Grid>
                         </StackPanel>
@@ -247,32 +156,44 @@
                 </StackPanel>
 
                 <StackPanel Grid.Column="1" Spacing="16">
-                    <Border Classes="surface-dark" Padding="18">
-                        <StackPanel Spacing="10">
-                            <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Configuration Signals" />
-                            <TextBlock FontSize="24"
-                                       FontWeight="SemiBold"
-                                       Foreground="#F7F0E7"
-                                       Text="{Binding LoadStatus}" />
-                            <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding ActionSummary}" TextWrapping="Wrap" />
+                    <Border Classes="card" Padding="18">
+                        <StackPanel Spacing="12">
+                            <TextBlock Classes="kicker" Text="Safehouses" />
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="10">
+                                <CheckBox Content="Allow player safehouses" IsChecked="{Binding PlayerSafehouse}" />
+                                <CheckBox Grid.Column="1" Content="Allow admin safehouses" IsChecked="{Binding AdminSafehouse}" />
+                                <CheckBox Grid.Row="1" Content="Allow trespass" IsChecked="{Binding SafehouseAllowTrespass}" />
+                                <CheckBox Grid.Row="1" Grid.Column="1" Content="Allow fire damage" IsChecked="{Binding SafehouseAllowFire}" />
+                                <CheckBox Grid.Row="2" Content="Allow looting" IsChecked="{Binding SafehouseAllowLoot}" />
+                                <CheckBox Grid.Row="2" Grid.Column="1" Content="Allow respawn" IsChecked="{Binding SafehouseAllowRespawn}" />
+                                <CheckBox Grid.Row="3" Content="Allow non-residential claiming" IsChecked="{Binding SafehouseAllowNonResidential}" />
+                                <CheckBox Grid.Row="3" Grid.Column="1" Content="Disable while owner is online" IsChecked="{Binding DisableSafehouseWhenPlayerConnected}" />
+                                <CheckBox Grid.Row="4" Content="Disable while owner is offline" IsChecked="{Binding DisableSafehouseWhenPlayerDisconnected}" />
+                                <CheckBox Grid.Row="4" Grid.Column="1" Content="Drop whitelist on death" IsChecked="{Binding DropWhitelistOnDeath}" />
+                                <StackPanel Grid.Row="5" Spacing="4">
+                                    <TextBlock Classes="body" Text="Days before claim is allowed" />
+                                    <TextBox Text="{Binding SafehouseDaysToClaim}" />
+                                </StackPanel>
+                                <StackPanel Grid.Row="5" Grid.Column="1" Spacing="4">
+                                    <TextBlock Classes="body" Text="Removal time (hours)" />
+                                    <TextBox Text="{Binding SafehouseRemovalHours}" />
+                                </StackPanel>
+                            </Grid>
                         </StackPanel>
                     </Border>
 
                     <Border Classes="card" Padding="18">
                         <StackPanel Spacing="12">
-                            <TextBlock Classes="kicker" Text="Factions &amp; Trade" />
-                            <TextBlock Classes="body"
-                                       Text="Factions and trade change how social the server feels once groups start forming."
-                                       TextWrapping="Wrap" />
+                            <TextBlock Classes="kicker" Text="Factions and Trade" />
                             <Grid ColumnDefinitions="*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto,Auto" RowSpacing="10">
-                                <CheckBox Content="Factions Enabled" IsChecked="{Binding FactionEnabled}" />
-                                <CheckBox Grid.Column="1" Content="Allow Trade UI" IsChecked="{Binding AllowTradeUi}" />
+                                <CheckBox Content="Enable factions" IsChecked="{Binding FactionEnabled}" />
+                                <CheckBox Grid.Column="1" Content="Allow trade UI" IsChecked="{Binding AllowTradeUi}" />
                                 <StackPanel Grid.Row="1" Spacing="4">
-                                    <TextBlock Classes="body" Text="Days To Create Faction" />
+                                    <TextBlock Classes="body" Text="Days before a faction can be created" />
                                     <TextBox Text="{Binding FactionDaysToCreate}" />
                                 </StackPanel>
                                 <StackPanel Grid.Row="1" Grid.Column="1" Spacing="4">
-                                    <TextBlock Classes="body" Text="Players Required For Tag" />
+                                    <TextBlock Classes="body" Text="Players required for a faction tag" />
                                     <TextBox Text="{Binding FactionPlayersForTag}" />
                                 </StackPanel>
                             </Grid>
@@ -281,69 +202,40 @@
 
                     <Border Classes="card" Padding="18">
                         <StackPanel Spacing="12">
-                            <TextBlock Classes="kicker" Text="Respawn &amp; Cleanup" />
-                            <Grid ColumnDefinitions="*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto" RowSpacing="10">
-                                <CheckBox Content="Respawn At Death Location" IsChecked="{Binding RespawnWithSelf}" />
-                                <CheckBox Grid.Column="1" Content="Respawn With Split-Screen Partner" IsChecked="{Binding RespawnWithOther}" />
-                                <StackPanel Grid.Row="1" Spacing="4">
-                                    <TextBlock Classes="body" Text="World Item Removal Hours" />
-                                    <TextBox Text="{Binding WorldItemRemovalHours}" />
-                                    <TextBlock Classes="caption"
-                                               Text="In-game hours before configured ground items are cleaned up. Use 0 to disable removal."
-                                               TextWrapping="Wrap" />
+                            <TextBlock Classes="kicker" Text="Ports and Launcher" />
+
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="body" Text="Default port" />
+                                    <TextBox Text="{Binding DefaultPort}" />
                                 </StackPanel>
-                                <StackPanel Grid.Row="1" Grid.Column="1" Spacing="4">
-                                    <TextBlock Classes="body" Text="World Item Removal List" />
-                                    <TextBox Text="{Binding WorldItemRemovalList}" AcceptsReturn="True" Height="108" TextWrapping="Wrap" />
-                                    <TextBlock Classes="caption"
-                                               Text="Use one item per line. The launcher writes them back as a comma-separated cleanup list."
-                                               TextWrapping="Wrap" />
+                                <StackPanel Grid.Column="1" Spacing="4">
+                                    <TextBlock Classes="body" Text="UDP port" />
+                                    <TextBox Text="{Binding UdpPort}" />
                                 </StackPanel>
                             </Grid>
-                        </StackPanel>
-                    </Border>
 
-                    <Border Classes="card" Padding="18">
-                        <StackPanel Spacing="12">
-                            <TextBlock Classes="kicker" Text="Ports" />
-                            <TextBlock Classes="body"
-                                       Text="These values keep the launcher and host aligned on the same network footprint."
-                                       TextWrapping="Wrap" />
                             <StackPanel Spacing="4">
-                                <TextBlock Classes="body" Text="Default Port" />
-                                <TextBox Text="{Binding DefaultPort}" />
-                            </StackPanel>
-                            <StackPanel Spacing="4">
-                                <TextBlock Classes="body" Text="UDP Port Override" />
-                                <TextBox Text="{Binding UdpPort}" />
-                            </StackPanel>
-                            <StackPanel Spacing="4">
-                                <TextBlock Classes="body" Text="RCON Port" />
+                                <TextBlock Classes="body" Text="RCON port" />
                                 <TextBox Text="{Binding RconPort}" />
                             </StackPanel>
-                        </StackPanel>
-                    </Border>
 
-                    <Border Classes="card" Padding="18">
-                        <StackPanel Spacing="12">
-                            <TextBlock Classes="kicker" Text="Launcher Runtime" />
-                            <TextBlock Classes="body"
-                                       Text="These are launcher-side runtime knobs, not Project Zomboid gameplay knobs."
-                                       TextWrapping="Wrap" />
                             <StackPanel Spacing="4">
-                                <TextBlock Classes="body" Text="Preferred Memory (GB)" />
+                                <TextBlock Classes="body" Text="Preferred memory (GB)" />
                                 <TextBox Text="{Binding MemoryInGigabytes}" />
                             </StackPanel>
-                            <CheckBox Content="Start With Host" IsChecked="{Binding StartWithHost}" />
-                            <CheckBox Content="Auto Restart On Crash" IsChecked="{Binding AutoRestartOnCrash}" />
+
+                            <CheckBox Content="Start this server when the host starts" IsChecked="{Binding StartWithHost}" />
+                            <CheckBox Content="Auto restart on crash" IsChecked="{Binding AutoRestartOnCrash}" />
                         </StackPanel>
                     </Border>
 
-                    <Border Background="#F0E2D0" CornerRadius="16" Padding="14">
-                        <StackPanel Spacing="6">
-                            <TextBlock Classes="kicker" Text="Validation" />
+                    <Border Classes="surface-soft" Padding="18">
+                        <StackPanel Spacing="8">
+                            <TextBlock Classes="kicker" Text="Before You Save" />
+                            <TextBlock Classes="body" Text="{Binding ActionSummary}" TextWrapping="Wrap" />
                             <TextBlock Classes="caption"
-                                       Text="Use Apply Settings for live writes, Save Draft for a local staging copy, Discard Draft to re-read the host state, and Reload From Host to resync everything."
+                                       Text="Apply Settings writes to the real server files. Save Draft keeps a local work-in-progress copy. Reload pulls fresh values from the host."
                                        TextWrapping="Wrap" />
                         </StackPanel>
                     </Border>
@@ -352,11 +244,13 @@
 
             <Border Grid.Row="3"
                     Background="#FBF7F1"
+                    BorderBrush="#DED3C7"
+                    BorderThickness="1"
                     CornerRadius="14"
                     Padding="16"
                     IsVisible="{Binding HasFieldErrors}">
                 <StackPanel Spacing="8">
-                    <TextBlock Classes="kicker" Text="Validation" />
+                    <TextBlock Classes="kicker" Text="Please Fix These Before Saving" />
                     <ItemsControl ItemsSource="{Binding FieldErrors}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
@@ -367,25 +261,21 @@
                 </StackPanel>
             </Border>
 
-            <Border Grid.Row="4" Classes="surface-dark" Padding="18">
+            <Border Grid.Row="4" Classes="card" Padding="18">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
-                    <StackPanel Spacing="8">
-                        <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Operator Actions" />
-                        <TextBlock FontSize="22"
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Save Options" />
+                        <TextBlock Classes="body"
                                    FontWeight="SemiBold"
-                                   Foreground="#F7F0E7"
-                                   Text="{Binding ActionSummary}"
+                                   Text="{Binding LoadStatus}"
                                    TextWrapping="Wrap" />
-                        <TextBlock Classes="caption"
-                                   Foreground="#CCBBA8"
-                                   Text="Apply writes directly to the profile. Save Draft stores a local staging copy only."
-                                   TextWrapping="Wrap" />
+                        <TextBlock Classes="caption" Text="{Binding CatalogSummary}" TextWrapping="Wrap" />
                     </StackPanel>
                     <WrapPanel Grid.Column="1" Orientation="Horizontal" ItemWidth="152" ItemHeight="36">
                         <Button Classes="action-primary" Command="{Binding SaveSettingsCommand}" Content="Apply Settings" IsEnabled="{Binding CanEdit}" />
                         <Button Classes="action-secondary" Command="{Binding SaveDraftCommand}" Content="Save Draft" IsEnabled="{Binding CanEdit}" />
                         <Button Classes="action-secondary" Command="{Binding DiscardDraftCommand}" Content="Discard Draft" />
-                        <Button Classes="action-secondary" Command="{Binding ReloadCommand}" Content="Reload From Host" />
+                        <Button Classes="action-secondary" Command="{Binding ReloadCommand}" Content="Reload" />
                     </WrapPanel>
                 </Grid>
             </Border>

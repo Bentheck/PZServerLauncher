@@ -30,7 +30,7 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
     public override string PageSummary => SelectedProfile is null
         ? "Select a profile to edit real Project Zomboid server settings."
-        : $"General server settings for {SelectedProfile.DisplayName}.";
+        : $"Basic server settings for {SelectedProfile.DisplayName}.";
 
     public string ProfileDisplayName => SelectedProfile?.DisplayName ?? "No profile selected";
 
@@ -39,13 +39,13 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
     public string Branch => SelectedProfile?.Branch ?? "Unknown";
 
     public string WorkspaceSummary => SelectedProfile is null
-        ? "Choose a profile to unlock server browser, ports, and world access controls."
-        : $"{SelectedProfile.DisplayName} now edits actual Project Zomboid .ini values for public listing, loot lifecycle, survival rules, safehouses, factions, and core ports.";
+        ? "Choose a server to edit the settings most hosts care about first."
+        : $"{SelectedProfile.DisplayName} saves real Project Zomboid .ini values for name, player access, gameplay basics, safehouses, factions, and core ports.";
 
     public string ActionSummary => RequiresAdvancedFilesFallback
         ? "Structured editing is temporarily unavailable for this file. Use Advanced Files for raw recovery."
         : CanEdit
-            ? "Apply changes to write the active server .ini, or save a draft first if you want to keep working."
+            ? "Change the fields you need, then apply them to write the active server .ini. Use drafts if you are not ready yet."
             : IsLoading
                 ? "Loading structured General settings from the host..."
                 : "General settings are not currently editable.";
