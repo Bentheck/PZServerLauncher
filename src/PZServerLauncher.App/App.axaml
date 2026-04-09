@@ -12,19 +12,38 @@
         <Style Selector="Window">
             <Setter Property="Background">
                 <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
-                    <GradientStop Color="#F7F0E7" Offset="0" />
-                    <GradientStop Color="#E6E0D6" Offset="0.45" />
-                    <GradientStop Color="#D5D2C7" Offset="1" />
+                    <GradientStop Color="#F6EEE3" Offset="0" />
+                    <GradientStop Color="#E3D8CC" Offset="0.48" />
+                    <GradientStop Color="#CEC4B8" Offset="1" />
                 </LinearGradientBrush>
             </Setter>
         </Style>
         <Style Selector="Border.card">
-            <Setter Property="Background" Value="#F9F6F2" />
-            <Setter Property="BorderBrush" Value="#2A2927" />
+            <Setter Property="Background" Value="#FCF8F3" />
+            <Setter Property="BorderBrush" Value="#D5B79A" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="CornerRadius" Value="18" />
             <Setter Property="Padding" Value="20" />
             <Setter Property="BoxShadow" Value="0 14 36 0 #22000000" />
+        </Style>
+        <Style Selector="Border.surface-dark">
+            <Setter Property="Background" Value="#1F1813" />
+            <Setter Property="BorderBrush" Value="#6E5039" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="20" />
+            <Setter Property="BoxShadow" Value="0 18 42 0 #301F120F" />
+        </Style>
+        <Style Selector="Border.surface-soft">
+            <Setter Property="Background" Value="#F1E4D6" />
+            <Setter Property="BorderBrush" Value="#D6B08C" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="18" />
+        </Style>
+        <Style Selector="Border.metric-card">
+            <Setter Property="Background" Value="#FFF8F0" />
+            <Setter Property="BorderBrush" Value="#D8B694" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="16" />
         </Style>
         <Style Selector="TextBlock.section-title">
             <Setter Property="FontSize" Value="22" />
@@ -45,6 +64,11 @@
             <Setter Property="FontSize" Value="14" />
             <Setter Property="TextWrapping" Value="Wrap" />
             <Setter Property="Foreground" Value="#3B3733" />
+        </Style>
+        <Style Selector="TextBlock.caption">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Foreground" Value="#6A5646" />
+            <Setter Property="TextWrapping" Value="Wrap" />
         </Style>
         <Style Selector="TextBox.code-preview">
             <Setter Property="FontFamily" Value="Cascadia Code,Consolas,monospace" />

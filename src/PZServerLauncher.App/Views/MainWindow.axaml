@@ -21,58 +21,125 @@
     </Design.DataContext>
 
     <Grid>
-        <Border Background="#F4EDE4" />
-        <Border Height="240" VerticalAlignment="Top">
+        <Border Background="#EEE2D3" />
+        <Border Height="320" VerticalAlignment="Top">
             <Border.Background>
                 <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                    <GradientStop Color="#2A211B" Offset="0" />
-                    <GradientStop Color="#6F4A31" Offset="0.58" />
-                    <GradientStop Color="#D4A479" Offset="1" />
+                    <GradientStop Color="#1A1411" Offset="0" />
+                    <GradientStop Color="#473222" Offset="0.48" />
+                    <GradientStop Color="#A36F45" Offset="1" />
                 </LinearGradientBrush>
             </Border.Background>
         </Border>
+        <Border Width="420"
+                Height="420"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Top"
+                Margin="0,-110,-120,0"
+                CornerRadius="999"
+                Background="#28F2C187" />
+        <Border Width="260"
+                Height="260"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Top"
+                Margin="-80,160,0,0"
+                CornerRadius="999"
+                Background="#20FFE6C7" />
 
         <Grid RowDefinitions="Auto,Auto,*" RowSpacing="18" Margin="24">
-            <Border Background="#FCF7F1" CornerRadius="22" Padding="24" BoxShadow="0 18 46 0 #2D241B22">
-                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
-                    <StackPanel Spacing="8">
-                        <TextBlock Classes="kicker" Foreground="#A76A3D" Text="Project Zomboid Workspace" />
-                        <TextBlock FontSize="40" FontWeight="Bold" Foreground="#1D1A17" Text="{Binding CurrentPageTitle}" />
-                        <TextBlock Classes="body" FontSize="17" Text="{Binding WorkspaceGuidance}" TextWrapping="Wrap" />
-                        <WrapPanel Margin="0,6,0,0" Orientation="Horizontal" ItemWidth="220" ItemHeight="40">
-                            <Border Background="#F0E1D1" CornerRadius="999" Padding="14,8">
-                                <TextBlock Foreground="#5A4331" FontWeight="SemiBold" Text="{Binding ProfileCountSummary}" />
+            <Border Background="#FCF8F3" CornerRadius="28" Padding="26" BoxShadow="0 22 54 0 #2B1F141F">
+                <Grid ColumnDefinitions="1.4*,1.1*,360" ColumnSpacing="18">
+                    <StackPanel Spacing="10">
+                        <TextBlock Classes="kicker" Foreground="#B8703A" Text="Project Zomboid Server Control" />
+                        <TextBlock FontSize="42"
+                                   FontWeight="Bold"
+                                   Foreground="#181411"
+                                   Text="{Binding CurrentPageTitle}" />
+                        <TextBlock Classes="body"
+                                   FontSize="17"
+                                   Foreground="#40352C"
+                                   Text="{Binding WorkspaceGuidance}"
+                                   TextWrapping="Wrap" />
+
+                        <WrapPanel Margin="0,8,0,0" Orientation="Horizontal" ItemHeight="38">
+                            <Border Classes="metric-card" Padding="14,8" Margin="0,0,10,10">
+                                <TextBlock Classes="body"
+                                           FontWeight="SemiBold"
+                                           Foreground="#5E4735"
+                                           Text="{Binding ProfileCountSummary}" />
                             </Border>
-                            <Border Background="#F0E1D1" CornerRadius="999" Padding="14,8">
-                                <TextBlock Foreground="#5A4331" FontWeight="SemiBold" Text="{Binding RecentActivitySummary}" />
+                            <Border Classes="metric-card" Padding="14,8" Margin="0,0,10,10">
+                                <TextBlock Classes="body"
+                                           FontWeight="SemiBold"
+                                           Foreground="#5E4735"
+                                           Text="{Binding RecentActivitySummary}" />
                             </Border>
-                            <Border Background="#F0E1D1" CornerRadius="999" Padding="14,8">
-                                <TextBlock Foreground="#5A4331" FontWeight="SemiBold" Text="{Binding RemotePostureSummary}" />
+                            <Border Classes="metric-card" Padding="14,8" Margin="0,0,10,10">
+                                <TextBlock Classes="body"
+                                           FontWeight="SemiBold"
+                                           Foreground="#5E4735"
+                                           Text="{Binding RemotePostureSummary}" />
                             </Border>
                         </WrapPanel>
                     </StackPanel>
 
-                    <StackPanel Grid.Column="1" Spacing="10" HorizontalAlignment="Right" Width="360">
-                        <Border Background="#1F1D1B" CornerRadius="18" Padding="18,14">
-                            <StackPanel Spacing="6">
-                                <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Local Host" />
-                                <TextBlock FontSize="20" FontWeight="SemiBold" Foreground="#F7F0E7" Text="{Binding Legacy.HostSummary}" />
-                                <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding ActorSummary}" TextWrapping="Wrap" />
-                                <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding Legacy.StatusMessage}" TextWrapping="Wrap" />
+                    <Border Grid.Column="1" Classes="surface-soft" Padding="18">
+                        <Grid RowDefinitions="Auto,Auto,*" RowSpacing="10">
+                            <StackPanel Spacing="4">
+                                <TextBlock Classes="kicker" Text="Active Theater" />
+                                <TextBlock Classes="panel-title" FontSize="22" Text="{Binding CurrentPageSummary}" TextWrapping="Wrap" />
                             </StackPanel>
-                        </Border>
 
-                        <WrapPanel HorizontalAlignment="Right" ItemWidth="168" ItemHeight="38">
-                            <Button Background="#F4E2CE"
-                                    Foreground="#2A211B"
-                                    Command="{Binding RefreshLegacyCommand}"
-                                    Content="Refresh Host State" />
-                            <Button Background="#2A211B"
-                                    Foreground="#F7F0E7"
-                                    Command="{Binding ExitDesktopCommand}"
-                                    Content="Exit Desktop" />
-                        </WrapPanel>
-                    </StackPanel>
+                            <WrapPanel Grid.Row="1" Orientation="Horizontal" ItemHeight="28">
+                                <Border Background="#2A2927" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                    <TextBlock Foreground="#F7F0E7" FontSize="11" Text="{Binding ActorSummary}" TextWrapping="Wrap" />
+                                </Border>
+                                <Border Background="#2A2927" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                    <TextBlock Foreground="#F7F0E7" FontSize="11" Text="{Binding Legacy.HostSummary}" TextWrapping="Wrap" />
+                                </Border>
+                            </WrapPanel>
+
+                            <TextBlock Grid.Row="2"
+                                       Classes="caption"
+                                       Text="{Binding Legacy.StatusMessage}"
+                                       TextWrapping="Wrap" />
+                        </Grid>
+                    </Border>
+
+                    <Border Grid.Column="2" Classes="surface-dark" Padding="18">
+                        <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="12">
+                            <StackPanel Spacing="4">
+                                <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Local Host Control" />
+                                <TextBlock FontSize="22"
+                                           FontWeight="SemiBold"
+                                           Foreground="#F7F0E7"
+                                           Text="{Binding Legacy.HostSummary}" />
+                                <TextBlock Classes="body"
+                                           Foreground="#D3C8BA"
+                                           Text="{Binding Legacy.StatusMessage}"
+                                           TextWrapping="Wrap" />
+                            </StackPanel>
+
+                            <Border Grid.Row="1" Background="#2D241D" CornerRadius="16" Padding="14">
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Operator" />
+                                    <TextBlock Classes="body" Foreground="#F1E8DE" Text="{Binding ActorSummary}" TextWrapping="Wrap" />
+                                    <TextBlock Classes="caption" Foreground="#CFBEAB" Text="{Binding RemotePostureSummary}" />
+                                </StackPanel>
+                            </Border>
+
+                            <WrapPanel Grid.Row="2" Orientation="Horizontal" ItemWidth="150" ItemHeight="40">
+                                <Button Background="#F4E2CE"
+                                        Foreground="#221B16"
+                                        Command="{Binding RefreshLegacyCommand}"
+                                        Content="Refresh Host" />
+                                <Button Background="#C95F3E"
+                                        Foreground="#FFF7F1"
+                                        Command="{Binding ExitDesktopCommand}"
+                                        Content="Exit Desktop" />
+                            </WrapPanel>
+                        </Grid>
+                    </Border>
                 </Grid>
             </Border>
 
@@ -94,59 +161,111 @@
                 </Grid>
             </Border>
 
-            <Grid Grid.Row="2" ColumnDefinitions="320,*" ColumnSpacing="18">
-                <Border Background="#221C17" CornerRadius="22" Padding="16" BoxShadow="0 18 42 0 #1E171110">
-                    <Grid RowDefinitions="Auto,*,Auto" RowSpacing="16">
+            <Grid Grid.Row="2" ColumnDefinitions="336,*" ColumnSpacing="18">
+                <Border Classes="surface-dark" Padding="18">
+                    <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="16">
                         <StackPanel Spacing="6">
-                            <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Navigation" />
-                            <TextBlock Classes="panel-title" FontSize="24" Foreground="#F7F0E7" Text="Workspace" />
+                            <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Command Rail" />
+                            <TextBlock Classes="panel-title" FontSize="26" Foreground="#F7F0E7" Text="Operations" />
                             <TextBlock Classes="body"
-                                       Foreground="#D3C8BA"
-                                       Text="Global pages handle host-wide control. Profiles opens the full server workspace with install, config, mods, backups, and logs."
+                                       Foreground="#D2C5B8"
+                                       Text="Move between fleet-wide control, profile work, host runtime, remote rollout, and operator access from one rail."
                                        TextWrapping="Wrap" />
                         </StackPanel>
 
-                        <ItemsControl Grid.Row="1" ItemsSource="{Binding GlobalNavigation}">
+                        <Border Grid.Row="1" Background="#2A211B" CornerRadius="18" Padding="16">
+                            <StackPanel Spacing="6">
+                                <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Current Focus" />
+                                <TextBlock Classes="body" Foreground="#F2E8DD" Text="{Binding CurrentPageSummary}" TextWrapping="Wrap" />
+                                <TextBlock Classes="caption" Foreground="#CBB9A8" Text="{Binding WorkspaceGuidance}" />
+                            </StackPanel>
+                        </Border>
+
+                        <ItemsControl Grid.Row="2" ItemsSource="{Binding GlobalNavigation}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="vm:WorkspaceNavigationItemViewModel">
                                     <Button HorizontalAlignment="Stretch"
                                             Margin="0,0,0,10"
-                                            Padding="16,14"
-                                            Background="#F8F1E8"
+                                            Padding="0"
+                                            Background="Transparent"
+                                            BorderThickness="0"
                                             Command="{Binding #RootWindow.DataContext.SelectGlobalPageCommand}"
                                             CommandParameter="{Binding .}"
                                             IsEnabled="{Binding IsEnabled}">
-                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                                            <StackPanel Spacing="3">
-                                                <TextBlock FontSize="15" FontWeight="SemiBold" Text="{Binding Title}" />
-                                                <TextBlock Classes="body" FontSize="12" Text="{Binding Summary}" TextWrapping="Wrap" />
-                                            </StackPanel>
-                                            <Border Grid.Column="1"
-                                                    Background="#2A2927"
-                                                    CornerRadius="999"
-                                                    Padding="10,4"
-                                                    VerticalAlignment="Top"
-                                                    IsVisible="{Binding IsSelected}">
-                                                <TextBlock Foreground="#F7F0E7" Text="Active" />
-                                            </Border>
-                                        </Grid>
+                                        <Border Background="#F8F0E6"
+                                                BorderBrush="#D8B28D"
+                                                BorderThickness="1"
+                                                CornerRadius="18"
+                                                Padding="0">
+                                            <Grid ColumnDefinitions="8,*" ColumnSpacing="0">
+                                                <Border Background="#D27A3E"
+                                                        CornerRadius="18,0,0,18"
+                                                        IsVisible="{Binding IsSelected}" />
+                                                <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="12" Margin="14,12">
+                                                    <StackPanel Spacing="4">
+                                                        <TextBlock FontSize="16" FontWeight="SemiBold" Foreground="#1D1815" Text="{Binding Title}" />
+                                                        <TextBlock Classes="caption" Foreground="#5E4D3F" Text="{Binding Summary}" TextWrapping="Wrap" />
+                                                    </StackPanel>
+                                                    <StackPanel Grid.Column="1" Spacing="6" VerticalAlignment="Top">
+                                                        <Border Background="#26201A"
+                                                                CornerRadius="999"
+                                                                Padding="10,4"
+                                                                IsVisible="{Binding IsSelected}">
+                                                            <TextBlock Foreground="#F7F0E7" FontSize="11" Text="Active" />
+                                                        </Border>
+                                                        <Border Background="#E7D6C5"
+                                                                CornerRadius="999"
+                                                                Padding="10,4">
+                                                            <TextBlock Foreground="#5D4837" FontSize="11" Text="Rail" />
+                                                        </Border>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Grid>
+                                        </Border>
                                     </Button>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
 
-                        <Border Grid.Row="2" Background="#2E2823" CornerRadius="16" Padding="14">
+                        <Border Grid.Row="3" Background="#2A211B" CornerRadius="18" Padding="16">
                             <StackPanel Spacing="6">
-                                <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Current Focus" />
-                                <TextBlock Classes="body" Foreground="#F1E8DE" Text="{Binding CurrentPageSummary}" TextWrapping="Wrap" />
+                                <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Operator Note" />
+                                <TextBlock Classes="body"
+                                           Foreground="#F1E8DE"
+                                           Text="Profiles is your server roster. Dashboard is the fleet board. Host, Remote Access, and Users stay global so the whole machine stays manageable."
+                                           TextWrapping="Wrap" />
                             </StackPanel>
                         </Border>
                     </Grid>
                 </Border>
 
-                <ScrollViewer Grid.Column="1" HorizontalScrollBarVisibility="Disabled">
-                    <ContentControl Content="{Binding CurrentPage}" />
-                </ScrollViewer>
+                <Grid Grid.Column="1" RowDefinitions="Auto,*" RowSpacing="16">
+                    <Border Background="#FFF9F3" CornerRadius="24" Padding="18" BoxShadow="0 18 40 0 #2F1F1214">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18">
+                            <StackPanel Spacing="4">
+                                <TextBlock Classes="kicker" Text="Page Deck" />
+                                <TextBlock Classes="panel-title" FontSize="28" Text="{Binding CurrentPageTitle}" />
+                                <TextBlock Classes="body"
+                                           Foreground="#493A2E"
+                                           Text="{Binding CurrentPageSummary}"
+                                           TextWrapping="Wrap" />
+                            </StackPanel>
+
+                            <WrapPanel Grid.Column="1" Orientation="Horizontal" ItemHeight="30">
+                                <Border Background="#F1E4D6" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                    <TextBlock Classes="caption" FontWeight="SemiBold" Text="{Binding ProfileCountSummary}" />
+                                </Border>
+                                <Border Background="#F1E4D6" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                    <TextBlock Classes="caption" FontWeight="SemiBold" Text="{Binding RecentActivitySummary}" />
+                                </Border>
+                            </WrapPanel>
+                        </Grid>
+                    </Border>
+
+                    <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
+                        <ContentControl Content="{Binding CurrentPage}" />
+                    </ScrollViewer>
+                </Grid>
             </Grid>
         </Grid>
     </Grid>

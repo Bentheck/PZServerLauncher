@@ -9,7 +9,7 @@ public sealed class ProjectZomboidUserAccessSummaryBuilderTests
     [Fact]
     public void Build_SummarizesPrivilegedCoverageAndCreateRoleGuardrails()
     {
-        var users =
+        UserAccountDto[] users =
         [
             new UserAccountDto("owner-1", "owner", "owner@example.com", [UserRole.Owner], true),
             new UserAccountDto("admin-1", "admin", "admin@example.com", [UserRole.Admin], false),
