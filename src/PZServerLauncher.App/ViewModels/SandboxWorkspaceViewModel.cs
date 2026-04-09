@@ -13,6 +13,11 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
     private SettingsCatalogDto? _catalog;
     private string? _sourceSha256;
     private bool _isApplyingState;
+    private ProjectZomboidSandboxPostureSummary _postureSummary = ProjectZomboidSandboxPostureSummaryBuilder.Build(
+        new Dictionary<string, string?>(StringComparer.Ordinal),
+        requiresAdvancedFilesFallback: false,
+        hasUnsavedChanges: false,
+        fieldErrorCount: 0);
 
     public SandboxWorkspaceViewModel(MainWindowViewModel legacy, LocalHostApiClient hostApiClient)
         : base(
@@ -40,17 +45,39 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         ? "Choose a profile to unlock Sandbox settings."
         : $"{SelectedProfile.DisplayName} is ready for branch-aware gameplay, world, and survival-system tuning.";
 
-    public string ActionSummary => RequiresAdvancedFilesFallback
-        ? "Structured editing is unavailable for this Sandbox file. Use Advanced Files for raw recovery."
-        : CanEdit
-            ? "Apply changes to write SandboxVars.lua, or keep a draft while you experiment."
-            : IsLoading
-                ? "Loading structured Sandbox settings from the host..."
-                : "Sandbox settings are not currently editable.";
+    public string ActionSummary => OperatorSummary;
 
     public ObservableCollection<string> FieldErrors { get; } = [];
 
     public bool HasFieldErrors => FieldErrors.Count > 0;
+
+    public string WorldStateHeadline => _postureSummary.WorldStateHeadline;
+
+    public string ZombiePressureHeadline => _postureSummary.ZombiePressureHeadline;
+
+    public string SurvivalEconomyHeadline => _postureSummary.SurvivalEconomyHeadline;
+
+    public string EventAndClimateHeadline => _postureSummary.EventAndClimateHeadline;
+
+    public string SurvivorRulesHeadline => _postureSummary.SurvivorRulesHeadline;
+
+    public string RecoveryHeadline => _postureSummary.RecoveryHeadline;
+
+    public string OperatorSummary => _postureSummary.OperatorSummary;
+
+    public IReadOnlyList<string> SandboxChecklist => _postureSummary.Checklist;
+
+    public string ValidationSummary => HasFieldErrors
+        ? $"{FieldErrors.Count} validation issue(s) are currently blocking a clean save."
+        : RequiresAdvancedFilesFallback
+            ? "Structured validation is unavailable while fallback is active."
+            : HasUnsavedChanges
+                ? "No validation issues yet, but the current Sandbox edits are still local."
+                : "Structured Sandbox values are currently clean.";
+
+    public string FallbackSummary => RequiresAdvancedFilesFallback
+        ? FallbackReason
+        : "Structured Sandbox editing is active for the current file.";
 
     public IAsyncRelayCommand SaveSettingsCommand { get; }
 
@@ -873,6 +900,7 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
     private void NotifyComputedState()
     {
+        RefreshPosture();
         OnPropertyChanged(nameof(PageSummary));
         OnPropertyChanged(nameof(ProfileDisplayName));
         OnPropertyChanged(nameof(Branch));
@@ -881,5 +909,24 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         OnPropertyChanged(nameof(HasFieldErrors));
         OnPropertyChanged(nameof(CanEdit));
         OnPropertyChanged(nameof(RequiresAdvancedFilesFallback));
+        OnPropertyChanged(nameof(WorldStateHeadline));
+        OnPropertyChanged(nameof(ZombiePressureHeadline));
+        OnPropertyChanged(nameof(SurvivalEconomyHeadline));
+        OnPropertyChanged(nameof(EventAndClimateHeadline));
+        OnPropertyChanged(nameof(SurvivorRulesHeadline));
+        OnPropertyChanged(nameof(RecoveryHeadline));
+        OnPropertyChanged(nameof(OperatorSummary));
+        OnPropertyChanged(nameof(SandboxChecklist));
+        OnPropertyChanged(nameof(ValidationSummary));
+        OnPropertyChanged(nameof(FallbackSummary));
+    }
+
+    private void RefreshPosture()
+    {
+        _postureSummary = ProjectZomboidSandboxPostureSummaryBuilder.Build(
+            BuildValues(),
+            RequiresAdvancedFilesFallback,
+            HasUnsavedChanges,
+            FieldErrors.Count);
     }
 }
