@@ -869,7 +869,7 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
 
         public int Position { get; } = position;
 
-        public string OrderLabel => $"{position + 1:00}";
+        public string OrderLabel => $"{Position + 1:00}";
 
         public string Value { get; } = value;
     }
@@ -889,7 +889,7 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
 
         public DateTimeOffset UpdatedAtUtc { get; } = updatedAtUtc;
 
-        public string UpdatedLabel => updatedAtUtc.ToLocalTime().ToString("g");
+        public string UpdatedLabel => UpdatedAtUtc.ToLocalTime().ToString("g");
 
         public string CompositionSummary { get; } = compositionSummary;
     }

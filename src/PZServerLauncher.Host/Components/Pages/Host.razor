@@ -41,22 +41,22 @@
         <section class="metric-grid metric-grid--host">
             <article class="metric-card">
                 <span class="metric-label">Lifecycle</span>
-                <strong class="metric-value">@_summary.LifecycleHeadline</strong>
+                <strong class="metric-value">@(_summary?.LifecycleHeadline ?? "Lifecycle unavailable")</strong>
                 <span class="metric-note">The host control plane and Windows startup posture for this machine.</span>
             </article>
             <article class="metric-card">
                 <span class="metric-label">Fleet</span>
-                <strong class="metric-value">@_summary.FleetHeadline</strong>
+                <strong class="metric-value">@(_summary?.FleetHeadline ?? "Fleet unavailable")</strong>
                 <span class="metric-note">Profiles currently under host supervision.</span>
             </article>
             <article class="metric-card">
                 <span class="metric-label">Exposure</span>
-                <strong class="metric-value">@_summary.ExposureHeadline</strong>
+                <strong class="metric-value">@(_summary?.ExposureHeadline ?? "Exposure unavailable")</strong>
                 <span class="metric-note">How much of the host is intentionally reachable from outside the desktop.</span>
             </article>
             <article class="metric-card">
                 <span class="metric-label">Security</span>
-                <strong class="metric-value">@_summary.SecurityHeadline</strong>
+                <strong class="metric-value">@(_summary?.SecurityHeadline ?? "Security unavailable")</strong>
                 <span class="metric-note">Owner bootstrap and access posture for the local host.</span>
             </article>
         </section>
@@ -64,22 +64,22 @@
         <section class="metric-grid metric-grid--host">
             <article class="metric-card">
                 <span class="metric-label">Startup Roster</span>
-                <strong class="metric-value">@_summary.StartupHeadline</strong>
+                <strong class="metric-value">@(_summary?.StartupHeadline ?? "Startup roster unavailable")</strong>
                 <span class="metric-note">What will come online automatically when the host starts.</span>
             </article>
             <article class="metric-card">
                 <span class="metric-label">Recovery</span>
-                <strong class="metric-value">@_summary.RecoveryHeadline</strong>
+                <strong class="metric-value">@(_summary?.RecoveryHeadline ?? "Recovery unavailable")</strong>
                 <span class="metric-note">The current archive posture and rollback readiness.</span>
             </article>
             <article class="metric-card">
                 <span class="metric-label">Automation</span>
-                <strong class="metric-value">@_summary.AutomationHeadline</strong>
+                <strong class="metric-value">@(_summary?.AutomationHeadline ?? "Automation unavailable")</strong>
                 <span class="metric-note">Crash recovery and unattended restart posture.</span>
             </article>
             <article class="metric-card">
                 <span class="metric-label">Risk</span>
-                <strong class="metric-value">@_summary.RiskHeadline</strong>
+                <strong class="metric-value">@(_summary?.RiskHeadline ?? "Risk unavailable")</strong>
                 <span class="metric-note">The strongest operator warning on this page.</span>
             </article>
         </section>
@@ -100,8 +100,8 @@
             }
             else
             {
-                <p class="muted-text">@_summary.FleetHeadline</p>
-                <p class="muted-text">@_summary.OperatorSummary</p>
+                <p class="muted-text">@(_summary?.FleetHeadline ?? "Fleet posture unavailable.")</p>
+                <p class="muted-text">@(_summary?.OperatorSummary ?? "Operator summary unavailable.")</p>
 
                 <div class="field-grid">
                     @foreach (var profile in _profiles)
@@ -150,12 +150,12 @@
 
                 <div class="status-banner">
                     <strong>Operator note</strong>
-                    <p>@_summary.OperatorSummary</p>
+                    <p>@(_summary?.OperatorSummary ?? "Operator summary unavailable.")</p>
                 </div>
 
                 <div class="status-banner status-banner--warm">
                     <strong>Next step</strong>
-                    <p>@_summary.NextStepSummary</p>
+                    <p>@(_summary?.NextStepSummary ?? "Next-step guidance unavailable.")</p>
                 </div>
             </section>
 
@@ -185,7 +185,7 @@
 
                 <div class="status-banner status-banner--warm">
                     <strong>Security posture</strong>
-                    <p>@_summary.SecurityHeadline</p>
+                    <p>@(_summary?.SecurityHeadline ?? "Security posture unavailable.")</p>
                 </div>
             </section>
 
@@ -206,7 +206,7 @@
 
                 <div class="status-banner">
                     <strong>Recommended next step</strong>
-                    <p>@_summary.NextStepSummary</p>
+                    <p>@(_summary?.NextStepSummary ?? "Next-step guidance unavailable.")</p>
                 </div>
             </section>
         </div>
@@ -217,7 +217,7 @@
                     <p class="eyebrow">Operator Checklist</p>
                     <h2>Host Rollout</h2>
                 </div>
-                <span class="pill">@($"{_summary.Checklist.Count} item(s)")</span>
+                <span class="pill">@($"{_summary?.Checklist.Count ?? 0} item(s)")</span>
             </div>
 
             <p class="muted-text">Use this checklist to decide whether the host should stay local-only, become a persistent controller, or expose the optional web surface.</p>
@@ -231,7 +231,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var item in _summary.Checklist)
+                        @foreach (var item in _summary?.Checklist ?? [])
                         {
                             <tr>
                                 <td>@item.StatusLabel</td>
