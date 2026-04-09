@@ -6,8 +6,10 @@
 @inject RuntimeStateStore RuntimeStateStore
 @inject ServerBackupService BackupService
 @inject ServerProcessSupervisor ProcessSupervisor
+@inject AuditStore AuditStore
 @using PZServerLauncher.Contracts.Profiles
 @using PZServerLauncher.Core.Planning
+@using PZServerLauncher.Core.Profiles
 @using PZServerLauncher.Infrastructure.Planning
 
 <PageTitle>Backups</PageTitle>
@@ -170,6 +172,36 @@ else
                         <h3>Retention Notes</h3>
                         <p class="muted-text">Manual archives are never auto-deleted. Pre-update archives are created before host updates, and scheduled archives only rotate when scheduled backups are enabled in the profile policy. If the latest known-good is older than you expect, make a manual archive before continuing with risky work.</p>
                     </div>
+
+                    <div class="profile-section">
+                        <h3>Manage Policy</h3>
+                        <div class="admin-grid">
+                            <label class="checkbox-label">
+                                <input type="checkbox" @bind="_scheduledBackupsEnabled" disabled="@_busy" />
+                                Enable scheduled backups
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" @bind="_preUpdateBackupEnabled" disabled="@_busy" />
+                                Create pre-update safety archives
+                            </label>
+                            <div>
+                                <span>Scheduled retention count</span>
+                                <input @bind="_scheduledRetentionCount" disabled="@_busy" />
+                            </div>
+                            <div>
+                                <span>Pre-update retention count</span>
+                                <input @bind="_preUpdateRetentionCount" disabled="@_busy" />
+                            </div>
+                            <label class="checkbox-label">
+                                <input type="checkbox" @bind="_keepManualBackupsForever" disabled="@_busy" />
+                                Keep manual backups forever
+                            </label>
+                        </div>
+                        <div class="action-row">
+                            <button class="nav-button" @onclick="SavePolicyAsync" disabled="@_busy">Save Policy</button>
+                        </div>
+                        <p class="muted-text">@PolicyEditorSummary</p>
+                    </div>
                 </section>
 
                 <section class="card">
@@ -239,6 +271,11 @@ else
     private List<BackupArchiveRow> _backupEntries = [];
     private BackupArchiveRow? _selectedBackupEntry;
     private bool _restartAfterRestore = true;
+    private bool _scheduledBackupsEnabled;
+    private string _scheduledRetentionCount = "10";
+    private bool _preUpdateBackupEnabled = true;
+    private string _preUpdateRetentionCount = "5";
+    private bool _keepManualBackupsForever = true;
     private ProjectZomboidBackupPostureSummary? _backupSummary;
     private ProjectZomboidRecoveryConsoleSummary? _recoverySummary;
 
@@ -279,6 +316,9 @@ else
     private string SelectedBackupTriage => _selectedBackupEntry is null
         ? "No archive triage is available."
         : $"{_selectedBackupEntry.KindLabel} archive | {(_selectedBackupEntry.IsLatest ? "latest known-good" : "not latest")} | {_selectedBackupEntry.TimestampLabel}";
+    private string PolicyEditorSummary => _profile is null
+        ? "Select a profile to manage retention policy."
+        : $"Scheduled backups {(_scheduledBackupsEnabled ? "enabled" : "disabled")} | pre-update safety {(_preUpdateBackupEnabled ? "enabled" : "disabled")} | manual backups {(_keepManualBackupsForever ? "kept forever" : "subject to retention")}.";
 
     protected override async Task OnParametersSetAsync()
     {
@@ -296,6 +336,7 @@ else
         _runtimeStatus = RuntimeStateStore.GetOrDefault(ProfileId);
         _backups = BackupService.ListBackups(ProfileId).ToList();
         _backupEntries = _backups.Select((backup, index) => ParseBackupEntry(backup, index == 0)).ToList();
+        ApplyPolicyEditor(_profile.BackupPolicy);
         if (_selectedBackup is null || !_backups.Contains(_selectedBackup, StringComparer.Ordinal))
         {
             _selectedBackup = _latestBackup;
@@ -322,6 +363,65 @@ else
             await BackupService.CreateBackupAsync(_profile.ProfileId, Core.Runtime.BackupTrigger.Manual, CancellationToken.None);
             _statusMessage = "Manual backup created.";
             await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task SavePolicyAsync()
+    {
+        if (_profile is null)
+        {
+            return;
+        }
+
+        if (!int.TryParse(_scheduledRetentionCount, NumberStyles.Integer, CultureInfo.InvariantCulture, out var scheduledRetention) ||
+            scheduledRetention < 1)
+        {
+            _statusMessage = "Scheduled retention count must be at least 1.";
+            return;
+        }
+
+        if (!int.TryParse(_preUpdateRetentionCount, NumberStyles.Integer, CultureInfo.InvariantCulture, out var preUpdateRetention) ||
+            preUpdateRetention < 1)
+        {
+            _statusMessage = "Pre-update retention count must be at least 1.";
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var updated = await ProfileStore.UpsertAsync(_profile with
+            {
+                BackupPolicy = new BackupPolicy
+                {
+                    ScheduledBackupsEnabled = _scheduledBackupsEnabled,
+                    ScheduledBackupRetentionCount = scheduledRetention,
+                    PreUpdateBackupEnabled = _preUpdateBackupEnabled,
+                    PreUpdateBackupRetentionCount = preUpdateRetention,
+                    KeepManualBackupsForever = _keepManualBackupsForever,
+                },
+                UpdatedAtUtc = DateTimeOffset.UtcNow,
+            }, CancellationToken.None);
+
+            await AuditStore.WriteAsync(
+                "profile.backup-policy.updated",
+                updated.ProfileId,
+                "web",
+                "Updated backup retention and recovery policy from web admin.",
+                cancellationToken: CancellationToken.None);
+
+            _profile = updated;
+            ApplyPolicyEditor(updated.BackupPolicy);
+            RefreshBackupSummary();
+            _statusMessage = "Backup policy updated.";
         }
         catch (Exception ex)
         {
@@ -420,6 +520,15 @@ else
     {
         _selectedBackup = backupFileName;
         RefreshBackupSummary();
+    }
+
+    private void ApplyPolicyEditor(BackupPolicy policy)
+    {
+        _scheduledBackupsEnabled = policy.ScheduledBackupsEnabled;
+        _scheduledRetentionCount = policy.ScheduledBackupRetentionCount.ToString(CultureInfo.InvariantCulture);
+        _preUpdateBackupEnabled = policy.PreUpdateBackupEnabled;
+        _preUpdateRetentionCount = policy.PreUpdateBackupRetentionCount.ToString(CultureInfo.InvariantCulture);
+        _keepManualBackupsForever = policy.KeepManualBackupsForever;
     }
 
     private string BuildRestoreSafetyCopy()

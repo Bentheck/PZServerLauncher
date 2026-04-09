@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using PZServerLauncher.Contracts.Profiles;
 using PZServerLauncher.Contracts.Runtime;
+using PZServerLauncher.Core.Profiles;
 using PZServerLauncher.Core.Runtime;
 using PZServerLauncher.Core.Settings;
 using PZServerLauncher.Host.Components;
@@ -373,6 +374,44 @@ public class Program
             var updated = await store.UpsertAsync(configFileService.ApplyCommonConfig(profile, common), cancellationToken);
             await auditStore.WriteAsync("config.common.updated", profileId, "local", "Updated common profile config.", cancellationToken: cancellationToken);
             return Results.Ok(configFileService.GetCommonConfig(updated));
+        }).RequireAuthorization("DesktopOrAdmin");
+
+        api.MapGet("/profiles/{profileId}/backup-policy", async (
+            string profileId,
+            ProfileStore store,
+            CancellationToken cancellationToken) =>
+        {
+            var profile = await store.GetAsync(profileId, cancellationToken);
+            return profile is null ? Results.NotFound() : Results.Ok(profile.BackupPolicy);
+        }).RequireAuthorization("DesktopOrViewer");
+
+        api.MapPut("/profiles/{profileId}/backup-policy", async (
+            string profileId,
+            BackupPolicy policy,
+            ProfileStore store,
+            AuditStore auditStore,
+            CancellationToken cancellationToken) =>
+        {
+            var profile = await store.GetAsync(profileId, cancellationToken);
+            if (profile is null)
+            {
+                return Results.NotFound();
+            }
+
+            var updated = await store.UpsertAsync(profile with
+            {
+                BackupPolicy = policy,
+                UpdatedAtUtc = DateTimeOffset.UtcNow,
+            }, cancellationToken);
+
+            await auditStore.WriteAsync(
+                "profile.backup-policy.updated",
+                profileId,
+                "local",
+                "Updated backup retention and recovery policy.",
+                cancellationToken: cancellationToken);
+
+            return Results.Ok(updated.BackupPolicy);
         }).RequireAuthorization("DesktopOrAdmin");
 
         api.MapGet("/profiles/{profileId}/settings/catalog", async (

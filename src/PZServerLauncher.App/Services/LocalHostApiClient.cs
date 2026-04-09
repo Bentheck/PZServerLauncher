@@ -160,6 +160,15 @@ public sealed class LocalHostApiClient
         CancellationToken cancellationToken = default) =>
         PutAsync<CommonConfigDto>($"/api/profiles/{profileId}/config/common", config, cancellationToken);
 
+    public Task<BackupPolicy?> GetBackupPolicyAsync(string profileId, CancellationToken cancellationToken = default) =>
+        GetAsync<BackupPolicy>($"/api/profiles/{profileId}/backup-policy", cancellationToken);
+
+    public Task<BackupPolicy?> UpdateBackupPolicyAsync(
+        string profileId,
+        BackupPolicy policy,
+        CancellationToken cancellationToken = default) =>
+        PutAsync<BackupPolicy>($"/api/profiles/{profileId}/backup-policy", policy, cancellationToken);
+
     public Task<WorkshopScanResultDto?> ScanWorkshopAsync(string profileId, CancellationToken cancellationToken = default) =>
         PostAsync<WorkshopScanResultDto>($"/api/profiles/{profileId}/workshop/scan", null, cancellationToken);
 

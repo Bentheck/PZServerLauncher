@@ -35,6 +35,7 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         false);
 
     private readonly LocalHostApiClient _hostApiClient;
+    private bool _isApplyingPolicy;
 
     public BackupsWorkspaceViewModel(MainWindowViewModel legacy, LocalHostApiClient hostApiClient)
         : base(
@@ -48,6 +49,7 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         _hostApiClient = hostApiClient;
         CreateBackupCommand = new AsyncRelayCommand(CreateBackupAsync);
         RestoreSelectedCommand = new AsyncRelayCommand(RestoreSelectedAsync);
+        SavePolicyCommand = new AsyncRelayCommand(SavePolicyAsync);
         ReloadCommand = new AsyncRelayCommand(ReloadAsync);
     }
 
@@ -147,6 +149,16 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         ? "No recovery policy loaded."
         : CurrentSummary.RetentionSummary;
 
+    public string PolicyEditorSummary => SelectedProfile is null
+        ? "Select a profile to manage scheduled retention and pre-update safety."
+        : IsPolicyDirty
+            ? "Recovery policy has unsaved changes."
+            : "Recovery policy is in sync with the selected profile.";
+
+    public string PolicyValidationSummary => string.IsNullOrWhiteSpace(PolicyValidationMessage)
+        ? "Policy values look valid."
+        : PolicyValidationMessage;
+
     public string RestoreModeSummary => SelectedProfile is null
         ? "Restore behavior not loaded."
         : RestartAfterRestore
@@ -165,6 +177,8 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
     public IAsyncRelayCommand RestoreSelectedCommand { get; }
 
+    public IAsyncRelayCommand SavePolicyCommand { get; }
+
     public IAsyncRelayCommand ReloadCommand { get; }
 
     [ObservableProperty]
@@ -182,8 +196,32 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
     [ObservableProperty]
     private bool isBusy;
 
+    [ObservableProperty]
+    private bool scheduledBackupsEnabled;
+
+    [ObservableProperty]
+    private string scheduledBackupRetentionCount = "10";
+
+    [ObservableProperty]
+    private bool preUpdateBackupEnabled = true;
+
+    [ObservableProperty]
+    private string preUpdateBackupRetentionCount = "5";
+
+    [ObservableProperty]
+    private bool keepManualBackupsForever = true;
+
+    [ObservableProperty]
+    private bool isPolicyDirty;
+
+    [ObservableProperty]
+    private string policyValidationMessage = string.Empty;
+
+    public bool CanSavePolicy => SelectedProfile is not null && !IsBusy && IsPolicyDirty;
+
     protected override void OnSelectedProfileChangedCore(ProfileCardViewModel? profile)
     {
+        ApplyPolicy(profile?.BackupPolicy ?? BackupPolicy.Default);
         NotifyComputedState();
         _ = LoadAsync(profile);
     }
@@ -267,6 +305,7 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         SelectedBackup = null;
         SelectedBackupArchive = null;
         RestartAfterRestore = true;
+        ApplyPolicy(BackupPolicy.Default);
         LoadStatus = "Select a profile to load backups.";
         NotifyComputedState();
     }
@@ -319,6 +358,16 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         OnPropertyChanged(nameof(RecoveryChecklist));
     }
 
+    partial void OnScheduledBackupsEnabledChanged(bool value) => NotifyPolicyEdited();
+
+    partial void OnScheduledBackupRetentionCountChanged(string value) => NotifyPolicyEdited();
+
+    partial void OnPreUpdateBackupEnabledChanged(bool value) => NotifyPolicyEdited();
+
+    partial void OnPreUpdateBackupRetentionCountChanged(string value) => NotifyPolicyEdited();
+
+    partial void OnKeepManualBackupsForeverChanged(bool value) => NotifyPolicyEdited();
+
     private void NotifyComputedState()
     {
         OnPropertyChanged(nameof(PageSummary));
@@ -345,11 +394,105 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         OnPropertyChanged(nameof(SelectedBackupKindSummary));
         OnPropertyChanged(nameof(RecoveryModeHeadline));
         OnPropertyChanged(nameof(PolicySummary));
+        OnPropertyChanged(nameof(PolicyEditorSummary));
+        OnPropertyChanged(nameof(PolicyValidationSummary));
+        OnPropertyChanged(nameof(CanSavePolicy));
         OnPropertyChanged(nameof(RestoreModeSummary));
         OnPropertyChanged(nameof(OperatorNextStep));
         OnPropertyChanged(nameof(RecoveryChecklist));
         OnPropertyChanged(nameof(RecoveryHeroTitle));
         OnPropertyChanged(nameof(RecoveryHeroCopy));
+    }
+
+    private async Task SavePolicyAsync()
+    {
+        if (SelectedProfile is null)
+        {
+            return;
+        }
+
+        if (!TryBuildPolicy(out var policy))
+        {
+            NotifyComputedState();
+            return;
+        }
+
+        await RunBusyAsync(async () =>
+        {
+            var updated = await _hostApiClient.UpdateBackupPolicyAsync(SelectedProfile.ProfileId, policy);
+            if (updated is null)
+            {
+                throw new InvalidOperationException("The host did not return an updated backup policy.");
+            }
+
+            ApplyPolicy(updated);
+            LoadStatus = $"Updated backup policy for {SelectedProfile.DisplayName}.";
+            await Legacy.RefreshCommand.ExecuteAsync(null);
+            await LoadAsync(SelectedProfile);
+        }, $"Saving recovery policy for {SelectedProfile.DisplayName}...");
+    }
+
+    private void ApplyPolicy(BackupPolicy policy)
+    {
+        try
+        {
+            _isApplyingPolicy = true;
+            ScheduledBackupsEnabled = policy.ScheduledBackupsEnabled;
+            ScheduledBackupRetentionCount = policy.ScheduledBackupRetentionCount.ToString(CultureInfo.InvariantCulture);
+            PreUpdateBackupEnabled = policy.PreUpdateBackupEnabled;
+            PreUpdateBackupRetentionCount = policy.PreUpdateBackupRetentionCount.ToString(CultureInfo.InvariantCulture);
+            KeepManualBackupsForever = policy.KeepManualBackupsForever;
+            IsPolicyDirty = false;
+            PolicyValidationMessage = string.Empty;
+        }
+        finally
+        {
+            _isApplyingPolicy = false;
+        }
+    }
+
+    private void NotifyPolicyEdited()
+    {
+        if (_isApplyingPolicy)
+        {
+            return;
+        }
+
+        IsPolicyDirty = true;
+        PolicyValidationMessage = string.Empty;
+        NotifyComputedState();
+    }
+
+    private bool TryBuildPolicy(out BackupPolicy policy)
+    {
+        PolicyValidationMessage = string.Empty;
+
+        if (!int.TryParse(ScheduledBackupRetentionCount, NumberStyles.Integer, CultureInfo.InvariantCulture, out var scheduledRetention) ||
+            scheduledRetention < 1)
+        {
+            policy = BackupPolicy.Default;
+            PolicyValidationMessage = "Scheduled backup retention must be a whole number greater than or equal to 1.";
+            return false;
+        }
+
+        if (!int.TryParse(PreUpdateBackupRetentionCount, NumberStyles.Integer, CultureInfo.InvariantCulture, out var preUpdateRetention) ||
+            preUpdateRetention < 1)
+        {
+            policy = BackupPolicy.Default;
+            PolicyValidationMessage = "Pre-update backup retention must be a whole number greater than or equal to 1.";
+            return false;
+        }
+
+        policy = new BackupPolicy
+        {
+            ScheduledBackupsEnabled = ScheduledBackupsEnabled,
+            ScheduledBackupRetentionCount = scheduledRetention,
+            PreUpdateBackupEnabled = PreUpdateBackupEnabled,
+            PreUpdateBackupRetentionCount = preUpdateRetention,
+            KeepManualBackupsForever = KeepManualBackupsForever,
+        };
+
+        return true;
     }
 
     private ProjectZomboidBackupPostureSummary CurrentSummary =>

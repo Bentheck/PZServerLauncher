@@ -195,6 +195,60 @@
                 </Grid>
 
                 <Border Classes="card" Padding="18">
+                    <Grid ColumnDefinitions="1.05*,.95*" ColumnSpacing="16">
+                        <StackPanel Spacing="8">
+                            <TextBlock Classes="kicker" Text="Recovery Policy" />
+                            <TextBlock Classes="panel-title" FontSize="22" Text="Retention &amp; safety automation" TextWrapping="Wrap" />
+                            <TextBlock Classes="body" Text="{Binding PolicyEditorSummary}" TextWrapping="Wrap" />
+                            <TextBlock Classes="caption" Text="{Binding PolicyValidationSummary}" TextWrapping="Wrap" />
+
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                                <StackPanel Spacing="6">
+                                    <CheckBox Content="Enable scheduled backups"
+                                              IsChecked="{Binding ScheduledBackupsEnabled}" />
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Classes="body" Text="Scheduled retention count" />
+                                        <TextBox Text="{Binding ScheduledBackupRetentionCount}" />
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1" Spacing="6">
+                                    <CheckBox Content="Create pre-update safety archives"
+                                              IsChecked="{Binding PreUpdateBackupEnabled}" />
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Classes="body" Text="Pre-update retention count" />
+                                        <TextBox Text="{Binding PreUpdateBackupRetentionCount}" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </Grid>
+
+                            <CheckBox Content="Keep manual backups forever"
+                                      IsChecked="{Binding KeepManualBackupsForever}" />
+
+                            <WrapPanel Orientation="Horizontal" ItemWidth="170" ItemHeight="36">
+                                <Button Classes="action-primary"
+                                        Command="{Binding SavePolicyCommand}"
+                                        Content="Save Policy"
+                                        IsEnabled="{Binding CanSavePolicy}" />
+                                <Button Classes="action-secondary"
+                                        Command="{Binding ReloadCommand}"
+                                        Content="Reload Recovery"
+                                        IsEnabled="{Binding HasSelectedProfile}" />
+                            </WrapPanel>
+                        </StackPanel>
+
+                        <Border Grid.Column="1" Classes="surface-soft" Padding="14">
+                            <StackPanel Spacing="6">
+                                <TextBlock Classes="kicker" Text="Policy Briefing" />
+                                <TextBlock Classes="panel-title" FontSize="20" Text="{Binding RetentionHeadline}" TextWrapping="Wrap" />
+                                <TextBlock Classes="body" Text="{Binding PolicySummary}" TextWrapping="Wrap" />
+                                <TextBlock Classes="caption" Text="{Binding OperatorNextStep}" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <Border Classes="card" Padding="18">
                     <StackPanel Spacing="8">
                         <TextBlock Classes="kicker" Text="Recovery Notes" />
                         <TextBlock Classes="body" Text="Backups are ZIP archives produced by the host service. Manual archives stay protected from retention, pre-update archives are created before risky upgrades, and scheduled archives rotate only when enabled." TextWrapping="Wrap" />
