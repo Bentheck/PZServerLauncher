@@ -1,6 +1,7 @@
 @page "/profiles/{ProfileId}/overview"
 @attribute [Authorize]
 @using PZServerLauncher.Core.Settings
+@using PZServerLauncher.Infrastructure.Planning
 @using PZServerLauncher.Host.Services
 @inject ProfileStore ProfileStore
 @inject RuntimeStateStore RuntimeStateStore
@@ -334,7 +335,7 @@ else
 
     private string InstallPostureSummary => _profile is null
         ? "No install posture available."
-        : $"{_profile.BranchChannelSummary} | {_profile.InstallPreflightSummary} | {_profile.LaunchReadinessSummary}";
+        : $"{BuildInstallPosture().BranchChannelSummary} | {BuildInstallPosture().PreflightSummary} | {BuildInstallPosture().LaunchReadinessSummary}";
 
     private string NamedPresetSummary => _namedPresetCount == 0
         ? "No named workshop presets saved yet."
@@ -467,5 +468,12 @@ else
     private string InstallHref => $"/profiles/{Uri.EscapeDataString(ProfileId)}/install-update";
 
     private string GeneralHref => $"/profiles/{Uri.EscapeDataString(ProfileId)}/general";
+
+    private PZServerLauncher.Core.Planning.ProjectZomboidInstallPostureSummary BuildInstallPosture() =>
+        ProjectZomboidInstallPostureSummaryBuilder.Build(
+            _profile!,
+            _runtimeStatus?.State.ToString() ?? "Unknown",
+            !string.IsNullOrWhiteSpace(_latestBackup),
+            _latestBackup ?? "No backup");
 
 }

@@ -13,6 +13,8 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
     private readonly LocalHostApiClient _hostApiClient;
     private bool _isApplyingState;
     private SettingsCatalogDto? _catalog;
+    private WorkshopScanResultDto? _lastScanResult;
+    private ProjectZomboidModsAndMapsPostureSummary _postureSummary = ProjectZomboidModsAndMapsPostureSummaryBuilder.Empty();
 
     public ModsAndMapsWorkspaceViewModel(MainWindowViewModel legacy, LocalHostApiClient hostApiClient)
         : base(
@@ -51,61 +53,28 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
         : $"{SelectedProfile.DisplayName} now manages the actual WorkshopItems, Mods, and Map keys through an ordered preset editor instead of raw text alone.";
 
     public string ActionSummary => HasUnsavedChanges
-        ? "Apply or discard changes before scanning so diagnostics reflect the saved preset."
-        : CanScan
-            ? "The ordered preset is in sync. Scan local workshop content to validate what is actually installed."
-            : "Load a profile to inspect workshop, mod, and map settings.";
+        ? QueueIntegritySummary
+        : SelectedProfile is null
+            ? "Load a profile to inspect workshop, mod, and map settings."
+            : ScannerSummary;
 
-    public string WorkshopSummary => WorkshopEntries.Count == 0
+    public string WorkshopSummary => SelectedProfile is null
         ? "No workshop items queued yet."
-        : $"{WorkshopEntries.Count} workshop item(s) in install order.";
+        : $"{WorkshopEntries.Count} workshop item(s) are staged in install order.";
 
-    public string EnabledModsSummary => EnabledModEntries.Count == 0
+    public string EnabledModsSummary => SelectedProfile is null
         ? "No enabled mod IDs saved yet."
-        : $"{EnabledModEntries.Count} mod ID(s) in load order.";
+        : $"{EnabledModEntries.Count} mod ID(s) are staged in load order.";
 
-    public string MapOrderSummary => MapEntries.Count == 0
+    public string MapOrderSummary => SelectedProfile is null
         ? "No custom map folders listed."
-        : $"{MapEntries.Count} map folder(s) in load order.";
+        : $"{MapEntries.Count} map folder(s) are staged in load order.";
 
-    public string SavedPresetSummary => SavedPresets.Count == 0
-        ? "No named presets saved for this profile yet."
-        : $"{SavedPresets.Count} named preset(s) available for this profile.";
+    public string SavedPresetSummary => PresetLibraryHeadline;
 
-    public string ScanReadinessSummary => SelectedProfile is null
-        ? "Choose a profile first."
-        : HasUnsavedChanges
-            ? "Apply or discard local edits before scanning so diagnostics match the live preset."
-            : HasDiagnostics
-                ? $"{Diagnostics.Count} diagnostic(s) from the last local scan."
-                : "Ready to scan the local workshop cache.";
+    public string ScanReadinessSummary => ValidationHeadline;
 
-    public string ModsNextStepSummary
-    {
-        get
-        {
-            if (SelectedProfile is null)
-            {
-                return "Select a profile to start building a real preset.";
-            }
-
-            if (WorkshopEntries.Count == 0 && EnabledModEntries.Count == 0 && MapEntries.Count == 0)
-            {
-                return "Start by pasting a workshop URL or ID, then shape the mod and map order from there.";
-            }
-
-            if (HasUnsavedChanges)
-            {
-                return "Apply the current order first, then run a scan so diagnostics match the saved server preset.";
-            }
-
-            return Diagnostics.Count > 0
-                ? "Resolve the scanner diagnostics or accept them, then keep the saved order aligned with your map stack."
-                : SavedPresets.Count == 0
-                    ? "Save the current loadout as a named preset once it looks right so you can recover or reuse it quickly."
-                    : "Scan again after any install change so the saved preset stays aligned with local workshop content.";
-        }
-    }
+    public string ModsNextStepSummary => OperatorSummary;
 
     public ObservableCollection<string> Diagnostics { get; } = [];
 
@@ -136,6 +105,51 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
     public bool HasSavedPresets => SavedPresets.Count > 0;
 
     public bool HasNoSavedPresets => SavedPresets.Count == 0;
+
+    public string LoadoutHeadline => _postureSummary.LoadoutHeadline;
+
+    public string ValidationHeadline => _postureSummary.ValidationHeadline;
+
+    public string PresetLibraryHeadline => _postureSummary.PresetLibraryHeadline;
+
+    public string MapChainHeadline => _postureSummary.MapChainHeadline;
+
+    public string QueueIntegritySummary => _postureSummary.QueueIntegritySummary;
+
+    public string ScannerSummary => _postureSummary.ScannerSummary;
+
+    public string RecoverySummary => _postureSummary.RecoverySummary;
+
+    public string OperatorSummary => _postureSummary.OperatorSummary;
+
+    public IReadOnlyList<ProjectZomboidModsAndMapsDiagnosticBucket> DiagnosticBuckets => _postureSummary.DiagnosticBuckets;
+
+    public bool HasDiagnosticBuckets => DiagnosticBuckets.Count > 0;
+
+    public bool HasNoDiagnosticBuckets => DiagnosticBuckets.Count == 0;
+
+    public IReadOnlyList<string> ModsChecklist => _postureSummary.Checklist;
+
+    public SavedPresetViewModel? LatestSavedPreset => SavedPresets.FirstOrDefault();
+
+    public bool HasLatestSavedPreset => LatestSavedPreset is not null;
+
+    public bool HasNoLatestSavedPreset => LatestSavedPreset is null;
+
+    public string LatestSavedPresetHeadline => LatestSavedPreset is null
+        ? "No named fallback captured yet."
+        : $"{LatestSavedPreset.Name} saved {LatestSavedPreset.UpdatedLabel}";
+
+    public string LatestSavedPresetComposition => LatestSavedPreset?.CompositionSummary
+        ?? "Save a named preset once the live stack looks right so rollback is immediate.";
+
+    public bool HasScanPreview => _lastScanResult is not null;
+
+    public bool HasNoScanPreview => _lastScanResult is null;
+
+    public string ScanPreviewHeadline => _lastScanResult is null
+        ? "No normalized scan result yet."
+        : $"{_lastScanResult.Preset.WorkshopItemIds.Count} workshop | {_lastScanResult.Preset.EnabledModIds.Count} mods | {_lastScanResult.Preset.MapFolders.Count} maps in the latest normalized snapshot.";
 
     public IAsyncRelayCommand SaveSettingsCommand { get; }
 
@@ -322,6 +336,7 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
                 : $"{_catalog.CatalogId} v{_catalog.CatalogVersion} | {_catalog.Branch}";
 
             ApplyPreset(preset);
+            _lastScanResult = null;
             ReplaceSavedPresets(savedPresets);
             MarkClean("Loaded Mods & Maps settings from the local host.");
             Diagnostics.Clear();
@@ -362,6 +377,7 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
             MarkClean("Workshop scan normalized the saved preset.");
         }
 
+        _lastScanResult = result;
         Diagnostics.Clear();
         foreach (var diagnostic in result.Diagnostics)
         {
@@ -750,6 +766,7 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
 
     private void NotifyComputedState()
     {
+        RefreshPosture();
         OnPropertyChanged(nameof(PageSummary));
         OnPropertyChanged(nameof(ProfileDisplayName));
         OnPropertyChanged(nameof(Branch));
@@ -774,6 +791,26 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
         OnPropertyChanged(nameof(HasNoMapEntries));
         OnPropertyChanged(nameof(HasSavedPresets));
         OnPropertyChanged(nameof(HasNoSavedPresets));
+        OnPropertyChanged(nameof(LoadoutHeadline));
+        OnPropertyChanged(nameof(ValidationHeadline));
+        OnPropertyChanged(nameof(PresetLibraryHeadline));
+        OnPropertyChanged(nameof(MapChainHeadline));
+        OnPropertyChanged(nameof(QueueIntegritySummary));
+        OnPropertyChanged(nameof(ScannerSummary));
+        OnPropertyChanged(nameof(RecoverySummary));
+        OnPropertyChanged(nameof(OperatorSummary));
+        OnPropertyChanged(nameof(DiagnosticBuckets));
+        OnPropertyChanged(nameof(HasDiagnosticBuckets));
+        OnPropertyChanged(nameof(HasNoDiagnosticBuckets));
+        OnPropertyChanged(nameof(ModsChecklist));
+        OnPropertyChanged(nameof(LatestSavedPreset));
+        OnPropertyChanged(nameof(HasLatestSavedPreset));
+        OnPropertyChanged(nameof(HasNoLatestSavedPreset));
+        OnPropertyChanged(nameof(LatestSavedPresetHeadline));
+        OnPropertyChanged(nameof(LatestSavedPresetComposition));
+        OnPropertyChanged(nameof(HasScanPreview));
+        OnPropertyChanged(nameof(HasNoScanPreview));
+        OnPropertyChanged(nameof(ScanPreviewHeadline));
     }
 
     private void ReplaceSavedPresets(IReadOnlyList<NamedWorkshopPresetDto> presets)
@@ -804,6 +841,17 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
             preset.Preset,
             preset.UpdatedAtUtc,
             $"{preset.Preset.WorkshopItemIds.Count} workshop | {preset.Preset.EnabledModIds.Count} mods | {preset.Preset.MapFolders.Count} maps"));
+    }
+
+    private void RefreshPosture()
+    {
+        _postureSummary = ProjectZomboidModsAndMapsPostureSummaryBuilder.Build(
+            BuildPreset(),
+            _lastScanResult,
+            SavedPresets.Count,
+            installDetected: SelectedProfile is not null && Directory.Exists(SelectedProfile.InstallDirectory),
+            cacheDetected: SelectedProfile is not null && Directory.Exists(SelectedProfile.CacheDirectory),
+            hasUnsavedChanges: HasUnsavedChanges);
     }
 
     private static string GetKindLabel(PresetEntryKind kind) =>

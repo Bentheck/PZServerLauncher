@@ -8,15 +8,19 @@ namespace PZServerLauncher.Host.Services;
 
 public sealed class NamedWorkshopPresetStore(ApplicationDbContext dbContext)
 {
-    public async Task<IReadOnlyList<NamedWorkshopPresetDto>> ListAsync(string profileId, CancellationToken cancellationToken = default) =>
-        (await dbContext.NamedWorkshopPresets
+    public async Task<IReadOnlyList<NamedWorkshopPresetDto>> ListAsync(string profileId, CancellationToken cancellationToken = default)
+    {
+        var entities = await dbContext.NamedWorkshopPresets
             .AsNoTracking()
             .Where(entity => entity.ProfileId == profileId)
+            .ToListAsync(cancellationToken);
+
+        return entities
             .OrderByDescending(entity => entity.UpdatedAtUtc)
-            .ThenBy(entity => entity.Name)
-            .ToListAsync(cancellationToken))
+            .ThenBy(entity => entity.Name, StringComparer.OrdinalIgnoreCase)
             .Select(entity => entity.ToDto())
             .ToArray();
+    }
 
     public async Task<NamedWorkshopPresetDto> UpsertAsync(
         string profileId,

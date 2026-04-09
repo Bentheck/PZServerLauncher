@@ -1,6 +1,7 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:PZServerLauncher.App.ViewModels"
+             xmlns:settings="using:PZServerLauncher.Contracts.Profiles"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d"
@@ -40,26 +41,50 @@
                 <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="14">
                     <Border Background="#F6EFE6" CornerRadius="14" Padding="16">
                         <StackPanel Spacing="6">
-                            <TextBlock Classes="kicker" Text="Workshop Queue" />
-                            <TextBlock Classes="body" Text="{Binding WorkshopSummary}" TextWrapping="Wrap" />
+                            <TextBlock Classes="kicker" Text="Live Stack" />
+                            <TextBlock FontSize="18"
+                                       FontWeight="SemiBold"
+                                       Text="{Binding LoadoutHeadline}"
+                                       TextWrapping="Wrap" />
+                            <TextBlock Classes="body"
+                                       Text="{Binding WorkshopSummary}"
+                                       TextWrapping="Wrap" />
                         </StackPanel>
                     </Border>
                     <Border Grid.Column="1" Background="#F6EFE6" CornerRadius="14" Padding="16">
                         <StackPanel Spacing="6">
-                            <TextBlock Classes="kicker" Text="Enabled Mods" />
-                            <TextBlock Classes="body" Text="{Binding EnabledModsSummary}" TextWrapping="Wrap" />
+                            <TextBlock Classes="kicker" Text="Validation" />
+                            <TextBlock FontSize="18"
+                                       FontWeight="SemiBold"
+                                       Text="{Binding ValidationHeadline}"
+                                       TextWrapping="Wrap" />
+                            <TextBlock Classes="body"
+                                       Text="{Binding ScannerSummary}"
+                                       TextWrapping="Wrap" />
                         </StackPanel>
                     </Border>
                     <Border Grid.Column="2" Background="#F6EFE6" CornerRadius="14" Padding="16">
                         <StackPanel Spacing="6">
-                            <TextBlock Classes="kicker" Text="Map Order" />
-                            <TextBlock Classes="body" Text="{Binding MapOrderSummary}" TextWrapping="Wrap" />
+                            <TextBlock Classes="kicker" Text="Fallbacks" />
+                            <TextBlock FontSize="18"
+                                       FontWeight="SemiBold"
+                                       Text="{Binding PresetLibraryHeadline}"
+                                       TextWrapping="Wrap" />
+                            <TextBlock Classes="body"
+                                       Text="{Binding RecoverySummary}"
+                                       TextWrapping="Wrap" />
                         </StackPanel>
                     </Border>
                     <Border Grid.Column="3" Background="#F6EFE6" CornerRadius="14" Padding="16">
                         <StackPanel Spacing="6">
-                            <TextBlock Classes="kicker" Text="Scan Readiness" />
-                            <TextBlock Classes="body" Text="{Binding ScanReadinessSummary}" TextWrapping="Wrap" />
+                            <TextBlock Classes="kicker" Text="Map Chain" />
+                            <TextBlock FontSize="18"
+                                       FontWeight="SemiBold"
+                                       Text="{Binding MapChainHeadline}"
+                                       TextWrapping="Wrap" />
+                            <TextBlock Classes="body"
+                                       Text="{Binding MapOrderSummary}"
+                                       TextWrapping="Wrap" />
                         </StackPanel>
                     </Border>
                 </Grid>
@@ -72,7 +97,7 @@
                                     <StackPanel Spacing="4">
                                         <TextBlock Classes="panel-title" FontSize="20" Text="Ordered Preset Manager" />
                                         <TextBlock Classes="body"
-                                                   Text="Shape the exact workshop, mod, and map order here. Bulk paste stays available below, but the primary editor now behaves like a real preset queue."
+                                                   Text="Shape the live workshop, mod, and map order here. The queue editor is now the operator surface, while bulk paste remains the fast lane for large reshuffles."
                                                    TextWrapping="Wrap" />
                                     </StackPanel>
                                     <Button Grid.Column="1"
@@ -85,6 +110,9 @@
                                     <Border Background="#FBF7F1" CornerRadius="14" Padding="14">
                                         <StackPanel Spacing="10">
                                             <TextBlock Classes="kicker" Text="Workshop Items" />
+                                            <TextBlock Classes="body"
+                                                       Text="Seed the live stack with workshop IDs or URLs, then let the scanner normalize them against the local cache."
+                                                       TextWrapping="Wrap" />
                                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                                                 <TextBox Text="{Binding NewWorkshopEntry}"
                                                          Watermark="Paste a workshop URL or numeric ID" />
@@ -133,6 +161,9 @@
                                     <Border Grid.Column="1" Background="#FBF7F1" CornerRadius="14" Padding="14">
                                         <StackPanel Spacing="10">
                                             <TextBlock Classes="kicker" Text="Enabled Mods" />
+                                            <TextBlock Classes="body"
+                                                       Text="Mirror the exact mod IDs the server should load once the workshop items are installed."
+                                                       TextWrapping="Wrap" />
                                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                                                 <TextBox Text="{Binding NewEnabledModEntry}"
                                                          Watermark="Paste a mod ID" />
@@ -181,6 +212,9 @@
                                     <Border Grid.Column="2" Background="#FBF7F1" CornerRadius="14" Padding="14">
                                         <StackPanel Spacing="10">
                                             <TextBlock Classes="kicker" Text="Map Folders" />
+                                            <TextBlock Classes="body"
+                                                       Text="Keep custom map folders in the same order the server should bootstrap them at runtime."
+                                                       TextWrapping="Wrap" />
                                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                                                 <TextBox Text="{Binding NewMapEntry}"
                                                          Watermark="Paste a map folder" />
@@ -233,7 +267,7 @@
                             <StackPanel Spacing="12">
                                 <TextBlock Classes="kicker" Text="Bulk Paste &amp; Export" />
                                 <TextBlock Classes="body"
-                                           Text="Paste or export the raw ordered lists here when you need speed. The queue editor above always reflects these values."
+                                           Text="Paste or export the raw ordered lists here when you need speed. The queue editor above and the operator posture on the right both track these values."
                                            TextWrapping="Wrap" />
                                 <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
                                     <StackPanel Spacing="8">
@@ -276,8 +310,36 @@
 
                         <Border Background="#FFF8F1" CornerRadius="14" Padding="16">
                             <StackPanel Spacing="8">
-                                <TextBlock Classes="kicker" Text="Next Step" />
-                                <TextBlock Classes="body" Text="{Binding ModsNextStepSummary}" TextWrapping="Wrap" />
+                                <TextBlock Classes="kicker" Text="Operator Lane" />
+                                <TextBlock FontSize="18"
+                                           FontWeight="SemiBold"
+                                           Text="{Binding ModsNextStepSummary}"
+                                           TextWrapping="Wrap" />
+                                <TextBlock Classes="body"
+                                           Text="{Binding QueueIntegritySummary}"
+                                           TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Background="#F6EFE6" CornerRadius="14" Padding="16">
+                            <StackPanel Spacing="8">
+                                <TextBlock Classes="kicker" Text="Scanner Posture" />
+                                <TextBlock Classes="body" Text="{Binding ScannerSummary}" TextWrapping="Wrap" />
+                                <TextBlock Classes="body" Text="{Binding ScanReadinessSummary}" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Background="#FBF7F1" CornerRadius="14" Padding="16">
+                            <StackPanel Spacing="8">
+                                <TextBlock Classes="kicker" Text="Rollback Coverage" />
+                                <TextBlock Classes="body" Text="{Binding RecoverySummary}" TextWrapping="Wrap" />
+                                <TextBlock FontWeight="SemiBold"
+                                           IsVisible="{Binding HasLatestSavedPreset}"
+                                           Text="{Binding LatestSavedPresetHeadline}"
+                                           TextWrapping="Wrap" />
+                                <TextBlock Classes="body"
+                                           Text="{Binding LatestSavedPresetComposition}"
+                                           TextWrapping="Wrap" />
                             </StackPanel>
                         </Border>
 
@@ -291,7 +353,7 @@
                                     <TextBox Text="{Binding NewPresetName}" Watermark="Preset name" />
                                     <Button Grid.Column="1"
                                             Command="{Binding SaveNamedPresetCommand}"
-                                            Content="Save Preset"
+                                            Content="Capture Fallback"
                                             IsEnabled="{Binding CanSaveNamedPreset}" />
                                 </Grid>
                                 <ItemsControl ItemsSource="{Binding SavedPresets}" IsVisible="{Binding HasSavedPresets}">
@@ -317,7 +379,20 @@
                                 </ItemsControl>
                                 <TextBlock Classes="body"
                                            IsVisible="{Binding HasNoSavedPresets}"
-                                           Text="Save the current loadout once it looks right, then reuse it later without rebuilding the entire queue by hand."
+                                           Text="Capture the current loadout once it looks right so you always have a known-good stack to reload later."
+                                           TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Background="#FFF8F1" CornerRadius="14" Padding="16">
+                            <StackPanel Spacing="8">
+                                <TextBlock Classes="kicker" Text="Latest Scan Snapshot" />
+                                <TextBlock FontWeight="SemiBold"
+                                           Text="{Binding ScanPreviewHeadline}"
+                                           TextWrapping="Wrap" />
+                                <TextBlock Classes="body"
+                                           IsVisible="{Binding HasNoScanPreview}"
+                                           Text="Run Scan after any install change or queue rewrite to refresh the normalized local-content snapshot."
                                            TextWrapping="Wrap" />
                             </StackPanel>
                         </Border>
@@ -336,7 +411,40 @@
 
                         <Border Background="#FBF7F1" CornerRadius="14" Padding="16">
                             <StackPanel Spacing="8">
+                                <TextBlock Classes="kicker" Text="Operator Checklist" />
+                                <ItemsControl ItemsSource="{Binding ModsChecklist}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Classes="body"
+                                                       Margin="0,0,0,6"
+                                                       Text="{Binding .}"
+                                                       TextWrapping="Wrap" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Background="#FBF7F1" CornerRadius="14" Padding="16">
+                            <StackPanel Spacing="8">
                                 <TextBlock Classes="kicker" Text="Diagnostics" />
+                                <ItemsControl ItemsSource="{Binding DiagnosticBuckets}" IsVisible="{Binding HasDiagnosticBuckets}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="settings:ProjectZomboidModsAndMapsDiagnosticBucket">
+                                            <Border Background="#F6EFE6" CornerRadius="12" Padding="10" Margin="0,0,0,8">
+                                                <StackPanel Spacing="4">
+                                                    <TextBlock FontWeight="SemiBold"
+                                                               Text="{Binding Title}" />
+                                                    <TextBlock Classes="body"
+                                                               Text="{Binding Summary}"
+                                                               TextWrapping="Wrap" />
+                                                    <TextBlock Classes="kicker"
+                                                               Text="{Binding Count, StringFormat='{}{0} issue(s)'}" />
+                                                </StackPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
                                 <ItemsControl ItemsSource="{Binding Diagnostics}" IsVisible="{Binding HasDiagnostics}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
@@ -345,8 +453,8 @@
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
                                 <TextBlock Classes="body"
-                                           IsVisible="{Binding HasNoDiagnostics}"
-                                           Text="No workshop diagnostics yet. Apply settings and run a scan to validate the local cache."
+                                           IsVisible="{Binding HasNoDiagnosticBuckets}"
+                                           Text="No categorized scan issues yet. Apply settings and run a scan to validate the local cache."
                                            TextWrapping="Wrap" />
                             </StackPanel>
                         </Border>

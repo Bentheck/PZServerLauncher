@@ -418,8 +418,11 @@ else
 
     private string OverviewHref => $"/profiles/{Uri.EscapeDataString(ProfileId)}/overview";
 
-    private static string GetArchiveTriageLabel(BackupArchiveRow row) =>
-        $"{row.KindLabel} | {row.IsLatest ? "latest known-good" : "alternate point"}";
+    private static string GetArchiveTriageLabel(BackupArchiveRow row)
+    {
+        var posture = row.IsLatest ? "latest known-good" : "alternate point";
+        return $"{row.KindLabel} | {posture}";
+    }
 
     private static BackupArchiveRow ParseBackupEntry(string backupFileName, bool isLatest)
     {

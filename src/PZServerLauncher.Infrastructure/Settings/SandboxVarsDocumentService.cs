@@ -268,15 +268,15 @@ public sealed partial class SandboxVarsDocumentService : ISandboxVarsDocumentSer
                 continue;
             }
 
-            var key = valueMatch.Groups["key"].Value;
-            var pathSegments = stack.Reverse().Select(frame => frame.Key).Append(key);
+            var valueKey = valueMatch.Groups["key"].Value;
+            var pathSegments = stack.Reverse().Select(frame => frame.Key).Append(valueKey);
             var keyPath = string.Join('.', pathSegments);
             var rawValue = valueMatch.Groups["value"].Value.Trim();
             values[keyPath] = rawValue;
             entries[keyPath] = new SandboxLineEntry(
                 index,
                 valueMatch.Groups["indent"].Value,
-                key,
+                valueKey,
                 valueMatch.Groups["comma"].Success ? valueMatch.Groups["comma"].Value : ",",
                 valueMatch.Groups["comment"].Success ? valueMatch.Groups["comment"].Value.TrimEnd() : null);
         }

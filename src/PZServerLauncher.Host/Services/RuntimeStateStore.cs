@@ -65,7 +65,7 @@ public sealed class RuntimeStateStore(ProjectZomboidLiveOperationsInterpreter li
             ? actions.ToArray().OrderByDescending(action => action.TimestampUtc).ToList()
             : [];
         var lastPlayerActivityAtUtc = recentSignals.Count == 0
-            ? null
+            ? (DateTimeOffset?)null
             : recentSignals.Max(signal => signal.TimestampUtc);
 
         return new ProfileLiveOperationsSnapshot(
@@ -130,7 +130,7 @@ public sealed class RuntimeStateStore(ProjectZomboidLiveOperationsInterpreter li
         var playerCount = _connectedPlayers.TryGetValue(status.ProfileId, out var roster) ? roster.Count : 0;
         var lastPlayerActivityAtUtc = _playerSignals.TryGetValue(status.ProfileId, out var signals) && signals.Count > 0
             ? signals.Max(signal => signal.TimestampUtc)
-            : null;
+            : (DateTimeOffset?)null;
         var lastOperatorSummary = _operatorActions.TryGetValue(status.ProfileId, out var actions)
             ? actions.ToArray().OrderByDescending(action => action.TimestampUtc).FirstOrDefault()?.Summary
             : status.LastOperatorCommandSummary;

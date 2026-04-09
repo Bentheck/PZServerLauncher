@@ -1,13 +1,10 @@
 using PZServerLauncher.Core.Planning;
 using PZServerLauncher.Core.Runtime;
-using System.Text.RegularExpressions;
 
 namespace PZServerLauncher.Infrastructure.Planning;
 
 public static class ProjectZomboidLogPostureSummaryBuilder
 {
-    private static readonly Regex QuotedNameRegex = new("""(?<name>[^"]+)""", RegexOptions.Compiled);
-    private static readonly Regex UsernameRegex = new("""\b(?:username|user|player)[=: ]+["']?(?<name>[A-Za-z0-9 _.\-]+)["']?""", RegexOptions.Compiled | RegexOptions.IgnoreCase);
     private static readonly string[] PlayerJoinKeywords = ["connected", "joined", "logged in"];
     private static readonly string[] PlayerLeaveKeywords = ["disconnected", "disconnect", "left", "kicked", "banned"];
 
@@ -147,6 +144,19 @@ public static class ProjectZomboidLogPostureSummaryBuilder
                 continue;
             }
 
+            if (!isConnected)
+            {
+                foreach (var existingKey in players.Keys
+                             .Where(existingKey =>
+                                 string.Equals(existingKey, playerName, StringComparison.OrdinalIgnoreCase) ||
+                                 existingKey.EndsWith(playerName, StringComparison.OrdinalIgnoreCase) ||
+                                 playerName.EndsWith(existingKey, StringComparison.OrdinalIgnoreCase))
+                             .ToArray())
+                {
+                    players[existingKey] = false;
+                }
+            }
+
             players[playerName] = isConnected;
         }
 
@@ -227,16 +237,16 @@ public static class ProjectZomboidLogPostureSummaryBuilder
 
     private static string ExtractPlayerName(string line)
     {
-        var quotedMatch = QuotedNameRegex.Match(line);
-        if (quotedMatch.Success)
+        var quotedName = ExtractQuotedName(line);
+        if (!string.IsNullOrWhiteSpace(quotedName))
         {
-            return NormalizePlayerName(quotedMatch.Groups["name"].Value);
+            return NormalizePlayerName(quotedName);
         }
 
-        var usernameMatch = UsernameRegex.Match(line);
-        if (usernameMatch.Success)
+        var explicitUsername = ExtractInlinePlayerToken(line, "username=");
+        if (!string.IsNullOrWhiteSpace(explicitUsername))
         {
-            return NormalizePlayerName(usernameMatch.Groups["name"].Value);
+            return NormalizePlayerName(explicitUsername);
         }
 
         var transitionMarkerIndex = line.IndexOf(" connected", StringComparison.OrdinalIgnoreCase);
@@ -264,15 +274,86 @@ public static class ProjectZomboidLogPostureSummaryBuilder
             prefix = prefix[(prefix.LastIndexOf(':') + 1)..].Trim();
         }
 
-        var tokens = prefix.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        if (tokens.Length == 0)
+        foreach (var marker in new[] { "username=", "user ", "player " })
+        {
+            if (prefix.StartsWith(marker, StringComparison.OrdinalIgnoreCase))
+            {
+                prefix = prefix[marker.Length..].Trim();
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(prefix))
         {
             return string.Empty;
         }
 
-        return NormalizePlayerName(tokens[^1]);
+        return NormalizePlayerName(prefix);
     }
 
     private static string NormalizePlayerName(string value) =>
         value.Trim().Trim('"', '\'', '[', ']', '(', ')', ',', '.', ';', ':');
+
+    private static string ExtractQuotedName(string line)
+    {
+        var start = line.IndexOf('"');
+        if (start < 0)
+        {
+            start = line.IndexOf('\'');
+        }
+
+        if (start < 0)
+        {
+            return string.Empty;
+        }
+
+        var quote = line[start];
+        var end = line.IndexOf(quote, start + 1);
+        return end > start
+            ? line[(start + 1)..end]
+            : string.Empty;
+    }
+
+    private static string ExtractInlinePlayerToken(string line, string marker)
+    {
+        var markerIndex = line.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+        if (markerIndex < 0)
+        {
+            return string.Empty;
+        }
+
+        var remainder = line[(markerIndex + marker.Length)..].Trim();
+        if (remainder.Length == 0)
+        {
+            return string.Empty;
+        }
+
+        var terminatorIndex = remainder.IndexOfAny([' ', '\t', '\r', '\n', '"', '\'', ',', ';', ':']);
+        return terminatorIndex > 0
+            ? remainder[..terminatorIndex]
+            : TrimTransitionSuffix(remainder);
+    }
+
+    private static string TrimTransitionSuffix(string value)
+    {
+        var candidate = value.Trim();
+        foreach (var marker in new[]
+                 {
+                     " disconnected",
+                     " connected",
+                     " joined",
+                     " left",
+                     " kicked",
+                     " logged in",
+                     " to server",
+                 })
+        {
+            var markerIndex = candidate.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+            if (markerIndex > 0)
+            {
+                candidate = candidate[..markerIndex];
+            }
+        }
+
+        return candidate.Trim();
+    }
 }
