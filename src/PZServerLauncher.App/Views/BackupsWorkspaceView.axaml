@@ -214,9 +214,9 @@
                     <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding RestoreModeSummary}" TextWrapping="Wrap" />
 
                     <WrapPanel Orientation="Horizontal" ItemWidth="168" ItemHeight="36">
-                        <Button Command="{Binding CreateBackupCommand}" Content="Create Backup" IsEnabled="{Binding CanCreateBackup}" />
-                        <Button Command="{Binding RestoreSelectedCommand}" Content="Restore Selected" IsEnabled="{Binding CanRestore}" />
-                        <Button Command="{Binding ReloadCommand}" Content="Reload" />
+                        <Button Classes="action-primary" Command="{Binding CreateBackupCommand}" Content="Create Backup" IsEnabled="{Binding CanCreateBackup}" />
+                        <Button Classes="action-danger" Command="{Binding RestoreSelectedCommand}" Content="Restore Selected" IsEnabled="{Binding CanRestore}" />
+                        <Button Classes="action-secondary" Command="{Binding ReloadCommand}" Content="Reload" />
                     </WrapPanel>
 
                     <CheckBox Content="Restart server after restore"

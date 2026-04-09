@@ -54,6 +54,30 @@ public sealed class DashboardWorkspaceViewModel : WorkspacePageViewModelBase
             ? "Review the fleet posture below, then jump into Profiles or Overview to tune the next server."
             : "Refresh the host, then discover local imports so the panel can surface existing Zomboid servers.";
 
+    public bool IsFirstRun => !HasProfiles && !HasImportCandidates;
+
+    public string LaunchPadHeadline => HasImportCandidates
+        ? $"{ImportCandidateCount} local server candidate(s) are ready for intake."
+        : HasProfiles
+            ? "Your fleet is online. Use the board below to decide the next server action."
+            : "Create or import the first managed server.";
+
+    public string FirstRunActionPlan => HasImportCandidates
+        ? "Bring one local server under management first, then verify install, backup, and launch posture before the first live boot."
+        : "The fastest path is create or import, install the server footprint, capture a first backup, then tune settings before launch.";
+
+    public string LaunchPadStepOne => HasImportCandidates
+        ? "Step 1: Review the local server candidates and import the one you want to manage first."
+        : "Step 1: Create a starter profile or scan the local Zomboid directories for an existing server.";
+
+    public string LaunchPadStepTwo => HasImportCandidates
+        ? "Step 2: Open Profiles and confirm install, cache, and recovery posture for the imported server."
+        : "Step 2: Use Install & Update to create the dedicated server footprint and verify branch isolation.";
+
+    public string LaunchPadStepThree => HasImportCandidates
+        ? "Step 3: Tune General, Sandbox, Mods & Maps, and Network before the first live launch."
+        : "Step 3: Tune the structured settings, capture a first backup, then launch from Overview.";
+
     public bool HasProfiles => Legacy.Profiles.Count > 0;
 
     public bool HasNoProfiles => Legacy.Profiles.Count == 0;
@@ -190,6 +214,12 @@ public sealed class DashboardWorkspaceViewModel : WorkspacePageViewModelBase
         OnPropertyChanged(nameof(ImportSummary));
         OnPropertyChanged(nameof(RecentJobSummary));
         OnPropertyChanged(nameof(NextActionSummary));
+        OnPropertyChanged(nameof(IsFirstRun));
+        OnPropertyChanged(nameof(LaunchPadHeadline));
+        OnPropertyChanged(nameof(FirstRunActionPlan));
+        OnPropertyChanged(nameof(LaunchPadStepOne));
+        OnPropertyChanged(nameof(LaunchPadStepTwo));
+        OnPropertyChanged(nameof(LaunchPadStepThree));
         OnPropertyChanged(nameof(HasProfiles));
         OnPropertyChanged(nameof(HasNoProfiles));
         OnPropertyChanged(nameof(ProfileCount));

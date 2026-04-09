@@ -82,12 +82,14 @@
                     </StackPanel>
 
                     <Button Grid.Column="1"
+                            Classes="action-secondary"
                             VerticalAlignment="Bottom"
                             Command="{Binding LoadCommand}"
                             Content="Load File"
                             IsEnabled="{Binding CanLoad}" />
 
                     <Button Grid.Column="2"
+                            Classes="action-primary"
                             VerticalAlignment="Bottom"
                             Command="{Binding SaveCommand}"
                             Content="Save File"

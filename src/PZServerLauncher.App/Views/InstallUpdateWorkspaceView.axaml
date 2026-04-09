@@ -271,8 +271,8 @@
                         <StackPanel Spacing="8">
                             <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Deploy" />
                             <WrapPanel Orientation="Horizontal" ItemWidth="136" ItemHeight="36">
-                                <Button Command="{Binding InstallCommand}" Content="Install" />
-                                <Button Command="{Binding UpdateCommand}" Content="Update" />
+                                <Button Classes="action-secondary" Command="{Binding InstallCommand}" Content="Install" />
+                                <Button Classes="action-secondary" Command="{Binding UpdateCommand}" Content="Update" />
                             </WrapPanel>
                         </StackPanel>
                     </Border>
@@ -281,9 +281,9 @@
                         <StackPanel Spacing="8">
                             <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Runtime" />
                             <WrapPanel Orientation="Horizontal" ItemWidth="136" ItemHeight="36">
-                                <Button Command="{Binding StartCommand}" Content="Start" />
-                                <Button Command="{Binding StopCommand}" Content="Stop" />
-                                <Button Command="{Binding RestartCommand}" Content="Restart" />
+                                <Button Classes="action-primary" Command="{Binding StartCommand}" Content="Start" />
+                                <Button Classes="action-danger" Command="{Binding StopCommand}" Content="Stop" />
+                                <Button Classes="action-secondary" Command="{Binding RestartCommand}" Content="Restart" />
                             </WrapPanel>
                         </StackPanel>
                     </Border>
@@ -292,8 +292,8 @@
                         <StackPanel Spacing="8">
                             <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Safeguards" />
                             <WrapPanel Orientation="Horizontal" ItemWidth="136" ItemHeight="36">
-                                <Button Command="{Binding BackupCommand}" Content="Manual Backup" />
-                                <Button Command="{Binding RefreshCommand}" Content="Refresh" />
+                                <Button Classes="action-secondary" Command="{Binding BackupCommand}" Content="Manual Backup" />
+                                <Button Classes="action-secondary" Command="{Binding RefreshCommand}" Content="Refresh" />
                             </WrapPanel>
                             <TextBlock Classes="caption" Foreground="#CCBBA8" Text="{Binding LatestBackupLabel}" TextWrapping="Wrap" />
                             <TextBlock Classes="caption" Foreground="#CCBBA8" Text="{Binding BackupSignalSummary}" TextWrapping="Wrap" />

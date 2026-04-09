@@ -94,17 +94,17 @@
                         <StackPanel Spacing="6">
                             <TextBlock FontWeight="SemiBold" Text="Broadcast Message" />
                             <TextBox Text="{Binding BroadcastMessage}" PlaceholderText="servermsg text" />
-                            <Button Command="{Binding SendBroadcastCommand}" Content="Send Broadcast" IsEnabled="{Binding CanSendCommands}" />
+                            <Button Classes="action-primary" Command="{Binding SendBroadcastCommand}" Content="Send Broadcast" IsEnabled="{Binding CanSendCommands}" />
                         </StackPanel>
 
                         <StackPanel Spacing="6">
                             <TextBlock FontWeight="SemiBold" Text="Raw Console Command" />
                             <TextBox Text="{Binding RawConsoleCommand}" PlaceholderText="adduser / kickuser / save" />
-                            <Button Command="{Binding SendConsoleCommand}" Content="Send Console Command" IsEnabled="{Binding CanSendCommands}" />
+                            <Button Classes="action-secondary" Command="{Binding SendConsoleCommand}" Content="Send Console Command" IsEnabled="{Binding CanSendCommands}" />
                             <WrapPanel Orientation="Horizontal">
-                                <Button Command="{Binding ListPlayersCommand}" Content="Request Player List" IsEnabled="{Binding CanSendCommands}" Margin="0,8,10,0" />
-                                <Button Command="{Binding SaveWorldCommand}" Content="Save World" IsEnabled="{Binding CanSendCommands}" Margin="0,8,10,0" />
-                                <Button Command="{Binding ReloadOptionsCommand}" Content="Reload Options" IsEnabled="{Binding CanSendCommands}" Margin="0,8,0,0" />
+                                <Button Classes="action-secondary" Command="{Binding ListPlayersCommand}" Content="Request Player List" IsEnabled="{Binding CanSendCommands}" Margin="0,8,10,0" />
+                                <Button Classes="action-secondary" Command="{Binding SaveWorldCommand}" Content="Save World" IsEnabled="{Binding CanSendCommands}" Margin="0,8,10,0" />
+                                <Button Classes="action-secondary" Command="{Binding ReloadOptionsCommand}" Content="Reload Options" IsEnabled="{Binding CanSendCommands}" Margin="0,8,0,0" />
                             </WrapPanel>
                         </StackPanel>
                     </StackPanel>
@@ -124,9 +124,9 @@
                                                 <TextBlock Classes="caption" Text="{Binding LastSeenSummary}" TextWrapping="Wrap" />
                                             </StackPanel>
                                             <WrapPanel Orientation="Horizontal" ItemHeight="34">
-                                                <Button Command="{Binding #LogsRoot.DataContext.KickPlayerCommand}" CommandParameter="{Binding .}" Content="Kick" IsEnabled="{Binding #LogsRoot.DataContext.CanSendCommands}" Margin="0,0,8,0" />
-                                                <Button Command="{Binding #LogsRoot.DataContext.BanPlayerCommand}" CommandParameter="{Binding .}" Content="Ban" IsEnabled="{Binding #LogsRoot.DataContext.CanSendCommands}" Margin="0,0,8,0" />
-                                                <Button Command="{Binding #LogsRoot.DataContext.WhitelistPlayerCommand}" CommandParameter="{Binding .}" Content="Whitelist" IsEnabled="{Binding #LogsRoot.DataContext.CanSendCommands}" />
+                                                <Button Classes="action-danger" Command="{Binding #LogsRoot.DataContext.KickPlayerCommand}" CommandParameter="{Binding .}" Content="Kick" IsEnabled="{Binding #LogsRoot.DataContext.CanSendCommands}" Margin="0,0,8,0" />
+                                                <Button Classes="action-danger" Command="{Binding #LogsRoot.DataContext.BanPlayerCommand}" CommandParameter="{Binding .}" Content="Ban" IsEnabled="{Binding #LogsRoot.DataContext.CanSendCommands}" Margin="0,0,8,0" />
+                                                <Button Classes="action-secondary" Command="{Binding #LogsRoot.DataContext.WhitelistPlayerCommand}" CommandParameter="{Binding .}" Content="Whitelist" IsEnabled="{Binding #LogsRoot.DataContext.CanSendCommands}" />
                                             </WrapPanel>
                                         </StackPanel>
                                     </Border>

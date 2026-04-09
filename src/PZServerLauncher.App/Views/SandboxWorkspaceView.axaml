@@ -251,10 +251,10 @@
                             <StackPanel Spacing="8">
                                 <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Actions" />
                                 <WrapPanel Orientation="Horizontal" ItemWidth="152" ItemHeight="36">
-                                    <Button Command="{Binding SaveSettingsCommand}" Content="Apply Settings" IsEnabled="{Binding CanEdit}" />
-                                    <Button Command="{Binding SaveDraftCommand}" Content="Save Draft" IsEnabled="{Binding CanEdit}" />
-                                    <Button Command="{Binding DiscardDraftCommand}" Content="Discard Draft" />
-                                    <Button Command="{Binding ReloadCommand}" Content="Reload From Host" />
+                                    <Button Classes="action-primary" Command="{Binding SaveSettingsCommand}" Content="Apply Settings" IsEnabled="{Binding CanEdit}" />
+                                    <Button Classes="action-secondary" Command="{Binding SaveDraftCommand}" Content="Save Draft" IsEnabled="{Binding CanEdit}" />
+                                    <Button Classes="action-secondary" Command="{Binding DiscardDraftCommand}" Content="Discard Draft" />
+                                    <Button Classes="action-secondary" Command="{Binding ReloadCommand}" Content="Reload From Host" />
                                 </WrapPanel>
                             </StackPanel>
                         </Border>

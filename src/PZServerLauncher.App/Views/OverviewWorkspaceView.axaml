@@ -192,13 +192,13 @@
                     <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding NetworkPostureSummary}" TextWrapping="Wrap" />
 
                     <WrapPanel Orientation="Horizontal" ItemWidth="138" ItemHeight="36">
-                        <Button Command="{Binding InstallCommand}" Content="Install" />
-                        <Button Command="{Binding UpdateCommand}" Content="Update" />
-                        <Button Command="{Binding StartCommand}" Content="Start" />
-                        <Button Command="{Binding StopCommand}" Content="Stop" />
-                        <Button Command="{Binding RestartCommand}" Content="Restart" />
-                        <Button Command="{Binding BackupCommand}" Content="Backup" />
-                        <Button Command="{Binding RestoreCommand}" Content="Restore Latest" IsEnabled="{Binding CanRestore}" />
+                        <Button Classes="action-secondary" Command="{Binding InstallCommand}" Content="Install" />
+                        <Button Classes="action-secondary" Command="{Binding UpdateCommand}" Content="Update" />
+                        <Button Classes="action-primary" Command="{Binding StartCommand}" Content="Start" />
+                        <Button Classes="action-danger" Command="{Binding StopCommand}" Content="Stop" />
+                        <Button Classes="action-secondary" Command="{Binding RestartCommand}" Content="Restart" />
+                        <Button Classes="action-secondary" Command="{Binding BackupCommand}" Content="Backup" />
+                        <Button Classes="action-secondary" Command="{Binding RestoreCommand}" Content="Restore Latest" IsEnabled="{Binding CanRestore}" />
                     </WrapPanel>
 
                     <Border Background="#2B221C" CornerRadius="16" Padding="14">

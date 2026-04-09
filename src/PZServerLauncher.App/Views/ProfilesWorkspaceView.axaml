@@ -126,10 +126,23 @@
                 <Border Grid.Row="3" Classes="callout-card" Padding="18" IsVisible="{Binding HasNoProfiles}">
                     <StackPanel Spacing="8">
                         <TextBlock Classes="kicker" Text="Roster Empty" />
-                        <TextBlock Classes="panel-title" FontSize="20" Text="No managed servers yet" />
-                        <TextBlock Classes="body"
-                                   Text="Create a starter profile or import an existing local server. Once one lands here, the full profile cockpit and section rail come online."
-                                   TextWrapping="Wrap" />
+                        <TextBlock Classes="panel-title" FontSize="20" Text="{Binding FirstRunHeadline}" />
+                        <TextBlock Classes="body" Text="{Binding FirstRunActionPlan}" TextWrapping="Wrap" />
+                        <Border Background="#F5E8DA" CornerRadius="12" Padding="12">
+                            <StackPanel Spacing="6">
+                                <TextBlock Classes="caption" Text="{Binding FirstRunStepOne}" TextWrapping="Wrap" />
+                                <TextBlock Classes="caption" Text="{Binding FirstRunStepTwo}" TextWrapping="Wrap" />
+                                <TextBlock Classes="caption" Text="{Binding FirstRunStepThree}" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+                        <WrapPanel Orientation="Horizontal" ItemWidth="146" ItemHeight="36">
+                            <Button Classes="action-primary"
+                                    Command="{Binding Legacy.CreateStarterProfileCommand}"
+                                    Content="Create Profile" />
+                            <Button Classes="action-secondary"
+                                    Command="{Binding Legacy.DiscoverImportsCommand}"
+                                    Content="Scan Imports" />
+                        </WrapPanel>
                     </StackPanel>
                 </Border>
 
@@ -194,6 +207,16 @@
                     <TextBlock Classes="panel-title" FontSize="24" Text="Select a profile to open the cockpit" />
                     <TextBlock Classes="body" Text="{Binding SelectedWorkspaceSummary}" TextWrapping="Wrap" />
                     <TextBlock Classes="caption" Text="{Binding SelectedWorkspaceAction}" TextWrapping="Wrap" />
+                    <WrapPanel Orientation="Horizontal" ItemWidth="146" ItemHeight="36">
+                        <Button Classes="action-primary"
+                                Command="{Binding Legacy.CreateStarterProfileCommand}"
+                                Content="Create Profile"
+                                IsVisible="{Binding HasNoProfiles}" />
+                        <Button Classes="action-secondary"
+                                Command="{Binding Legacy.DiscoverImportsCommand}"
+                                Content="Scan Imports"
+                                IsVisible="{Binding HasImportCandidates}" />
+                    </WrapPanel>
                 </StackPanel>
             </Border>
 

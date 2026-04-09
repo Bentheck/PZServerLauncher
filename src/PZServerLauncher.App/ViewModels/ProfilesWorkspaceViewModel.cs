@@ -10,6 +10,7 @@ namespace PZServerLauncher.App.ViewModels;
 public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageHeader, IWorkspaceDirtyState
 {
     private readonly IReadOnlyDictionary<string, ViewModelBase> _sections;
+    private string? _selectedProfileId;
 
     public ProfilesWorkspaceViewModel(MainWindowViewModel legacy, LocalHostApiClient hostApiClient, RuntimeEventStream runtimeEventStream)
     {
@@ -17,6 +18,11 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
         if (Legacy.Profiles is INotifyCollectionChanged profiles)
         {
             profiles.CollectionChanged += OnProfilesChanged;
+        }
+
+        if (Legacy.ImportCandidates is INotifyCollectionChanged importCandidates)
+        {
+            importCandidates.CollectionChanged += OnImportCandidatesChanged;
         }
 
         Overview = new OverviewWorkspaceViewModel(legacy, hostApiClient, runtimeEventStream);
@@ -88,6 +94,26 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
 
     public bool HasNoProfiles => !HasProfiles;
 
+    public bool HasImportCandidates => Legacy.ImportCandidates.Count > 0;
+
+    public int ImportCandidateCount => Legacy.ImportCandidates.Count;
+
+    public string FirstRunHeadline => HasImportCandidates
+        ? $"{ImportCandidateCount} local server candidate(s) are ready for intake."
+        : "Create or import the first managed server.";
+
+    public string FirstRunActionPlan => HasImportCandidates
+        ? "Import one candidate first, then use the section rail to verify install, recovery, and configuration posture."
+        : "Create a starter profile or scan the machine for an existing Zomboid install, then continue here once the roster has its first server.";
+
+    public string FirstRunStepOne => HasImportCandidates
+        ? "Step 1: Choose the local server you want to bring under management."
+        : "Step 1: Create a starter profile or run import discovery.";
+
+    public string FirstRunStepTwo => "Step 2: Open Install & Update to establish the server footprint and branch isolation.";
+
+    public string FirstRunStepThree => "Step 3: Use the section rail to finish settings, backups, and the first launch.";
+
     public IReadOnlyList<WorkspaceNavigationItemViewModel> SectionItems { get; }
 
     public IReadOnlyList<ProfileCardViewModel> Profiles => Legacy.Profiles;
@@ -155,7 +181,9 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
         : $"This workspace is centered on {SelectedProfile.DisplayName}. The section rail below keeps all profile-specific tasks in one place.";
 
     public string SelectedWorkspaceAction => SelectedProfile is null
-        ? "Import or create a profile, then use the section rail to continue."
+        ? HasProfiles
+            ? "Choose a roster entry on the left to open its control stack."
+            : "Create or import the first profile, then use the section rail to continue."
         : Directory.Exists(SelectedProfile.InstallDirectory)
             ? "The profile appears installed. Start in Overview, then move to Install & Update or General depending on what needs attention."
             : "The profile is not installed yet. Use Install & Update first, then return here to continue configuration.";
@@ -333,6 +361,7 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
 
     partial void OnSelectedProfileChanged(ProfileCardViewModel? value)
     {
+        _selectedProfileId = value?.ProfileId;
         foreach (var profile in Legacy.Profiles)
         {
             profile.IsSelected = ReferenceEquals(profile, value);
@@ -365,6 +394,20 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
 
     private void OnProfilesChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
+        if (Legacy.Profiles.Count == 0)
+        {
+            SelectedProfile = null;
+        }
+        else if (!string.IsNullOrWhiteSpace(_selectedProfileId))
+        {
+            SelectedProfile = Legacy.Profiles.FirstOrDefault(profile => string.Equals(profile.ProfileId, _selectedProfileId, StringComparison.Ordinal))
+                ?? Legacy.Profiles[0];
+        }
+        else if (SelectedProfile is null)
+        {
+            SelectedProfile = Legacy.Profiles[0];
+        }
+
         foreach (var profile in Legacy.Profiles)
         {
             profile.IsSelected = ReferenceEquals(profile, SelectedProfile);
@@ -373,6 +416,13 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
         OnPropertyChanged(nameof(ProfileCountSummary));
         OnPropertyChanged(nameof(HasProfiles));
         OnPropertyChanged(nameof(HasNoProfiles));
+        OnPropertyChanged(nameof(HasImportCandidates));
+        OnPropertyChanged(nameof(ImportCandidateCount));
+        OnPropertyChanged(nameof(FirstRunHeadline));
+        OnPropertyChanged(nameof(FirstRunActionPlan));
+        OnPropertyChanged(nameof(FirstRunStepOne));
+        OnPropertyChanged(nameof(FirstRunStepTwo));
+        OnPropertyChanged(nameof(FirstRunStepThree));
         OnPropertyChanged(nameof(InstalledProfileCount));
         OnPropertyChanged(nameof(RecoveryReadyProfileCount));
         OnPropertyChanged(nameof(DirectJavaReadyProfileCount));
@@ -380,5 +430,17 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
         OnPropertyChanged(nameof(FallbackLaunchProfileCount));
         OnPropertyChanged(nameof(WorkspaceHeadline));
         OnPropertyChanged(nameof(WorkspaceGuidance));
+    }
+
+    private void OnImportCandidatesChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        OnPropertyChanged(nameof(HasImportCandidates));
+        OnPropertyChanged(nameof(ImportCandidateCount));
+        OnPropertyChanged(nameof(FirstRunHeadline));
+        OnPropertyChanged(nameof(FirstRunActionPlan));
+        OnPropertyChanged(nameof(FirstRunStepOne));
+        OnPropertyChanged(nameof(FirstRunStepTwo));
+        OnPropertyChanged(nameof(FirstRunStepThree));
+        OnPropertyChanged(nameof(SelectedWorkspaceAction));
     }
 }
