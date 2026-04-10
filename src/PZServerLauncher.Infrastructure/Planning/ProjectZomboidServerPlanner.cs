@@ -99,8 +99,7 @@ public sealed class ProjectZomboidServerPlanner : IProjectZomboidServerPlanner
     {
         var arguments = new List<string>
         {
-            "-cachedir",
-            profile.CacheDirectory,
+            $"-cachedir={profile.CacheDirectory}",
             "-servername",
             profile.ServerName,
             "-port",
@@ -455,6 +454,11 @@ public sealed class ProjectZomboidServerPlanner : IProjectZomboidServerPlanner
         for (var index = 0; index < originalArguments.Count; index++)
         {
             var token = originalArguments[index];
+            if (ManagedServerArguments.Any(argument => token.StartsWith($"{argument}=", StringComparison.OrdinalIgnoreCase)))
+            {
+                continue;
+            }
+
             if (ManagedServerArguments.Contains(token))
             {
                 index++;

@@ -9,7 +9,7 @@
              x:Class="PZServerLauncher.App.Views.ProfilesWorkspaceView"
              x:Name="ProfilesRoot"
              x:DataType="vm:ProfilesWorkspaceViewModel">
-    <Grid ColumnDefinitions="330,*" ColumnSpacing="18">
+    <Grid ColumnDefinitions="360,*" ColumnSpacing="18">
         <Border Classes="surface-dark" Padding="18">
             <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" RowSpacing="16">
                 <StackPanel Spacing="6">
@@ -31,7 +31,7 @@
                             Content="Scan Imports" />
                 </Grid>
 
-                <Border Grid.Row="2" Classes="command-card" Padding="16">
+                <Border Grid.Row="2" Classes="command-card" Padding="16" IsVisible="{Binding HasProfiles}">
                     <StackPanel Spacing="6">
                         <TextBlock Classes="kicker" Foreground="#E5A26B" Text="{Binding ProfileCountSummary}" />
                         <TextBlock Classes="body" Foreground="#F1E8DE" Text="{Binding WorkspaceGuidance}" TextWrapping="Wrap" />
@@ -126,7 +126,7 @@
                 <Border Grid.Row="3" Classes="callout-card" Padding="18" IsVisible="{Binding HasNoProfiles}">
                     <StackPanel Spacing="8">
                         <TextBlock Classes="kicker" Text="Roster Empty" />
-                        <TextBlock Classes="panel-title" FontSize="20" Text="{Binding FirstRunHeadline}" />
+                        <TextBlock Classes="panel-title" FontSize="20" Text="{Binding FirstRunHeadline}" TextWrapping="Wrap" />
                         <TextBlock Classes="body" Text="{Binding FirstRunActionPlan}" TextWrapping="Wrap" />
                         <Border Background="#F5E8DA" CornerRadius="12" Padding="12">
                             <StackPanel Spacing="6">
@@ -146,7 +146,7 @@
                     </StackPanel>
                 </Border>
 
-                <Border Grid.Row="4" Classes="command-card" Padding="16">
+                <Border Grid.Row="4" Classes="command-card" Padding="16" IsVisible="{Binding HasProfiles}">
                     <StackPanel Spacing="6">
                         <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Selected Server" />
                         <TextBlock Classes="body" Foreground="#F1E8DE" Text="{Binding SelectedProfileSummary}" TextWrapping="Wrap" />

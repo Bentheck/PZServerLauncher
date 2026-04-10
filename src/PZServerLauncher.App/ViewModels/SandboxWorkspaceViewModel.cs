@@ -341,6 +341,11 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         NotifyComputedState();
     }
 
+    public override async Task RefreshPageAsync()
+    {
+        await LoadAsync(SelectedProfile);
+    }
+
     public override async Task SaveDraftAsync()
     {
         if (SelectedProfile is null || _catalog is null || !CanEdit)

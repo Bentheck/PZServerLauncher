@@ -75,7 +75,7 @@ public static class ProjectZomboidUserAccessSummaryBuilder
     {
         if (!ownerBootstrapConfigured)
         {
-            return "Finish owner bootstrap first so the account manager can become a real security console instead of a placeholder.";
+            return "Finish owner bootstrap first so the account manager can become a real local security console.";
         }
 
         if (pendingTwoFactor > 0)

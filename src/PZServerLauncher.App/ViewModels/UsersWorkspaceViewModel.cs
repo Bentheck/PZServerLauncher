@@ -176,6 +176,11 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
         RefreshDirtyState();
     }
 
+    public override async Task RefreshPageAsync()
+    {
+        await ReloadUsersAsync();
+    }
+
     public override Task DiscardDraftAsync()
     {
         ResetCreateForm();

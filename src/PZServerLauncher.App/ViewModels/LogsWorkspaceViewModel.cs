@@ -280,6 +280,11 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
         _ = LoadAsync(profile);
     }
 
+    public override async Task RefreshPageAsync()
+    {
+        await LoadAsync(SelectedProfile);
+    }
+
     public override Task SaveDraftAsync() => Task.CompletedTask;
 
     public override Task DiscardDraftAsync() => Task.CompletedTask;

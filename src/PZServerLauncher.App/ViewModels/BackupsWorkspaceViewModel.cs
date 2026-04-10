@@ -226,6 +226,12 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         _ = LoadAsync(profile);
     }
 
+    public override async Task RefreshPageAsync()
+    {
+        ApplyPolicy(SelectedProfile?.BackupPolicy ?? BackupPolicy.Default);
+        await LoadAsync(SelectedProfile);
+    }
+
     public override Task SaveDraftAsync() => Task.CompletedTask;
 
     public override Task DiscardDraftAsync() => Task.CompletedTask;

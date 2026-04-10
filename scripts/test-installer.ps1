@@ -2,8 +2,8 @@
 param(
     [string]$Configuration = "Release",
     [string]$RuntimeIdentifier = "win-x64",
-    [string]$BaseVersion = "0.1.0",
-    [string]$UpgradeVersion = "0.1.1",
+    [string]$BaseVersion = "",
+    [string]$UpgradeVersion = "",
     [switch]$SkipIfNotAdmin
 )
 
@@ -70,6 +70,28 @@ function Get-LatestMsiPath {
     return $msi.FullName
 }
 
+function Get-RepoInstallerVersion {
+    param([string]$RepoRoot)
+
+    $propsPath = Join-Path $RepoRoot "Directory.Build.props"
+    [xml]$props = Get-Content -Path $propsPath
+    $versionNode = $props.Project.PropertyGroup.PZServerLauncherVersion | Select-Object -First 1
+    $version = [string]$versionNode
+    if ([string]::IsNullOrWhiteSpace($version)) {
+        throw "Directory.Build.props does not define PZServerLauncherVersion."
+    }
+
+    return $version.Trim()
+}
+
+function Get-NextPatchVersion {
+    param([string]$Version)
+
+    $parsed = [Version]$Version
+    $patch = if ($parsed.Build -ge 0) { $parsed.Build } else { 0 }
+    return "{0}.{1}.{2}" -f $parsed.Major, $parsed.Minor, ($patch + 1)
+}
+
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
 $artifactsRoot = Join-Path $repoRoot "artifacts"
 $logsRoot = Join-Path $artifactsRoot "installer-smoke"
@@ -96,6 +118,14 @@ New-Item -ItemType Directory -Force -Path $installRoot | Out-Null
 $buildInstallerScript = Join-Path $repoRoot "scripts\build-installer.ps1"
 $currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
 $isAdministrator = $currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+
+if ([string]::IsNullOrWhiteSpace($BaseVersion)) {
+    $BaseVersion = Get-RepoInstallerVersion -RepoRoot $repoRoot
+}
+
+if ([string]::IsNullOrWhiteSpace($UpgradeVersion)) {
+    $UpgradeVersion = Get-NextPatchVersion -Version $BaseVersion
+}
 
 Write-Host "Building base installer $BaseVersion"
 Invoke-PowerShellScript -ScriptPath $buildInstallerScript -FailureMessage "Base installer build failed." -Arguments @(

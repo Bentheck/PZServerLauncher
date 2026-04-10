@@ -205,6 +205,11 @@ public partial class NetworkAndAdminWorkspaceViewModel : ProfileWorkspacePageVie
         NotifyComputedState();
     }
 
+    public override async Task RefreshPageAsync()
+    {
+        await LoadAsync(SelectedProfile);
+    }
+
     public override async Task SaveDraftAsync()
     {
         LoadStatus = "Drafts are disabled on Network & Admin so password fields are never persisted.";

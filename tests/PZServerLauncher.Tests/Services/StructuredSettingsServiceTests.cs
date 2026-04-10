@@ -1320,8 +1320,7 @@ public sealed class StructuredSettingsServiceTests : IDisposable
             Assert.EndsWith(Path.Combine("jre64", "bin", "java.exe"), launchPlan.LauncherPath, StringComparison.OrdinalIgnoreCase);
             Assert.Contains("-Xms10g", launchPlan.Arguments);
             Assert.Contains("-Xmx10g", launchPlan.Arguments);
-            Assert.Contains("-cachedir", launchPlan.Arguments);
-            Assert.Contains(cacheRoot, launchPlan.Arguments);
+            Assert.Contains(launchPlan.Arguments, argument => string.Equals(argument, $"-cachedir={cacheRoot}", StringComparison.OrdinalIgnoreCase));
             Assert.Contains("-servername", launchPlan.Arguments);
             Assert.Contains("servertest", launchPlan.Arguments);
             Assert.Contains("-adminusername", launchPlan.Arguments);

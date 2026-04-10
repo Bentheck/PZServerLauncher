@@ -7,7 +7,7 @@ using PZServerLauncher.Contracts.Runtime;
 
 namespace PZServerLauncher.App.ViewModels;
 
-public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageHeader, IWorkspaceDirtyState
+public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageHeader, IWorkspaceDirtyState, IWorkspaceRefreshable
 {
     private readonly IReadOnlyDictionary<string, ViewModelBase> _sections;
     private string? _selectedProfileId;
@@ -68,7 +68,7 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
         CurrentSection = Overview;
         UpdateSectionSelection(ProfileWorkspacePageIds.Overview);
 
-        SelectSectionCommand = new RelayCommand<WorkspaceNavigationItemViewModel>(SelectSection);
+        SelectSectionCommand = new AsyncRelayCommand<WorkspaceNavigationItemViewModel>(SelectSectionAsync);
         SaveCurrentDraftCommand = new AsyncRelayCommand(SaveDraftAsync);
         DiscardCurrentDraftCommand = new AsyncRelayCommand(DiscardDraftAsync);
         ConfirmSectionNavigationSaveCommand = new AsyncRelayCommand(ConfirmSectionNavigationSaveAsync);
@@ -217,7 +217,7 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
     [ObservableProperty]
     private WorkspaceNavigationItemViewModel? pendingSectionTarget;
 
-    public IRelayCommand<WorkspaceNavigationItemViewModel> SelectSectionCommand { get; }
+    public IAsyncRelayCommand<WorkspaceNavigationItemViewModel> SelectSectionCommand { get; }
 
     public IAsyncRelayCommand SaveCurrentDraftCommand { get; }
 
@@ -253,7 +253,7 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
             ?? SectionItems.FirstOrDefault(item => string.Equals(item.Key, ProfileWorkspacePageIds.Overview, StringComparison.Ordinal))
             ?? SectionItems.First();
 
-        SelectSection(targetSection);
+        _ = SelectSectionAsync(targetSection);
     }
 
     public async Task SaveDraftAsync()
@@ -276,7 +276,13 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
         }
     }
 
-    private void SelectSection(WorkspaceNavigationItemViewModel? section)
+    public async Task RefreshPageAsync()
+    {
+        RefreshWorkspaceState();
+        await RefreshCurrentSectionAsync();
+    }
+
+    private async Task SelectSectionAsync(WorkspaceNavigationItemViewModel? section)
     {
         if (section is null || !section.IsEnabled)
         {
@@ -284,7 +290,7 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
         }
 
         var next = ResolvePage(section.Key);
-        if (next is null || ReferenceEquals(next, CurrentSection))
+        if (next is null)
         {
             return;
         }
@@ -292,12 +298,14 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
         if (CurrentSection is IWorkspaceDirtyState dirtyState && dirtyState.HasUnsavedChanges)
         {
             PendingSectionTarget = section;
-            PendingSectionNavigationMessage = $"Save or discard changes in {((IWorkspacePageHeader)CurrentSection).PageTitle} before switching to {section.Title}.";
+            PendingSectionNavigationMessage = ReferenceEquals(next, CurrentSection)
+                ? $"Save or discard changes in {((IWorkspacePageHeader)CurrentSection).PageTitle} before refreshing it."
+                : $"Save or discard changes in {((IWorkspacePageHeader)CurrentSection).PageTitle} before switching to {section.Title}.";
             HasPendingSectionNavigation = true;
             return;
         }
 
-        SwitchSection(section.Key, next);
+        await SwitchSectionAsync(section.Key, next);
     }
 
     private async Task ConfirmSectionNavigationSaveAsync()
@@ -315,7 +323,7 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
             var next = ResolvePage(target.Key);
             if (next is not null)
             {
-                SwitchSection(target.Key, next);
+                await SwitchSectionAsync(target.Key, next);
             }
         }
     }
@@ -335,7 +343,7 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
             var next = ResolvePage(target.Key);
             if (next is not null)
             {
-                SwitchSection(target.Key, next);
+                await SwitchSectionAsync(target.Key, next);
             }
         }
     }
@@ -350,12 +358,31 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
             ? page
             : null;
 
-    private void SwitchSection(string pageId, ViewModelBase section)
+    private async Task RefreshCurrentSectionAsync()
     {
-        CurrentSection = section;
-        UpdateSectionSelection(pageId);
-        OnPropertyChanged(nameof(HasUnsavedChanges));
-        OnPropertyChanged(nameof(DirtyStateMessage));
+        if (CurrentSection is IWorkspaceRefreshable refreshable)
+        {
+            await refreshable.RefreshPageAsync();
+        }
+    }
+
+    private async Task SwitchSectionAsync(string pageId, ViewModelBase section)
+    {
+        if (!ReferenceEquals(CurrentSection, section))
+        {
+            CurrentSection = section;
+            UpdateSectionSelection(pageId);
+            OnPropertyChanged(nameof(HasUnsavedChanges));
+            OnPropertyChanged(nameof(DirtyStateMessage));
+        }
+        else
+        {
+            UpdateSectionSelection(pageId);
+        }
+
+        await Legacy.RefreshCommand.ExecuteAsync(null);
+        RefreshWorkspaceState();
+        await RefreshCurrentSectionAsync();
     }
 
     private void UpdateSectionSelection(string selectedPageId)
@@ -412,6 +439,8 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
         {
             page.SetSelectedProfile(value);
         }
+
+        RefreshWorkspaceState();
     }
 
     private void OnProfilesChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -464,5 +493,42 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
         OnPropertyChanged(nameof(FirstRunStepTwo));
         OnPropertyChanged(nameof(FirstRunStepThree));
         OnPropertyChanged(nameof(SelectedWorkspaceAction));
+    }
+
+    private void RefreshWorkspaceState()
+    {
+        OnPropertyChanged(nameof(ProfileCountSummary));
+        OnPropertyChanged(nameof(HasProfiles));
+        OnPropertyChanged(nameof(HasNoProfiles));
+        OnPropertyChanged(nameof(HasImportCandidates));
+        OnPropertyChanged(nameof(ImportCandidateCount));
+        OnPropertyChanged(nameof(FirstRunHeadline));
+        OnPropertyChanged(nameof(FirstRunActionPlan));
+        OnPropertyChanged(nameof(FirstRunStepOne));
+        OnPropertyChanged(nameof(FirstRunStepTwo));
+        OnPropertyChanged(nameof(FirstRunStepThree));
+        OnPropertyChanged(nameof(InstalledProfileCount));
+        OnPropertyChanged(nameof(RecoveryReadyProfileCount));
+        OnPropertyChanged(nameof(DirectJavaReadyProfileCount));
+        OnPropertyChanged(nameof(RunningProfileCount));
+        OnPropertyChanged(nameof(FallbackLaunchProfileCount));
+        OnPropertyChanged(nameof(SelectedProfileSummary));
+        OnPropertyChanged(nameof(SelectedProfileBranchSummary));
+        OnPropertyChanged(nameof(SelectedProfileRuntimeSummary));
+        OnPropertyChanged(nameof(SelectedProfilePathSummary));
+        OnPropertyChanged(nameof(SelectedProfilePortsSummary));
+        OnPropertyChanged(nameof(SelectedCommunitySummary));
+        OnPropertyChanged(nameof(SelectedNetworkSummary));
+        OnPropertyChanged(nameof(SelectedWorldSummary));
+        OnPropertyChanged(nameof(SelectedDeploymentSummary));
+        OnPropertyChanged(nameof(SelectedLaunchSummary));
+        OnPropertyChanged(nameof(SelectedRecoverySummary));
+        OnPropertyChanged(nameof(SelectedWelcomeSummary));
+        OnPropertyChanged(nameof(SelectedWorkspaceSummary));
+        OnPropertyChanged(nameof(SelectedWorkspaceAction));
+        OnPropertyChanged(nameof(WorkspaceHeadline));
+        OnPropertyChanged(nameof(WorkspaceGuidance));
+        OnPropertyChanged(nameof(HasSelectedProfile));
+        OnPropertyChanged(nameof(HasNoSelectedProfile));
     }
 }

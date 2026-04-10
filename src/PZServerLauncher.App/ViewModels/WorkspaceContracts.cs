@@ -18,6 +18,11 @@ public interface IWorkspaceDirtyState
     Task DiscardDraftAsync();
 }
 
+public interface IWorkspaceRefreshable
+{
+    Task RefreshPageAsync();
+}
+
 public interface IProfileWorkspacePage : IWorkspacePageHeader
 {
     string PageId { get; }

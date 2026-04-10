@@ -177,6 +177,12 @@ public sealed class OverviewWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         Notify();
     }
 
+    public override async Task RefreshPageAsync()
+    {
+        await RefreshStructuredOverviewAsync(SelectedProfile);
+        Notify();
+    }
+
     private async Task ExecuteProfileCommandAsync(IAsyncRelayCommand<ProfileCardViewModel> command)
     {
         if (SelectedProfile is null)

@@ -104,7 +104,7 @@
                                 <TextBlock Classes="body" Text="{Binding RemoteBindingSummary}" TextWrapping="Wrap" />
                                 <TextBlock Classes="caption" Text="{Binding RemoteExposureSummary}" TextWrapping="Wrap" />
                             </StackPanel>
-                            <Border Background="#2A2927" CornerRadius="999" Padding="10,5" VerticalAlignment="Top">
+                            <Border Grid.Column="1" Background="#2A2927" CornerRadius="999" Padding="10,5" VerticalAlignment="Top">
                                 <TextBlock Foreground="#F7F0E7" FontSize="11" Text="Desktop-managed" />
                             </Border>
                         </Grid>

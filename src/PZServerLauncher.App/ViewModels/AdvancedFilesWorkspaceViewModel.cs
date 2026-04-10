@@ -105,6 +105,18 @@ public partial class AdvancedFilesWorkspaceViewModel : ProfileWorkspacePageViewM
         NotifyComputedState();
     }
 
+    public override async Task RefreshPageAsync()
+    {
+        if (IsLoaded && SelectedProfile is not null)
+        {
+            await LoadAsync();
+            return;
+        }
+
+        Reset(SelectedProfile);
+        NotifyComputedState();
+    }
+
     public override async Task SaveDraftAsync()
     {
         if (CanSave && HasUnsavedChanges)

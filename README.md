@@ -43,10 +43,10 @@ Build the Windows installer with:
 Optional parameters:
 
 ```powershell
-./scripts/build-installer.ps1 -Configuration Release -RuntimeIdentifier win-x64 -InstallerVersion 0.1.0
+./scripts/build-installer.ps1 -Configuration Release -RuntimeIdentifier win-x64 -InstallerVersion 0.2.0
 ```
 
-The script stages published outputs under `artifacts/publish` and then builds the WiX MSI from those staged folders.
+The script stages published outputs under `artifacts/publish` and then builds the WiX MSI from those staged folders. If `-InstallerVersion` is omitted, it uses the repo version from `Directory.Build.props`.
 
 Run the local installer smoke test with:
 
@@ -54,6 +54,6 @@ Run the local installer smoke test with:
 ./scripts/test-installer.ps1
 ```
 
-That script builds two MSI versions, installs the first, upgrades to the second, checks that app data survives the upgrade, and then uninstalls the product. The same flow runs in GitHub Actions on `windows-latest` through `.github/workflows/installer-smoke.yml`.
+That script builds two MSI versions, installs the first, upgrades to the second, checks that app data survives the upgrade, and then uninstalls the product. By default it uses the repo version from `Directory.Build.props` as the base MSI version and increments the patch version for the upgrade pass. The same flow runs in GitHub Actions on `windows-latest` through `.github/workflows/installer-smoke.yml`.
 
 Local smoke testing requires an elevated PowerShell session because the MSI is authored as a per-machine installer.

@@ -324,6 +324,12 @@ public sealed partial class InstallUpdateWorkspaceViewModel : ProfileWorkspacePa
         Notify();
     }
 
+    public override Task RefreshPageAsync()
+    {
+        Notify();
+        return Task.CompletedTask;
+    }
+
     partial void OnEditableInstallDirectoryChanged(string value)
     {
         OnPropertyChanged(nameof(HasPathOverridesDirty));

@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PZServerLauncher.App.Services;
@@ -9,8 +10,12 @@ namespace PZServerLauncher.App.ViewModels;
 
 public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHeader
 {
+    private static readonly TimeSpan AutoRefreshInterval = TimeSpan.FromSeconds(5);
+
     private readonly DesktopShellService _desktopShellService;
     private readonly LocalHostApiClient _hostApiClient;
+    private readonly DispatcherTimer _autoRefreshTimer;
+    private readonly SemaphoreSlim _refreshGate = new(1, 1);
 
     public WorkspaceShellViewModel()
         : this(
@@ -66,14 +71,21 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
         CurrentPage = Dashboard;
         MarkNavigationSelection(WorkspacePageIds.Dashboard);
 
-        SelectGlobalPageCommand = new RelayCommand<WorkspaceNavigationItemViewModel>(SelectGlobalPage);
+        SelectGlobalPageCommand = new AsyncRelayCommand<WorkspaceNavigationItemViewModel>(SelectGlobalPageAsync);
         SaveCurrentDraftCommand = new AsyncRelayCommand(SaveCurrentDraftAsync);
         DiscardCurrentDraftCommand = new AsyncRelayCommand(DiscardCurrentDraftAsync);
         ConfirmNavigationSaveCommand = new AsyncRelayCommand(ConfirmNavigationSaveAsync);
         ConfirmNavigationDiscardCommand = new AsyncRelayCommand(ConfirmNavigationDiscardAsync);
         CancelNavigationCommand = new RelayCommand(CancelNavigation);
         ExitDesktopCommand = new RelayCommand(() => _desktopShellService.ExitDesktop());
-        RefreshLegacyCommand = new AsyncRelayCommand(RefreshAsync);
+        RefreshLegacyCommand = new AsyncRelayCommand(RefreshWorkspaceAsync);
+
+        _autoRefreshTimer = new DispatcherTimer
+        {
+            Interval = AutoRefreshInterval,
+        };
+        _autoRefreshTimer.Tick += OnAutoRefreshTick;
+        _autoRefreshTimer.Start();
 
         _ = InitializeAsync();
     }
@@ -140,7 +152,7 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
     [ObservableProperty]
     private string actorSummary = "Loading workspace capabilities...";
 
-    public IRelayCommand<WorkspaceNavigationItemViewModel> SelectGlobalPageCommand { get; }
+    public IAsyncRelayCommand<WorkspaceNavigationItemViewModel> SelectGlobalPageCommand { get; }
 
     public IAsyncRelayCommand SaveCurrentDraftCommand { get; }
 
@@ -156,20 +168,25 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
 
     public IAsyncRelayCommand RefreshLegacyCommand { get; }
 
-    public void SelectGlobalPage(WorkspaceNavigationItemViewModel? target)
+    public void SelectGlobalPageByKey(string key)
+    {
+        _ = SelectGlobalPageByKeyAsync(key);
+    }
+
+    private async Task SelectGlobalPageAsync(WorkspaceNavigationItemViewModel? target)
     {
         if (target is null || !target.IsEnabled)
         {
             return;
         }
 
-        SelectGlobalPageByKey(target.Key);
+        await SelectGlobalPageByKeyAsync(target.Key);
     }
 
-    public void SelectGlobalPageByKey(string key)
+    private async Task SelectGlobalPageByKeyAsync(string key)
     {
         var next = ResolvePage(key);
-        if (next is null || ReferenceEquals(next, CurrentPage))
+        if (next is null)
         {
             return;
         }
@@ -177,20 +194,27 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
         if (CurrentPage is IWorkspaceDirtyState dirtyState && dirtyState.HasUnsavedChanges)
         {
             PendingNavigationTarget = GlobalNavigation.FirstOrDefault(item => item.Key == key);
-            PendingNavigationMessage = $"Save or discard changes in {((IWorkspacePageHeader)CurrentPage).PageTitle} before switching to {((IWorkspacePageHeader)next).PageTitle}.";
+            PendingNavigationMessage = ReferenceEquals(next, CurrentPage)
+                ? $"Save or discard changes in {((IWorkspacePageHeader)CurrentPage).PageTitle} before refreshing it."
+                : $"Save or discard changes in {((IWorkspacePageHeader)CurrentPage).PageTitle} before switching to {((IWorkspacePageHeader)next).PageTitle}.";
             HasPendingNavigation = true;
             return;
         }
 
-        NavigateTo(next, key);
+        await NavigateToAsync(next, key);
     }
 
     private async Task InitializeAsync()
     {
-        await RefreshAsync();
+        await RefreshWorkspaceAsync();
     }
 
-    private async Task RefreshAsync()
+    private async Task RefreshWorkspaceAsync()
+    {
+        await RefreshWorkspaceAsync(CurrentPage, isAutoRefresh: false);
+    }
+
+    private async Task RefreshLegacyStateAsync()
     {
         await Legacy.RefreshCommand.ExecuteAsync(null);
         OnPropertyChanged(nameof(ProfileCountSummary));
@@ -207,6 +231,14 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
         }
         catch
         {
+        }
+    }
+
+    private static async Task RefreshPageAsync(ViewModelBase page)
+    {
+        if (page is IWorkspaceRefreshable refreshable)
+        {
+            await refreshable.RefreshPageAsync();
         }
     }
 
@@ -253,7 +285,7 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
         ClearPendingNavigation();
         if (next is not null)
         {
-            NavigateTo(ResolvePage(next.Key) ?? Dashboard, next.Key);
+            await NavigateToAsync(ResolvePage(next.Key) ?? Dashboard, next.Key);
         }
     }
 
@@ -269,7 +301,7 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
         ClearPendingNavigation();
         if (next is not null)
         {
-            NavigateTo(ResolvePage(next.Key) ?? Dashboard, next.Key);
+            await NavigateToAsync(ResolvePage(next.Key) ?? Dashboard, next.Key);
         }
     }
 
@@ -278,11 +310,20 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
         ClearPendingNavigation();
     }
 
-    private void NavigateTo(ViewModelBase next, string key)
+    private async Task NavigateToAsync(ViewModelBase next, string key)
     {
-        CurrentPage = next;
-        MarkNavigationSelection(key);
-        UpdateCurrentStatus();
+        if (!ReferenceEquals(CurrentPage, next))
+        {
+            CurrentPage = next;
+            MarkNavigationSelection(key);
+            UpdateCurrentStatus();
+        }
+        else
+        {
+            MarkNavigationSelection(key);
+        }
+
+        await RefreshWorkspaceAsync(next, isAutoRefresh: false);
     }
 
     private ViewModelBase? ResolvePage(string key) =>
@@ -340,5 +381,49 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
     partial void OnCurrentPageChanged(ViewModelBase value)
     {
         UpdateCurrentStatus();
+    }
+
+    private async Task RefreshWorkspaceAsync(ViewModelBase page, bool isAutoRefresh)
+    {
+        if (isAutoRefresh)
+        {
+            if (!_refreshGate.Wait(0))
+            {
+                return;
+            }
+        }
+        else
+        {
+            await _refreshGate.WaitAsync();
+        }
+
+        try
+        {
+            if (isAutoRefresh && (HasPendingNavigation || CurrentPageHasUnsavedChanges()))
+            {
+                return;
+            }
+
+            await RefreshLegacyStateAsync();
+            await RefreshPageAsync(page);
+        }
+        finally
+        {
+            _refreshGate.Release();
+        }
+    }
+
+    private bool CurrentPageHasUnsavedChanges() =>
+        CurrentPage is IWorkspaceDirtyState dirtyState && dirtyState.HasUnsavedChanges;
+
+    private async void OnAutoRefreshTick(object? sender, EventArgs e)
+    {
+        try
+        {
+            await RefreshWorkspaceAsync(CurrentPage, isAutoRefresh: true);
+        }
+        catch
+        {
+        }
     }
 }

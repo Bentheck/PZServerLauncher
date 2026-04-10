@@ -72,10 +72,10 @@ public sealed class ProjectZomboidServerPlannerTests
             Assert.Contains("-Xmx8g", plan.Arguments);
             Assert.DoesNotContain("-Xms2048m", plan.Arguments);
             Assert.DoesNotContain("-Xmx2048m", plan.Arguments);
-            Assert.Contains("-cachedir", plan.Arguments);
+            Assert.Contains(plan.Arguments, argument => argument.StartsWith("-cachedir=", StringComparison.OrdinalIgnoreCase));
             Assert.Contains("-servername", plan.Arguments);
             Assert.Contains("-adminpassword", plan.Arguments);
-            Assert.Contains("\"D:\\Servers\\Profiles\\bravo server\"", commandLine);
+            Assert.Contains("-cachedir=D:\\Servers\\Profiles\\bravo server", commandLine, StringComparison.OrdinalIgnoreCase);
             Assert.Contains("secret-password", commandLine);
             Assert.DoesNotContain("servertest", commandLine, StringComparison.OrdinalIgnoreCase);
         }

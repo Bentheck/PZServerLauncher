@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.IO.Compression;
 using System.Diagnostics;
 using PZServerLauncher.Host.Infrastructure;
@@ -45,9 +46,10 @@ public sealed class SteamCmdToolService(AppPaths appPaths, IHttpClientFactory ht
         }
     }
 
-    public async Task<int> RunScriptAsync(string scriptPath, Func<string, Task> onOutput, CancellationToken cancellationToken = default)
+    public async Task<SteamCmdExecutionResult> RunScriptAsync(string scriptPath, Func<string, Task> onOutput, CancellationToken cancellationToken = default)
     {
         await EnsureInstalledAsync(cancellationToken);
+        var outputLines = new ConcurrentQueue<string>();
 
         var startInfo = new ProcessStartInfo
         {
@@ -63,13 +65,17 @@ public sealed class SteamCmdToolService(AppPaths appPaths, IHttpClientFactory ht
         using var process = new Process { StartInfo = startInfo };
         process.Start();
 
-        var stdoutTask = ReadLinesAsync(process.StandardOutput, onOutput, cancellationToken);
-        var stderrTask = ReadLinesAsync(process.StandardError, onOutput, cancellationToken);
+        var stdoutTask = ReadLinesAsync(process.StandardOutput, outputLines, onOutput, cancellationToken);
+        var stderrTask = ReadLinesAsync(process.StandardError, outputLines, onOutput, cancellationToken);
         await Task.WhenAll(stdoutTask, stderrTask, process.WaitForExitAsync(cancellationToken));
-        return process.ExitCode;
+        return new SteamCmdExecutionResult(process.ExitCode, outputLines.ToArray());
     }
 
-    private static async Task ReadLinesAsync(StreamReader reader, Func<string, Task> onOutput, CancellationToken cancellationToken)
+    private static async Task ReadLinesAsync(
+        StreamReader reader,
+        ConcurrentQueue<string> outputLines,
+        Func<string, Task> onOutput,
+        CancellationToken cancellationToken)
     {
         while (!cancellationToken.IsCancellationRequested)
         {
@@ -81,8 +87,22 @@ public sealed class SteamCmdToolService(AppPaths appPaths, IHttpClientFactory ht
 
             if (!string.IsNullOrWhiteSpace(line))
             {
+                outputLines.Enqueue(line);
                 await onOutput(line);
             }
         }
     }
+}
+
+public sealed record SteamCmdExecutionResult(int ExitCode, IReadOnlyList<string> OutputLines)
+{
+    public bool HasMissingConfigurationFailure =>
+        ExitCode == 7 &&
+        OutputLines.Any(line => line.Contains("Missing configuration", StringComparison.OrdinalIgnoreCase));
+
+    public string? LastRelevantLine =>
+        OutputLines.LastOrDefault(line =>
+            !string.IsNullOrWhiteSpace(line) &&
+            !line.Contains("Loading Steam API", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(line, "OK", StringComparison.OrdinalIgnoreCase));
 }

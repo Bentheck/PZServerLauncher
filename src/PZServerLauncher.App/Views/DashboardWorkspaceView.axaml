@@ -9,7 +9,7 @@
              x:Class="PZServerLauncher.App.Views.DashboardWorkspaceView"
              x:Name="DashboardRoot"
              x:DataType="vm:DashboardWorkspaceViewModel">
-    <ScrollViewer>
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled">
         <StackPanel Spacing="18">
             <Border Classes="card" Padding="28">
                 <Grid ColumnDefinitions="1.2*,.8*" ColumnSpacing="20">
@@ -65,7 +65,7 @@
                                 <TextBlock Classes="panel-title" FontSize="24" Text="{Binding SetupModeHeadline}" TextWrapping="Wrap" />
                                 <TextBlock Classes="body" Text="{Binding SetupModeSummary}" TextWrapping="Wrap" />
                             </StackPanel>
-                            <Border Background="#EAD6BF" CornerRadius="999" Padding="10,6" VerticalAlignment="Top">
+                            <Border Grid.Column="1" Background="#EAD6BF" CornerRadius="999" Padding="10,6" VerticalAlignment="Top">
                                 <TextBlock Foreground="#5A4330" FontSize="11" Text="{Binding ProfileCount, StringFormat='Profiles: {0}'}" />
                             </Border>
                         </Grid>
@@ -121,7 +121,8 @@
                                 <TextBlock Classes="kicker" Text="Import Intake" />
                                 <TextBlock Classes="panel-title" FontSize="24" Text="{Binding ImportSummary}" TextWrapping="Wrap" />
                             </StackPanel>
-                            <Button Classes="action-secondary"
+                            <Button Grid.Column="1"
+                                    Classes="action-secondary"
                                     Command="{Binding Legacy.DiscoverImportsCommand}"
                                     Content="Scan Again" />
                         </Grid>
@@ -143,7 +144,8 @@
                                                            Text="{Binding CacheDirectory}"
                                                            TextWrapping="Wrap" />
                                             </StackPanel>
-                                            <Button Classes="action-primary"
+                                            <Button Grid.Column="1"
+                                                    Classes="action-primary"
                                                     Command="{Binding #DashboardRoot.DataContext.Legacy.ImportCandidateCommand}"
                                                     CommandParameter="{Binding .}"
                                                     Content="{Binding ImportActionLabel}"
@@ -218,7 +220,7 @@
                             <TextBlock Classes="panel-title" FontSize="24" Text="Fleet Overview" />
                             <TextBlock Classes="body" Text="Desktop and web converge on the same profile workspaces. Pick a profile above to jump straight into the next task." TextWrapping="Wrap" />
                         </StackPanel>
-                        <Border Background="#2A2927" CornerRadius="999" Padding="10,6" VerticalAlignment="Top">
+                        <Border Grid.Column="1" Background="#2A2927" CornerRadius="999" Padding="10,6" VerticalAlignment="Top">
                             <TextBlock Foreground="#F7F0E7" FontSize="11" Text="{Binding ProfileCount}" />
                         </Border>
                     </Grid>

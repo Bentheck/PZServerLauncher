@@ -35,8 +35,8 @@ public sealed class HostWorkspaceViewModel : WorkspacePageViewModelBase
         : "Windows startup is disabled until you opt in.";
 
     public string HostStartupLabel => Legacy.HostStartWithWindows
-        ? "Start with Windows: On"
-        : "Start with Windows: Off";
+        ? "Windows startup on"
+        : "Windows startup off";
 
     public string HostFleetSummary => CurrentSummary.FleetHeadline;
 

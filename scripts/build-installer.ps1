@@ -21,6 +21,27 @@ function Invoke-ExternalStep {
     }
 }
 
+function Get-RepoInstallerVersion {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$RepoRoot
+    )
+
+    $propsPath = Join-Path $RepoRoot "Directory.Build.props"
+    if (-not (Test-Path $propsPath)) {
+        throw "Unable to locate Directory.Build.props at $propsPath"
+    }
+
+    [xml]$props = Get-Content -Path $propsPath
+    $versionNode = $props.Project.PropertyGroup.PZServerLauncherVersion | Select-Object -First 1
+    $version = [string]$versionNode
+    if ([string]::IsNullOrWhiteSpace($version)) {
+        throw "Directory.Build.props does not define PZServerLauncherVersion."
+    }
+
+    return $version.Trim()
+}
+
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
 $artifactsRoot = Join-Path $repoRoot "artifacts"
 $publishRoot = Join-Path $artifactsRoot "publish"
@@ -28,12 +49,7 @@ $appPublishDir = Join-Path $publishRoot "app"
 $hostPublishDir = Join-Path $publishRoot "host"
 
 if ([string]::IsNullOrWhiteSpace($InstallerVersion)) {
-    $commitCount = & git -C $repoRoot rev-list --count HEAD
-    if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($commitCount)) {
-        throw "Unable to derive installer version from git history."
-    }
-
-    $InstallerVersion = "0.1.$commitCount"
+    $InstallerVersion = Get-RepoInstallerVersion -RepoRoot $repoRoot
 }
 
 Write-Host "Using installer version $InstallerVersion"

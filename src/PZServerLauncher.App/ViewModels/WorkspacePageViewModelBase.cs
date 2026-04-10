@@ -3,7 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 
 namespace PZServerLauncher.App.ViewModels;
 
-public abstract partial class WorkspacePageViewModelBase : ViewModelBase, IWorkspacePageHeader, IWorkspaceDirtyState
+public abstract partial class WorkspacePageViewModelBase : ViewModelBase, IWorkspacePageHeader, IWorkspaceDirtyState, IWorkspaceRefreshable
 {
     private readonly string _emptyDirtyMessage;
 
@@ -85,7 +85,7 @@ public abstract partial class WorkspacePageViewModelBase : ViewModelBase, IWorks
 
     public virtual Task SaveDraftAsync()
     {
-        MarkClean($"Saved placeholder draft for {PageTitle}.");
+        MarkClean($"Saved notes for {PageTitle}.");
         return Task.CompletedTask;
     }
 
@@ -100,4 +100,6 @@ public abstract partial class WorkspacePageViewModelBase : ViewModelBase, IWorks
         MarkClean();
         return Task.CompletedTask;
     }
+
+    public virtual Task RefreshPageAsync() => Task.CompletedTask;
 }

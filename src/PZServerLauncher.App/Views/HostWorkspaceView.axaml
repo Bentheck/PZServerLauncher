@@ -26,9 +26,16 @@
                                    TextWrapping="Wrap" />
                     </StackPanel>
 
-                    <StackPanel Grid.Column="1" Spacing="10" Width="184">
+                    <StackPanel Grid.Column="1"
+                                Spacing="10"
+                                MinWidth="184"
+                                HorizontalAlignment="Right">
                         <Border Background="#2A2927" CornerRadius="999" Padding="14,8">
-                            <TextBlock Foreground="#F7F0E7" FontWeight="SemiBold" Text="{Binding HostStartupLabel}" />
+                            <TextBlock Foreground="#F7F0E7"
+                                       FontWeight="SemiBold"
+                                       Text="{Binding HostStartupLabel}"
+                                       TextAlignment="Center"
+                                       TextWrapping="Wrap" />
                         </Border>
                         <Button Classes="action-secondary"
                                 Command="{Binding Legacy.SaveHostSettingsCommand}"
@@ -99,7 +106,7 @@
                                            Text="These are the server profiles the local host supervises for startup, crash recovery, and stop-all operations."
                                            TextWrapping="Wrap" />
                             </StackPanel>
-                            <Border Background="#2A2927" CornerRadius="999" Padding="10,5" VerticalAlignment="Top">
+                            <Border Grid.Column="1" Background="#2A2927" CornerRadius="999" Padding="10,5" VerticalAlignment="Top">
                                 <TextBlock Foreground="#F7F0E7" FontSize="11" Text="{Binding ManagedProfileCount}" />
                             </Border>
                         </Grid>

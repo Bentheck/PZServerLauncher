@@ -36,15 +36,15 @@
                                Foreground="#455154"
                                Text="{Binding WorkspaceGuidance}"
                                TextWrapping="Wrap" />
-                    <WrapPanel Margin="0,8,0,0" Orientation="Horizontal" ItemHeight="28">
-                        <Border Background="#233238" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
-                            <TextBlock Foreground="#F7F8F6" FontSize="11" Text="{Binding ProfileCountSummary}" />
+                    <WrapPanel Margin="0,8,0,0" Orientation="Horizontal">
+                        <Border Classes="pill-dark" Margin="0,0,8,8">
+                            <TextBlock Classes="pill-text-light" Text="{Binding ProfileCountSummary}" />
                         </Border>
-                        <Border Background="#E9F0EB" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
-                            <TextBlock Foreground="#2F5446" FontSize="11" Text="{Binding RecentActivitySummary}" />
+                        <Border Classes="pill-soft-green" Margin="0,0,8,8">
+                            <TextBlock Classes="pill-text-green" Text="{Binding RecentActivitySummary}" />
                         </Border>
-                        <Border Background="#F4F0E8" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
-                            <TextBlock Foreground="#536065" FontSize="11" Text="{Binding RemotePostureSummary}" />
+                        <Border Classes="pill-soft-neutral" Margin="0,0,8,8">
+                            <TextBlock Classes="pill-text-neutral" Text="{Binding RemotePostureSummary}" />
                         </Border>
                     </WrapPanel>
                 </StackPanel>
@@ -160,28 +160,8 @@
             </Grid>
         </Border>
 
-        <Grid Grid.Row="2" Grid.Column="1" RowDefinitions="Auto,*" RowSpacing="14">
-            <Border Classes="card" Padding="18">
-                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
-                    <StackPanel Spacing="4">
-                        <TextBlock Classes="kicker" Text="Current Page" />
-                        <TextBlock Classes="panel-title" FontSize="28" Text="{Binding CurrentPageTitle}" />
-                        <TextBlock Classes="body"
-                                   Foreground="#4A565A"
-                                   Text="{Binding CurrentPageSummary}"
-                                   TextWrapping="Wrap" />
-                    </StackPanel>
-
-                    <Border Grid.Column="1" Classes="surface-soft" Padding="14" Width="280">
-                        <StackPanel Spacing="4">
-                            <TextBlock Classes="kicker" Text="Helpful Reminder" />
-                            <TextBlock Classes="caption" Text="{Binding WorkspaceGuidance}" TextWrapping="Wrap" />
-                        </StackPanel>
-                    </Border>
-                </Grid>
-            </Border>
-
-            <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
+        <Grid Grid.Row="2" Grid.Column="1">
+            <ScrollViewer HorizontalScrollBarVisibility="Disabled">
                 <ContentControl Content="{Binding CurrentPage}" />
             </ScrollViewer>
         </Grid>

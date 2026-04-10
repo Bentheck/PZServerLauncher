@@ -23,9 +23,9 @@
 
             <Border Background="#F1E6D7" CornerRadius="14" Padding="16">
                 <StackPanel Spacing="8">
-                    <TextBlock Classes="kicker" Text="Workspace Scaffold" />
-                    <TextBlock Classes="body" Text="This page is a shell placeholder for the workspace migration. Structured editing and real controls will land here in later milestones." TextWrapping="Wrap" />
-                    <TextBlock Classes="body" Text="Use the draft box to exercise the navigation guard scaffold." TextWrapping="Wrap" />
+                    <TextBlock Classes="kicker" Text="Workspace Notes" />
+                    <TextBlock Classes="body" Text="Use this area to keep track of decisions, rollout notes, or follow-up checks for the current workspace page." TextWrapping="Wrap" />
+                    <TextBlock Classes="body" Text="Saved notes stay local and help you pick up where you left off when you return." TextWrapping="Wrap" />
                 </StackPanel>
             </Border>
 
