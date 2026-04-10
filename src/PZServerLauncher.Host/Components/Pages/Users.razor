@@ -19,7 +19,7 @@
         <div class="workspace-panel__copy">
             <p class="eyebrow">Web Admin</p>
             <h1>User Management</h1>
-            <p class="muted-text">Create local accounts, shape role coverage, and verify which privileged users still need an authenticator app before the optional remote surface is trusted. This page mirrors the desktop guardrails so the same access rules stay visible everywhere.</p>
+            <p class="muted-text">Create local username accounts, shape role coverage, and verify which privileged users still need an authenticator app before the optional remote surface is trusted. This page mirrors the desktop guardrails so the same access rules stay visible everywhere.</p>
             <p class="muted-text">@summary.RosterHeadline</p>
             <p class="muted-text">@summary.SecurityHeadline</p>
         </div>
@@ -163,6 +163,7 @@
         </div>
 
         <p class="muted-text">Owner and Admin accounts must configure TOTP before they can sign in to the web admin.</p>
+        <p class="muted-text">Passwords stay local to this machine. If someone is locked out, an owner can assign a temporary password here and the user can change it after signing in.</p>
         <p class="muted-text">@summary.CreateRoleHeadline</p>
         <p class="muted-text">@summary.CreateRoleGuardrailHeadline</p>
 
@@ -170,10 +171,6 @@
             <label>
                 <span>Username</span>
                 <input @bind="_createUser.UserName" />
-            </label>
-            <label>
-                <span>Email</span>
-                <input @bind="_createUser.Email" />
             </label>
             <label>
                 <span>Temporary Password</span>
@@ -221,9 +218,9 @@
                     <thead>
                         <tr>
                             <th>Username</th>
-                            <th>Email</th>
                             <th>Role</th>
                             <th>Security</th>
+                            <th>Password Reset</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -232,7 +229,6 @@
                         {
                             <tr>
                                 <td><input @bind="row.UserName" /></td>
-                                <td><input @bind="row.Email" /></td>
                                 <td>
                                     <select @bind="row.RoleName">
                                         @foreach (var roleName in ManagedRoleNames)
@@ -246,7 +242,17 @@
                                     <div>@BuildRowSecuritySummary(row)</div>
                                     <div class="table-subtext">@((row.TwoFactorEnabled ? "TOTP is enabled." : row.RequiresTwoFactor ? "Finish TOTP before remote sign-in." : "This account can stay low risk."))</div>
                                 </td>
+                                <td>
+                                    <input @bind="row.TemporaryPassword" type="password" placeholder="Temporary password" />
+                                    <div class="table-subtext">Users can change it later from Account > Password.</div>
+                                </td>
                                 <td class="actions-cell">
+                                    <button type="button"
+                                            class="nav-button"
+                                            @onclick="() => ResetPasswordAsync(row)"
+                                            disabled="@(!CanResetPasswords || string.IsNullOrWhiteSpace(row.TemporaryPassword))">
+                                        Reset Password
+                                    </button>
                                     <button type="button" class="nav-button" @onclick="() => SaveAsync(row)">Save Changes</button>
                                     <button type="button" class="nav-button secondary-button" @onclick="() => DeleteAsync(row)">Remove Account</button>
                                 </td>
@@ -287,10 +293,13 @@
             _users.Select(row => new UserAccountDto(
                 row.UserId,
                 row.UserName,
-                row.Email,
                 [Enum.Parse<UserRole>(row.RoleName, ignoreCase: true)],
                 row.TwoFactorEnabled)).ToArray(),
             _createUser.RoleName);
+
+    private bool CanResetPasswords =>
+        HttpContext.User.IsInRole(nameof(UserRole.Owner)) ||
+        HttpContext.User.IsInRole(nameof(UserRole.LocalSystem));
 
     private async Task ReloadAsync()
     {
@@ -307,7 +316,6 @@
         {
             var created = await UserManagementService.CreateAsync(new CreateUserRequestDto(
                 _createUser.UserName,
-                _createUser.Email,
                 _createUser.Password,
                 [Enum.Parse<UserRole>(_createUser.RoleName, ignoreCase: true)]));
             await AuditStore.WriteAsync("user.created", created.UserId, "web", $"Created user {created.UserName}.", CurrentUserId);
@@ -330,7 +338,6 @@
                 row.UserId,
                 new UpdateUserRequestDto(
                     row.UserName,
-                    row.Email,
                     [Enum.Parse<UserRole>(row.RoleName, ignoreCase: true)]),
                 actingUserId: CurrentUserId);
             await AuditStore.WriteAsync("user.updated", row.UserId, "web", $"Updated user {row.UserName}.", CurrentUserId);
@@ -359,13 +366,39 @@
         }
     }
 
+    private async Task ResetPasswordAsync(EditableUserRow row)
+    {
+        if (!CanResetPasswords)
+        {
+            _statusMessage = "Only an owner can reset another user's password from the web admin.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(row.TemporaryPassword))
+        {
+            _statusMessage = "Enter a temporary password before resetting this account.";
+            return;
+        }
+
+        try
+        {
+            await UserManagementService.ResetPasswordAsync(row.UserId, row.TemporaryPassword);
+            await AuditStore.WriteAsync("user.password-reset", row.UserId, "web", $"Reset password for {row.UserName}.", CurrentUserId);
+            row.TemporaryPassword = string.Empty;
+            _statusMessage = $"Reset password for {row.UserName}.";
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+    }
+
     private static EditableUserRow MapRow(UserAccountDto user)
     {
         var role = user.Roles.FirstOrDefault(role => role != UserRole.LocalSystem);
         return new EditableUserRow(
             user.UserId,
             user.UserName,
-            user.Email ?? string.Empty,
             role == default ? nameof(UserRole.Viewer) : role.ToString(),
             user.TwoFactorEnabled,
             user.Roles.Any(UserManagementService.RoleRequiresTwoFactor));
@@ -405,8 +438,6 @@
     {
         public string UserName { get; set; } = string.Empty;
 
-        public string Email { get; set; } = string.Empty;
-
         public string Password { get; set; } = string.Empty;
 
         public string RoleName { get; set; } = nameof(UserRole.Viewer);
@@ -414,7 +445,6 @@
         public void Reset()
         {
             UserName = string.Empty;
-            Email = string.Empty;
             Password = string.Empty;
             RoleName = nameof(UserRole.Viewer);
         }
@@ -423,7 +453,6 @@
     private sealed class EditableUserRow(
         string userId,
         string userName,
-        string email,
         string roleName,
         bool twoFactorEnabled,
         bool requiresTwoFactor)
@@ -432,12 +461,12 @@
 
         public string UserName { get; set; } = userName;
 
-        public string Email { get; set; } = email;
-
         public string RoleName { get; set; } = roleName;
 
         public bool TwoFactorEnabled { get; } = twoFactorEnabled;
 
         public bool RequiresTwoFactor { get; } = requiresTwoFactor;
+
+        public string TemporaryPassword { get; set; } = string.Empty;
     }
 }

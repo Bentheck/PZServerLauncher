@@ -131,7 +131,7 @@ public class Program
                 options.Lockout.AllowedForNewUsers = true;
                 options.Lockout.MaxFailedAccessAttempts = 5;
                 options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
-                options.User.RequireUniqueEmail = true;
+                options.User.RequireUniqueEmail = false;
             })
             .AddRoles<IdentityRole>()
             .AddEntityFrameworkStores<ApplicationDbContext>()
@@ -312,7 +312,7 @@ public class Program
             var profile = await store.UpsertAsync(request.ToModel(), cancellationToken);
             await auditStore.WriteAsync("profile.created", profile.ProfileId, "local", $"Created profile {profile.DisplayName}.", cancellationToken: cancellationToken);
             return Results.Ok(profile.ToDto());
-        }).RequireAuthorization("DesktopOrAdmin");
+        }).RequireAuthorization(policy => policy.RequireRole(nameof(UserRole.Owner), nameof(UserRole.LocalSystem)));
 
         api.MapPut("/profiles/{profileId}", async (
             string profileId,
@@ -1075,6 +1075,30 @@ public class Program
             }
         }).RequireAuthorization("DesktopOrAdmin");
 
+        api.MapPost("/users/{userId}/reset-password", async (
+            string userId,
+            ResetUserPasswordRequestDto request,
+            UserManagementService userManagementService,
+            AuditStore auditStore,
+            ClaimsPrincipal user,
+            CancellationToken cancellationToken) =>
+        {
+            try
+            {
+                await userManagementService.ResetPasswordAsync(userId, request.NewPassword, cancellationToken);
+                await auditStore.WriteAsync("user.password-reset", userId, "local", $"Reset password for user {userId}.", user.FindFirstValue(ClaimTypes.NameIdentifier), cancellationToken);
+                return Results.Ok(new OperationResultDto(true, "Password reset completed."));
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return Results.NotFound(new OperationResultDto(false, ex.Message));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.BadRequest(new OperationResultDto(false, ex.Message));
+            }
+        }).RequireAuthorization("DesktopOrAdmin");
+
         api.MapPut("/users/{userId}", async (
             string userId,
             UpdateUserRequestDto request,
@@ -1137,9 +1161,9 @@ public class Program
             var user = new ApplicationUser
             {
                 UserName = request.UserName,
-                Email = request.Email,
                 DisplayName = request.UserName,
-                EmailConfirmed = true,
+                Email = null,
+                NormalizedEmail = null,
             };
 
             var createResult = await userManager.CreateAsync(user, request.Password);

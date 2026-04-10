@@ -82,9 +82,8 @@ public sealed class CapabilityResolver : ICapabilityResolver
     {
         var roles = ResolveRoles(user);
         var displayName = user.FindFirstValue(ClaimTypes.Name) ??
-            user.FindFirstValue(ClaimTypes.Email) ??
+            user.FindFirstValue(ClaimTypes.NameIdentifier) ??
             "Unknown user";
-        var email = user.FindFirstValue(ClaimTypes.Email);
         var surface = string.Equals(
             user.FindFirstValue("auth_source"),
             "loopback",
@@ -92,7 +91,7 @@ public sealed class CapabilityResolver : ICapabilityResolver
             ? WorkspaceSurfaceKind.Desktop
             : WorkspaceSurfaceKind.Web;
 
-        return new WorkspaceActorDto(displayName, email, surface, roles);
+        return new WorkspaceActorDto(displayName, surface, roles);
     }
 
     private static IReadOnlySet<Capability> ResolveCapabilitySet(ClaimsPrincipal user)

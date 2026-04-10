@@ -20,7 +20,7 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
             "Users",
             "Owner bootstrap and desktop account management for the local host, with the optional web admin reusing the same users.",
             "User settings are in sync.",
-            ["Owner bootstrap", "Create users", "Edit roles", "Delete accounts"])
+            ["Owner bootstrap", "Create users", "Edit roles", "Reset passwords"])
     {
         Legacy = legacy;
         _hostApiClient = hostApiClient;
@@ -35,6 +35,7 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
         ReloadUsersCommand = new AsyncRelayCommand(ReloadUsersAsync, () => CanManageUsers);
         CreateUserCommand = new AsyncRelayCommand(CreateUserAsync, () => CanCreateUser);
         SaveUserCommand = new AsyncRelayCommand<EditableUserRowViewModel>(SaveUserAsync);
+        ResetUserPasswordCommand = new AsyncRelayCommand<EditableUserRowViewModel>(ResetUserPasswordAsync);
         DeleteUserCommand = new AsyncRelayCommand<EditableUserRowViewModel>(DeleteUserAsync);
 
         _ = InitializeAsync();
@@ -71,7 +72,7 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
     public string OwnerProtectionSummary => CurrentSummary.OwnerHeadline;
 
     public string CreateFormSummary => OwnerBootstrapConfigured
-        ? $"The selected {CreateRoleName} role will be created as a local account and edited from this page after it appears in the roster."
+        ? $"The selected {CreateRoleName} role will be created as a local username account and can change its password after sign-in."
         : "Bootstrap the owner account first, then return here to add operators, admins, or viewers.";
 
     public string CreateRoleSummary => CurrentSummary.CreateRoleHeadline;
@@ -123,7 +124,6 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
     public bool CanCreateUser =>
         CanManageUsers &&
         !string.IsNullOrWhiteSpace(CreateUserName) &&
-        !string.IsNullOrWhiteSpace(CreateEmail) &&
         !string.IsNullOrWhiteSpace(CreatePassword);
 
     public IAsyncRelayCommand ReloadUsersCommand { get; }
@@ -131,6 +131,8 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
     public IAsyncRelayCommand CreateUserCommand { get; }
 
     public IAsyncRelayCommand<EditableUserRowViewModel> SaveUserCommand { get; }
+
+    public IAsyncRelayCommand<EditableUserRowViewModel> ResetUserPasswordCommand { get; }
 
     public IAsyncRelayCommand<EditableUserRowViewModel> DeleteUserCommand { get; }
 
@@ -142,9 +144,6 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
 
     [ObservableProperty]
     private string createUserName = string.Empty;
-
-    [ObservableProperty]
-    private string createEmail = string.Empty;
 
     [ObservableProperty]
     private string createPassword = string.Empty;
@@ -195,7 +194,6 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
 
     private bool IsCreateFormDirty =>
         !string.IsNullOrWhiteSpace(CreateUserName) ||
-        !string.IsNullOrWhiteSpace(CreateEmail) ||
         !string.IsNullOrWhiteSpace(CreatePassword) ||
         !string.Equals(CreateRoleName, nameof(UserRole.Viewer), StringComparison.Ordinal);
 
@@ -266,7 +264,6 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
             var created = await _hostApiClient.CreateUserAsync(
                 new CreateUserRequestDto(
                     CreateUserName.Trim(),
-                    CreateEmail.Trim(),
                     CreatePassword,
                     [Enum.Parse<UserRole>(CreateRoleName, ignoreCase: true)]),
                 CancellationToken.None);
@@ -312,13 +309,12 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
                 row.UserId,
                 new UpdateUserRequestDto(
                     row.UserName.Trim(),
-                    row.Email.Trim(),
                     [Enum.Parse<UserRole>(row.RoleName, ignoreCase: true)]),
                 CancellationToken.None);
 
             if (updated is not null)
             {
-                row.MarkSaved(updated.UserName, updated.Email ?? string.Empty, ResolveRoleName(updated), updated.TwoFactorEnabled, updated.Roles.Any(RoleRequiresTwoFactor));
+                row.MarkSaved(updated.UserName, ResolveRoleName(updated), updated.TwoFactorEnabled, updated.Roles.Any(RoleRequiresTwoFactor));
                 StatusMessage = $"Saved {updated.UserName}.";
             }
             else
@@ -326,6 +322,39 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
                 StatusMessage = $"Saved {row.UserName}.";
                 row.MarkSaved();
             }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = ex.Message;
+        }
+        finally
+        {
+            IsBusy = false;
+            RefreshCommandStates();
+            RefreshDirtyState();
+        }
+    }
+
+    private async Task ResetUserPasswordAsync(EditableUserRowViewModel? row)
+    {
+        if (row is null || !OwnerBootstrapConfigured || IsBusy)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(row.TemporaryPassword))
+        {
+            StatusMessage = "Enter a temporary password before resetting this account.";
+            return;
+        }
+
+        try
+        {
+            IsBusy = true;
+            StatusMessage = $"Resetting password for {row.UserName.Trim()}...";
+            var result = await _hostApiClient.ResetUserPasswordAsync(row.UserId, row.TemporaryPassword, CancellationToken.None);
+            row.ClearTemporaryPassword();
+            StatusMessage = result?.Message ?? $"Password reset for {row.UserName}.";
         }
         catch (Exception ex)
         {
@@ -372,7 +401,6 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
     private void ResetCreateForm()
     {
         CreateUserName = string.Empty;
-        CreateEmail = string.Empty;
         CreatePassword = string.Empty;
         CreateRoleName = nameof(UserRole.Viewer);
         RefreshCommandStates();
@@ -442,12 +470,6 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
         RefreshDirtyState();
     }
 
-    partial void OnCreateEmailChanged(string value)
-    {
-        RefreshCommandStates();
-        RefreshDirtyState();
-    }
-
     partial void OnCreatePasswordChanged(string value)
     {
         RefreshCommandStates();
@@ -496,7 +518,6 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
         new(
             user.UserId,
             user.UserName,
-            user.Email ?? string.Empty,
             ResolveRoleName(user),
             user.TwoFactorEnabled,
             user.Roles.Any(RoleRequiresTwoFactor));
@@ -505,7 +526,6 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
         new(
             row.UserId,
             row.UserName,
-            row.Email,
             [Enum.Parse<UserRole>(row.RoleName, ignoreCase: true)],
             row.TwoFactorEnabled);
 
@@ -557,23 +577,19 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
     public sealed partial class EditableUserRowViewModel : ObservableObject
     {
         private string _originalUserName;
-        private string _originalEmail;
         private string _originalRoleName;
 
         public EditableUserRowViewModel(
             string userId,
             string userName,
-            string email,
             string roleName,
             bool twoFactorEnabled,
             bool requiresTwoFactor)
         {
             UserId = userId;
             _originalUserName = userName;
-            _originalEmail = email;
             _originalRoleName = roleName;
             this.userName = userName;
-            this.email = email;
             this.roleName = roleName;
             TwoFactorEnabled = twoFactorEnabled;
             RequiresTwoFactor = requiresTwoFactor;
@@ -587,7 +603,6 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
 
         public bool IsDirty =>
             !string.Equals(UserName, _originalUserName, StringComparison.Ordinal) ||
-            !string.Equals(Email, _originalEmail, StringComparison.Ordinal) ||
             !string.Equals(RoleName, _originalRoleName, StringComparison.Ordinal);
 
         public string DirtySummary => IsDirty ? "Unsaved changes" : "Saved";
@@ -609,26 +624,30 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
                 ? "Lower-risk role with optional TOTP."
                 : "Lower-risk role with no web-sign-in requirement.";
 
+        public string PasswordResetSummary => RequiresTwoFactor
+            ? "Set a temporary password here, then have the user sign in and change it right away."
+            : "Set a temporary password here if this local account needs access again.";
+
+        public bool CanResetPassword => !string.IsNullOrWhiteSpace(TemporaryPassword);
+
         [ObservableProperty]
         private string userName;
 
         [ObservableProperty]
-        private string email;
+        private string roleName;
 
         [ObservableProperty]
-        private string roleName;
+        private string temporaryPassword = string.Empty;
 
         public void Reset()
         {
             UserName = _originalUserName;
-            Email = _originalEmail;
             RoleName = _originalRoleName;
         }
 
         public void MarkSaved()
         {
             _originalUserName = UserName;
-            _originalEmail = Email;
             _originalRoleName = RoleName;
             OnPropertyChanged(nameof(IsDirty));
             OnPropertyChanged(nameof(DirtySummary));
@@ -636,15 +655,13 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
             OnPropertyChanged(nameof(SecuritySummary));
         }
 
-        public void MarkSaved(string userName, string email, string roleName, bool twoFactorEnabled, bool requiresTwoFactor)
+        public void MarkSaved(string userName, string roleName, bool twoFactorEnabled, bool requiresTwoFactor)
         {
             UserName = userName;
-            Email = email;
             RoleName = roleName;
             TwoFactorEnabled = twoFactorEnabled;
             RequiresTwoFactor = requiresTwoFactor;
             _originalUserName = userName;
-            _originalEmail = email;
             _originalRoleName = roleName;
             OnPropertyChanged(nameof(TwoFactorEnabled));
             OnPropertyChanged(nameof(RequiresTwoFactor));
@@ -652,15 +669,10 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
             OnPropertyChanged(nameof(DirtySummary));
             OnPropertyChanged(nameof(RoleSummary));
             OnPropertyChanged(nameof(SecuritySummary));
+            OnPropertyChanged(nameof(PasswordResetSummary));
         }
 
         partial void OnUserNameChanged(string value)
-        {
-            OnPropertyChanged(nameof(IsDirty));
-            OnPropertyChanged(nameof(DirtySummary));
-        }
-
-        partial void OnEmailChanged(string value)
         {
             OnPropertyChanged(nameof(IsDirty));
             OnPropertyChanged(nameof(DirtySummary));
@@ -672,6 +684,16 @@ public partial class UsersWorkspaceViewModel : WorkspacePageViewModelBase
             OnPropertyChanged(nameof(DirtySummary));
             OnPropertyChanged(nameof(RoleSummary));
             OnPropertyChanged(nameof(SecuritySummary));
+            OnPropertyChanged(nameof(PasswordResetSummary));
+        }
+
+        partial void OnTemporaryPasswordChanged(string value) =>
+            OnPropertyChanged(nameof(CanResetPassword));
+
+        public void ClearTemporaryPassword()
+        {
+            TemporaryPassword = string.Empty;
+            OnPropertyChanged(nameof(CanResetPassword));
         }
     }
 }

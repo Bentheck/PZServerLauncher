@@ -268,6 +268,15 @@ public sealed class LocalHostApiClient
         await EnsureSuccessAsync(response, cancellationToken);
     }
 
+    public Task<OperationResultDto?> ResetUserPasswordAsync(
+        string userId,
+        string newPassword,
+        CancellationToken cancellationToken = default) =>
+        PostAsync<OperationResultDto>(
+            $"/api/users/{userId}/reset-password",
+            new ResetUserPasswordRequestDto(newPassword),
+            cancellationToken);
+
     public Task<RawConfigFileDto?> GetRawConfigAsync(
         string profileId,
         PZServerLauncher.Core.Runtime.ConfigFileKind kind,
@@ -293,12 +302,11 @@ public sealed class LocalHostApiClient
 
     public Task<OperationResultDto?> BootstrapOwnerAsync(
         string userName,
-        string email,
         string password,
         CancellationToken cancellationToken = default) =>
         PostAsync<OperationResultDto>(
             "/api/onboarding/bootstrap",
-            new BootstrapOwnerRequestDto(userName, email, password),
+            new BootstrapOwnerRequestDto(userName, password),
             cancellationToken);
 
     public Task<HostSettings?> GetHostSettingsAsync(CancellationToken cancellationToken = default) =>

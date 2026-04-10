@@ -24,9 +24,9 @@
                 <hr />
                 <ValidationSummary class="text-danger" role="alert" />
                 <div class="form-floating mb-3">
-                    <InputText @bind-Value="Input.Email" id="Input.Email" class="form-control" autocomplete="username webauthn" aria-required="true" placeholder="name@example.com" />
-                    <label for="Input.Email" class="form-label">Email</label>
-                    <ValidationMessage For="() => Input.Email" class="text-danger" />
+                    <InputText @bind-Value="Input.UserName" id="Input.UserName" class="form-control" autocomplete="username webauthn" aria-required="true" placeholder="username" />
+                    <label for="Input.UserName" class="form-label">Username</label>
+                    <ValidationMessage For="() => Input.UserName" class="text-danger" />
                 </div>
                 <div class="form-floating mb-3">
                     <InputText type="password" @bind-Value="Input.Password" id="Input.Password" class="form-control" autocomplete="current-password" aria-required="true" placeholder="password" />
@@ -45,18 +45,15 @@
                 <hr />
                 <div class="d-flex flex-column">
                     <span class="text-secondary mx-auto mt-2">OR</span>
-                    <PasskeySubmit Operation="PasskeyOperation.Request" Name="Input.Passkey" EmailName="Input.Email" class="btn btn-link mx-auto">Log in with a passkey</PasskeySubmit>
+                    <PasskeySubmit Operation="PasskeyOperation.Request" Name="Input.Passkey" EmailName="Input.UserName" class="btn btn-link mx-auto">Log in with a passkey</PasskeySubmit>
                 </div>
                 <hr />
                 <div>
                     <p>
-                        <a href="Account/ForgotPassword">Forgot your password?</a>
+                        Password resets are handled locally by the owner in PZ Server Launcher.
                     </p>
                     <p>
-                        <a href="@(NavigationManager.GetUriWithQueryParameters("Account/Register", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl }))">Register as a new user</a>
-                    </p>
-                    <p>
-                        <a href="Account/ResendEmailConfirmation">Resend email confirmation</a>
+                        Ask the owner for a temporary password, then change it after signing in from Account / Manage / ChangePassword.
                     </p>
                 </div>
             </EditForm>
@@ -64,9 +61,9 @@
     </div>
     <div class="col-lg-4 col-lg-offset-2">
         <section>
-            <h3>Use another service to log in.</h3>
+            <h3>Local account notes</h3>
             <hr />
-            <ExternalLoginPicker />
+            <p>Usernames stay local to this machine. No email inbox or mail server is required.</p>
         </section>
     </div>
 </div>
@@ -121,7 +118,7 @@
                 return;
             }
 
-            passwordUser = await UserManager.FindByEmailAsync(Input.Email);
+            passwordUser = await UserManager.FindByNameAsync(Input.UserName);
             if (passwordUser is null)
             {
                 errorMessage = "Error: Invalid login attempt.";
@@ -133,7 +130,12 @@
 
         if (result.Succeeded)
         {
-            var signedInUser = passwordUser ?? await UserManager.FindByEmailAsync(Input.Email);
+            var signedInUser = passwordUser;
+            if (signedInUser is null && !string.IsNullOrWhiteSpace(Input.UserName))
+            {
+                signedInUser = await UserManager.FindByNameAsync(Input.UserName);
+            }
+
             if (signedInUser is not null)
             {
                 var roles = await UserManager.GetRolesAsync(signedInUser);
@@ -172,8 +174,7 @@
     private sealed class InputModel
     {
         [Required]
-        [EmailAddress]
-        public string Email { get; set; } = "";
+        public string UserName { get; set; } = "";
 
         [Required]
         [DataType(DataType.Password)]

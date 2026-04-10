@@ -76,8 +76,7 @@ public static class ContractsMappingExtensions
     public static UserAccountDto ToDto(this ApplicationUser user, IReadOnlyList<UserRole> roles) =>
         new(
             user.Id,
-            user.UserName ?? user.Email ?? user.Id,
-            user.Email,
+            user.UserName ?? user.Id,
             roles,
             user.TwoFactorEnabled);
 }

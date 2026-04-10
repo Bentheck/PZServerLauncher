@@ -11,9 +11,9 @@ public sealed class ProjectZomboidUserAccessSummaryBuilderTests
     {
         UserAccountDto[] users =
         [
-            new UserAccountDto("owner-1", "owner", "owner@example.com", [UserRole.Owner], true),
-            new UserAccountDto("admin-1", "admin", "admin@example.com", [UserRole.Admin], false),
-            new UserAccountDto("viewer-1", "viewer", "viewer@example.com", [UserRole.Viewer], false),
+            new UserAccountDto("owner-1", "owner", [UserRole.Owner], true),
+            new UserAccountDto("admin-1", "admin", [UserRole.Admin], false),
+            new UserAccountDto("viewer-1", "viewer", [UserRole.Viewer], false),
         ];
 
         var summary = ProjectZomboidUserAccessSummaryBuilder.Build(

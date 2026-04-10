@@ -142,8 +142,8 @@ else
 
         sharedKey = FormatKey(unformattedKey!);
 
-        var email = await UserManager.GetEmailAsync(user);
-        authenticatorUri = GenerateQrCodeUri(email!, unformattedKey!);
+        var accountName = await UserManager.GetUserNameAsync(user);
+        authenticatorUri = GenerateQrCodeUri(accountName ?? user.UserName ?? "local-user", unformattedKey!);
     }
 
     private string FormatKey(string unformattedKey)
@@ -163,13 +163,13 @@ else
         return result.ToString().ToLowerInvariant();
     }
 
-    private string GenerateQrCodeUri(string email, string unformattedKey)
+    private string GenerateQrCodeUri(string accountName, string unformattedKey)
     {
         return string.Format(
             CultureInfo.InvariantCulture,
             AuthenticatorUriFormat,
             UrlEncoder.Encode("Microsoft.AspNetCore.Identity.UI"),
-            UrlEncoder.Encode(email),
+            UrlEncoder.Encode(accountName),
             unformattedKey);
     }
 

@@ -28,7 +28,7 @@ public sealed class UserManagementServiceTests : IDisposable
         services.AddIdentityCore<ApplicationUser>(options =>
             {
                 options.SignIn.RequireConfirmedAccount = false;
-                options.User.RequireUniqueEmail = true;
+                options.User.RequireUniqueEmail = false;
                 options.Lockout.AllowedForNewUsers = true;
             })
             .AddRoles<IdentityRole>()
@@ -63,7 +63,6 @@ public sealed class UserManagementServiceTests : IDisposable
 
         var created = await service.CreateAsync(new CreateUserRequestDto(
             "operator1",
-            "operator1@example.com",
             "StrongPassword!123",
             [UserRole.Operator]));
 
@@ -83,7 +82,6 @@ public sealed class UserManagementServiceTests : IDisposable
 
         var owner = await service.CreateAsync(new CreateUserRequestDto(
             "owner1",
-            "owner1@example.com",
             "StrongPassword!123",
             [UserRole.Owner]));
 
@@ -104,13 +102,12 @@ public sealed class UserManagementServiceTests : IDisposable
 
         var owner = await service.CreateAsync(new CreateUserRequestDto(
             "owner2",
-            "owner2@example.com",
             "StrongPassword!123",
             [UserRole.Owner]));
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => service.UpdateAsync(
             owner.UserId,
-            new UpdateUserRequestDto(owner.UserName, owner.Email ?? "owner2@example.com", [UserRole.Viewer]),
+            new UpdateUserRequestDto(owner.UserName, [UserRole.Viewer]),
             actingUserId: "another-user"));
 
         Assert.Contains("owner", ex.Message, StringComparison.OrdinalIgnoreCase);
@@ -124,12 +121,32 @@ public sealed class UserManagementServiceTests : IDisposable
 
         var viewer = await service.CreateAsync(new CreateUserRequestDto(
             "viewer1",
-            "viewer1@example.com",
             "StrongPassword!123",
             [UserRole.Viewer]));
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => service.DeleteAsync(viewer.UserId, viewer.UserId));
         Assert.Contains("currently signed in", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task ResetPasswordAsync_ReplacesExistingPassword()
+    {
+        await using var scope = _serviceProvider.CreateAsyncScope();
+        var service = scope.ServiceProvider.GetRequiredService<UserManagementService>();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+
+        var created = await service.CreateAsync(new CreateUserRequestDto(
+            "resetme",
+            "StrongPassword!123",
+            [UserRole.Viewer]));
+
+        await service.ResetPasswordAsync(created.UserId, "EvenStronger!456");
+
+        var persisted = await userManager.FindByIdAsync(created.UserId);
+
+        Assert.NotNull(persisted);
+        Assert.False(await userManager.CheckPasswordAsync(persisted!, "StrongPassword!123"));
+        Assert.True(await userManager.CheckPasswordAsync(persisted!, "EvenStronger!456"));
     }
 
     public void Dispose()

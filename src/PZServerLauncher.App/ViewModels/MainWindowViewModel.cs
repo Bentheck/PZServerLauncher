@@ -96,9 +96,6 @@ public partial class MainWindowViewModel : ViewModelBase
     private string ownerUserName = "owner";
 
     [ObservableProperty]
-    private string ownerEmail = "owner@localhost";
-
-    [ObservableProperty]
     private string ownerPassword = string.Empty;
 
     [ObservableProperty]
@@ -318,16 +315,15 @@ public partial class MainWindowViewModel : ViewModelBase
     private async Task BootstrapOwnerAsync()
     {
         if (string.IsNullOrWhiteSpace(OwnerUserName) ||
-            string.IsNullOrWhiteSpace(OwnerEmail) ||
             string.IsNullOrWhiteSpace(OwnerPassword))
         {
-            StatusMessage = "Owner username, email, and password are all required.";
+            StatusMessage = "Owner username and password are both required.";
             return;
         }
 
         await RunBusyAsync(async () =>
         {
-            var result = await _hostApiClient.BootstrapOwnerAsync(OwnerUserName, OwnerEmail, OwnerPassword, CancellationToken.None);
+            var result = await _hostApiClient.BootstrapOwnerAsync(OwnerUserName, OwnerPassword, CancellationToken.None);
             OwnerPassword = string.Empty;
             StatusMessage = result?.Message ?? "Owner account created.";
             await RefreshAsync();

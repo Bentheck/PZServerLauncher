@@ -33,12 +33,13 @@ public sealed class UserManagementService(UserManager<ApplicationUser> userManag
     {
         cancellationToken.ThrowIfCancellationRequested();
         var roles = SanitizeRoles(request.Roles);
+        var normalizedUserName = request.UserName.Trim();
         var user = new ApplicationUser
         {
-            UserName = request.UserName.Trim(),
-            Email = request.Email.Trim(),
-            DisplayName = request.UserName.Trim(),
-            EmailConfirmed = true,
+            UserName = normalizedUserName,
+            Email = null,
+            NormalizedEmail = null,
+            DisplayName = normalizedUserName,
             LockoutEnabled = true,
         };
 
@@ -61,12 +62,14 @@ public sealed class UserManagementService(UserManager<ApplicationUser> userManag
             ?? throw new KeyNotFoundException($"User '{userId}' was not found.");
         var desiredRoles = SanitizeRoles(request.Roles);
         var existingRoles = await GetRolesAsync(user);
+        var normalizedUserName = request.UserName.Trim();
 
         await EnsureOwnerWillRemainAsync(user, existingRoles, desiredRoles, actingUserId);
 
-        user.UserName = request.UserName.Trim();
-        user.Email = request.Email.Trim();
-        user.DisplayName = request.UserName.Trim();
+        user.UserName = normalizedUserName;
+        user.Email = null;
+        user.NormalizedEmail = null;
+        user.DisplayName = normalizedUserName;
         user.LockoutEnabled = true;
 
         var updateResult = await userManager.UpdateAsync(user);
@@ -106,6 +109,34 @@ public sealed class UserManagementService(UserManager<ApplicationUser> userManag
 
         var deleteResult = await userManager.DeleteAsync(user);
         EnsureSucceeded(deleteResult);
+    }
+
+    public async Task ResetPasswordAsync(
+        string userId,
+        string newPassword,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        if (string.IsNullOrWhiteSpace(newPassword))
+        {
+            throw new InvalidOperationException("A new password is required.");
+        }
+
+        var user = await userManager.FindByIdAsync(userId)
+            ?? throw new KeyNotFoundException($"User '{userId}' was not found.");
+
+        IdentityResult result;
+        if (await userManager.HasPasswordAsync(user))
+        {
+            var resetToken = await userManager.GeneratePasswordResetTokenAsync(user);
+            result = await userManager.ResetPasswordAsync(user, resetToken, newPassword);
+        }
+        else
+        {
+            result = await userManager.AddPasswordAsync(user, newPassword);
+        }
+
+        EnsureSucceeded(result);
     }
 
     public async Task EnsureRemoteAccessReadyAsync(CancellationToken cancellationToken = default)
