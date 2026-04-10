@@ -1,0 +1,493 @@
+@page "/profiles/{ProfileId}/logs"
+@attribute [Authorize]
+@inject ProfileStore ProfileStore
+@inject RuntimeStateStore RuntimeStateStore
+@inject ServerProcessSupervisor ProcessSupervisor
+@inject AuditStore AuditStore
+@using PZServerLauncher.Contracts.Profiles
+@using PZServerLauncher.Core.Runtime
+@using PZServerLauncher.Core.Planning
+@using PZServerLauncher.Infrastructure.Planning
+
+<PageTitle>Logs</PageTitle>
+
+@if (_profile is null)
+{
+    <div class="home-shell">
+        <div class="card">
+            <p class="eyebrow">Profile Workspace</p>
+            <h1>Profile not found</h1>
+            <p class="muted-text">The selected profile could not be loaded.</p>
+            <a class="nav-button" href="/profiles">Back to profiles</a>
+        </div>
+    </div>
+}
+else
+{
+    <ProfileWorkspaceShell Profile="@_profile"
+                           ActivePage="logs"
+                           RuntimeStatus="@_runtimeStatus"
+                           InstallDetected="@_installDetected"
+                           CacheDetected="@_cacheDetected">
+        <Actions>
+            <a class="nav-button secondary-button" href="@OverviewHref">Overview</a>
+            <button class="nav-button secondary-button" @onclick='() => SendQuickCommandAsync("players", "Requested current player list.")' disabled="@_busy">Player List</button>
+            <button class="nav-button secondary-button" @onclick='() => SendQuickCommandAsync("save", "Requested world save.")' disabled="@_busy">Save World</button>
+            <button class="nav-button" @onclick="ReloadAsync">Reload Logs</button>
+        </Actions>
+        <ChildContent>
+            <section class="card">
+                <div class="hero">
+                    <div class="hero-copy">
+                        <p class="eyebrow">Live Console</p>
+                        <h1>@_profile.DisplayName</h1>
+                        <p class="muted-text">Watch the recent runtime feed, inferred roster, and operator posture here while you validate startup, mod loading, and live admin changes.</p>
+                    </div>
+                    <div class="hero-pills">
+                        <span class="pill">@_profile.Branch</span>
+                        <span class="pill">@(_runtimeStatus?.State.ToString() ?? "Unknown runtime")</span>
+                        <span class="pill">@(_logSummary?.BufferSummary ?? "Buffer unavailable")</span>
+                        <span class="pill">@(_logSummary?.PlayerActivitySummary ?? "Roster posture unavailable")</span>
+                        <span class="pill">@(_logSummary?.SignalPostureSummary ?? "Signal posture unavailable")</span>
+                        <span class="pill pill--strong">@(_logSummary?.LatestSignalSummary ?? "Latest signal unavailable")</span>
+                    </div>
+                </div>
+            </section>
+
+            <div class="cards cards--four">
+                <section class="card">
+                    <h2>Feed Health</h2>
+                    <p class="muted-text">@(_consoleSummary?.FeedHeadline ?? "Feed health is unavailable.")</p>
+                </section>
+                <section class="card">
+                    <h2>Incident Triage</h2>
+                    <p class="muted-text">@(_consoleSummary?.IncidentHeadline ?? "Incident triage is unavailable.")</p>
+                </section>
+                <section class="card">
+                    <h2>Roster Posture</h2>
+                    <p class="muted-text">@(_consoleSummary?.RosterHeadline ?? "Roster posture is unavailable.")</p>
+                </section>
+                <section class="card">
+                    <h2>Command Posture</h2>
+                    <p class="muted-text">@(_consoleSummary?.CommandHeadline ?? "Command posture is unavailable.")</p>
+                </section>
+            </div>
+
+            <div class="cards cards--four">
+                <section class="card">
+                    <h2>Runtime Window</h2>
+                    <p class="muted-text">@(_logSummary?.RuntimeWindowSummary ?? "Runtime window is unavailable.")</p>
+                    <p class="muted-text">@RuntimePostureHeadline</p>
+                </section>
+                <section class="card">
+                    <h2>Signal Posture</h2>
+                    <p class="muted-text">@(_logSummary?.SignalPostureSummary ?? "Signal posture is unavailable.")</p>
+                    <p class="muted-text">@SignalTriageSummary</p>
+                </section>
+                <section class="card">
+                    <h2>Roster</h2>
+                    <p class="muted-text">@RosterSummary</p>
+                    <p class="muted-text">@(_logSummary?.PlayerActivitySummary ?? "Player activity posture is unavailable.")</p>
+                </section>
+                <section class="card">
+                    <h2>Moderation</h2>
+                    <p class="muted-text">@ModerationSummary</p>
+                    <p class="muted-text">@(_logSummary?.OperatorCommandSummary ?? "Operator command posture is unavailable.")</p>
+                </section>
+            </div>
+
+            <div class="cards cards--wide">
+                <AuthorizeView Roles="Owner,Admin,Operator">
+                    <Authorized>
+                        <section class="card">
+                            <h2>Live Operations</h2>
+                            <p class="muted-text">Use the live console to request the current player list, broadcast a server message, save the world, reload options, or issue a raw Project Zomboid console command while the server is live.</p>
+
+                            <div class="profile-section">
+                                <h3>Operator Posture</h3>
+                                <div class="field-grid">
+                                    <div class="field-card">
+                                        <span class="field-label">Latest signal</span>
+                                        <span>@(_logSummary?.LatestSignalSummary ?? "Latest signal unavailable.")</span>
+                                    </div>
+                                    <div class="field-card">
+                                        <span class="field-label">Runtime window</span>
+                                        <span>@(_logSummary?.RuntimeWindowSummary ?? "Runtime window unavailable.")</span>
+                                    </div>
+                                    <div class="field-card">
+                                        <span class="field-label">Signal posture</span>
+                                        <span>@(_logSummary?.SignalPostureSummary ?? "Signal posture unavailable.")</span>
+                                    </div>
+                                    <div class="field-card">
+                                        <span class="field-label">Command posture</span>
+                                        <span>@(_logSummary?.OperatorCommandSummary ?? "Operator command posture unavailable.")</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="profile-section">
+                                <h3>Moderation Guidance</h3>
+                                <p class="muted-text">@ModerationSummary</p>
+                                <p class="muted-text">@PlayerSummary</p>
+                                <p class="muted-text">@OperatorActionSummary</p>
+                                <div class="button-row">
+                                    <button class="nav-button secondary-button" @onclick='() => SendQuickCommandAsync("players", "Requested current player list.")' disabled="@_busy">Request Player List</button>
+                                    <button class="nav-button secondary-button" @onclick='() => SendQuickCommandAsync("save", "Requested world save.")' disabled="@_busy">Save World</button>
+                                    <button class="nav-button secondary-button" @onclick='() => SendQuickCommandAsync("reloadoptions", "Requested option reload.")' disabled="@_busy">Reload Options</button>
+                                </div>
+                            </div>
+
+                            <div class="profile-section">
+                                <h3>Broadcast</h3>
+                                <input @bind="_broadcastMessage" placeholder="Message to all connected players" />
+                                <p class="muted-text">Broadcasts appear in the operator history and are best used for maintenance windows, restart warnings, and moderation announcements.</p>
+                                <div class="button-row">
+                                    <button class="nav-button" @onclick="SendBroadcastAsync" disabled="@_busy">Broadcast To Server</button>
+                                </div>
+                            </div>
+
+                            <div class="profile-section">
+                                <h3>Raw Console</h3>
+                                <input @bind="_rawCommand" placeholder="Example: players" />
+                                <p class="muted-text">Use raw commands when the player list, save cycle, or moderation action needs a direct console call.</p>
+                                <div class="button-row">
+                                    <button class="nav-button" @onclick="SendRawCommandAsync" disabled="@_busy">Send Raw Command</button>
+                                    <button class="nav-button secondary-button" @onclick='() => SendQuickCommandAsync("players", "Requested current player list.")' disabled="@_busy">Request Player List</button>
+                                    <button class="nav-button secondary-button" @onclick='() => SendQuickCommandAsync("save", "Requested world save.")' disabled="@_busy">Save World</button>
+                                    <button class="nav-button secondary-button" @onclick='() => SendQuickCommandAsync("reloadoptions", "Requested option reload.")' disabled="@_busy">Reload Options</button>
+                                </div>
+                            </div>
+                        </section>
+                    </Authorized>
+                    <NotAuthorized>
+                        <section class="card">
+                            <h2>Players &amp; Ops</h2>
+                            <p class="muted-text">Live operator commands are restricted to Owner, Admin, and Operator roles. Viewers can still monitor the inferred roster, player signals, runtime feed, and command history from this page.</p>
+                        </section>
+                    </NotAuthorized>
+                </AuthorizeView>
+
+                <section class="card">
+                    <h2>Inferred Live Roster</h2>
+                    <p class="muted-text">@BuildModerationSummary()</p>
+                    <p class="muted-text">@RosterSummary</p>
+                    @if (_liveOperations?.ConnectedPlayers.Count > 0)
+                    {
+                        <ul class="stack-list">
+                            @foreach (var player in _liveOperations.ConnectedPlayers)
+                            {
+                                <li>
+                                    <div>@player.UserName | joined @player.JoinedAtUtc.ToString("HH:mm:ss 'UTC'") | last seen @player.LastSeenAtUtc.ToString("HH:mm:ss 'UTC'")</div>
+                                    <div class="muted-text">@BuildPlayerSignalSummary(player.UserName)</div>
+                                    <AuthorizeView Roles="Owner,Admin,Operator">
+                                        <Authorized>
+                                            <div class="button-row">
+                                                <button class="nav-button secondary-button" @onclick='() => SendQuickCommandAsync(BuildTargetedCommand("kickuser", player.UserName), $"Queued kick command for {player.UserName}.")' disabled="@_busy">Kick</button>
+                                                <button class="nav-button secondary-button" @onclick='() => SendQuickCommandAsync(BuildTargetedCommand("banuser", player.UserName), $"Queued ban command for {player.UserName}.")' disabled="@_busy">Ban</button>
+                                                <button class="nav-button secondary-button" @onclick='() => SendQuickCommandAsync(BuildTargetedCommand("addusertowhitelist", player.UserName), $"Queued whitelist command for {player.UserName}.")' disabled="@_busy">Whitelist</button>
+                                            </div>
+                                        </Authorized>
+                                    </AuthorizeView>
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <p class="muted-text">No active roster could be inferred from the current buffer yet. Keep this page open during joins or request Player List while the server is live to pull fresh activity into the console.</p>
+                        <p class="muted-text">@(_logSummary?.PlayerActivitySummary ?? "Player activity posture is unavailable.")</p>
+                    }
+
+                    <h3>Recent Player Signals</h3>
+                    @if (_liveOperations?.RecentPlayerSignals.Count > 0)
+                    {
+                        <div class="card inner-card">
+                            @foreach (var signal in _liveOperations.RecentPlayerSignals)
+                            {
+                                <div class="log-line">@signal.TimestampUtc.ToString("HH:mm:ss 'UTC'") | @signal.UserName @signal.Activity.ToLowerInvariant()</div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="muted-text">Player-related signals will appear here as the runtime buffer captures joins, disconnects, whitelist changes, or player list responses.</p>
+                    }
+
+                    <h3>Recent Operator Actions</h3>
+                    @if (_liveOperations?.RecentOperatorActions.Count > 0)
+                    {
+                        <div class="card inner-card">
+                            @foreach (var action in _liveOperations.RecentOperatorActions)
+                            {
+                                <div class="log-line">@action.TimestampUtc.ToString("HH:mm:ss 'UTC'") | @action.Kind | @action.CommandText</div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="muted-text">Broadcasts and raw console commands sent from the launcher will appear here as soon as the runtime accepts them.</p>
+                    }
+                </section>
+            </div>
+
+            <div class="card">
+                <h2>Recent Runtime Output</h2>
+                <p class="muted-text">This page shows the host's recent in-memory log buffer for the selected profile.</p>
+                <p class="muted-text">@(_logSummary?.OperatorFocusSummary ?? "Operator guidance is unavailable.")</p>
+
+                <div class="profile-section">
+                    <h3>Runtime Summary</h3>
+                    <div class="field-grid">
+                        <div class="field-card">
+                            <span class="field-label">Runtime State</span>
+                            <span>@(_runtimeStatus?.State.ToString() ?? "Unknown")</span>
+                        </div>
+                        <div class="field-card">
+                            <span class="field-label">Latest Line</span>
+                            <span>@(_runtimeStatus?.LatestLogLine ?? "No recent log line.")</span>
+                        </div>
+                        <div class="field-card">
+                            <span class="field-label">Buffered Lines</span>
+                            <span>@_logLines.Count</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="profile-section">
+                    <h3>Recent Buffer</h3>
+                    @if (_logLines.Count == 0)
+                    {
+                        <p class="muted-text">No buffered logs yet. Start the profile or reload after new runtime activity.</p>
+                    }
+                    else
+                    {
+                        <div class="card inner-card">
+                            @foreach (var line in _logLines)
+                            {
+                                <div class="log-line">@line</div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <section class="card">
+                <h2>Operator Focus</h2>
+                <p class="muted-text">@(_consoleSummary?.OperatorSummary ?? _logSummary?.OperatorFocusSummary ?? "Operator guidance is unavailable.")</p>
+                <p class="muted-text">@(_consoleSummary?.TriageSummary ?? SignalTriageSummary)</p>
+                <p class="muted-text">@RuntimePostureHeadline</p>
+                <p class="muted-text">@SignalTriageSummary</p>
+                <p class="muted-text">@_statusMessage</p>
+                <ul>
+                    @foreach (var item in _consoleSummary?.Checklist ?? Array.Empty<string>())
+                    {
+                        <li>@item</li>
+                    }
+                </ul>
+            </section>
+
+        </ChildContent>
+    </ProfileWorkspaceShell>
+}
+
+@code {
+    [Parameter]
+    public string ProfileId { get; set; } = string.Empty;
+
+    private ServerProfile? _profile;
+    private ServerRuntimeStatus? _runtimeStatus;
+    private List<string> _logLines = [];
+    private string _statusMessage = "Loading logs...";
+    private bool _installDetected;
+    private bool _cacheDetected;
+    private ProjectZomboidLogPostureSummary? _logSummary;
+    private ProjectZomboidLiveOpsConsoleSummary? _consoleSummary;
+    private ProfileLiveOperationsSnapshot? _liveOperations;
+    private string _broadcastMessage = string.Empty;
+    private string _rawCommand = string.Empty;
+    private bool _busy;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        _profile = await ProfileStore.GetAsync(ProfileId);
+        if (_profile is null)
+        {
+            return;
+        }
+
+        _runtimeStatus = RuntimeStateStore.GetOrDefault(ProfileId);
+        _logLines = RuntimeStateStore.GetRecentLogs(ProfileId).ToList();
+        _liveOperations = RuntimeStateStore.GetLiveOperations(ProfileId);
+        _installDetected = Directory.Exists(_profile.InstallDirectory);
+        _cacheDetected = Directory.Exists(_profile.CacheDirectory);
+        _logSummary = ProjectZomboidLogPostureSummaryBuilder.Build(_runtimeStatus, _logLines);
+        RefreshConsoleSummary();
+        _statusMessage = _logLines.Count == 0
+            ? "No buffered logs are available yet."
+            : $"Loaded {_logLines.Count} recent log line(s).";
+    }
+
+    private string PlayerSummary => _liveOperations is null
+        ? "No live player roster is available yet."
+        : _liveOperations.ConnectedPlayers.Count == 0
+            ? "No players are currently inferred online from the runtime feed."
+            : $"{_liveOperations.ConnectedPlayers.Count} player(s) are inferred online from recent runtime output.";
+
+    private string OperatorActionSummary => _liveOperations is null
+        ? "No launcher-driven command activity is available yet."
+        : _liveOperations.RecentOperatorActions.Count == 0
+            ? "No launcher-driven broadcast or raw command has been recorded yet."
+            : _liveOperations.RecentOperatorActions[0].Summary;
+
+    private string RuntimePostureHeadline => _runtimeStatus?.State == ServerRuntimeState.Running
+        ? "Live runtime feed is active and ready for moderation or incident response."
+        : "Runtime feed is idle; refresh after start or while the server is joining.";
+
+    private string SignalTriageSummary => _logSummary?.LatestSignalSummary ?? "Latest signal unavailable.";
+
+    private string ModerationSummary => _liveOperations is null
+        ? "Moderation guidance is unavailable until the runtime feed has loaded."
+        : _liveOperations.ConnectedPlayers.Count > 0
+            ? $"Moderation-ready roster: {_liveOperations.ConnectedPlayers.Count} active player(s) inferred from the buffer."
+            : "No active roster is inferred yet. Player List can pull the roster into the feed before you moderate.";
+
+    private string RosterSummary => _liveOperations is null
+        ? "No live roster data is available yet."
+        : _liveOperations.ConnectedPlayers.Count == 0
+            ? "The server is live, but the roster is still empty or not yet inferred."
+            : $"{_liveOperations.ConnectedPlayers.Count} player(s) currently inferred online.";
+
+    private string BuildModerationSummary() => _runtimeStatus?.State == ServerRuntimeState.Running
+        ? "Kick, ban, or whitelist directly from the inferred roster while the runtime is live."
+        : "Targeted moderation actions unlock once the runtime is live.";
+
+    private string BuildPlayerSignalSummary(string userName)
+    {
+        var signal = _liveOperations?.RecentPlayerSignals.FirstOrDefault(entry => string.Equals(entry.UserName, userName, StringComparison.OrdinalIgnoreCase));
+        return signal is null
+            ? "No recent player signal recorded yet."
+            : $"Latest signal: {signal.Activity.ToLowerInvariant()} at {signal.TimestampUtc:HH:mm:ss 'UTC'}.";
+    }
+
+    private async Task SendBroadcastAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_broadcastMessage))
+        {
+            _statusMessage = "Enter a broadcast message before sending it.";
+            return;
+        }
+
+        var sanitized = _broadcastMessage.Replace("\"", "'", StringComparison.Ordinal).Trim();
+        await SendBroadcastInternalAsync(sanitized);
+        _broadcastMessage = string.Empty;
+    }
+
+    private async Task SendRawCommandAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_rawCommand))
+        {
+            _statusMessage = "Enter a raw console command before sending it.";
+            return;
+        }
+
+        var command = _rawCommand.Trim();
+        await SendQuickCommandAsync(command, $"Sent raw console command: {command}");
+        _rawCommand = string.Empty;
+    }
+
+    private async Task SendBroadcastInternalAsync(string message)
+    {
+        if (_profile is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            _liveOperations = await ProcessSupervisor.SendBroadcastAsync(_profile.ProfileId, message, CancellationToken.None);
+            _runtimeStatus = RuntimeStateStore.GetOrDefault(_profile.ProfileId);
+            await AuditStore.WriteAsync("runtime.broadcast.sent", _profile.ProfileId, "web", $"Broadcasted message: {message}", cancellationToken: CancellationToken.None);
+            _statusMessage = $"Broadcasted message: {message}";
+            RefreshConsoleSummary();
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task SendQuickCommandAsync(string commandText, string statusMessage)
+    {
+        if (_profile is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            _liveOperations = await ProcessSupervisor.SendCommandAsync(_profile.ProfileId, commandText, CancellationToken.None);
+            _runtimeStatus = RuntimeStateStore.GetOrDefault(_profile.ProfileId);
+            await AuditStore.WriteAsync("runtime.command.sent", _profile.ProfileId, "web", statusMessage, cancellationToken: CancellationToken.None);
+            _statusMessage = statusMessage;
+            RefreshConsoleSummary();
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private static string BuildTargetedCommand(string commandName, string userName) =>
+        $"{commandName} {QuoteConsoleArgument(userName)}";
+
+    private static string QuoteConsoleArgument(string value) =>
+        $"\"{value.Replace("\"", "'", StringComparison.Ordinal).Trim()}\"";
+
+    private string OverviewHref => $"/profiles/{Uri.EscapeDataString(ProfileId)}/overview";
+
+    private void RefreshConsoleSummary()
+    {
+        var runtimeState = _runtimeStatus?.State.ToString() ?? "Stopped";
+        var rosterCount = _liveOperations?.ConnectedPlayers.Count ?? _logSummary?.ConnectedPlayerCount ?? 0;
+        var operatorActionCount = _liveOperations?.RecentOperatorActions.Count ?? _logSummary?.OperatorCommandCount ?? 0;
+        _consoleSummary = ProjectZomboidLiveOpsConsoleSummaryBuilder.Build(
+            _logSummary ?? new ProjectZomboidLogPostureSummary(
+                "No buffered lines are available yet. Select a profile to inspect runtime output.",
+                "Latest signal: no runtime output captured yet.",
+                "No runtime signals are buffered yet.",
+                "Pick a profile, then start or reload to watch runtime output.",
+                "Runtime window: no status is available yet.",
+                "No player activity is available yet.",
+                "No operator commands have been recorded yet.",
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                false,
+                false,
+                false,
+                [],
+                []),
+            runtimeState,
+            string.Equals(runtimeState, ServerRuntimeState.Running.ToString(), StringComparison.OrdinalIgnoreCase),
+            rosterCount,
+            operatorActionCount);
+    }
+}

@@ -1,0 +1,162 @@
+using PZServerLauncher.Core.Settings;
+
+namespace PZServerLauncher.Tests.Settings;
+
+public sealed class ProjectZomboidProfilePostureSummaryBuilderTests
+{
+    [Fact]
+    public void Build_SummarizesCommunityPosture()
+    {
+        var generalValues = new Dictionary<string, string?>(StringComparer.Ordinal)
+        {
+            ["b42.server.public"] = "true",
+            ["b42.server.open"] = "false",
+            ["b42.server.pvp"] = "true",
+            ["b42.server.max-players"] = "24",
+        };
+
+        var summary = ProjectZomboidProfilePostureSummaryBuilder.Build(
+            "Nightingale",
+            generalValues,
+            new Dictionary<string, string?>(StringComparer.Ordinal),
+            new Dictionary<string, string?>(StringComparer.Ordinal));
+
+        Assert.Equal("Nightingale | 24 slots | public listing on | password-gated | PvP on.", summary.CommunitySummary);
+        Assert.True(summary.IsPubliclyListed);
+        Assert.True(summary.IsPvpEnabled);
+    }
+
+    [Fact]
+    public void Build_SummarizesServerRules()
+    {
+        var generalValues = new Dictionary<string, string?>(StringComparer.Ordinal)
+        {
+            ["b42.server.sleep-allowed"] = "true",
+            ["b42.server.sleep-needed"] = "false",
+            ["b42.server.player-safehouse"] = "true",
+            ["b42.server.faction-enabled"] = "true",
+            ["b42.server.allow-trade-ui"] = "false",
+            ["b42.server.no-fire"] = "true",
+            ["b42.server.respawn-with-self"] = "true",
+            ["b42.server.world-item-removal-hours"] = "36.5",
+        };
+
+        var summary = ProjectZomboidProfilePostureSummaryBuilder.Build(
+            "Nightingale",
+            generalValues,
+            new Dictionary<string, string?>(StringComparer.Ordinal),
+            new Dictionary<string, string?>(StringComparer.Ordinal));
+
+        Assert.Equal("Sleep allowed | respawn self on | cleanup 36.5h | safehouses enabled | factions enabled | trade UI off | fire spread disabled.", summary.ServerRulesSummary);
+    }
+
+    [Fact]
+    public void Build_SummarizesNetworkPosture()
+    {
+        var networkValues = new Dictionary<string, string?>(StringComparer.Ordinal)
+        {
+            ["b42.network.bind-ip"] = "10.0.0.42",
+            ["b42.network.steam-vac"] = "true",
+            ["b42.network.auto-whitelist"] = "false",
+            ["b42.network.safety-system"] = "true",
+            ["b42.network.display-user-name"] = "false",
+            ["b42.network.show-first-last-name"] = "false",
+            ["b42.network.mouse-over-display-name"] = "true",
+            ["b42.network.hide-players-behind-you"] = "true",
+            ["b42.network.player-bump-player"] = "false",
+            ["b42.network.voice-enabled"] = "true",
+            ["b42.network.voice-3d"] = "true",
+            ["b42.network.voice-min-distance"] = "12",
+            ["b42.network.voice-max-distance"] = "48",
+        };
+
+        var summary = ProjectZomboidProfilePostureSummaryBuilder.Build(
+            "Nightingale",
+            new Dictionary<string, string?>(StringComparer.Ordinal),
+            networkValues,
+            new Dictionary<string, string?>(StringComparer.Ordinal));
+
+        Assert.Equal("Bind 10.0.0.42 | VAC on | whitelist manual | safety enabled | names hover names | rear cull on | bump off | 3D voice 12-48.", summary.NetworkSummary);
+        Assert.True(summary.IsVoiceEnabled);
+        Assert.True(summary.IsSafetyEnabled);
+    }
+
+    [Fact]
+    public void Build_SummarizesWorldSnapshot()
+    {
+        var sandboxValues = new Dictionary<string, string?>(StringComparer.Ordinal)
+        {
+            ["b42.sandbox.zombies"] = "5",
+            ["b42.sandbox.day-length"] = "9",
+            ["b42.sandbox.helicopter"] = "4",
+            ["b42.sandbox.loot-respawn"] = "2",
+            ["b42.sandbox.enable-vehicles"] = "true",
+            ["b42.sandbox.fire-spread"] = "false",
+            ["b42.sandbox.hours-for-corpse-removal"] = "120",
+            ["b42.sandbox.multi-hit"] = "true",
+            ["b42.sandbox.bone-fracture"] = "false",
+            ["b42.sandbox.attack-block-movements"] = "false",
+            ["b42.sandbox.vehicle-easy-use"] = "true",
+            ["b42.sandbox.player-damage-from-crash"] = "false",
+            ["b42.sandbox.starter-kit"] = "true",
+            ["b42.sandbox.nutrition"] = "false",
+        };
+
+        var summary = ProjectZomboidProfilePostureSummaryBuilder.Build(
+            "Nightingale",
+            new Dictionary<string, string?>(StringComparer.Ordinal),
+            new Dictionary<string, string?>(StringComparer.Ordinal),
+            sandboxValues);
+
+        Assert.Equal("Zombies 5 | day length 9 | helicopter 4 | loot respawn 2 | vehicles on | fire spread off | corpse cleanup 120h | multi-hit on | fractures off | attack lock off | easy vehicles on | crash damage off | starter kit on | nutrition off.", summary.WorldSummary);
+    }
+
+    [Fact]
+    public void Build_SummarizesSandboxTuning()
+    {
+        var sandboxValues = new Dictionary<string, string?>(StringComparer.Ordinal)
+        {
+            ["b42.sandbox.zombie-lore-speed"] = "1",
+            ["b42.sandbox.zombie-lore-strength"] = "4",
+            ["b42.sandbox.zombie-lore-transmission"] = "3",
+            ["b42.sandbox.zombie-lore-mortality"] = "6",
+            ["b42.sandbox.zombie-lore-reanimate"] = "2",
+            ["b42.sandbox.zombie-lore-cognition"] = "5",
+            ["b42.sandbox.zombie-lore-memory"] = "1",
+            ["b42.sandbox.zombie-lore-decomp"] = "4",
+            ["b42.sandbox.zombie-lore-sight"] = "4",
+            ["b42.sandbox.zombie-lore-hearing"] = "2",
+            ["b42.sandbox.zombie-lore-smell"] = "3",
+            ["b42.sandbox.zombie-lore-trigger-house-alarm"] = "true",
+            ["b42.sandbox.zombie-lore-thump-no-chasing"] = "false",
+            ["b42.sandbox.zombie-lore-thump-on-construction"] = "true",
+            ["b42.sandbox.zombie-lore-drag-down"] = "false",
+            ["b42.sandbox.zombie-lore-fence-lunge"] = "true",
+        };
+
+        var summary = ProjectZomboidProfilePostureSummaryBuilder.Build(
+            "Nightingale",
+            new Dictionary<string, string?>(StringComparer.Ordinal),
+            new Dictionary<string, string?>(StringComparer.Ordinal),
+            sandboxValues);
+
+        Assert.Equal("Zombie lore speed 1 | strength 4 | transmission 3 | mortality 6 | reanimate 2 | cognition 5 | memory 1 | decomp 4 | sight 4 | hearing 2 | smell 3 | alarm on | thump off | build thump on | drag off | fence on.", summary.SandboxTuningSummary);
+    }
+
+    [Fact]
+    public void Build_FlattensWelcomeMessage()
+    {
+        var generalValues = new Dictionary<string, string?>(StringComparer.Ordinal)
+        {
+            ["b42.server.welcome-message"] = "Welcome survivor!\r\nStay alive.\nBring snacks.",
+        };
+
+        var summary = ProjectZomboidProfilePostureSummaryBuilder.Build(
+            "Nightingale",
+            generalValues,
+            new Dictionary<string, string?>(StringComparer.Ordinal),
+            new Dictionary<string, string?>(StringComparer.Ordinal));
+
+        Assert.Equal("Welcome: Welcome survivor! Stay alive. Bring snacks.", summary.WelcomeSummary);
+    }
+}

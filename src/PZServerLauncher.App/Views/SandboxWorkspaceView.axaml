@@ -1,0 +1,290 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:PZServerLauncher.App.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignWidth="1120"
+             d:DesignHeight="960"
+             x:Class="PZServerLauncher.App.Views.SandboxWorkspaceView"
+             x:DataType="vm:SandboxWorkspaceViewModel">
+    <ScrollViewer>
+        <Grid RowDefinitions="Auto,Auto,*" RowSpacing="18">
+            <Grid ColumnDefinitions="1.42*,340" ColumnSpacing="18">
+                <Border Classes="card" Padding="26">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18">
+                        <StackPanel Spacing="8">
+                            <TextBlock Classes="kicker" Text="World Pressure Console" />
+                            <TextBlock Classes="panel-title" FontSize="30" Text="{Binding ProfileDisplayName}" />
+                            <TextBlock Classes="body" FontSize="16" Foreground="#45382E" Text="{Binding WorkspaceSummary}" TextWrapping="Wrap" />
+                            <TextBlock Classes="caption" Text="{Binding ActionSummary}" TextWrapping="Wrap" />
+                            <WrapPanel Margin="0,8,0,0" Orientation="Horizontal" ItemHeight="30">
+                                <Border Background="#2A2927" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                    <TextBlock Foreground="#F7F0E7" FontSize="11" Text="{Binding Branch}" />
+                                </Border>
+                                <Border Background="#EAD6BF" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                    <TextBlock Foreground="#5A4330" FontSize="11" Text="{Binding WorldStateHeadline}" />
+                                </Border>
+                                <Border Background="#EAD6BF" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                    <TextBlock Foreground="#5A4330" FontSize="11" Text="{Binding ZombiePressureHeadline}" />
+                                </Border>
+                            </WrapPanel>
+                        </StackPanel>
+                        <Border Grid.Column="1" Classes="metric-card" Padding="16" Width="220">
+                            <StackPanel Spacing="6">
+                                <TextBlock Classes="kicker" Text="Recovery" />
+                                <TextBlock Classes="body" FontWeight="SemiBold" Text="{Binding RecoveryHeadline}" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <Border Grid.Column="1" Classes="surface-dark" Padding="18">
+                    <StackPanel Spacing="10">
+                        <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Scenario Watch" />
+                        <TextBlock FontSize="22" FontWeight="SemiBold" Foreground="#F7F0E7" Text="{Binding SurvivorRulesHeadline}" TextWrapping="Wrap" />
+                        <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding ValidationSummary}" TextWrapping="Wrap" />
+                        <TextBlock Classes="caption" Foreground="#CCB9A8" Text="{Binding FallbackSummary}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <Grid Grid.Row="1" ColumnDefinitions="*,*,*,*" ColumnSpacing="14">
+                <Border Classes="metric-card" Padding="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="World State" />
+                        <TextBlock Classes="panel-title" FontSize="22" Text="{Binding WorldStateHeadline}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="1" Classes="metric-card" Padding="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Zombie Pressure" />
+                        <TextBlock Classes="panel-title" FontSize="22" Text="{Binding ZombiePressureHeadline}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="2" Classes="metric-card" Padding="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Survival Economy" />
+                        <TextBlock Classes="panel-title" FontSize="22" Text="{Binding SurvivalEconomyHeadline}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="3" Classes="metric-card" Padding="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Events &amp; Climate" />
+                        <TextBlock Classes="panel-title" FontSize="22" Text="{Binding EventAndClimateHeadline}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <Grid Grid.Row="2" ColumnDefinitions="1.22*,.78*" ColumnSpacing="18">
+                <StackPanel Spacing="18">
+                    <Border Classes="surface-dark" Padding="22">
+                        <Grid ColumnDefinitions="1.08*,.92*" ColumnSpacing="18">
+                            <StackPanel Spacing="10">
+                                <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Scenario Situation" />
+                                <TextBlock FontSize="26" FontWeight="SemiBold" Foreground="#F7F0E7" Text="{Binding WorldStateHeadline}" TextWrapping="Wrap" />
+                                <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding ZombiePressureHeadline}" TextWrapping="Wrap" />
+                                <TextBlock Classes="caption" Foreground="#CCB9A8" Text="{Binding SurvivalEconomyHeadline}" TextWrapping="Wrap" />
+                            </StackPanel>
+                            <ItemsControl Grid.Column="1" ItemsSource="{Binding SandboxChecklist}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="#F0E2D0" CornerRadius="14" Padding="12" Margin="0,0,0,8">
+                                            <TextBlock Classes="caption" Foreground="#5E4735" Text="{Binding .}" TextWrapping="Wrap" />
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </Grid>
+                    </Border>
+
+                    <Border Background="#FFF8F1" CornerRadius="14" Padding="16" IsVisible="{Binding RequiresAdvancedFilesFallback}">
+                        <StackPanel Spacing="6">
+                            <TextBlock Classes="kicker" Text="Fallback Required" />
+                            <TextBlock Classes="body" Text="{Binding FallbackReason}" TextWrapping="Wrap" />
+                            <TextBlock Classes="caption" Text="Use Advanced Files for raw SandboxVars.lua editing when this structured page cannot safely own the file." TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+
+                    <Grid ColumnDefinitions="1.05*,.95*" ColumnSpacing="16" IsEnabled="{Binding CanEdit}">
+                        <StackPanel Spacing="16">
+                            <Border Classes="card" Padding="18">
+                                <StackPanel Spacing="12">
+                                    <TextBlock Classes="kicker" Text="World Setup" />
+                                    <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto" RowSpacing="12">
+                                        <StackPanel Spacing="4"><TextBlock Classes="body" Text="Zombie Spawn Rate" /><TextBox Text="{Binding Zombies}" /></StackPanel>
+                                        <StackPanel Grid.Column="1" Spacing="4"><TextBlock Classes="body" Text="Zombie Distribution" /><TextBox Text="{Binding Distribution}" /></StackPanel>
+                                        <StackPanel Grid.Column="2" Spacing="4"><TextBlock Classes="body" Text="Day Length" /><TextBox Text="{Binding DayLength}" /></StackPanel>
+                                        <StackPanel Grid.Column="3" Spacing="4"><TextBlock Classes="body" Text="Start Year" /><TextBox Text="{Binding StartYear}" /></StackPanel>
+                                        <StackPanel Grid.Row="1" Spacing="4"><TextBlock Classes="body" Text="Start Month" /><TextBox Text="{Binding StartMonth}" /></StackPanel>
+                                        <StackPanel Grid.Row="1" Grid.Column="1" Spacing="4"><TextBlock Classes="body" Text="Start Day" /><TextBox Text="{Binding StartDay}" /></StackPanel>
+                                        <StackPanel Grid.Row="1" Grid.Column="2" Spacing="4"><TextBlock Classes="body" Text="Start Time" /><TextBox Text="{Binding StartTime}" /></StackPanel>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Classes="card" Padding="18">
+                                <StackPanel Spacing="12">
+                                    <TextBlock Classes="kicker" Text="Zombie Lore" />
+                                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="10">
+                                        <StackPanel Spacing="4"><TextBlock Classes="body" Text="Zombie Speed" /><TextBox Text="{Binding ZombieLoreSpeed}" /></StackPanel>
+                                        <StackPanel Grid.Column="1" Spacing="4"><TextBlock Classes="body" Text="Zombie Strength" /><TextBox Text="{Binding ZombieLoreStrength}" /></StackPanel>
+                                        <StackPanel Grid.Row="1" Spacing="4"><TextBlock Classes="body" Text="Zombie Toughness" /><TextBox Text="{Binding ZombieLoreToughness}" /></StackPanel>
+                                        <StackPanel Grid.Row="1" Grid.Column="1" Spacing="4"><TextBlock Classes="body" Text="Transmission" /><TextBox Text="{Binding ZombieLoreTransmission}" /></StackPanel>
+                                        <StackPanel Grid.Row="2" Spacing="4"><TextBlock Classes="body" Text="Mortality" /><TextBox Text="{Binding ZombieLoreMortality}" /></StackPanel>
+                                        <StackPanel Grid.Row="2" Grid.Column="1" Spacing="4"><TextBlock Classes="body" Text="Reanimate Delay" /><TextBox Text="{Binding ZombieLoreReanimate}" /></StackPanel>
+                                        <StackPanel Grid.Row="3" Spacing="4"><TextBlock Classes="body" Text="Cognition" /><TextBox Text="{Binding ZombieLoreCognition}" /></StackPanel>
+                                        <StackPanel Grid.Row="3" Grid.Column="1" Spacing="4"><TextBlock Classes="body" Text="Memory" /><TextBox Text="{Binding ZombieLoreMemory}" /></StackPanel>
+                                        <StackPanel Grid.Row="4" Spacing="4"><TextBlock Classes="body" Text="Decomp" /><TextBox Text="{Binding ZombieLoreDecomp}" /></StackPanel>
+                                        <StackPanel Grid.Row="4" Grid.Column="1" Spacing="4"><TextBlock Classes="body" Text="Sight" /><TextBox Text="{Binding ZombieLoreSight}" /></StackPanel>
+                                        <StackPanel Grid.Row="5" Spacing="4"><TextBlock Classes="body" Text="Hearing" /><TextBox Text="{Binding ZombieLoreHearing}" /></StackPanel>
+                                        <StackPanel Grid.Row="5" Grid.Column="1" Spacing="4"><TextBlock Classes="body" Text="Smell" /><TextBox Text="{Binding ZombieLoreSmell}" /></StackPanel>
+                                        <CheckBox Grid.Row="6" Content="Trigger House Alarm" IsChecked="{Binding ZombieLoreTriggerHouseAlarm}" />
+                                        <CheckBox Grid.Row="6" Grid.Column="1" Content="Thump Without Chasing" IsChecked="{Binding ZombieLoreThumpNoChasing}" />
+                                        <CheckBox Grid.Row="7" Content="Thump On Construction" IsChecked="{Binding ZombieLoreThumpOnConstruction}" />
+                                        <CheckBox Grid.Row="7" Grid.Column="1" Content="Fence Lunge" IsChecked="{Binding ZombieLoreFenceLunge}" />
+                                        <CheckBox Grid.Row="8" Content="Drag Down" IsChecked="{Binding ZombieLoreDragDown}" />
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Classes="card" Padding="18">
+                                <StackPanel Spacing="12">
+                                    <TextBlock Classes="kicker" Text="Zombie Population" />
+                                    <Grid ColumnDefinitions="*,*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="10">
+                                        <StackPanel Spacing="4"><TextBlock Classes="body" Text="Population Multiplier" /><TextBox Text="{Binding PopulationMultiplier}" /></StackPanel>
+                                        <StackPanel Grid.Column="1" Spacing="4"><TextBlock Classes="body" Text="Start Population" /><TextBox Text="{Binding PopulationStartMultiplier}" /></StackPanel>
+                                        <StackPanel Grid.Column="2" Spacing="4"><TextBlock Classes="body" Text="Peak Population" /><TextBox Text="{Binding PopulationPeakMultiplier}" /></StackPanel>
+                                        <StackPanel Grid.Row="1" Spacing="4"><TextBlock Classes="body" Text="Peak Day" /><TextBox Text="{Binding PopulationPeakDay}" /></StackPanel>
+                                        <StackPanel Grid.Row="1" Grid.Column="1" Spacing="4"><TextBlock Classes="body" Text="Respawn Hours" /><TextBox Text="{Binding RespawnHours}" /></StackPanel>
+                                        <StackPanel Grid.Row="1" Grid.Column="2" Spacing="4"><TextBlock Classes="body" Text="Respawn Unseen Hours" /><TextBox Text="{Binding RespawnUnseenHours}" /></StackPanel>
+                                        <StackPanel Grid.Row="2" Spacing="4"><TextBlock Classes="body" Text="Respawn Multiplier" /><TextBox Text="{Binding RespawnMultiplier}" /></StackPanel>
+                                        <StackPanel Grid.Row="2" Grid.Column="1" Spacing="4"><TextBlock Classes="body" Text="Redistribute Hours" /><TextBox Text="{Binding RedistributeHours}" /></StackPanel>
+                                        <StackPanel Grid.Row="2" Grid.Column="2" Spacing="4"><TextBlock Classes="body" Text="Follow Sound Distance" /><TextBox Text="{Binding FollowSoundDistance}" /></StackPanel>
+                                        <StackPanel Grid.Row="3" Spacing="4"><TextBlock Classes="body" Text="Rally Group Size" /><TextBox Text="{Binding RallyGroupSize}" /></StackPanel>
+                                        <StackPanel Grid.Row="3" Grid.Column="1" Spacing="4"><TextBlock Classes="body" Text="Rally Travel Distance" /><TextBox Text="{Binding RallyTravelDistance}" /></StackPanel>
+                                        <StackPanel Grid.Row="3" Grid.Column="2" Spacing="4"><TextBlock Classes="body" Text="Rally Group Separation" /><TextBox Text="{Binding RallyGroupSeparation}" /></StackPanel>
+                                        <StackPanel Grid.Row="4" Spacing="4"><TextBlock Classes="body" Text="Rally Group Radius" /><TextBox Text="{Binding RallyGroupRadius}" /></StackPanel>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1" Spacing="16">
+                            <Border Classes="card" Padding="18">
+                                <StackPanel Spacing="12">
+                                    <TextBlock Classes="kicker" Text="Utilities" />
+                                    <StackPanel Spacing="4"><TextBlock Classes="body" Text="Water Shutoff Day" /><TextBox Text="{Binding WaterShutModifier}" /></StackPanel>
+                                    <StackPanel Spacing="4"><TextBlock Classes="body" Text="Electricity Shutoff Day" /><TextBox Text="{Binding ElectricityShutModifier}" /></StackPanel>
+                                    <StackPanel Spacing="4"><TextBlock Classes="body" Text="Erosion Speed" /><TextBox Text="{Binding ErosionSpeed}" /></StackPanel>
+                                    <StackPanel Spacing="4"><TextBlock Classes="body" Text="Loot Respawn" /><TextBox Text="{Binding LootRespawn}" /></StackPanel>
+                                    <CheckBox Content="Starter Kit" IsChecked="{Binding StarterKit}" />
+                                    <CheckBox Content="Nutrition" IsChecked="{Binding Nutrition}" />
+                                </StackPanel>
+                            </Border>
+
+                            <Border Classes="card" Padding="18">
+                                <StackPanel Spacing="12">
+                                    <TextBlock Classes="kicker" Text="Loot &amp; Climate" />
+                                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="10">
+                                        <StackPanel Spacing="4"><TextBlock Classes="body" Text="Food Loot" /><TextBox Text="{Binding FoodLoot}" /></StackPanel>
+                                        <StackPanel Grid.Column="1" Spacing="4"><TextBlock Classes="body" Text="Weapon Loot" /><TextBox Text="{Binding WeaponLoot}" /></StackPanel>
+                                        <StackPanel Grid.Row="1" Spacing="4"><TextBlock Classes="body" Text="Other Loot" /><TextBox Text="{Binding OtherLoot}" /></StackPanel>
+                                        <StackPanel Grid.Row="1" Grid.Column="1" Spacing="4"><TextBlock Classes="body" Text="Temperature" /><TextBox Text="{Binding Temperature}" /></StackPanel>
+                                        <StackPanel Grid.Row="2" Spacing="4"><TextBlock Classes="body" Text="Rain" /><TextBox Text="{Binding Rain}" /></StackPanel>
+                                        <StackPanel Grid.Row="2" Grid.Column="1" Spacing="4"><TextBlock Classes="body" Text="House Alarm Frequency" /><TextBox Text="{Binding Alarm}" /></StackPanel>
+                                        <StackPanel Grid.Row="3" Spacing="4"><TextBlock Classes="body" Text="Locked Houses" /><TextBox Text="{Binding LockedHouses}" /></StackPanel>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Classes="card" Padding="18">
+                                <StackPanel Spacing="12">
+                                    <TextBlock Classes="kicker" Text="Survival Systems" />
+                                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="10">
+                                        <StackPanel Spacing="4"><TextBlock Classes="body" Text="Farming Speed" /><TextBox Text="{Binding Farming}" /></StackPanel>
+                                        <StackPanel Grid.Column="1" Spacing="4"><TextBlock Classes="body" Text="Stats Decrease" /><TextBox Text="{Binding StatsDecrease}" /></StackPanel>
+                                        <StackPanel Grid.Row="1" Spacing="4"><TextBlock Classes="body" Text="Nature Abundance" /><TextBox Text="{Binding NatureAbundance}" /></StackPanel>
+                                        <StackPanel Grid.Row="1" Grid.Column="1" Spacing="4"><TextBlock Classes="body" Text="Food Rot Speed" /><TextBox Text="{Binding FoodRotSpeed}" /></StackPanel>
+                                        <StackPanel Grid.Row="2" Spacing="4"><TextBlock Classes="body" Text="Fridge Factor" /><TextBox Text="{Binding FridgeFactor}" /></StackPanel>
+                                        <StackPanel Grid.Row="2" Grid.Column="1" Spacing="4"><TextBlock Classes="body" Text="Plant Resilience" /><TextBox Text="{Binding PlantResilience}" /></StackPanel>
+                                        <StackPanel Grid.Row="3" Spacing="4"><TextBlock Classes="body" Text="Plant Abundance" /><TextBox Text="{Binding PlantAbundance}" /></StackPanel>
+                                        <StackPanel Grid.Row="3" Grid.Column="1" Spacing="4"><TextBlock Classes="body" Text="Endurance Regen" /><TextBox Text="{Binding EndRegen}" /></StackPanel>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Classes="card" Padding="18">
+                                <StackPanel Spacing="12">
+                                    <TextBlock Classes="kicker" Text="World Events &amp; Survivors" />
+                                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="10">
+                                        <StackPanel Spacing="4"><TextBlock Classes="body" Text="Helicopter Event" /><TextBox Text="{Binding Helicopter}" /></StackPanel>
+                                        <StackPanel Grid.Column="1" Spacing="4"><TextBlock Classes="body" Text="Meta Event Frequency" /><TextBox Text="{Binding MetaEvent}" /></StackPanel>
+                                        <StackPanel Grid.Row="1" Spacing="4"><TextBlock Classes="body" Text="Sleeping Event Frequency" /><TextBox Text="{Binding SleepingEvent}" /></StackPanel>
+                                        <StackPanel Grid.Row="1" Grid.Column="1" Spacing="4"><TextBlock Classes="body" Text="Generator Spawn Rate" /><TextBox Text="{Binding GeneratorSpawning}" /></StackPanel>
+                                        <StackPanel Grid.Row="2" Spacing="4"><TextBlock Classes="body" Text="Character Free Points" /><TextBox Text="{Binding CharacterFreePoints}" /></StackPanel>
+                                        <StackPanel Grid.Row="2" Grid.Column="1" Spacing="4"><TextBlock Classes="body" Text="Construction Bonus Points" /><TextBox Text="{Binding ConstructionBonusPoints}" /></StackPanel>
+                                        <CheckBox Grid.Row="3" Content="Multi-Hit" IsChecked="{Binding MultiHit}" />
+                                        <CheckBox Grid.Row="3" Grid.Column="1" Content="Allow Exterior Generator" IsChecked="{Binding AllowExteriorGenerator}" />
+                                        <CheckBox Grid.Row="4" Content="Bone Fracture" IsChecked="{Binding BoneFracture}" />
+                                        <CheckBox Grid.Row="4" Grid.Column="1" Content="Attack Blocks Movement" IsChecked="{Binding AttackBlockMovements}" />
+                                        <CheckBox Grid.Row="5" Content="All Clothes Unlocked" IsChecked="{Binding AllClothesUnlocked}" />
+                                        <CheckBox Grid.Row="5" Grid.Column="1" Content="Vehicle Easy Use" IsChecked="{Binding VehicleEasyUse}" />
+                                    </Grid>
+                                    <CheckBox Content="Player Damage From Crash" IsChecked="{Binding PlayerDamageFromCrash}" />
+                                    <CheckBox Content="Snow On Ground" IsChecked="{Binding EnableSnowOnGround}" />
+                                    <CheckBox Content="Vehicles Enabled" IsChecked="{Binding EnableVehicles}" />
+                                    <CheckBox Content="Fire Spread" IsChecked="{Binding FireSpread}" />
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+
+                <Border Grid.Column="1" Classes="surface-dark" Padding="18">
+                    <StackPanel Spacing="14">
+                        <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Command Tower" />
+                        <TextBlock FontSize="24" FontWeight="SemiBold" Foreground="#F7F0E7" Text="{Binding SurvivorRulesHeadline}" TextWrapping="Wrap" />
+                        <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding EventAndClimateHeadline}" TextWrapping="Wrap" />
+
+                        <Border Background="#2B221C" CornerRadius="16" Padding="14">
+                            <StackPanel Spacing="8">
+                                <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Actions" />
+                                <WrapPanel Orientation="Horizontal" ItemWidth="152" ItemHeight="36">
+                                    <Button Classes="action-primary" Command="{Binding SaveSettingsCommand}" Content="Apply Settings" IsEnabled="{Binding CanEdit}" />
+                                    <Button Classes="action-secondary" Command="{Binding SaveDraftCommand}" Content="Save Draft" IsEnabled="{Binding CanEdit}" />
+                                    <Button Classes="action-secondary" Command="{Binding DiscardDraftCommand}" Content="Discard Draft" />
+                                    <Button Classes="action-secondary" Command="{Binding ReloadCommand}" Content="Reload From Host" />
+                                </WrapPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Background="#F0E2D0" CornerRadius="16" Padding="14">
+                            <StackPanel Spacing="8">
+                                <TextBlock Classes="kicker" Text="Current Signals" />
+                                <TextBlock Classes="body" Text="{Binding CatalogSummary}" TextWrapping="Wrap" />
+                                <TextBlock Classes="caption" Text="{Binding LoadStatus}" TextWrapping="Wrap" />
+                                <TextBlock Classes="caption" Text="{Binding RecoveryHeadline}" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Background="#F0E2D0" CornerRadius="16" Padding="14">
+                            <StackPanel Spacing="8">
+                                <TextBlock Classes="kicker" Text="Validation" />
+                                <StackPanel Spacing="6" IsVisible="{Binding HasFieldErrors}">
+                                    <ItemsControl ItemsSource="{Binding FieldErrors}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Classes="caption" Text="{Binding .}" TextWrapping="Wrap" Margin="0,0,0,6" />
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Grid>
+    </ScrollViewer>
+</UserControl>

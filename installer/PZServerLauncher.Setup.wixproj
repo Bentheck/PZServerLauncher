@@ -1,0 +1,35 @@
+<Project Sdk="WixToolset.Sdk/5.0.2">
+  <PropertyGroup>
+    <OutputType>Package</OutputType>
+    <InstallerPlatform>x64</InstallerPlatform>
+    <Platform>x64</Platform>
+    <Cultures>en-us</Cultures>
+    <DefineConstants>InstallerVersion=$(InstallerVersion);AppPublishDir=$(AppPublishDir);HostPublishDir=$(HostPublishDir)</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="WixToolset.Heat" />
+    <PackageReference Include="WixToolset.UI.wixext" />
+    <PackageReference Include="WixToolset.Util.wixext" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <HarvestDirectory Include="$(AppPublishDir)">
+      <ComponentGroupName>DesktopAppFiles</ComponentGroupName>
+      <DirectoryRefId>APPFOLDER</DirectoryRefId>
+      <SuppressCom>true</SuppressCom>
+      <SuppressRegistry>true</SuppressRegistry>
+      <SuppressRootDirectory>true</SuppressRootDirectory>
+      <PreprocessorVariable>var.AppPublishDir</PreprocessorVariable>
+    </HarvestDirectory>
+
+    <HarvestDirectory Include="$(HostPublishDir)">
+      <ComponentGroupName>HostFiles</ComponentGroupName>
+      <DirectoryRefId>HOSTFOLDER</DirectoryRefId>
+      <SuppressCom>true</SuppressCom>
+      <SuppressRegistry>true</SuppressRegistry>
+      <SuppressRootDirectory>true</SuppressRootDirectory>
+      <PreprocessorVariable>var.HostPublishDir</PreprocessorVariable>
+    </HarvestDirectory>
+  </ItemGroup>
+</Project>

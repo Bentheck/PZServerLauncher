@@ -1,0 +1,23 @@
+@page "/Account/Register"
+
+@inject NavigationManager NavigationManager
+
+<PageTitle>Registration Disabled</PageTitle>
+
+<div class="row">
+    <div class="col-lg-8">
+        <h1>Registration is disabled</h1>
+        <p>
+            PZServerLauncher only creates the initial owner account through the trusted desktop onboarding flow.
+            Additional web users must be provisioned by an existing owner or admin.
+        </p>
+        <button class="btn btn-primary" @onclick="GoToLogin">Back to login</button>
+    </div>
+</div>
+
+@code {
+    private void GoToLogin()
+    {
+        NavigationManager.NavigateTo("/Account/Login");
+    }
+}

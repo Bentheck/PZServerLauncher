@@ -16,7 +16,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\PZServerLauncher.Contracts\PZServerLauncher.Contracts.csproj" />
     <ProjectReference Include="..\..\src\PZServerLauncher.Core\PZServerLauncher.Core.csproj" />
     <ProjectReference Include="..\..\src\PZServerLauncher.Infrastructure\PZServerLauncher.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\PZServerLauncher.Host\PZServerLauncher.Host.csproj" />
   </ItemGroup>
 </Project>

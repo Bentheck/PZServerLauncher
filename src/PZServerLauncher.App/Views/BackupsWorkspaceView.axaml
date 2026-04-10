@@ -1,0 +1,292 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:PZServerLauncher.App.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignWidth="1120"
+             d:DesignHeight="900"
+             x:Class="PZServerLauncher.App.Views.BackupsWorkspaceView"
+             x:DataType="vm:BackupsWorkspaceViewModel">
+    <Grid RowDefinitions="Auto,Auto,*" RowSpacing="18">
+        <Grid ColumnDefinitions="1.42*,340" ColumnSpacing="18">
+            <Border Classes="card" Padding="26">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18">
+                    <StackPanel Spacing="8">
+                        <TextBlock Classes="kicker" Text="Recovery Console" />
+                        <TextBlock Classes="panel-title" FontSize="30" Text="{Binding RecoveryHeroTitle}" />
+                        <TextBlock Classes="body"
+                                   FontSize="16"
+                                   Foreground="#45382E"
+                                   Text="{Binding RecoveryHeroCopy}"
+                                   TextWrapping="Wrap" />
+                        <TextBlock Classes="caption"
+                                   Text="{Binding BackupInventorySummary}"
+                                   TextWrapping="Wrap" />
+
+                        <WrapPanel Margin="0,8,0,0" Orientation="Horizontal" ItemHeight="30">
+                            <Border Background="#2A2927" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                <TextBlock Foreground="#F7F0E7" FontSize="11" Text="{Binding Branch}" />
+                            </Border>
+                            <Border Background="#EAD6BF" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                <TextBlock Foreground="#5A4330" FontSize="11" Text="{Binding BackupCountSummary}" />
+                            </Border>
+                            <Border Background="#EAD6BF" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                <TextBlock Foreground="#5A4330" FontSize="11" Text="{Binding LatestBackupSummary}" />
+                            </Border>
+                        </WrapPanel>
+                    </StackPanel>
+
+                    <Border Grid.Column="1" Classes="metric-card" Padding="16" Width="220">
+                        <StackPanel Spacing="6">
+                            <TextBlock Classes="kicker" Text="Recovery Mode" />
+                            <TextBlock Classes="body"
+                                       FontWeight="SemiBold"
+                                       Text="{Binding RecoveryModeHeadline}"
+                                       TextWrapping="Wrap" />
+                            <TextBlock Classes="caption" Text="{Binding RestoreModeSummary}" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Border>
+
+            <Border Grid.Column="1" Classes="surface-dark" Padding="18">
+                <StackPanel Spacing="10">
+                    <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Restore Watch" />
+                    <TextBlock FontSize="22"
+                               FontWeight="SemiBold"
+                               Foreground="#F7F0E7"
+                               Text="{Binding RestoreRiskHeadline}"
+                               TextWrapping="Wrap" />
+                    <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding RecoveryGuidance}" TextWrapping="Wrap" />
+                    <TextBlock Classes="caption" Foreground="#CCB9A8" Text="{Binding LoadStatus}" TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <Grid Grid.Row="1" ColumnDefinitions="*,*,*,*" ColumnSpacing="14">
+            <Border Classes="metric-card" Padding="16">
+                <StackPanel Spacing="6">
+                    <TextBlock Classes="kicker" Text="Coverage" />
+                    <TextBlock Classes="panel-title" FontSize="22" Text="{Binding CoverageHeadline}" TextWrapping="Wrap" />
+                    <TextBlock Classes="caption" Text="{Binding BackupPosture}" TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+            <Border Grid.Column="1" Classes="metric-card" Padding="16">
+                <StackPanel Spacing="6">
+                    <TextBlock Classes="kicker" Text="Latest Known-Good" />
+                    <TextBlock Classes="panel-title" FontSize="22" Text="{Binding LatestKnownGoodHeadline}" TextWrapping="Wrap" />
+                    <TextBlock Classes="caption" Text="{Binding RecoverySelectionSummary}" TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+            <Border Grid.Column="2" Classes="metric-card" Padding="16">
+                <StackPanel Spacing="6">
+                    <TextBlock Classes="kicker" Text="Restore Window" />
+                    <TextBlock Classes="panel-title" FontSize="22" Text="{Binding RestoreWindowHeadline}" TextWrapping="Wrap" />
+                    <TextBlock Classes="caption" Text="{Binding RecoveryGuidance}" TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+            <Border Grid.Column="3" Classes="metric-card" Padding="16">
+                <StackPanel Spacing="6">
+                    <TextBlock Classes="kicker" Text="Retention" />
+                    <TextBlock Classes="panel-title" FontSize="22" Text="{Binding RetentionHeadline}" TextWrapping="Wrap" />
+                    <TextBlock Classes="caption" Text="{Binding PolicySummary}" TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <Grid Grid.Row="2" ColumnDefinitions="360,*,320" ColumnSpacing="16">
+            <Border Classes="surface-dark" Padding="18">
+                <StackPanel Spacing="10">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                        <StackPanel Spacing="4">
+                            <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Archive Inventory" />
+                            <TextBlock FontSize="22"
+                                       FontWeight="SemiBold"
+                                       Foreground="#F7F0E7"
+                                       Text="{Binding BackupInventorySummary}"
+                                       TextWrapping="Wrap" />
+                            <TextBlock Classes="caption"
+                                       Foreground="#CCB9A8"
+                                       Text="Manual, pre-update, and scheduled archives appear newest-first."
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Grid>
+
+                    <ListBox ItemsSource="{Binding BackupEntries}"
+                             SelectedItem="{Binding SelectedBackupArchive}"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             MinHeight="420">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="#F8F0E6" CornerRadius="14" Padding="12" Margin="0,0,0,8">
+                                    <StackPanel Spacing="4">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <TextBlock FontWeight="SemiBold" Foreground="#191512" Text="{Binding Title}" />
+                                            <Border Background="#E5A26B" CornerRadius="999" Padding="8,2" IsVisible="{Binding IsLatest}">
+                                                <TextBlock Foreground="#1F1D1B" FontSize="11" FontWeight="SemiBold" Text="Latest" />
+                                            </Border>
+                                            <Border Background="#26201A" CornerRadius="999" Padding="8,2">
+                                                <TextBlock Foreground="#F7F0E7" FontSize="11" Text="{Binding KindLabel}" />
+                                            </Border>
+                                        </StackPanel>
+                                        <TextBlock Classes="caption" Text="{Binding TimestampLabel}" TextWrapping="Wrap" />
+                                        <TextBlock Classes="caption"
+                                                   FontFamily="Cascadia Code,Consolas,monospace"
+                                                   Text="{Binding FileLabel}"
+                                                   TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <TextBlock Classes="body"
+                               Text="No backups yet. Create the first manual archive from this page."
+                               IsVisible="{Binding HasNoBackups}"
+                               TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+
+            <StackPanel Grid.Column="1" Spacing="16">
+                <Border Classes="card" Padding="20">
+                    <Grid ColumnDefinitions="1.04*,.96*" ColumnSpacing="16">
+                        <StackPanel Spacing="8">
+                            <TextBlock Classes="kicker" Text="Selected Recovery Point" />
+                            <TextBlock Classes="panel-title" FontSize="24" Text="{Binding SelectedBackupHeadline}" TextWrapping="Wrap" />
+                            <TextBlock Classes="body" Text="{Binding SelectedBackupKindSummary}" TextWrapping="Wrap" />
+                            <TextBlock Classes="caption" Text="{Binding SelectedBackupDetails}" TextWrapping="Wrap" />
+                            <TextBlock Classes="caption" Text="{Binding LatestBackupSummary}" TextWrapping="Wrap" />
+                        </StackPanel>
+
+                        <Border Grid.Column="1" Classes="surface-soft" Padding="14">
+                            <StackPanel Spacing="6">
+                                <TextBlock Classes="kicker" Text="Restore Risk" />
+                                <TextBlock Classes="panel-title" FontSize="20" Text="{Binding RestoreRiskHeadline}" TextWrapping="Wrap" />
+                                <TextBlock Classes="body" Text="{Binding RecoveryGuidance}" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
+                    <Border Classes="card" Padding="18">
+                        <StackPanel Spacing="8">
+                            <TextBlock Classes="kicker" Text="Operator Summary" />
+                            <TextBlock Classes="panel-title" FontSize="22" Text="{Binding RecoveryOperatorSummary}" TextWrapping="Wrap" />
+                            <TextBlock Classes="caption" Text="{Binding OperatorNextStep}" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="1" Classes="card" Padding="18">
+                        <StackPanel Spacing="8">
+                            <TextBlock Classes="kicker" Text="Recovery Checklist" />
+                            <ItemsControl ItemsSource="{Binding RecoveryChecklist}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="#F5E8DA" CornerRadius="12" Padding="10" Margin="0,0,0,8">
+                                            <TextBlock Classes="caption" Text="{Binding .}" TextWrapping="Wrap" />
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <Border Classes="card" Padding="18">
+                    <Grid ColumnDefinitions="1.05*,.95*" ColumnSpacing="16">
+                        <StackPanel Spacing="8">
+                            <TextBlock Classes="kicker" Text="Recovery Policy" />
+                            <TextBlock Classes="panel-title" FontSize="22" Text="Retention &amp; safety automation" TextWrapping="Wrap" />
+                            <TextBlock Classes="body" Text="{Binding PolicyEditorSummary}" TextWrapping="Wrap" />
+                            <TextBlock Classes="caption" Text="{Binding PolicyValidationSummary}" TextWrapping="Wrap" />
+
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                                <StackPanel Spacing="6">
+                                    <CheckBox Content="Enable scheduled backups"
+                                              IsChecked="{Binding ScheduledBackupsEnabled}" />
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Classes="body" Text="Scheduled retention count" />
+                                        <TextBox Text="{Binding ScheduledBackupRetentionCount}" />
+                                    </StackPanel>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1" Spacing="6">
+                                    <CheckBox Content="Create pre-update safety archives"
+                                              IsChecked="{Binding PreUpdateBackupEnabled}" />
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Classes="body" Text="Pre-update retention count" />
+                                        <TextBox Text="{Binding PreUpdateBackupRetentionCount}" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </Grid>
+
+                            <CheckBox Content="Keep manual backups forever"
+                                      IsChecked="{Binding KeepManualBackupsForever}" />
+
+                            <WrapPanel Orientation="Horizontal" ItemWidth="170" ItemHeight="36">
+                                <Button Classes="action-primary"
+                                        Command="{Binding SavePolicyCommand}"
+                                        Content="Save Policy"
+                                        IsEnabled="{Binding CanSavePolicy}" />
+                                <Button Classes="action-secondary"
+                                        Command="{Binding ReloadCommand}"
+                                        Content="Reload Recovery"
+                                        IsEnabled="{Binding HasSelectedProfile}" />
+                            </WrapPanel>
+                        </StackPanel>
+
+                        <Border Grid.Column="1" Classes="surface-soft" Padding="14">
+                            <StackPanel Spacing="6">
+                                <TextBlock Classes="kicker" Text="Policy Briefing" />
+                                <TextBlock Classes="panel-title" FontSize="20" Text="{Binding RetentionHeadline}" TextWrapping="Wrap" />
+                                <TextBlock Classes="body" Text="{Binding PolicySummary}" TextWrapping="Wrap" />
+                                <TextBlock Classes="caption" Text="{Binding OperatorNextStep}" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Border>
+
+                <Border Classes="card" Padding="18">
+                    <StackPanel Spacing="8">
+                        <TextBlock Classes="kicker" Text="Recovery Notes" />
+                        <TextBlock Classes="body" Text="Backups are ZIP archives produced by the host service. Manual archives stay protected from retention, pre-update archives are created before risky upgrades, and scheduled archives rotate only when enabled." TextWrapping="Wrap" />
+                        <TextBlock Classes="caption" Text="Use this page for standard recovery workflows. File-level surgery still belongs in filesystem tooling and Advanced Files." TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <Border Grid.Column="2" Classes="surface-dark" Padding="18">
+                <StackPanel Spacing="14">
+                    <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Action Zone" />
+                    <TextBlock FontSize="24"
+                               FontWeight="SemiBold"
+                               Foreground="#F7F0E7"
+                               Text="{Binding RecoveryModeHeadline}"
+                               TextWrapping="Wrap" />
+                    <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding RestoreModeSummary}" TextWrapping="Wrap" />
+
+                    <WrapPanel Orientation="Horizontal" ItemWidth="168" ItemHeight="36">
+                        <Button Classes="action-primary" Command="{Binding CreateBackupCommand}" Content="Create Backup" IsEnabled="{Binding CanCreateBackup}" />
+                        <Button Classes="action-danger" Command="{Binding RestoreSelectedCommand}" Content="Restore Selected" IsEnabled="{Binding CanRestore}" />
+                        <Button Classes="action-secondary" Command="{Binding ReloadCommand}" Content="Reload" />
+                    </WrapPanel>
+
+                    <CheckBox Content="Restart server after restore"
+                              IsChecked="{Binding RestartAfterRestore}"
+                              IsEnabled="{Binding CanRestore}" />
+
+                    <Border Background="#2B221C" CornerRadius="16" Padding="14">
+                        <StackPanel Spacing="6">
+                            <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Current Guidance" />
+                            <TextBlock Classes="body" Foreground="#F0E7DC" Text="{Binding RecoveryGuidance}" TextWrapping="Wrap" />
+                            <TextBlock Classes="caption" Foreground="#CCBBA8" Text="{Binding OperatorNextStep}" TextWrapping="Wrap" />
+                            <TextBlock Classes="caption" Foreground="#CCBBA8" Text="{Binding LoadStatus}" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

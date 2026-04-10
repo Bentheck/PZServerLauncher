@@ -1,0 +1,547 @@
+@page "/profiles/{ProfileId}/network-admin"
+@attribute [Authorize(Roles="Owner,Admin")]
+@using PZServerLauncher.Contracts.Profiles
+@inject ProfileStore ProfileStore
+@inject StructuredSettingsService StructuredSettingsService
+@inject RuntimeStateStore RuntimeStateStore
+
+<PageTitle>Network &amp; Admin</PageTitle>
+
+@if (_profile is null)
+{
+    <div class="home-shell">
+        <div class="card">
+            <p class="eyebrow">Profile Workspace</p>
+            <h1>Profile not found</h1>
+            <p class="muted-text">The selected profile could not be loaded.</p>
+            <a class="nav-button" href="/profiles">Back to profiles</a>
+        </div>
+    </div>
+}
+else
+{
+    <ProfileWorkspaceShell Profile="@_profile"
+                           ActivePage="network-admin"
+                           RuntimeStatus="@_runtimeStatus"
+                           InstallDetected="@_installDetected"
+                           CacheDetected="@_cacheDetected">
+        <Actions>
+            <a class="nav-button secondary-button" href="@OverviewHref">Overview</a>
+            <a class="nav-button secondary-button" href="@GeneralHref">General</a>
+            <a class="nav-button secondary-button" href="@AdvancedFilesHref">Advanced Files</a>
+            <button class="nav-button" @onclick="ValidateAsync" disabled="@(!_canEdit || _busy)">Validate</button>
+            <button class="nav-button secondary-button" @onclick="SaveDraftAsync" disabled="@(!_canEdit || _busy || !_pageSupportsDrafts)">Save Draft</button>
+            <button class="nav-button secondary-button" @onclick="ApplyAsync" disabled="@(!_canEdit || _busy)">Apply Changes</button>
+        </Actions>
+        <ChildContent>
+            <section class="workspace-panel hero-panel">
+                <div class="workspace-panel__copy">
+                    <p class="eyebrow">Network &amp; Admin</p>
+                    <h1>@_profile.DisplayName</h1>
+                    <p class="muted-text">This page owns join and RCON access, anti-cheat and discovery rules, overload login policy, PvP safety, player visibility and collision rules, account policy, voice chat distance controls, bind IP, and launcher admin bootstrap. If the host marks it as fallback-only, use Advanced Files for the raw editor instead.</p>
+                </div>
+
+                <div class="workspace-actions">
+                    <span class="pill">@_profile.Branch</span>
+                    <span class="pill">@(_installDetected ? "Install detected" : "Install missing")</span>
+                    <span class="pill">@(_cacheDetected ? "Cache ready" : "Cache missing")</span>
+                    <span class="pill">@(_canEdit ? "Structured editing enabled" : "Structured editing unavailable")</span>
+                    <span class="pill">@(_pageSupportsDrafts ? "Drafts enabled" : "Drafts disabled for password safety")</span>
+                </div>
+            </section>
+
+            <section class="metric-grid metric-grid--host">
+                <article class="metric-card">
+                    <span class="metric-label">Security Controls</span>
+                    <strong class="metric-value">Join, RCON, VAC, whitelist</strong>
+                    <span class="metric-note">Structured access, trust, and anti-cheat settings</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Network Controls</span>
+                    <strong class="metric-value">Bind IP, UPnP, ping, voice</strong>
+                    <span class="metric-note">Connection, discovery, and proximity chat behavior</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Identity &amp; Safety</span>
+                    <strong class="metric-value">Names, PvP timers, safety toggles</strong>
+                    <span class="metric-note">Operator-facing rules for public community etiquette and account hygiene</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Fallback</span>
+                    <strong class="metric-value">@(_valueSet?.RequiresAdvancedFilesFallback == true ? "Required" : "Not needed")</strong>
+                    <span class="metric-note">@(_valueSet?.FallbackReason ?? "Structured editing is ready")</span>
+                </article>
+            </section>
+
+            <section class="metric-grid metric-grid--host">
+                <article class="metric-card">
+                    <span class="metric-label">Access Briefing</span>
+                    <strong class="metric-value">Bind and whitelist posture</strong>
+                    <span class="metric-note">@_postureSummary.AccessHeadline</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Trust Briefing</span>
+                    <strong class="metric-value">VAC and checksum posture</strong>
+                    <span class="metric-note">@_postureSummary.TrustHeadline</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Identity &amp; Safety</span>
+                    <strong class="metric-value">Names and PvP posture</strong>
+                    <span class="metric-note">@_postureSummary.IdentityAndSafetyHeadline</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Voice Briefing</span>
+                    <strong class="metric-value">Proximity comms</strong>
+                    <span class="metric-note">@_postureSummary.VoiceHeadline</span>
+                </article>
+            </section>
+
+            <section class="status-banner status-banner--warm">
+                <strong>Operator Briefing</strong>
+                <p>@_postureSummary.OperatorSummary</p>
+                <ul>
+                    @foreach (var item in _postureSummary.Checklist)
+                    {
+                        <li>@item</li>
+                    }
+                </ul>
+            </section>
+
+            <div class="cards cards--wide">
+                <section class="card">
+                    <div class="card-heading">
+                        <div>
+                            <p class="eyebrow">Network &amp; Admin</p>
+                            <h2>Structured Editor</h2>
+                        </div>
+                        <span class="pill">@(_canEdit ? "Editable" : "Read only")</span>
+                    </div>
+
+                    <p class="muted-text">Use this page for structured network, anti-cheat, identity, voice, and security controls. Join password, RCON password, and launcher admin bootstrap remain write-only fields, while the rest of the page maps directly onto Project Zomboid server options.</p>
+
+                    @if (_catalog is null || _page is null || _valueSet is null)
+                    {
+                        <div class="empty-state">
+                            <p>Loading network and admin editor...</p>
+                        </div>
+                    }
+                    else
+                    {
+                        if (_valueSet.RequiresAdvancedFilesFallback)
+                        {
+                            <div class="settings-banner settings-banner--warning">
+                                <strong>Structured editing is unavailable for this page.</strong>
+                                <p>@(_valueSet.FallbackReason ?? "Use Advanced Files for the raw network/admin file.")</p>
+                                <a class="nav-button secondary-button" href="@AdvancedFilesHref">Open Advanced Files</a>
+                            </div>
+                        }
+                        else if (!_pageSupportsDrafts)
+                        {
+                            <div class="settings-banner settings-banner--warning">
+                                <strong>Drafts are disabled here on purpose.</strong>
+                                <p>Join password, RCON password, and launcher admin bootstrap values are write-only and apply directly when you save, so this page does not persist a draft copy.</p>
+                            </div>
+                        }
+
+                        @foreach (var sectionDef in _page.Sections)
+                        {
+                            <div class="profile-section">
+                                <div class="profile-section__header">
+                                    <h3>@sectionDef.Title</h3>
+                                    @if (!string.IsNullOrWhiteSpace(sectionDef.Description))
+                                    {
+                                        <p class="muted-text">@sectionDef.Description</p>
+                                    }
+                                </div>
+
+                                <div class="field-grid">
+                                    @foreach (var field in sectionDef.Fields)
+                                    {
+                                        <label class="field-card">
+                                            <span class="field-label">@field.Label</span>
+                                            @if (_canEdit && !field.IsReadOnly)
+                                            {
+                                                @RenderField(field)
+                                            }
+                                            else
+                                            {
+                                                <div class="field-value field-value--readonly">
+                                                    @FormatReadOnlyValue(field)
+                                                </div>
+                                            }
+
+                                            <div class="field-meta">
+                                                @if (field.RequiresRestart)
+                                                {
+                                                    <span class="field-pill">Restart required</span>
+                                                }
+                                                @if (field.IsReadOnly)
+                                                {
+                                                    <span class="field-pill field-pill--readonly">Read only</span>
+                                                }
+                                            </div>
+
+                                            @if (!string.IsNullOrWhiteSpace(field.HelpText))
+                                            {
+                                                <small class="muted-text">@field.HelpText</small>
+                                            }
+
+                                            @if (_fieldErrors.TryGetValue(field.FieldId, out var errors))
+                                            {
+                                                @foreach (var error in errors)
+                                                {
+                                                    <span class="validation-message">@error</span>
+                                                }
+                                            }
+                                        </label>
+                                    }
+                                </div>
+                            </div>
+                        }
+
+                        if (_pageValidation is not null)
+                        {
+                            <div class="card inner-card">
+                                <div class="card-heading">
+                                    <div>
+                                        <p class="eyebrow">Validation</p>
+                                        <h3>Editor Feedback</h3>
+                                    </div>
+                                </div>
+
+                                @if (_pageValidation.PageErrors.Count == 0 && _pageValidation.FieldErrors.Count == 0)
+                                {
+                                    <p class="muted-text">No validation errors.</p>
+                                }
+                                else
+                                {
+                                    @if (_pageValidation.PageErrors.Count > 0)
+                                    {
+                                        <ul class="stack-list">
+                                            @foreach (var error in _pageValidation.PageErrors)
+                                            {
+                                                <li>@error</li>
+                                            }
+                                        </ul>
+                                    }
+
+                                    @if (_pageValidation.FieldErrors.Count > 0)
+                                    {
+                                        <ul class="stack-list">
+                                            @foreach (var entry in _pageValidation.FieldErrors)
+                                            {
+                                                @foreach (var error in entry.Value)
+                                                {
+                                                    <li><strong>@entry.Key</strong> - @error</li>
+                                                }
+                                            }
+                                        </ul>
+                                    }
+                                }
+                            </div>
+                        }
+                    }
+                </section>
+
+                <section class="card">
+                    <div class="card-heading">
+                        <div>
+                            <p class="eyebrow">Network Status</p>
+                            <h2>Workspace Snapshot</h2>
+                        </div>
+                    </div>
+
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">Branch</span>
+                            <span class="info-value">@_profile.Branch</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Catalog</span>
+                            <span class="info-value">@(_catalogSummary ?? "Loading...")</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Structured editing</span>
+                            <span class="info-value">@(_canEdit ? "Enabled" : "Unavailable")</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Drafts</span>
+                            <span class="info-value">@(_pageSupportsDrafts ? "Available" : "Unavailable")</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Fallback</span>
+                            <span class="info-value">@(_valueSet?.RequiresAdvancedFilesFallback == true ? "Yes" : "No")</span>
+                        </div>
+                    </div>
+
+                    <div class="status-banner status-banner--warm">
+                        <strong>Runtime and install state</strong>
+                        <p>Runtime: @(_runtimeStatus?.State.ToString() ?? "Unknown")</p>
+                        <p>Install: @(_installDetected ? "Detected" : "Missing")</p>
+                        <p>Cache: @(_cacheDetected ? "Detected" : "Missing")</p>
+                    </div>
+                </section>
+            </div>
+
+            <p class="status-line">@_statusMessage</p>
+        </ChildContent>
+    </ProfileWorkspaceShell>
+}
+
+@code {
+    [Parameter]
+    public string ProfileId { get; set; } = string.Empty;
+
+    private PZServerLauncher.Core.Profiles.ServerProfile? _profile;
+    private ServerRuntimeStatus? _runtimeStatus;
+    private SettingsCatalogDto? _catalog;
+    private SettingsPageDto? _page;
+    private SettingsValueSetDto? _valueSet;
+    private SettingsValidationResultDto? _pageValidation;
+    private Dictionary<string, string?> _values = new(StringComparer.Ordinal);
+    private Dictionary<string, IReadOnlyList<string>> _fieldErrors = new(StringComparer.Ordinal);
+    private bool _busy;
+    private bool _hasUnsavedChanges;
+    private string? _statusMessage;
+    private bool _installDetected;
+    private bool _cacheDetected;
+    private bool _canEdit;
+    private bool _pageSupportsDrafts;
+    private string? _catalogSummary;
+    private string? _sourceSha256;
+    private ProjectZomboidNetworkAndAdminPostureSummary _postureSummary = ProjectZomboidNetworkAndAdminPostureSummaryBuilder.Build(new Dictionary<string, string?>(StringComparer.Ordinal), false, false, 0);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        _profile = await ProfileStore.GetAsync(ProfileId);
+        if (_profile is null)
+        {
+            return;
+        }
+
+        _runtimeStatus = RuntimeStateStore.GetOrDefault(ProfileId);
+        _catalog = StructuredSettingsService.GetCatalog(_profile);
+        _page = _catalog.Pages.FirstOrDefault(page => string.Equals(page.PageId, "network-admin", StringComparison.OrdinalIgnoreCase));
+        _valueSet = StructuredSettingsService.GetPage(_profile, "network-admin");
+        _pageValidation = null;
+        _fieldErrors = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
+        _installDetected = Directory.Exists(_profile.InstallDirectory);
+        _cacheDetected = Directory.Exists(_profile.CacheDirectory);
+
+        _catalogSummary = _catalog is null ? null : $"{_catalog.CatalogId} v{_catalog.CatalogVersion} | {_catalog.Branch}";
+        _pageSupportsDrafts = _page?.SupportsDrafts == true;
+        _canEdit = _page?.SupportsStructuredEditing == true && _valueSet is not null && !_valueSet.RequiresAdvancedFilesFallback;
+
+        if (_valueSet is null)
+        {
+            _statusMessage = "Network and admin settings could not be loaded.";
+            _values = new Dictionary<string, string?>(StringComparer.Ordinal);
+            return;
+        }
+
+        _sourceSha256 = _valueSet.SourceSha256;
+        _values = new Dictionary<string, string?>(_valueSet.Values, StringComparer.Ordinal);
+        _hasUnsavedChanges = false;
+
+        _statusMessage = _valueSet.RequiresAdvancedFilesFallback
+            ? _valueSet.FallbackReason ?? "Structured network/admin editing is not available yet."
+            : "Network and admin settings loaded.";
+        RefreshPostureSummary();
+    }
+
+    private async Task ValidateAsync()
+    {
+        if (_profile is null || _page is null || !_canEdit)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            _pageValidation = StructuredSettingsService.Validate(_profile, "network-admin", _values);
+            _fieldErrors = new Dictionary<string, IReadOnlyList<string>>(_pageValidation.FieldErrors, StringComparer.Ordinal);
+            _statusMessage = _pageValidation.IsValid
+                ? "Network and admin validation completed successfully."
+                : _pageValidation.FallbackReason ?? "Network and admin validation reported issues.";
+            RefreshPostureSummary();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task SaveDraftAsync()
+    {
+        if (_profile is null || _page is null || !_canEdit || !_pageSupportsDrafts)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            _pageValidation = StructuredSettingsService.Validate(_profile, "network-admin", _values);
+            _fieldErrors = new Dictionary<string, IReadOnlyList<string>>(_pageValidation.FieldErrors, StringComparer.Ordinal);
+            _statusMessage = _pageValidation.IsValid
+                ? "Network and admin draft saved locally."
+                : _pageValidation.FallbackReason ?? "Network and admin draft could not be saved.";
+            RefreshPostureSummary();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task ApplyAsync()
+    {
+        if (_profile is null || _page is null || !_canEdit)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var result = await StructuredSettingsService.SaveAsync(_profile, "network-admin", _values);
+            _pageValidation = result.Validation;
+            _fieldErrors = new Dictionary<string, IReadOnlyList<string>>(result.Validation.FieldErrors, StringComparer.Ordinal);
+            if (result.Validation.IsValid && !result.Validation.RequiresAdvancedFilesFallback)
+            {
+                _hasUnsavedChanges = false;
+            }
+            _statusMessage = result.Validation.IsValid && !result.Validation.RequiresAdvancedFilesFallback
+                ? "Network and admin settings saved."
+                : result.Validation.FallbackReason ?? "Network and admin settings require Advanced Files.";
+            RefreshPostureSummary();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private RenderFragment RenderField(SettingsFieldDto field) => builder =>
+    {
+        var seq = 0;
+        var value = GetFieldValue(field.FieldId);
+
+        switch (field.Control)
+        {
+            case SettingsFieldControlKind.Checkbox:
+                builder.OpenElement(seq++, "input");
+                builder.AddAttribute(seq++, "type", "checkbox");
+                builder.AddAttribute(seq++, "checked", bool.TryParse(value, out var parsed) && parsed);
+                builder.AddAttribute(seq++, "disabled", !_canEdit || field.IsReadOnly);
+                builder.AddAttribute(seq++, "onchange", EventCallback.Factory.Create<ChangeEventArgs>(this, args => SetValue(field.FieldId, args.Value?.ToString())));
+                builder.CloseElement();
+                break;
+            case SettingsFieldControlKind.Numeric:
+                builder.OpenElement(seq++, "input");
+                builder.AddAttribute(seq++, "type", "number");
+                builder.AddAttribute(seq++, "value", value);
+                builder.AddAttribute(seq++, "disabled", !_canEdit || field.IsReadOnly);
+                builder.AddAttribute(seq++, "oninput", EventCallback.Factory.Create<ChangeEventArgs>(this, args => SetValue(field.FieldId, args.Value?.ToString())));
+                builder.CloseElement();
+                break;
+            case SettingsFieldControlKind.Password:
+                builder.OpenElement(seq++, "input");
+                builder.AddAttribute(seq++, "type", "password");
+                builder.AddAttribute(seq++, "value", value);
+                builder.AddAttribute(seq++, "disabled", !_canEdit || field.IsReadOnly);
+                builder.AddAttribute(seq++, "oninput", EventCallback.Factory.Create<ChangeEventArgs>(this, args => SetValue(field.FieldId, args.Value?.ToString())));
+                builder.CloseElement();
+                break;
+            case SettingsFieldControlKind.Select:
+                builder.OpenElement(seq++, "select");
+                builder.AddAttribute(seq++, "value", value);
+                builder.AddAttribute(seq++, "disabled", !_canEdit || field.IsReadOnly);
+                builder.AddAttribute(seq++, "onchange", EventCallback.Factory.Create<ChangeEventArgs>(this, args => SetValue(field.FieldId, args.Value?.ToString())));
+                foreach (var option in field.Options)
+                {
+                    builder.OpenElement(seq++, "option");
+                    builder.AddAttribute(seq++, "value", option.Value);
+                    if (string.Equals(option.Value, value, StringComparison.Ordinal))
+                    {
+                        builder.AddAttribute(seq++, "selected", true);
+                    }
+
+                    builder.AddContent(seq++, option.Label);
+                    builder.CloseElement();
+                }
+
+                builder.CloseElement();
+                break;
+            case SettingsFieldControlKind.MultiLineText:
+                builder.OpenElement(seq++, "textarea");
+                builder.AddAttribute(seq++, "rows", "5");
+                builder.AddAttribute(seq++, "value", value);
+                builder.AddAttribute(seq++, "disabled", !_canEdit || field.IsReadOnly);
+                builder.AddAttribute(seq++, "oninput", EventCallback.Factory.Create<ChangeEventArgs>(this, args => SetValue(field.FieldId, args.Value?.ToString())));
+                builder.AddContent(seq++, value);
+                builder.CloseElement();
+                break;
+            default:
+                builder.OpenElement(seq++, "input");
+                builder.AddAttribute(seq++, "type", "text");
+                builder.AddAttribute(seq++, "value", value);
+                builder.AddAttribute(seq++, "disabled", !_canEdit || field.IsReadOnly);
+                builder.AddAttribute(seq++, "oninput", EventCallback.Factory.Create<ChangeEventArgs>(this, args => SetValue(field.FieldId, args.Value?.ToString())));
+                builder.CloseElement();
+                break;
+        }
+    };
+
+    private string FormatReadOnlyValue(SettingsFieldDto field)
+    {
+        var value = GetFieldValue(field.FieldId);
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return field.DefaultValue ?? "Not set";
+        }
+
+        if (field.Control == SettingsFieldControlKind.Checkbox && bool.TryParse(value, out var parsed))
+        {
+            return parsed ? "On" : "Off";
+        }
+
+        return value;
+    }
+
+    private void SetValue(string fieldId, string? value)
+    {
+        if (!string.Equals(GetFieldValue(fieldId), value ?? string.Empty, StringComparison.Ordinal))
+        {
+            _hasUnsavedChanges = true;
+        }
+
+        _values[fieldId] = value;
+        _statusMessage = null;
+        RefreshPostureSummary();
+    }
+
+    private string GetFieldValue(string fieldId) =>
+        _values.TryGetValue(fieldId, out var currentValue) ? currentValue ?? string.Empty : string.Empty;
+
+    private void RefreshPostureSummary()
+    {
+        _postureSummary = ProjectZomboidNetworkAndAdminPostureSummaryBuilder.Build(
+            _values,
+            _valueSet?.RequiresAdvancedFilesFallback == true,
+            _hasUnsavedChanges,
+            _fieldErrors.Count);
+    }
+
+    private string OverviewHref => $"/profiles/{Uri.EscapeDataString(ProfileId)}/overview";
+
+    private string GeneralHref => $"/profiles/{Uri.EscapeDataString(ProfileId)}/general";
+
+    private string AdvancedFilesHref => $"/profiles/{Uri.EscapeDataString(ProfileId)}/advanced-files";
+}

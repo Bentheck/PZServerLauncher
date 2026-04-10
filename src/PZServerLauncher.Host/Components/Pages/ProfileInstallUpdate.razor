@@ -1,0 +1,647 @@
+@page "/profiles/{ProfileId}/install-update"
+@attribute [Authorize(Roles="Owner,Admin,Operator")]
+@using PZServerLauncher.Core.Planning
+@using PZServerLauncher.Core.Runtime
+@using PZServerLauncher.Infrastructure.Planning
+@inject ProfileStore ProfileStore
+@inject RuntimeStateStore RuntimeStateStore
+@inject ServerProcessSupervisor ProcessSupervisor
+@inject ServerInstallService InstallService
+@inject ServerBackupService BackupService
+@inject BackgroundJobDispatcher JobDispatcher
+@inject JobStore JobStore
+
+<PageTitle>Install &amp; Update</PageTitle>
+
+@if (_profile is null)
+{
+    <div class="home-shell">
+        <div class="card">
+            <p class="eyebrow">Profile Workspace</p>
+            <h1>Profile not found</h1>
+            <p class="muted-text">The selected profile could not be loaded.</p>
+            <a class="nav-button" href="/profiles">Back to profiles</a>
+        </div>
+    </div>
+}
+else
+{
+    <ProfileWorkspaceShell Profile="@_profile"
+                           ActivePage="install-update"
+                           RuntimeStatus="@_runtimeStatus"
+                           InstallDetected="@_installDetected"
+                           CacheDetected="@_cacheDetected">
+        <Actions>
+            <a class="nav-button secondary-button" href="@OverviewHref">Overview</a>
+            <a class="nav-button secondary-button" href="@BackupsHref">Backups</a>
+            <button class="nav-button secondary-button" @onclick="CreateBackupAsync" disabled="@_busy">Manual Backup</button>
+            <button class="nav-button secondary-button" @onclick="StartAsync" disabled="@(!_canStart || _busy)">Start</button>
+            <button class="nav-button secondary-button" @onclick="StopAsync" disabled="@(!_canStop || _busy)">Stop</button>
+            <button class="nav-button secondary-button" @onclick="RestartAsync" disabled="@(!_canRestart || _busy)">Restart</button>
+        </Actions>
+        <ChildContent>
+            <section class="workspace-panel hero-panel">
+                <div class="workspace-panel__copy">
+                    <p class="eyebrow">Install &amp; Update</p>
+                    <h2>@_profile.DisplayName</h2>
+                    <p class="muted-text">@(_installPosture?.DeploymentPostureSummary ?? "Install first, then update with confidence. This page now shows the branch channel, launcher footprint, cache and config readiness, runtime posture, and the safest operator path before you touch the binaries.")</p>
+                    <p class="muted-text">@(_installPosture?.MaintenanceWindowSummary ?? "Maintenance window guidance unavailable.")</p>
+                </div>
+
+                <div class="workspace-actions">
+                    <span class="pill">@_profile.Branch</span>
+                        <span class="pill">@(_installDetected ? "Install detected" : "Install missing")</span>
+                        <span class="pill">@(_cacheDetected ? "Cache ready" : "Cache missing")</span>
+                        <span class="pill">@(_installPosture?.UsesDirectJavaTemplate == true ? "Direct Java ready" : "Batch fallback")</span>
+                        <span class="pill">Desktop install only</span>
+                        <span class="pill">@RuntimeStateLabel</span>
+                    </div>
+                </section>
+
+            <section class="metric-grid">
+                <article class="metric-card">
+                    <span class="metric-label">Runtime</span>
+                    <strong class="metric-value">@RuntimeStateLabel</strong>
+                    <span class="metric-note">@(_runtimeStatus?.LatestLogLine ?? "No recent log line.")</span>
+                    <span class="metric-note">@RuntimeActionSummary</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Branch And Install</span>
+                    <strong class="metric-value">@_profile.Branch</strong>
+                    <span class="metric-note">@(_installPosture?.BranchChannelSummary ?? "No branch channel summary.")</span>
+                    <span class="metric-note">@(_installPosture?.DeploymentPostureSummary ?? "No deployment posture.")</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Launch Mode</span>
+                    <strong class="metric-value">@(_installPosture?.UsesDirectJavaTemplate == true ? "Direct Java" : "Fallback")</strong>
+                    <span class="metric-note">@(_installPosture?.LaunchReadinessSummary ?? "No launch summary.")</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Maintenance Window</span>
+                    <strong class="metric-value">@(_installPosture?.UsesDirectJavaTemplate == true ? "Ready" : "Needs attention")</strong>
+                    <span class="metric-note">@(_installPosture?.MaintenanceWindowSummary ?? "No maintenance window summary.")</span>
+                </article>
+            </section>
+
+            <section class="metric-grid">
+                <article class="metric-card">
+                    <span class="metric-label">Install Root</span>
+                    <strong class="metric-value">@InstallSignalLabel</strong>
+                    <span class="metric-note">@(_installPosture?.InstallFootprintSummary ?? "Install footprint summary unavailable.")</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Cache Layer</span>
+                    <strong class="metric-value">@CacheSignalLabel</strong>
+                    <span class="metric-note">@(_installPosture?.CacheFootprintSummary ?? "Cache footprint summary unavailable.")</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Config Layer</span>
+                    <strong class="metric-value">@ConfigSignalLabel</strong>
+                    <span class="metric-note">@ConfigFootprintSummary</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Backup Posture</span>
+                    <strong class="metric-value">@BackupSignalLabel</strong>
+                    <span class="metric-note">@(_installPosture?.BackupSafetySummary ?? "Backup safety summary unavailable.")</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Launch Mode</span>
+                    <strong class="metric-value">@LaunchModeLabel</strong>
+                    <span class="metric-note">@(_installPosture?.LaunchReadinessSummary ?? "Launch readiness summary unavailable.")</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Maintenance Window</span>
+                    <strong class="metric-value">@MaintenanceSignalLabel</strong>
+                    <span class="metric-note">@(_installPosture?.MaintenanceWindowSummary ?? "Maintenance window summary unavailable.")</span>
+                </article>
+            </section>
+
+            <div class="cards cards--wide">
+                <section class="card">
+                    <div class="card-heading">
+                        <div>
+                            <p class="eyebrow">Install State</p>
+                            <h2>Directories And Branch</h2>
+                        </div>
+                        <span class="pill">@(_installPosture?.InstallDetected == true ? "Detected" : "Pending")</span>
+                    </div>
+
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">Install directory</span>
+                            <span class="info-value">@_profile.InstallDirectory</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Cache directory</span>
+                            <span class="info-value">@_profile.CacheDirectory</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Branch</span>
+                            <span class="info-value">@_profile.Branch</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Auto restart</span>
+                            <span class="info-value">@(_profile.AutoRestartOnCrash ? "On" : "Off")</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Launcher path</span>
+                            <span class="info-value">@(_installPosture?.ExpectedLauncherPath ?? "Unavailable")</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">SteamCMD</span>
+                            <span class="info-value">@(_installPosture?.SteamCmdCommandSummary ?? "Unavailable")</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Deployment posture</span>
+                            <span class="info-value">@(_installPosture?.DeploymentPostureSummary ?? "Unavailable")</span>
+                        </div>
+                    </div>
+
+                    <div class="section-spacer"></div>
+                    <div class="status-banner">
+                        <strong>Desktop-only install control</strong>
+                        <p>The browser can review install posture, backups, and runtime state, but install/update work and path changes stay local to the desktop app.</p>
+                    </div>
+                </section>
+
+                <section class="card">
+                    <div class="card-heading">
+                        <div>
+                            <p class="eyebrow">Preflight</p>
+                            <h2>Update Flow</h2>
+                        </div>
+                    </div>
+
+                    <div class="status-banner">
+                        <strong>Before you update</strong>
+                        <p>@(_installPosture?.BackupSafetySummary ?? "Backup safety summary unavailable.")</p>
+                        <p>@(_installPosture?.PreflightSummary ?? "Preflight summary unavailable.")</p>
+                        <p>@(_installPosture?.BranchIsolationSummary ?? "Branch isolation summary unavailable.")</p>
+                        <p>@(_installPosture?.OperatorSequenceSummary ?? "Operator sequence summary unavailable.")</p>
+                    </div>
+
+                    <ul class="check-list">
+                        @foreach (var check in _installPosture?.PreflightChecks ?? [])
+                        {
+                            <li>@check</li>
+                        }
+                    </ul>
+                </section>
+            </div>
+
+            <section class="workspace-panel hero-panel">
+                <div class="workspace-panel__copy">
+                    <p class="eyebrow">Runtime Controls</p>
+                    <h2>@RuntimeStateLabel</h2>
+                    <p class="muted-text">@RuntimeActionSummary</p>
+                    <p class="muted-text">@(_installPosture?.LaunchReadinessSummary ?? "Launch readiness summary unavailable.")</p>
+                </div>
+
+                <div class="workspace-actions">
+                    <button class="nav-button" @onclick="StartAsync" disabled="@(!_canStart || _busy)">Start</button>
+                    <button class="nav-button secondary-button" @onclick="StopAsync" disabled="@(!_canStop || _busy)">Stop</button>
+                    <button class="nav-button secondary-button" @onclick="RestartAsync" disabled="@(!_canRestart || _busy)">Restart</button>
+                </div>
+            </section>
+
+            <div class="cards cards--wide">
+                <section class="card">
+                    <div class="card-heading">
+                        <div>
+                            <p class="eyebrow">SteamCMD</p>
+                            <h2>Install Script Preview</h2>
+                        </div>
+                    </div>
+
+                    <p class="muted-text">This is the exact SteamCMD script shape the launcher will hand to the host for install or update work.</p>
+                    <pre class="raw-editor">@(_installPosture?.SteamCmdScriptPreview ?? "No SteamCMD script preview available.")</pre>
+                </section>
+
+                <section class="card">
+                    <div class="card-heading">
+                        <div>
+                            <p class="eyebrow">Launch</p>
+                            <h2>Effective Command Preview</h2>
+                        </div>
+                    </div>
+
+                    <p class="muted-text">This preview reflects whether the host can launch via direct Java template extraction or has to fall back to the vendor batch file.</p>
+                    <pre class="raw-editor">@(_installPosture?.LaunchCommandPreview ?? "No launch command preview available.")</pre>
+                </section>
+            </div>
+
+            <div class="cards cards--wide">
+                <section class="card">
+                    <div class="card-heading">
+                        <div>
+                            <p class="eyebrow">Queue</p>
+                            <h2>Install History</h2>
+                        </div>
+                        <span class="pill">@(_jobs.Any(job => job.Kind == Core.Runtime.OperationJobKind.Install) ? "Active history" : "Empty")</span>
+                    </div>
+
+                    <p class="muted-text">@(_installPosture?.InstallFootprintSummary ?? "Install footprint summary unavailable.")</p>
+                    <p class="muted-text">@(_installPosture?.RuntimePolicySummary ?? "Runtime policy summary unavailable.")</p>
+
+                    @if (_jobs.All(job => job.Kind != Core.Runtime.OperationJobKind.Install))
+                    {
+                        <div class="empty-state">
+                            <p class="muted-text">No install jobs recorded for this profile yet.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <ul class="job-list">
+                            @foreach (var job in _jobs.Where(job => job.Kind == Core.Runtime.OperationJobKind.Install).Take(5))
+                            {
+                                <li class="job-list__item">
+                                    <div class="job-list__title">
+                                        <strong>@job.Kind</strong>
+                                        <span>@job.Status</span>
+                                    </div>
+                                    <div class="muted-text">@job.Detail ?? job.Summary</div>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </section>
+
+                <section class="card">
+                    <div class="card-heading">
+                        <div>
+                            <p class="eyebrow">Queue</p>
+                            <h2>Update History</h2>
+                        </div>
+                        <span class="pill">@(_jobs.Any(job => job.Kind == Core.Runtime.OperationJobKind.Update) ? "Active history" : "Empty")</span>
+                    </div>
+
+                    <p class="muted-text">@(_installPosture?.CacheFootprintSummary ?? "Cache footprint summary unavailable.")</p>
+                    <p class="muted-text">@(_installPosture?.MaintenanceWindowSummary ?? "Maintenance window summary unavailable.")</p>
+
+                    @if (_jobs.All(job => job.Kind != Core.Runtime.OperationJobKind.Update))
+                    {
+                        <div class="empty-state">
+                            <p class="muted-text">No update jobs recorded for this profile yet.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <ul class="job-list">
+                            @foreach (var job in _jobs.Where(job => job.Kind == Core.Runtime.OperationJobKind.Update).Take(5))
+                            {
+                                <li class="job-list__item">
+                                    <div class="job-list__title">
+                                        <strong>@job.Kind</strong>
+                                        <span>@job.Status</span>
+                                    </div>
+                                    <div class="muted-text">@job.Detail ?? job.Summary</div>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </section>
+            </div>
+
+            <div class="cards cards--wide">
+                <section class="card">
+                    <div class="card-heading">
+                        <div>
+                            <p class="eyebrow">Safeguards</p>
+                            <h2>Backup Posture</h2>
+                        </div>
+                        <span class="pill">@BackupSignalLabel</span>
+                    </div>
+
+                    <p class="muted-text">@LatestBackupLabel</p>
+                    <p class="muted-text">@(_installPosture?.BackupSafetySummary ?? "Backup safety summary unavailable.")</p>
+                    <p class="muted-text">Use a manual backup when you want a clearly named recovery point before install, update, or config cleanup work.</p>
+
+                    <div class="workspace-actions">
+                        <button class="nav-button" @onclick="CreateBackupAsync" disabled="@_busy">Manual Backup</button>
+                        <a class="nav-button secondary-button" href="@BackupsHref">Open Backups</a>
+                    </div>
+                </section>
+
+                <section class="card">
+                    <div class="card-heading">
+                        <div>
+                            <p class="eyebrow">Operator Flow</p>
+                            <h2>Actions</h2>
+                        </div>
+                    </div>
+
+                    <p class="muted-text">@(_installPosture?.DeploymentPostureSummary ?? "Runtime posture unavailable.")</p>
+                    <p class="muted-text">@(_installPosture?.OperatorSequenceSummary ?? "Operator sequence summary unavailable.")</p>
+                    <p class="muted-text">@(_installPosture?.LaunchReadinessSummary ?? "Launch readiness summary unavailable.")</p>
+                    <p class="muted-text">Use the action bar above for install, update, start, stop, and restart. This panel now explains the safest order instead of repeating the same controls again.</p>
+                </section>
+
+                <section class="card">
+                    <div class="card-heading">
+                        <div>
+                            <p class="eyebrow">Branch Posture</p>
+                            <h2>Deployment Context</h2>
+                        </div>
+                    </div>
+
+                    <p class="muted-text">@(_installPosture?.BranchChannelSummary ?? "Branch channel summary unavailable.")</p>
+                    <p class="muted-text">@(_installPosture?.BranchIsolationSummary ?? "Branch isolation summary unavailable.")</p>
+                    <p class="muted-text">@(_installPosture?.BackupSafetySummary ?? "Backup safety summary unavailable.")</p>
+                    <p class="muted-text">@(_installPosture?.PreflightSummary ?? "Preflight summary unavailable.")</p>
+
+                    <div class="status-banner">
+                        <strong>Branch posture</strong>
+                        <p>@(_installPosture?.LaunchReadinessSummary ?? "Launch readiness summary unavailable.")</p>
+                    </div>
+                </section>
+            </div>
+
+            <p class="status-line">@_statusMessage</p>
+        </ChildContent>
+    </ProfileWorkspaceShell>
+}
+
+@code {
+    [Parameter]
+    public string ProfileId { get; set; } = string.Empty;
+
+    private ServerProfile? _profile;
+    private ServerRuntimeStatus? _runtimeStatus;
+    private IReadOnlyList<OperationJob> _jobs = [];
+    private IReadOnlyList<string> _backups = [];
+    private ProjectZomboidInstallPostureSummary? _installPosture;
+    private bool _busy;
+    private string? _statusMessage;
+    private bool _installDetected;
+    private bool _cacheDetected;
+
+    private bool _canStart => !_busy && _profile is not null && !IsRunningOrStarting();
+    private bool _canStop => !_busy && _profile is not null && IsStopAllowed();
+    private bool _canRestart => !_busy && _profile is not null && _runtimeStatus?.State is ServerRuntimeState.Running;
+    private string RuntimeStateLabel => _runtimeStatus?.State.ToString() ?? "Unknown";
+    private string RuntimeActionSummary => _profile is null
+        ? "Pick a profile to see runtime controls."
+        : _runtimeStatus?.State switch
+        {
+            ServerRuntimeState.Running => "The server is online. Stop it before a maintenance update, or restart it if you only need a clean bounce.",
+            ServerRuntimeState.Starting => "The server is starting. Wait for the runtime to settle before sending more actions.",
+            ServerRuntimeState.Stopping => "The server is stopping. Hold off on new commands until the process is fully down.",
+            ServerRuntimeState.Crashed => "The server crashed. Restart it after you review the install/update posture and the latest log line.",
+            _ when _installDetected => "The install is present. Start it when you're ready, or update it first if you're preparing a maintenance window.",
+            _ => "Install the branch first, then use Start once the runtime footprint is ready.",
+        };
+
+    private string InstallSignalLabel => _profile is null
+        ? "No profile"
+        : _installDetected
+            ? "Ready"
+            : "Missing";
+
+    private string CacheSignalLabel => _profile is null
+        ? "No profile"
+        : _cacheDetected
+            ? "Ready"
+            : "Missing";
+
+    private string ConfigSignalLabel => _profile is null
+        ? "No profile"
+        : _installPosture?.ConfigDirectoryDetected != true
+            ? "Missing"
+            : _installPosture.IniDetected && _installPosture.SandboxDetected
+                ? "Ready"
+                : "Partial";
+
+    private string BackupSignalLabel => _profile is null
+        ? "No profile"
+        : _backups.Count > 0
+            ? "Protected"
+            : "Needs snapshot";
+
+    private string LaunchModeLabel => _profile is null
+        ? "No profile"
+        : _installPosture?.LauncherDetected != true
+            ? "Blocked"
+            : _installPosture.UsesDirectJavaTemplate
+                ? "Direct Java"
+                : "Batch fallback";
+
+    private string MaintenanceSignalLabel => _profile is null
+        ? "No profile"
+        : !_installDetected
+            ? "Install first"
+            : _runtimeStatus?.State is ServerRuntimeState.Running
+                ? "Live window"
+                : "Idle window";
+
+    private string LatestBackupLabel => _backups.FirstOrDefault() ?? "No backup archive yet.";
+
+    private string ConfigFootprintSummary => _profile is null
+        ? "No config footprint available."
+        : $"{(_installPosture?.ConfigDirectoryDetected == true ? "Config root detected" : "Config root missing")} | {(_installPosture?.IniDetected == true ? "INI present" : "INI missing")} | {(_installPosture?.SandboxDetected == true ? "Sandbox present" : "Sandbox missing")} | {(_installPosture?.WorldDetected == true ? "World save detected" : "World save not created yet")}";
+
+    private bool IsRunningOrStarting() => _runtimeStatus?.State is ServerRuntimeState.Running or ServerRuntimeState.Starting;
+
+    private bool IsStopAllowed() => _runtimeStatus?.State is ServerRuntimeState.Running or ServerRuntimeState.Starting or ServerRuntimeState.Crashed;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        _profile = await ProfileStore.GetAsync(ProfileId);
+        if (_profile is null)
+        {
+            return;
+        }
+
+        _runtimeStatus = RuntimeStateStore.GetOrDefault(ProfileId);
+        _jobs = (await JobStore.ListRecentAsync(20)).Where(job => string.Equals(job.ProfileId, ProfileId, StringComparison.OrdinalIgnoreCase) && (job.Kind is Core.Runtime.OperationJobKind.Install or Core.Runtime.OperationJobKind.Update)).ToList();
+        _backups = BackupService.ListBackups(ProfileId);
+        _installPosture = ProjectZomboidInstallPostureSummaryBuilder.Build(
+            _profile,
+            _runtimeStatus?.State.ToString() ?? "Unknown",
+            _backups.Count > 0,
+            _backups.FirstOrDefault() ?? "No backups");
+        _installDetected = _installPosture.InstallDetected;
+        _cacheDetected = _installPosture.CacheDetected;
+    }
+
+    private async Task InstallAsync() => await QueueInstallAsync(Core.Runtime.OperationJobKind.Install, "Install");
+
+    private async Task UpdateAsync() => await QueueUpdateAsync();
+
+    private async Task StartAsync()
+    {
+        if (_profile is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            await ProcessSupervisor.StartAsync(_profile, CancellationToken.None);
+            _statusMessage = "Server start requested.";
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task StopAsync()
+    {
+        if (_profile is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            await ProcessSupervisor.StopAsync(_profile.ProfileId, CancellationToken.None);
+            _statusMessage = "Server stop requested.";
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task RestartAsync()
+    {
+        if (_profile is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            await ProcessSupervisor.StopAsync(_profile.ProfileId, CancellationToken.None);
+            await ProcessSupervisor.StartAsync(_profile, CancellationToken.None);
+            _statusMessage = "Server restart requested.";
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task QueueInstallAsync(Core.Runtime.OperationJobKind kind, string actionName)
+    {
+        if (_profile is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var job = await JobDispatcher.QueueAsync(
+                kind,
+                _profile.ProfileId,
+                $"{actionName} {_profile.DisplayName}",
+                async (services, runningJob, token) =>
+                {
+                    var installer = services.GetRequiredService<ServerInstallService>();
+                    var jobStore = services.GetRequiredService<JobStore>();
+                    var runtimeStateStore = services.GetRequiredService<RuntimeStateStore>();
+                    await installer.ExecuteInstallAsync(_profile.ProfileId, runningJob, jobStore, runtimeStateStore, token);
+                });
+
+            _statusMessage = $"{actionName} queued. Job {job.JobId:N}.";
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task QueueUpdateAsync()
+    {
+        if (_profile is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var job = await JobDispatcher.QueueAsync(
+                Core.Runtime.OperationJobKind.Update,
+                _profile.ProfileId,
+                $"Update {_profile.DisplayName}",
+                async (services, runningJob, token) =>
+                {
+                    var installer = services.GetRequiredService<ServerInstallService>();
+                    var jobStore = services.GetRequiredService<JobStore>();
+                    var runtimeStateStore = services.GetRequiredService<RuntimeStateStore>();
+                    var backupService = services.GetRequiredService<ServerBackupService>();
+                    await backupService.CreateBackupAsync(_profile.ProfileId, BackupTrigger.PreUpdate, token);
+                    await installer.ExecuteInstallAsync(_profile.ProfileId, runningJob, jobStore, runtimeStateStore, token);
+                });
+
+            _statusMessage = $"Update queued. Job {job.JobId:N}.";
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task CreateBackupAsync()
+    {
+        if (_profile is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var zipPath = await BackupService.CreateBackupAsync(_profile.ProfileId, BackupTrigger.Manual, CancellationToken.None);
+            _statusMessage = $"Manual backup created: {Path.GetFileName(zipPath)}.";
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private string OverviewHref => $"/profiles/{Uri.EscapeDataString(ProfileId)}/overview";
+
+    private string BackupsHref => $"/profiles/{Uri.EscapeDataString(ProfileId)}/backups";
+}

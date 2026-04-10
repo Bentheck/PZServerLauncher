@@ -1,0 +1,595 @@
+@page "/profiles/{ProfileId}/backups"
+@attribute [Authorize]
+@using System.Globalization
+@using System.Text.RegularExpressions
+@inject ProfileStore ProfileStore
+@inject RuntimeStateStore RuntimeStateStore
+@inject ServerBackupService BackupService
+@inject ServerProcessSupervisor ProcessSupervisor
+@inject AuditStore AuditStore
+@using PZServerLauncher.Contracts.Profiles
+@using PZServerLauncher.Core.Planning
+@using PZServerLauncher.Core.Profiles
+@using PZServerLauncher.Infrastructure.Planning
+
+<PageTitle>Backups</PageTitle>
+
+@if (_profile is null)
+{
+    <div class="home-shell">
+        <div class="card">
+            <p class="eyebrow">Profile Workspace</p>
+            <h1>Profile not found</h1>
+            <p class="muted-text">The selected profile could not be loaded.</p>
+            <a class="nav-button" href="/profiles">Back to profiles</a>
+        </div>
+    </div>
+}
+else
+{
+    <ProfileWorkspaceShell Profile="@_profile"
+                           ActivePage="backups"
+                           RuntimeStatus="@_runtimeStatus"
+                           InstallDetected="@_installDetected"
+                           CacheDetected="@_cacheDetected">
+        <Actions>
+            <a class="nav-button secondary-button" href="@OverviewHref">Overview</a>
+            <button class="nav-button" @onclick="CreateBackupAsync" disabled="@_busy">Create Backup</button>
+            <button class="nav-button secondary-button" @onclick="RestoreSelectedAsync" disabled="@(_busy || string.IsNullOrWhiteSpace(_selectedBackup))">Restore Selected</button>
+            <button class="nav-button secondary-button" @onclick="RestoreLatestAsync" disabled="@(_busy || string.IsNullOrWhiteSpace(_latestBackup))">Restore Latest</button>
+            <button class="nav-button secondary-button" @onclick="ReloadAsync" disabled="@_busy">Reload</button>
+        </Actions>
+        <ChildContent>
+            <section class="card">
+                <div class="hero">
+                    <div class="hero-copy">
+                        <p class="eyebrow">Recovery Center</p>
+                        <h1>@_profile.DisplayName</h1>
+                        <p class="muted-text">Manual recovery points, pre-update safety nets, and scheduled snapshots converge here so you can recover confidently before risky admin work. The page now favors restore-risk triage first and archive browsing second.</p>
+                    </div>
+                    <div class="hero-pills">
+                        <span class="pill">@_profile.Branch</span>
+                        <span class="pill">@RecoveryPostureLabel</span>
+                        <span class="pill">@BackupCountSummary</span>
+                        <span class="pill">@(_backupSummary?.ArchiveMixSummary ?? "Archive mix unavailable")</span>
+                        <span class="pill pill--strong">@(_backupSummary?.LatestArchiveSummary ?? "Latest archive unavailable")</span>
+                    </div>
+                </div>
+            </section>
+
+            <div class="cards cards--four">
+                <section class="card">
+                    <h2>Coverage</h2>
+                    <p class="muted-text">@(_recoverySummary?.CoverageHeadline ?? "Recovery coverage is unavailable.")</p>
+                </section>
+                <section class="card">
+                    <h2>Latest Known-Good</h2>
+                    <p class="muted-text">@(_recoverySummary?.LatestKnownGoodHeadline ?? "Latest known-good is unavailable.")</p>
+                </section>
+                <section class="card">
+                    <h2>Restore Risk</h2>
+                    <p class="muted-text">@(_recoverySummary?.RestoreRiskHeadline ?? "Restore risk is unavailable.")</p>
+                </section>
+                <section class="card">
+                    <h2>Retention</h2>
+                    <p class="muted-text">@(_recoverySummary?.RetentionHeadline ?? "Retention posture is unavailable.")</p>
+                </section>
+            </div>
+
+            <div class="cards cards--four">
+                <section class="card">
+                    <p class="muted-text">@(_backupSummary?.CoverageSummary ?? "Recovery coverage is unavailable.")</p>
+                </section>
+                <section class="card">
+                    <p class="muted-text">@(_backupSummary?.RetentionSummary ?? "Retention posture is unavailable.")</p>
+                </section>
+                <section class="card">
+                    <p class="muted-text">@(_recoverySummary?.SelectionSummary ?? "Selected archive summary is unavailable.")</p>
+                </section>
+                <section class="card">
+                    <p class="muted-text">@(_backupSummary?.ContinuitySummary ?? "Recovery continuity is unavailable.")</p>
+                </section>
+            </div>
+
+            <div class="cards">
+                <section class="card">
+                    <h2>Backup History</h2>
+                    <p class="muted-text">Select an archive to restore, or create a new manual backup from this page. Restore will stop the server if needed and can restart it afterward. Latest known-good is highlighted so you can choose the safest recovery point quickly.</p>
+
+                    <div class="profile-section">
+                        <div class="admin-grid">
+                            <div>
+                                <span>Available Backups</span>
+                                @if (_backupEntries.Count == 0)
+                                {
+                                    <div class="settings-banner settings-banner--warning">
+                                        <strong>No backups yet.</strong>
+                                        <p>Create the first manual archive from this page or from Overview.</p>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="stack-list">
+                                        @foreach (var backup in _backupEntries)
+                                        {
+                                            <label class="field-card">
+                                                <input type="radio"
+                                                       name="selected-backup"
+                                                       checked="@string.Equals(_selectedBackup, backup.FileName, StringComparison.Ordinal)"
+                                                       @onchange="@(() => SelectBackup(backup.FileName))"
+                                                       disabled="@_busy" />
+                                                <span class="field-label">@backup.Title</span>
+                                                <span>@backup.KindLabel | @backup.TimestampLabel</span>
+                                                <span class="muted-text">@GetArchiveTriageLabel(backup)</span>
+                                                <span class="muted-text">@backup.FileLabel</span>
+                                            </label>
+                                        }
+                                    </div>
+                                }
+                            </div>
+
+                            <div>
+                                <span>Selected Backup</span>
+                                <input value="@SelectedBackupHeadline" disabled />
+                                <input value="@(_backupSummary?.SelectedArchiveSummary ?? "No recovery point is currently selected.")" disabled />
+                                <input value="@(_selectedBackupEntry?.TimestampLabel ?? "Timestamp unavailable.")" disabled />
+                                <input value="@SelectedBackupTriage" disabled />
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (_backups.Count == 0)
+                    {
+                        <div class="settings-banner settings-banner--warning">
+                            <strong>No backups exist yet.</strong>
+                            <p>Create the first manual archive from this page or from Overview. Until then, there is no known-good restore point for this profile.</p>
+                        </div>
+                    }
+                </section>
+
+                <section class="card">
+                    <h2>Policy Summary</h2>
+                    <div class="field-grid">
+                        <div class="field-card">
+                            <span class="field-label">Manual Backups</span>
+                            <span>@(_profile.BackupPolicy.KeepManualBackupsForever ? "Kept forever" : "Subject to retention policy")</span>
+                        </div>
+                        <div class="field-card">
+                            <span class="field-label">Pre-Update</span>
+                            <span>@(_profile.BackupPolicy.PreUpdateBackupEnabled ? $"Enabled, keep last {_profile.BackupPolicy.PreUpdateBackupRetentionCount}" : "Disabled")</span>
+                        </div>
+                        <div class="field-card">
+                            <span class="field-label">Scheduled</span>
+                            <span>@(_profile.BackupPolicy.ScheduledBackupsEnabled ? $"Enabled, keep last {_profile.BackupPolicy.ScheduledBackupRetentionCount}" : "Disabled")</span>
+                        </div>
+                        <div class="field-card">
+                            <span class="field-label">Latest Backup</span>
+                            <span>@(_backupSummary?.LatestArchiveSummary ?? "Latest archive unavailable")</span>
+                        </div>
+                    </div>
+
+                    <div class="profile-section">
+                        <h3>Retention Notes</h3>
+                        <p class="muted-text">Manual archives are never auto-deleted. Pre-update archives are created before host updates, and scheduled archives only rotate when scheduled backups are enabled in the profile policy. If the latest known-good is older than you expect, make a manual archive before continuing with risky work.</p>
+                    </div>
+
+                    <div class="profile-section">
+                        <h3>Manage Policy</h3>
+                        <div class="admin-grid">
+                            <label class="checkbox-label">
+                                <input type="checkbox" @bind="_scheduledBackupsEnabled" disabled="@_busy" />
+                                Enable scheduled backups
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" @bind="_preUpdateBackupEnabled" disabled="@_busy" />
+                                Create pre-update safety archives
+                            </label>
+                            <div>
+                                <span>Scheduled retention count</span>
+                                <input @bind="_scheduledRetentionCount" disabled="@_busy" />
+                            </div>
+                            <div>
+                                <span>Pre-update retention count</span>
+                                <input @bind="_preUpdateRetentionCount" disabled="@_busy" />
+                            </div>
+                            <label class="checkbox-label">
+                                <input type="checkbox" @bind="_keepManualBackupsForever" disabled="@_busy" />
+                                Keep manual backups forever
+                            </label>
+                        </div>
+                        <div class="action-row">
+                            <button class="nav-button" @onclick="SavePolicyAsync" disabled="@_busy">Save Policy</button>
+                        </div>
+                        <p class="muted-text">@PolicyEditorSummary</p>
+                    </div>
+                </section>
+
+                <section class="card">
+                    <h2>Runtime Summary</h2>
+                    <div class="field-grid">
+                        <div class="field-card">
+                            <span class="field-label">Runtime State</span>
+                            <span>@(_runtimeStatus?.State.ToString() ?? "Unknown")</span>
+                        </div>
+                        <div class="field-card">
+                            <span class="field-label">Install</span>
+                            <span>@(_installDetected ? "Detected" : "Missing")</span>
+                        </div>
+                        <div class="field-card">
+                            <span class="field-label">Cache</span>
+                            <span>@(_cacheDetected ? "Detected" : "Missing")</span>
+                        </div>
+                        <div class="field-card">
+                            <span class="field-label">Backup Count</span>
+                            <span>@_backups.Count</span>
+                        </div>
+                    </div>
+
+                    <div class="profile-section">
+                        <h3>Restore Options</h3>
+                        <label class="checkbox-label">
+                            <input type="checkbox" @bind="_restartAfterRestore" @bind:after="RefreshBackupSummary" disabled="@_busy" />
+                            Restart server after restore
+                        </label>
+                        <p class="muted-text">@(_recoverySummary?.OperatorSummary ?? "Recovery guidance is unavailable.")</p>
+                        <p class="muted-text">@BuildRestoreModeSummary()</p>
+                        <p class="muted-text">@BuildRestoreSafetyCopy()</p>
+                        <p class="muted-text">@RestoreRiskSummary</p>
+                    </div>
+                </section>
+            </div>
+
+            <section class="card">
+                <h2>Recovery Briefing</h2>
+                <p class="muted-text">@(_recoverySummary?.OperatorSummary ?? "Recovery guidance is unavailable.")</p>
+                <p class="muted-text">@(_recoverySummary?.SelectionSummary ?? "No recovery selection summary is available.")</p>
+                <ul>
+                    @foreach (var item in _recoverySummary?.Checklist ?? Array.Empty<string>())
+                    {
+                        <li>@item</li>
+                    }
+                </ul>
+            </section>
+
+            <p class="muted-text">@_statusMessage</p>
+        </ChildContent>
+    </ProfileWorkspaceShell>
+}
+
+@code {
+    [Parameter]
+    public string ProfileId { get; set; } = string.Empty;
+
+    private ServerProfile? _profile;
+    private ServerRuntimeStatus? _runtimeStatus;
+    private List<string> _backups = [];
+    private bool _busy;
+    private string? _statusMessage;
+    private bool _installDetected;
+    private bool _cacheDetected;
+    private string? _selectedBackup;
+    private List<BackupArchiveRow> _backupEntries = [];
+    private BackupArchiveRow? _selectedBackupEntry;
+    private bool _restartAfterRestore = true;
+    private bool _scheduledBackupsEnabled;
+    private string _scheduledRetentionCount = "10";
+    private bool _preUpdateBackupEnabled = true;
+    private string _preUpdateRetentionCount = "5";
+    private bool _keepManualBackupsForever = true;
+    private ProjectZomboidBackupPostureSummary? _backupSummary;
+    private ProjectZomboidRecoveryConsoleSummary? _recoverySummary;
+
+    private static readonly Regex BackupPattern = new(
+        "-(manual|preupdate|scheduled)-(\\d{8}-\\d{6})\\.zip$",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+
+    private string? _latestBackup => _backups.FirstOrDefault();
+    private string BackupCountSummary => _backupSummary is null
+        ? "Archives unavailable"
+        : $"{_backupSummary.TotalBackupCount} total | {_backupSummary.ManualBackupCount} manual | {_backupSummary.PreUpdateBackupCount} pre-update | {_backupSummary.ScheduledBackupCount} scheduled";
+    private string SelectedBackupHeadline => _selectedBackupEntry?.Title ?? "No recovery point selected";
+    private string RecoveryPostureLabel => _backups.Count == 0
+        ? "No recovery point"
+        : _restartAfterRestore
+            ? "Restore-ready"
+            : "Restore-safe";
+    private string CoverageCallout => _backups.Count == 0
+        ? "This profile still has no archives. Create a manual backup before update or cleanup work."
+        : _backupSummary?.CoverageSummary ?? "Recovery coverage is unavailable.";
+    private string LatestKnownGoodCallout => _latestBackup is null
+        ? "No latest known-good archive exists yet."
+        : string.Equals(_selectedBackup, _latestBackup, StringComparison.Ordinal)
+            ? $"The selected archive is the latest known-good restore point: {_selectedBackupEntry?.Title ?? _latestBackup}."
+            : $"Latest known-good archive: {_backupEntries.FirstOrDefault(entry => string.Equals(entry.FileName, _latestBackup, StringComparison.Ordinal))?.Title ?? _latestBackup}.";
+    private string RestoreRiskSummary => _backups.Count == 0
+        ? "Restore risk is high because there is no archive to fall back to."
+        : !_installDetected || !_cacheDetected
+            ? "Restore risk is elevated because the install or cache footprint is incomplete."
+            : _runtimeStatus?.State.ToString() is "Running"
+                ? "Restore will stop a running server first, then unpack the archive and optionally restart it."
+                : "Restore risk is moderate. The server is offline, so the archive can be unpacked and inspected without immediate runtime pressure.";
+    private string OperatorGuidanceSummary => _backups.Count == 0
+        ? "Create the first manual snapshot now, then revisit this page before any update or cleanup work."
+        : _restartAfterRestore
+            ? "Use Restore Selected for a precise rollback, or Restore Latest when you want the safest recent snapshot with an automatic restart."
+            : "Use Restore Selected to inspect a rollback point offline, or create a manual snapshot before making larger changes.";
+    private string SelectedBackupTriage => _selectedBackupEntry is null
+        ? "No archive triage is available."
+        : $"{_selectedBackupEntry.KindLabel} archive | {(_selectedBackupEntry.IsLatest ? "latest known-good" : "not latest")} | {_selectedBackupEntry.TimestampLabel}";
+    private string PolicyEditorSummary => _profile is null
+        ? "Select a profile to manage retention policy."
+        : $"Scheduled backups {(_scheduledBackupsEnabled ? "enabled" : "disabled")} | pre-update safety {(_preUpdateBackupEnabled ? "enabled" : "disabled")} | manual backups {(_keepManualBackupsForever ? "kept forever" : "subject to retention")}.";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        _profile = await ProfileStore.GetAsync(ProfileId);
+        if (_profile is null)
+        {
+            return;
+        }
+
+        _runtimeStatus = RuntimeStateStore.GetOrDefault(ProfileId);
+        _backups = BackupService.ListBackups(ProfileId).ToList();
+        _backupEntries = _backups.Select((backup, index) => ParseBackupEntry(backup, index == 0)).ToList();
+        ApplyPolicyEditor(_profile.BackupPolicy);
+        if (_selectedBackup is null || !_backups.Contains(_selectedBackup, StringComparer.Ordinal))
+        {
+            _selectedBackup = _latestBackup;
+        }
+        _selectedBackupEntry = _backupEntries.FirstOrDefault(entry => string.Equals(entry.FileName, _selectedBackup, StringComparison.Ordinal));
+        _installDetected = Directory.Exists(_profile.InstallDirectory);
+        _cacheDetected = Directory.Exists(_profile.CacheDirectory);
+        RefreshBackupSummary();
+        _statusMessage = _backups.Count == 0
+            ? "No backups exist yet. Create the first manual archive from this page."
+            : $"Loaded {_backups.Count} backup archive(s) for {_profile.DisplayName}.";
+    }
+
+    private async Task CreateBackupAsync()
+    {
+        if (_profile is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            await BackupService.CreateBackupAsync(_profile.ProfileId, Core.Runtime.BackupTrigger.Manual, CancellationToken.None);
+            _statusMessage = "Manual backup created.";
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task SavePolicyAsync()
+    {
+        if (_profile is null)
+        {
+            return;
+        }
+
+        if (!int.TryParse(_scheduledRetentionCount, NumberStyles.Integer, CultureInfo.InvariantCulture, out var scheduledRetention) ||
+            scheduledRetention < 1)
+        {
+            _statusMessage = "Scheduled retention count must be at least 1.";
+            return;
+        }
+
+        if (!int.TryParse(_preUpdateRetentionCount, NumberStyles.Integer, CultureInfo.InvariantCulture, out var preUpdateRetention) ||
+            preUpdateRetention < 1)
+        {
+            _statusMessage = "Pre-update retention count must be at least 1.";
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var updated = await ProfileStore.UpsertAsync(_profile with
+            {
+                BackupPolicy = new BackupPolicy
+                {
+                    ScheduledBackupsEnabled = _scheduledBackupsEnabled,
+                    ScheduledBackupRetentionCount = scheduledRetention,
+                    PreUpdateBackupEnabled = _preUpdateBackupEnabled,
+                    PreUpdateBackupRetentionCount = preUpdateRetention,
+                    KeepManualBackupsForever = _keepManualBackupsForever,
+                },
+                UpdatedAtUtc = DateTimeOffset.UtcNow,
+            }, CancellationToken.None);
+
+            await AuditStore.WriteAsync(
+                "profile.backup-policy.updated",
+                updated.ProfileId,
+                "web",
+                "Updated backup retention and recovery policy from web admin.",
+                cancellationToken: CancellationToken.None);
+
+            _profile = updated;
+            ApplyPolicyEditor(updated.BackupPolicy);
+            RefreshBackupSummary();
+            _statusMessage = "Backup policy updated.";
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task RestoreSelectedAsync()
+    {
+        if (_profile is null || string.IsNullOrWhiteSpace(_selectedBackup))
+        {
+            return;
+        }
+
+        await RestoreAsync(_selectedBackup);
+    }
+
+    private async Task RestoreLatestAsync()
+    {
+        if (_profile is null || string.IsNullOrWhiteSpace(_latestBackup))
+        {
+            return;
+        }
+
+        await RestoreAsync(_latestBackup);
+    }
+
+    private async Task RestoreAsync(string backupFileName)
+    {
+        if (_profile is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var wasRunning = ProcessSupervisor.IsRunning(_profile.ProfileId);
+            if (wasRunning)
+            {
+                await ProcessSupervisor.StopAsync(_profile.ProfileId, CancellationToken.None);
+            }
+
+            await BackupService.RestoreBackupAsync(_profile.ProfileId, backupFileName, CancellationToken.None);
+
+            if (_restartAfterRestore)
+            {
+                await ProcessSupervisor.StartAsync(_profile, CancellationToken.None);
+            }
+
+            _statusMessage = _restartAfterRestore
+                ? $"Restored {backupFileName} and restarted the server when possible."
+                : $"Restored {backupFileName}.";
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void RefreshBackupSummary()
+    {
+        if (_profile is null)
+        {
+            _backupSummary = null;
+            _selectedBackupEntry = null;
+            return;
+        }
+
+        _selectedBackupEntry = _backupEntries.FirstOrDefault(entry => string.Equals(entry.FileName, _selectedBackup, StringComparison.Ordinal));
+        _backupSummary = ProjectZomboidBackupPostureSummaryBuilder.Build(
+            _profile,
+            _backups,
+            _selectedBackup,
+            _runtimeStatus?.State.ToString() ?? "Stopped");
+        _recoverySummary = ProjectZomboidRecoveryConsoleSummaryBuilder.Build(
+            _backupSummary,
+            _runtimeStatus?.State.ToString() ?? "Stopped",
+            _installDetected,
+            _cacheDetected,
+            _restartAfterRestore,
+            _selectedBackup,
+            string.Equals(_selectedBackup, _latestBackup, StringComparison.Ordinal));
+    }
+
+    private void SelectBackup(string backupFileName)
+    {
+        _selectedBackup = backupFileName;
+        RefreshBackupSummary();
+    }
+
+    private void ApplyPolicyEditor(BackupPolicy policy)
+    {
+        _scheduledBackupsEnabled = policy.ScheduledBackupsEnabled;
+        _scheduledRetentionCount = policy.ScheduledBackupRetentionCount.ToString(CultureInfo.InvariantCulture);
+        _preUpdateBackupEnabled = policy.PreUpdateBackupEnabled;
+        _preUpdateRetentionCount = policy.PreUpdateBackupRetentionCount.ToString(CultureInfo.InvariantCulture);
+        _keepManualBackupsForever = policy.KeepManualBackupsForever;
+    }
+
+    private string BuildRestoreSafetyCopy()
+    {
+        var posture = _backupSummary?.RestoreSafetySummary ?? "Restore safety is unavailable.";
+        return _restartAfterRestore
+            ? $"{posture} The host will request a restart after recovery."
+            : $"{posture} The server will stay offline afterward for inspection.";
+    }
+
+    private string BuildRestoreModeSummary() =>
+        _restartAfterRestore
+            ? "Restore mode: stop the server, unpack the archive, and request a restart."
+            : "Restore mode: stop the server, unpack the archive, and leave it offline for inspection.";
+
+    private string OverviewHref => $"/profiles/{Uri.EscapeDataString(ProfileId)}/overview";
+
+    private static string GetArchiveTriageLabel(BackupArchiveRow row)
+    {
+        var posture = row.IsLatest ? "latest known-good" : "alternate point";
+        return $"{row.KindLabel} | {posture}";
+    }
+
+    private static BackupArchiveRow ParseBackupEntry(string backupFileName, bool isLatest)
+    {
+        var match = BackupPattern.Match(backupFileName);
+        var (title, kindLabel) = match.Success
+            ? match.Groups[1].Value.ToLowerInvariant() switch
+            {
+                "manual" => ("Manual Snapshot", "Manual"),
+                "preupdate" => ("Pre-Update Safety Net", "Pre-Update"),
+                "scheduled" => ("Scheduled Archive", "Scheduled"),
+                _ => ("Recovery Archive", "Archive"),
+            }
+            : ("Recovery Archive", "Archive");
+
+        var timestampLabel = "Timestamp unavailable.";
+        if (match.Success &&
+            DateTimeOffset.TryParseExact(
+                match.Groups[2].Value,
+                "yyyyMMdd-HHmmss",
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+                out var createdAtUtc))
+        {
+            timestampLabel = createdAtUtc.ToLocalTime().ToString("MMM d, yyyy 'at' h:mm tt", CultureInfo.CurrentCulture);
+        }
+
+        if (isLatest)
+        {
+            title = $"{title} (Latest)";
+        }
+
+        return new BackupArchiveRow(backupFileName, title, kindLabel, timestampLabel, backupFileName, isLatest);
+    }
+
+    private sealed record BackupArchiveRow(
+        string FileName,
+        string Title,
+        string KindLabel,
+        string TimestampLabel,
+        string FileLabel,
+        bool IsLatest);
+}

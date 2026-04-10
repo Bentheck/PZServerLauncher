@@ -1,0 +1,521 @@
+@page "/profiles/{ProfileId}/overview"
+@attribute [Authorize]
+@using PZServerLauncher.Contracts.Profiles
+@using PZServerLauncher.Core.Settings
+@using PZServerLauncher.Infrastructure.Planning
+@using PZServerLauncher.Host.Services
+@inject ProfileStore ProfileStore
+@inject RuntimeStateStore RuntimeStateStore
+@inject ServerProcessSupervisor ProcessSupervisor
+@inject ServerBackupService BackupService
+@inject BackgroundJobDispatcher JobDispatcher
+@inject JobStore JobStore
+@inject NamedWorkshopPresetStore NamedWorkshopPresetStore
+@inject StructuredSettingsService StructuredSettingsService
+
+<PageTitle>Profile Overview</PageTitle>
+
+@if (_profile is null)
+{
+    <div class="home-shell">
+        <div class="card">
+            <p class="eyebrow">Profile Workspace</p>
+            <h1>Profile not found</h1>
+            <p class="muted-text">The selected profile could not be loaded.</p>
+            <a class="nav-button" href="/profiles">Back to profiles</a>
+        </div>
+    </div>
+}
+else
+{
+    <ProfileWorkspaceShell Profile="@_profile"
+                           ActivePage="overview"
+                           RuntimeStatus="@_runtimeStatus"
+                           InstallDetected="@_installDetected"
+                           CacheDetected="@_cacheDetected">
+        <Actions>
+            <a class="nav-button secondary-button" href="@InstallHref">Install &amp; Update</a>
+            <a class="nav-button secondary-button" href="@GeneralHref">General</a>
+            <button class="nav-button" @onclick="StartAsync" disabled="@_busy">Start</button>
+            <button class="nav-button secondary-button" @onclick="StopAsync" disabled="@_busy">Stop</button>
+            <button class="nav-button secondary-button" @onclick="BackupAsync" disabled="@_busy">Backup</button>
+            <button class="nav-button secondary-button" @onclick="RestoreLatestAsync" disabled="@(_busy || string.IsNullOrWhiteSpace(_latestBackup))">Restore Latest</button>
+        </Actions>
+        <ChildContent>
+            <section class="workspace-panel hero-panel">
+                <div class="workspace-panel__copy">
+                    <p class="eyebrow">Overview</p>
+                    <h2>@_profile.DisplayName</h2>
+                    <p class="muted-text">A live control room for the selected server. Runtime, backups, recent activity, community posture, network rules, and sandbox highlights are summarized here so you can act quickly without jumping to the deeper pages.</p>
+                </div>
+
+                <div class="workspace-actions">
+                    <span class="pill">@_profile.Branch</span>
+                    <span class="pill">@_profile.DefaultPort / @_profile.UdpPort / @_profile.RconPort</span>
+                    <span class="pill">@InstallPostureSummary</span>
+                    <span class="pill">@NamedPresetSummary</span>
+                    <span class="pill">@(_backups.Count == 0 ? "No backups yet" : $"{_backups.Count} backups")</span>
+                    <span class="pill">@(_recentJobs.Count == 0 ? "No recent jobs" : $"{_recentJobs.Count} recent jobs")</span>
+                </div>
+            </section>
+
+            <section class="metric-grid">
+                <article class="metric-card">
+                    <span class="metric-label">Runtime</span>
+                    <strong class="metric-value">@(_runtimeStatus?.State.ToString() ?? "Unknown")</strong>
+                    <span class="metric-note">Process @(_runtimeStatus?.ProcessId?.ToString() ?? "not running")</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Install</span>
+                    <strong class="metric-value">@(_installDetected ? "Detected" : "Missing")</strong>
+                    <span class="metric-note">@_profile.InstallDirectory</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Cache</span>
+                    <strong class="metric-value">@(_cacheDetected ? "Detected" : "Missing")</strong>
+                    <span class="metric-note">@_profile.CacheDirectory</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Backups</span>
+                    <strong class="metric-value">@(_backups.Count == 0 ? "None" : _backups.Count.ToString())</strong>
+                    <span class="metric-note">@(_latestBackup ?? "Create the first archive from this page.")</span>
+                </article>
+            </section>
+
+            <section class="metric-grid">
+                <article class="metric-card">
+                    <span class="metric-label">Community Posture</span>
+                    <strong class="metric-value">General</strong>
+                    <span class="metric-note">@_communitySummary</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Server Rules</span>
+                    <strong class="metric-value">Community Rules</strong>
+                    <span class="metric-note">@_serverRulesSummary</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Network Posture</span>
+                    <strong class="metric-value">Trust And Voice</strong>
+                    <span class="metric-note">@_networkSummary</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">World Snapshot</span>
+                    <strong class="metric-value">Sandbox</strong>
+                    <span class="metric-note">@_sandboxSummary</span>
+                </article>
+            </section>
+
+            <section class="metric-grid">
+                <article class="metric-card">
+                    <span class="metric-label">Install Posture</span>
+                    <strong class="metric-value">Launcher</strong>
+                    <span class="metric-note">@InstallPostureSummary</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Sandbox Tuning</span>
+                    <strong class="metric-value">Zombie Lore</strong>
+                    <span class="metric-note">@_sandboxTuningSummary</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Named Presets</span>
+                    <strong class="metric-value">@(_namedPresetCount == 0 ? "None" : _namedPresetCount.ToString())</strong>
+                    <span class="metric-note">@NamedPresetSummary</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Recovery</span>
+                    <strong class="metric-value">Backups</strong>
+                    <span class="metric-note">@BackupHealth</span>
+                </article>
+            </section>
+
+            <section class="metric-grid">
+                <article class="metric-card">
+                    <span class="metric-label">Access Posture</span>
+                    <strong class="metric-value">Network &amp; Admin</strong>
+                    <span class="metric-note">@_networkAdminSummary.AccessHeadline</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Trust Posture</span>
+                    <strong class="metric-value">Anti-cheat</strong>
+                    <span class="metric-note">@_networkAdminSummary.TrustHeadline</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Identity &amp; Safety</span>
+                    <strong class="metric-value">Community Rules</strong>
+                    <span class="metric-note">@_networkAdminSummary.IdentityAndSafetyHeadline</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Voice Posture</span>
+                    <strong class="metric-value">Comms</strong>
+                    <span class="metric-note">@_networkAdminSummary.VoiceHeadline</span>
+                </article>
+            </section>
+
+            <section class="status-banner status-banner--warm">
+                <strong>Network And Admin Briefing</strong>
+                <p>@_networkAdminSummary.OperatorSummary</p>
+                <ul>
+                    @foreach (var item in _networkAdminSummary.Checklist)
+                    {
+                        <li>@item</li>
+                    }
+                </ul>
+            </section>
+
+            <section class="metric-grid">
+                <article class="metric-card">
+                    <span class="metric-label">Players Online</span>
+                    <strong class="metric-value">@(_liveOperations?.ConnectedPlayers.Count ?? 0)</strong>
+                    <span class="metric-note">@PlayerSummary</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Player Activity</span>
+                    <strong class="metric-value">Live Feed</strong>
+                    <span class="metric-note">@PlayerSignalSummary</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Operator Action</span>
+                    <strong class="metric-value">Launcher</strong>
+                    <span class="metric-note">@OperatorActionSummary</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Roster</span>
+                    <strong class="metric-value">Players</strong>
+                    <span class="metric-note">@LiveRosterSummary</span>
+                </article>
+            </section>
+
+            <div class="cards cards--wide">
+                <section class="card">
+                    <div class="card-heading">
+                        <div>
+                            <p class="eyebrow">Server Snapshot</p>
+                            <h2>Runtime And Paths</h2>
+                        </div>
+                        <span class="pill pill--strong">@(_runtimeStatus?.LatestLogLine ?? "No recent log line.")</span>
+                    </div>
+
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">State</span>
+                            <span class="info-value">@(_runtimeStatus?.State.ToString() ?? "Unknown")</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Install directory</span>
+                            <span class="info-value">@_profile.InstallDirectory</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Cache directory</span>
+                            <span class="info-value">@_profile.CacheDirectory</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Workshop items</span>
+                            <span class="info-value">@_profile.WorkshopPreset.WorkshopItemIds.Count</span>
+                        </div>
+                    </div>
+
+                    <div class="status-banner status-banner--warm">
+                        <strong>Operational note</strong>
+                        <p>The Overview page is the fast path for starting, stopping, backing up, and restoring the selected server before you drill into the per-setting pages.</p>
+                        <p>@_welcomeSummary</p>
+                    </div>
+                </section>
+
+                <section class="card">
+                    <div class="card-heading">
+                        <div>
+                            <p class="eyebrow">Activity</p>
+                            <h2>Recent Jobs</h2>
+                        </div>
+                        <span class="pill">@(_recentJobs.Count == 0 ? "Idle" : "Active")</span>
+                    </div>
+
+                    @if (_recentJobs.Count == 0)
+                    {
+                        <p class="muted-text">No jobs have been queued yet.</p>
+                    }
+                    else
+                    {
+                        <ul class="job-list">
+                            @foreach (var job in _recentJobs.Take(5))
+                            {
+                                <li class="job-list__item">
+                                    <div class="job-list__title">
+                                        <strong>@job.Kind</strong>
+                                        <span>@job.Status</span>
+                                    </div>
+                                    <div class="muted-text">@job.Detail ?? job.Summary</div>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </section>
+            </div>
+
+            <div class="cards cards--wide">
+                <section class="card">
+                    <div class="card-heading">
+                        <div>
+                            <p class="eyebrow">Recovery</p>
+                            <h2>Latest Backups</h2>
+                        </div>
+                        <span class="pill">@(_latestBackup ?? "No archive")</span>
+                    </div>
+
+                    @if (_backups.Count == 0)
+                    {
+                        <div class="empty-state">
+                            <p class="muted-text">No backups are available yet. Use the Backup action to create the first archive.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <ul class="backup-list">
+                            @foreach (var backup in _backups.Take(5))
+                            {
+                                <li class="backup-list__item">@backup</li>
+                            }
+                        </ul>
+                    }
+                </section>
+
+                <section class="card">
+                    <div class="card-heading">
+                        <div>
+                            <p class="eyebrow">At A Glance</p>
+                            <h2>Summary</h2>
+                        </div>
+                    </div>
+
+                    <div class="info-grid info-grid--compact">
+                        <div class="info-item">
+                            <span class="info-label">Branch</span>
+                            <span class="info-value">@_profile.Branch</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Ports</span>
+                            <span class="info-value">@_profile.DefaultPort / @_profile.UdpPort / @_profile.RconPort</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Latest backup</span>
+                            <span class="info-value">@(_latestBackup ?? "None")</span>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <p class="status-line">@_statusMessage</p>
+        </ChildContent>
+    </ProfileWorkspaceShell>
+}
+
+@code {
+    [Parameter]
+    public string ProfileId { get; set; } = string.Empty;
+
+    private ServerProfile? _profile;
+    private ServerRuntimeStatus? _runtimeStatus;
+    private IReadOnlyList<string> _backups = [];
+    private IReadOnlyList<OperationJob> _recentJobs = [];
+    private bool _busy;
+    private string? _statusMessage;
+    private string? _latestBackup;
+    private bool _installDetected;
+    private bool _cacheDetected;
+    private string _communitySummary = "Structured community posture has not been loaded yet.";
+    private string _serverRulesSummary = "Server rules summary is not available yet.";
+    private string _networkSummary = "Network posture summary is not available yet.";
+    private string _sandboxSummary = "Sandbox summary is not available yet.";
+    private string _sandboxTuningSummary = "Sandbox tuning summary is not available yet.";
+    private string _welcomeSummary = "No welcome message configured yet.";
+    private int _namedPresetCount;
+    private ProfileLiveOperationsSnapshot? _liveOperations;
+    private ProjectZomboidNetworkAndAdminPostureSummary _networkAdminSummary = ProjectZomboidNetworkAndAdminPostureSummaryBuilder.Build(new Dictionary<string, string?>(StringComparer.Ordinal), false, false, 0);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        _profile = await ProfileStore.GetAsync(ProfileId);
+        if (_profile is null)
+        {
+            return;
+        }
+
+        _runtimeStatus = RuntimeStateStore.GetOrDefault(ProfileId);
+        _liveOperations = RuntimeStateStore.GetLiveOperations(ProfileId);
+        _backups = BackupService.ListBackups(ProfileId);
+        _latestBackup = _backups.FirstOrDefault();
+        _recentJobs = (await JobStore.ListRecentAsync(20)).Where(job => string.Equals(job.ProfileId, ProfileId, StringComparison.OrdinalIgnoreCase)).ToList();
+        _namedPresetCount = (await NamedWorkshopPresetStore.ListAsync(ProfileId)).Count;
+
+        var installRoot = Path.Combine(_profile.InstallDirectory, "server");
+        _installDetected = Directory.Exists(_profile.InstallDirectory) || Directory.Exists(installRoot);
+        _cacheDetected = Directory.Exists(_profile.CacheDirectory);
+
+        var generalValues = StructuredSettingsService.GetPage(_profile, "general").Values;
+        var networkValues = StructuredSettingsService.GetPage(_profile, "network-admin").Values;
+        var sandboxValues = StructuredSettingsService.GetPage(_profile, "sandbox").Values;
+        var networkValueSet = StructuredSettingsService.GetPage(_profile, "network-admin");
+
+        var posture = ProjectZomboidProfilePostureSummaryBuilder.Build(_profile.DisplayName, generalValues, networkValues, sandboxValues);
+        _communitySummary = posture.CommunitySummary;
+        _serverRulesSummary = posture.ServerRulesSummary;
+        _networkSummary = posture.NetworkSummary;
+        _sandboxSummary = posture.WorldSummary;
+        _sandboxTuningSummary = posture.SandboxTuningSummary;
+        _welcomeSummary = posture.WelcomeSummary;
+        _networkAdminSummary = ProjectZomboidNetworkAndAdminPostureSummaryBuilder.Build(
+            networkValueSet.Values,
+            networkValueSet.RequiresAdvancedFilesFallback,
+            hasUnsavedChanges: false,
+            fieldErrorCount: 0);
+    }
+
+    private string InstallPostureSummary => _profile is null
+        ? "No install posture available."
+        : $"{BuildInstallPosture().BranchChannelSummary} | {BuildInstallPosture().PreflightSummary} | {BuildInstallPosture().LaunchReadinessSummary}";
+
+    private string NamedPresetSummary => _namedPresetCount == 0
+        ? "No named workshop presets saved yet."
+        : $"{_namedPresetCount} named workshop preset(s) saved for this profile.";
+
+    private string PlayerSummary => _liveOperations is null
+        ? "No live roster is available yet."
+        : _liveOperations.ConnectedPlayers.Count == 0
+            ? "No players are currently inferred online from runtime output."
+            : $"{_liveOperations.ConnectedPlayers.Count} player(s) are currently inferred online from the runtime feed.";
+
+    private string PlayerSignalSummary => _liveOperations is null
+        ? "No live player activity is available yet."
+        : _liveOperations.RecentPlayerSignals.Count == 0
+            ? "Join and leave signals will appear here when the server emits them."
+            : $"{_liveOperations.RecentPlayerSignals[0].UserName} {_liveOperations.RecentPlayerSignals[0].Activity.ToLowerInvariant()} at {_liveOperations.RecentPlayerSignals[0].TimestampUtc:HH:mm:ss} UTC.";
+
+    private string OperatorActionSummary => _liveOperations is null
+        ? "No recent launcher-driven operator action is available yet."
+        : _liveOperations.RecentOperatorActions.Count == 0
+            ? "No recent broadcast or raw console action has been recorded yet."
+            : _liveOperations.RecentOperatorActions[0].Summary;
+
+    private string LiveRosterSummary => _liveOperations is null
+        ? "No active roster loaded yet."
+        : _liveOperations.ConnectedPlayers.Count == 0
+            ? "No player names are currently inferred online."
+            : string.Join(", ", _liveOperations.ConnectedPlayers.Select(player => player.UserName));
+
+    private string BackupHealth => _backups.Count == 0
+        ? "No backup archive has been captured yet."
+        : $"Latest backup is {_latestBackup}.";
+
+    private async Task StartAsync()
+    {
+        if (_profile is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            await ProcessSupervisor.StartAsync(_profile, CancellationToken.None);
+            _statusMessage = "Server start requested.";
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task StopAsync()
+    {
+        if (_profile is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            await ProcessSupervisor.StopAsync(_profile.ProfileId, CancellationToken.None);
+            _statusMessage = "Server stop requested.";
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task BackupAsync()
+    {
+        if (_profile is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            await BackupService.CreateBackupAsync(_profile.ProfileId, BackupTrigger.Manual, CancellationToken.None);
+            _statusMessage = "Backup created.";
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task RestoreLatestAsync()
+    {
+        if (_profile is null || string.IsNullOrWhiteSpace(_latestBackup))
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            await BackupService.RestoreBackupAsync(_profile.ProfileId, _latestBackup, CancellationToken.None);
+            _statusMessage = "Latest backup restored.";
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private string InstallHref => $"/profiles/{Uri.EscapeDataString(ProfileId)}/install-update";
+
+    private string GeneralHref => $"/profiles/{Uri.EscapeDataString(ProfileId)}/general";
+
+    private PZServerLauncher.Core.Planning.ProjectZomboidInstallPostureSummary BuildInstallPosture() =>
+        ProjectZomboidInstallPostureSummaryBuilder.Build(
+            _profile!,
+            _runtimeStatus?.State.ToString() ?? "Unknown",
+            !string.IsNullOrWhiteSpace(_latestBackup),
+            _latestBackup ?? "No backup");
+
+}

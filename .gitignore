@@ -425,6 +425,10 @@ test-results/
 # Mac bundle stuff
 *.dmg
 *.app
+!src/PZServerLauncher.App/
+!src/PZServerLauncher.App/**
+src/PZServerLauncher.App/bin/
+src/PZServerLauncher.App/obj/
 
 # content below from: https://github.com/github/gitignore/blob/main/Global/macOS.gitignore
 # General

@@ -1,0 +1,303 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:PZServerLauncher.App.ViewModels"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d"
+             d:DesignWidth="1320"
+             d:DesignHeight="980"
+             x:Class="PZServerLauncher.App.Views.ProfilesWorkspaceView"
+             x:Name="ProfilesRoot"
+             x:DataType="vm:ProfilesWorkspaceViewModel">
+    <Grid ColumnDefinitions="360,*" ColumnSpacing="18">
+        <Border Classes="surface-dark" Padding="18">
+            <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" RowSpacing="16">
+                <StackPanel Spacing="6">
+                    <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Servers" />
+                    <TextBlock Classes="panel-title" FontSize="28" Foreground="#F7F0E7" Text="{Binding PageTitle}" />
+                    <TextBlock Classes="body"
+                               Foreground="#D3C8BA"
+                               Text="Pick a server on the left, then use the pages on the right to work through setup, settings, backups, and logs."
+                               TextWrapping="Wrap" />
+                </StackPanel>
+
+                <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="10">
+                    <Button Classes="action-secondary"
+                            Command="{Binding Legacy.CreateStarterProfileCommand}"
+                            Content="Create Profile" />
+                    <Button Grid.Column="1"
+                            Classes="action-secondary"
+                            Command="{Binding Legacy.DiscoverImportsCommand}"
+                            Content="Scan Imports" />
+                </Grid>
+
+                <Border Grid.Row="2" Classes="command-card" Padding="16" IsVisible="{Binding HasProfiles}">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Foreground="#E5A26B" Text="{Binding ProfileCountSummary}" />
+                        <TextBlock Classes="body" Foreground="#F1E8DE" Text="{Binding WorkspaceGuidance}" TextWrapping="Wrap" />
+                        <WrapPanel Orientation="Horizontal" ItemHeight="26">
+                            <Border Background="#F0E2D0" CornerRadius="999" Padding="10,4" Margin="0,0,8,8">
+                                <TextBlock Foreground="#5E4735"
+                                           FontSize="11"
+                                           Text="{Binding InstalledProfileCount, StringFormat='Installed: {0}'}" />
+                            </Border>
+                            <Border Background="#F0E2D0" CornerRadius="999" Padding="10,4" Margin="0,0,8,8">
+                                <TextBlock Foreground="#5E4735"
+                                           FontSize="11"
+                                           Text="{Binding RecoveryReadyProfileCount, StringFormat='Recovery ready: {0}'}" />
+                            </Border>
+                            <Border Background="#F0E2D0" CornerRadius="999" Padding="10,4" Margin="0,0,8,8">
+                                <TextBlock Foreground="#5E4735"
+                                           FontSize="11"
+                                           Text="{Binding RunningProfileCount, StringFormat='Running: {0}'}" />
+                            </Border>
+                        </WrapPanel>
+                    </StackPanel>
+                </Border>
+
+                <ListBox Grid.Row="3"
+                         ItemsSource="{Binding Profiles}"
+                         SelectedItem="{Binding SelectedProfile}"
+                         Background="Transparent"
+                         BorderThickness="0"
+                         MinHeight="260"
+                         IsVisible="{Binding HasProfiles}">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:ProfileCardViewModel">
+                            <Grid ColumnDefinitions="8,*" ColumnSpacing="0" Margin="0,0,0,10">
+                                <Border Background="#D27A3E"
+                                        CornerRadius="16,0,0,16"
+                                        IsVisible="{Binding IsSelected}" />
+                                <Border Grid.Column="1"
+                                        Background="{Binding RosterCardBackground}"
+                                        BorderBrush="{Binding RosterCardBorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="0,16,16,0"
+                                        Padding="14">
+                                    <StackPanel Spacing="8">
+                                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+                                            <TextBlock FontSize="16"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="{Binding RosterTitleForeground}"
+                                                       Text="{Binding DisplayName}" />
+                                            <Border Grid.Column="1"
+                                                    Background="{Binding RosterChipBackground}"
+                                                    CornerRadius="999"
+                                                    Padding="10,4">
+                                                <TextBlock Foreground="{Binding RosterChipForeground}" FontSize="11" Text="{Binding Branch}" />
+                                            </Border>
+                                            <Border Grid.Column="2"
+                                                    Background="{Binding RosterChipBackground}"
+                                                    CornerRadius="999"
+                                                    Padding="10,4">
+                                                <TextBlock Foreground="{Binding RosterChipForeground}" FontSize="11" Text="{Binding RuntimeState}" />
+                                            </Border>
+                                        </Grid>
+
+                                        <WrapPanel Orientation="Horizontal" ItemHeight="24">
+                                            <Border Background="{Binding RosterChipBackground}" CornerRadius="999" Padding="8,3" Margin="0,0,6,6">
+                                                <TextBlock Foreground="{Binding RosterChipForeground}" FontSize="11" Text="{Binding InstallSignal}" />
+                                            </Border>
+                                            <Border Background="{Binding RosterChipBackground}" CornerRadius="999" Padding="8,3" Margin="0,0,6,6">
+                                                <TextBlock Foreground="{Binding RosterChipForeground}" FontSize="11" Text="{Binding LaunchModeLabel}" />
+                                            </Border>
+                                            <Border Background="{Binding RosterChipBackground}" CornerRadius="999" Padding="8,3" Margin="0,0,6,6">
+                                                <TextBlock Foreground="{Binding RosterChipForeground}" FontSize="11" Text="{Binding RecoveryStateHeadline}" />
+                                            </Border>
+                                            <Border Background="#F0E2D0"
+                                                    CornerRadius="999"
+                                                    Padding="8,3"
+                                                    Margin="0,0,6,6"
+                                                    IsVisible="{Binding IsSelected}">
+                                                <TextBlock Foreground="#5E4735" FontSize="11" Text="Selected" />
+                                            </Border>
+                                        </WrapPanel>
+
+                                        <TextBlock Classes="caption" Foreground="{Binding RosterSummaryForeground}" Text="{Binding CommunitySummary}" TextWrapping="Wrap" />
+                                        <TextBlock Classes="caption" Foreground="{Binding RosterSummaryForeground}" Text="{Binding InstallPreflightSummary}" TextWrapping="Wrap" />
+                                        <TextBlock Classes="caption" Foreground="{Binding RosterSummaryForeground}" Text="{Binding BackupSafetySummary}" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+
+                <Border Grid.Row="3" Classes="callout-card" Padding="18" IsVisible="{Binding HasNoProfiles}">
+                    <StackPanel Spacing="8">
+                        <TextBlock Classes="kicker" Text="Roster Empty" />
+                        <TextBlock Classes="panel-title" FontSize="20" Text="{Binding FirstRunHeadline}" TextWrapping="Wrap" />
+                        <TextBlock Classes="body" Text="{Binding FirstRunActionPlan}" TextWrapping="Wrap" />
+                        <Border Background="#F5E8DA" CornerRadius="12" Padding="12">
+                            <StackPanel Spacing="6">
+                                <TextBlock Classes="caption" Text="{Binding FirstRunStepOne}" TextWrapping="Wrap" />
+                                <TextBlock Classes="caption" Text="{Binding FirstRunStepTwo}" TextWrapping="Wrap" />
+                                <TextBlock Classes="caption" Text="{Binding FirstRunStepThree}" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+                        <WrapPanel Orientation="Horizontal" ItemWidth="146" ItemHeight="36">
+                            <Button Classes="action-primary"
+                                    Command="{Binding Legacy.CreateStarterProfileCommand}"
+                                    Content="Create Profile" />
+                            <Button Classes="action-secondary"
+                                    Command="{Binding Legacy.DiscoverImportsCommand}"
+                                    Content="Scan Imports" />
+                        </WrapPanel>
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Row="4" Classes="command-card" Padding="16" IsVisible="{Binding HasProfiles}">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Selected Server" />
+                        <TextBlock Classes="body" Foreground="#F1E8DE" Text="{Binding SelectedProfileSummary}" TextWrapping="Wrap" />
+                        <TextBlock Classes="caption" Foreground="#CCB9A8" Text="{Binding SelectedLaunchSummary}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Column="1" RowDefinitions="Auto,Auto,*" RowSpacing="16">
+            <Border Classes="card" Padding="22">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18">
+                    <StackPanel Spacing="8">
+                        <TextBlock Classes="kicker" Text="Selected Server" />
+                        <TextBlock Classes="panel-title" FontSize="30" Text="{Binding WorkspaceHeadline}" />
+                        <TextBlock Classes="body"
+                                   FontSize="16"
+                                   Foreground="#45382E"
+                                   Text="{Binding WorkspaceGuidance}"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+
+                    <WrapPanel Grid.Column="1" Orientation="Horizontal" ItemHeight="30">
+                        <Border Background="#2A2927" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                            <TextBlock Foreground="#F7F0E7" FontSize="11" Text="{Binding SelectedProfileBranchSummary}" />
+                        </Border>
+                        <Border Background="#2A2927" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                            <TextBlock Foreground="#F7F0E7" FontSize="11" Text="{Binding SelectedProfileRuntimeSummary}" />
+                        </Border>
+                    </WrapPanel>
+                </Grid>
+            </Border>
+
+            <Grid Grid.Row="1" ColumnDefinitions="*,*,*" ColumnSpacing="14" IsVisible="{Binding HasSelectedProfile}">
+                <Border Classes="metric-card" Padding="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Player access" />
+                        <TextBlock Classes="body" Text="{Binding SelectedCommunitySummary}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="1" Classes="metric-card" Padding="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Network" />
+                        <TextBlock Classes="body" Text="{Binding SelectedNetworkSummary}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="2" Classes="metric-card" Padding="16">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="World" />
+                        <TextBlock Classes="body" Text="{Binding SelectedWorldSummary}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <Border Grid.Row="2" Classes="callout-card" Padding="22" IsVisible="{Binding HasNoSelectedProfile}">
+                <StackPanel Spacing="10">
+                    <TextBlock Classes="kicker" Text="No Server Selected" />
+                    <TextBlock Classes="panel-title" FontSize="24" Text="Choose a profile to open its settings" />
+                    <TextBlock Classes="body" Text="{Binding SelectedWorkspaceSummary}" TextWrapping="Wrap" />
+                    <TextBlock Classes="caption" Text="{Binding SelectedWorkspaceAction}" TextWrapping="Wrap" />
+                    <WrapPanel Orientation="Horizontal" ItemWidth="146" ItemHeight="36">
+                        <Button Classes="action-primary"
+                                Command="{Binding Legacy.CreateStarterProfileCommand}"
+                                Content="Create Profile"
+                                IsVisible="{Binding HasNoProfiles}" />
+                        <Button Classes="action-secondary"
+                                Command="{Binding Legacy.DiscoverImportsCommand}"
+                                Content="Scan Imports"
+                                IsVisible="{Binding HasImportCandidates}" />
+                    </WrapPanel>
+                </StackPanel>
+            </Border>
+
+            <Grid Grid.Row="2" ColumnDefinitions="260,*" ColumnSpacing="16" IsVisible="{Binding HasSelectedProfile}">
+                <Grid RowDefinitions="Auto,Auto,*" RowSpacing="16">
+                    <Border Classes="surface-soft" Padding="16">
+                        <StackPanel Spacing="6">
+                            <TextBlock Classes="kicker" Text="Selected Server" />
+                            <TextBlock Classes="body" Text="{Binding SelectedProfilePathSummary}" TextWrapping="Wrap" />
+                            <TextBlock Classes="caption" Text="{Binding SelectedProfilePortsSummary}" />
+                            <TextBlock Classes="caption" Text="{Binding SelectedRecoverySummary}" TextWrapping="Wrap" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Row="1" Classes="card" Padding="16" IsVisible="{Binding HasPendingSectionNavigation}">
+                        <StackPanel Spacing="8">
+                            <TextBlock Classes="panel-title" Text="Unsaved changes" />
+                            <TextBlock Classes="body" Text="{Binding PendingSectionNavigationMessage}" TextWrapping="Wrap" />
+                            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                                <Button Classes="action-primary" Command="{Binding ConfirmSectionNavigationSaveCommand}" Content="Save" />
+                                <Button Grid.Column="1" Classes="action-secondary" Command="{Binding ConfirmSectionNavigationDiscardCommand}" Content="Discard" />
+                                <Button Grid.Column="2" Classes="action-secondary" Command="{Binding CancelSectionNavigationCommand}" Content="Cancel" />
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Row="2" Classes="surface-dark" Padding="16">
+                        <StackPanel Spacing="10">
+                            <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Sections" />
+                            <TextBlock Classes="caption"
+                                       Foreground="#CCB9A8"
+                                       Text="Jump between the selected server's main pages."
+                                       TextWrapping="Wrap" />
+
+                            <ItemsControl ItemsSource="{Binding SectionItems}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:WorkspaceNavigationItemViewModel">
+                                        <Button Margin="0,0,0,8"
+                                                Padding="0"
+                                                Background="Transparent"
+                                                BorderThickness="0"
+                                                Command="{Binding #ProfilesRoot.DataContext.SelectSectionCommand}"
+                                                CommandParameter="{Binding .}"
+                                                IsEnabled="{Binding IsEnabled}">
+                                            <Border Background="#F8F0E6"
+                                                    BorderBrush="#D8B28D"
+                                                    BorderThickness="1"
+                                                    CornerRadius="14"
+                                                    Padding="0">
+                                                <Grid ColumnDefinitions="8,*" ColumnSpacing="0">
+                                                    <Border Background="#D27A3E"
+                                                            CornerRadius="14,0,0,14"
+                                                            IsVisible="{Binding IsSelected}" />
+                                                    <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="10" Margin="12,10">
+                                                        <StackPanel Spacing="3">
+                                                            <TextBlock FontWeight="SemiBold" Foreground="#1D1815" Text="{Binding Title}" />
+                                                            <TextBlock Classes="caption" Foreground="#5E4D3F" Text="{Binding Summary}" TextWrapping="Wrap" />
+                                                        </StackPanel>
+                                                        <Border Grid.Column="1"
+                                                                Background="#26201A"
+                                                                CornerRadius="999"
+                                                                Padding="8,3"
+                                                                VerticalAlignment="Top"
+                                                                IsVisible="{Binding IsSelected}">
+                                                            <TextBlock Foreground="#F7F0E7" FontSize="11" Text="Live" />
+                                                        </Border>
+                                                    </Grid>
+                                                </Grid>
+                                            </Border>
+                                        </Button>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <Border Grid.Column="1" Classes="card" Padding="0">
+                    <ContentControl Content="{Binding CurrentSection}" />
+                </Border>
+            </Grid>
+        </Grid>
+    </Grid>
+</UserControl>

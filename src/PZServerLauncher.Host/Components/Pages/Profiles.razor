@@ -1,0 +1,212 @@
+@page "/profiles"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@using PZServerLauncher.Core.Planning
+@using PZServerLauncher.Core.Settings
+@using PZServerLauncher.Infrastructure.Planning
+@using PZServerLauncher.Host.Services
+@inject ProfileStore ProfileStore
+@inject RuntimeStateStore RuntimeStateStore
+@inject ServerBackupService BackupService
+@inject NamedWorkshopPresetStore NamedWorkshopPresetStore
+@inject StructuredSettingsService StructuredSettingsService
+
+<PageTitle>Profiles</PageTitle>
+
+<div class="home-shell">
+    <section class="workspace-panel hero-panel">
+        <div class="workspace-panel__copy">
+            <p class="eyebrow">Workspace</p>
+            <h1>Profiles</h1>
+            <p class="muted-text">Profile selection is now a first-class workspace area. Every per-profile page is live, and you can jump directly into each server workspace from here.</p>
+        </div>
+
+        <div class="workspace-actions">
+            <span class="pill">@(_rows.Count == 0 ? "No profiles loaded" : $"{_rows.Count} profiles")</span>
+            <span class="pill">Overview</span>
+            <span class="pill">Install &amp; Update</span>
+            <span class="pill">Advanced Files</span>
+        </div>
+    </section>
+
+    <section class="metric-grid metric-grid--host">
+        <article class="metric-card">
+            <span class="metric-label">Profiles</span>
+            <strong class="metric-value">@(_rows.Count)</strong>
+            <span class="metric-note">Known server workspaces</span>
+        </article>
+        <article class="metric-card">
+            <span class="metric-label">Branches</span>
+            <strong class="metric-value">@(_rows.Select(row => row.Profile.Branch).Distinct().Count())</strong>
+            <span class="metric-note">Build 41 / Build 42 mix</span>
+        </article>
+        <article class="metric-card">
+            <span class="metric-label">Running</span>
+            <strong class="metric-value">@(_rows.Count(row => string.Equals(row.Runtime.State.ToString(), "Running", StringComparison.OrdinalIgnoreCase)))</strong>
+            <span class="metric-note">Active server processes</span>
+        </article>
+        <article class="metric-card">
+            <span class="metric-label">Install / Recovery / Deploy</span>
+            <strong class="metric-value">@(_rows.Count(row => row.InstallPosture.InstallDetected)) / @(_rows.Count(row => row.BackupCount > 0)) / @(_rows.Count(row => row.InstallPosture.UsesDirectJavaTemplate))</strong>
+            <span class="metric-note">Installed roots, recovery-ready backups, and direct-Java launch paths</span>
+        </article>
+    </section>
+
+    <section class="profiles card">
+        <div class="card-heading">
+            <div>
+                <p class="eyebrow">Known Profiles</p>
+                <h2>Server Index</h2>
+            </div>
+            <span class="pill">@(_rows.Count == 0 ? "Waiting for a profile" : "Workspace ready")</span>
+        </div>
+
+        @if (_rows.Count == 0)
+        {
+            <div class="empty-state">
+                <p>No profiles have been created yet. Use the desktop app to create or import the first server profile.</p>
+            </div>
+        }
+        else
+        {
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Branch</th>
+                        <th>Ports</th>
+                        <th>Runtime</th>
+                        <th>Install</th>
+                        <th>Recovery</th>
+                        <th>Deployment</th>
+                        <th>Named Presets</th>
+                        <th>Workspace</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in _rows)
+                    {
+                        var profile = row.Profile;
+                        var runtime = row.Runtime;
+                        <tr>
+                            <td>@profile.DisplayName</td>
+                            <td>@profile.Branch</td>
+                            <td>@profile.DefaultPort / @profile.UdpPort / @profile.RconPort</td>
+                            <td>@runtime.State</td>
+                            <td>
+                                <div class="stack-list">
+                                    <div><strong>@row.InstallHeadline</strong></div>
+                                    <div>@row.InstallPosture.InstallFootprintSummary</div>
+                                    <div>@row.InstallPosture.CacheFootprintSummary</div>
+                                    <div>@row.InstallPosture.LaunchReadinessSummary</div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="stack-list">
+                                    <div><strong>@row.RecoveryHeadline</strong></div>
+                                    <div>@row.RecoverySummary</div>
+                                    <div>@row.BackupSummary</div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="stack-list">
+                                    <div><strong>@row.DeploymentHeadline</strong></div>
+                                    <div>@row.InstallPosture.DeploymentPostureSummary</div>
+                                    <div>@row.InstallPosture.MaintenanceWindowSummary</div>
+                                    <div>@row.InstallPosture.BackupSafetySummary</div>
+                                    <div>@row.InstallPosture.OperatorSequenceSummary</div>
+                                </div>
+                            </td>
+                            <td>@(row.NamedPresetCount == 0 ? "None" : $"{row.NamedPresetCount} preset(s)")</td>
+                            <td>
+                                <div class="actions-cell">
+                                    <a class="nav-button secondary-button" href="@BuildProfileHref(profile.ProfileId, "overview")">Overview</a>
+                                    <a class="nav-button secondary-button" href="@BuildProfileHref(profile.ProfileId, "install-update")">Install</a>
+                                    <a class="nav-button secondary-button" href="@BuildProfileHref(profile.ProfileId, "general")">General</a>
+                                    <a class="nav-button secondary-button" href="@BuildProfileHref(profile.ProfileId, "sandbox")">Sandbox</a>
+                                    <a class="nav-button secondary-button" href="@BuildProfileHref(profile.ProfileId, "mods-maps")">Mods &amp; Maps</a>
+                                    <a class="nav-button secondary-button" href="@BuildProfileHref(profile.ProfileId, "network-admin")">Network &amp; Admin</a>
+                                    <a class="nav-button secondary-button" href="@BuildProfileHref(profile.ProfileId, "backups")">Backups</a>
+                                    <a class="nav-button secondary-button" href="@BuildProfileHref(profile.ProfileId, "logs")">Logs</a>
+                                    <a class="nav-button secondary-button" href="@BuildProfileHref(profile.ProfileId, "advanced-files")">Advanced Files</a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </section>
+
+    <section class="card callout-card">
+        <div class="card-heading">
+            <div>
+                <p class="eyebrow">Next Milestone</p>
+                <h2>Fleet Posture</h2>
+            </div>
+        </div>
+        <p>@(_rows.Count == 0 ? "Desktop and web now converge on the same workspace map. Add the first profile to start seeing install, recovery, and deployment posture here." : $"{_rows.Count(row => row.InstallPosture.InstallDetected)}/{_rows.Count} installs detected, {_rows.Count(row => row.BackupCount > 0)} have recovery archives, {_rows.Count(row => row.InstallPosture.UsesDirectJavaTemplate)} can launch through direct Java, {_rows.Count(row => row.Posture.IsPvpEnabled)} PvP-enabled, {_rows.Count(row => row.Posture.IsSafetyEnabled)} safety-enabled, {_rows.Count(row => row.Posture.IsVoiceEnabled)} with voice chat.")</p>
+    </section>
+</div>
+
+@code {
+    private IReadOnlyList<ProfileIndexRow> _rows = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        var profiles = await ProfileStore.ListAsync();
+        var rowTasks = profiles.Select(async profile =>
+        {
+            var generalValues = StructuredSettingsService.GetPage(profile, "general").Values;
+            var networkValues = StructuredSettingsService.GetPage(profile, "network-admin").Values;
+            var sandboxValues = StructuredSettingsService.GetPage(profile, "sandbox").Values;
+            var namedPresetCount = (await NamedWorkshopPresetStore.ListAsync(profile.ProfileId)).Count;
+            var backups = BackupService.ListBackups(profile.ProfileId);
+            var runtime = RuntimeStateStore.GetOrDefault(profile.ProfileId);
+            var installPosture = ProjectZomboidInstallPostureSummaryBuilder.Build(
+                profile,
+                runtime.State.ToString(),
+                backups.Count > 0,
+                backups.FirstOrDefault() ?? "No backups");
+
+            return new ProfileIndexRow(
+                profile,
+                runtime,
+                ProjectZomboidProfilePostureSummaryBuilder.Build(profile.DisplayName, generalValues, networkValues, sandboxValues),
+                installPosture,
+                backups.Count,
+                backups.FirstOrDefault(),
+                namedPresetCount);
+        });
+
+        _rows = await Task.WhenAll(rowTasks);
+    }
+
+    private static string BuildProfileHref(string profileId, string page) =>
+        $"/profiles/{Uri.EscapeDataString(profileId)}/{page}";
+
+    private sealed record ProfileIndexRow(
+        PZServerLauncher.Core.Profiles.ServerProfile Profile,
+        PZServerLauncher.Core.Runtime.ServerRuntimeStatus Runtime,
+        ProjectZomboidProfilePostureSummary Posture,
+        ProjectZomboidInstallPostureSummary InstallPosture,
+        int BackupCount,
+        string? LatestBackup,
+        int NamedPresetCount)
+    {
+        public string InstallHeadline => InstallPosture.InstallDetected ? "Install ready" : "Install missing";
+
+        public string RecoveryHeadline => BackupCount > 0 ? "Recovery ready" : "No recovery";
+
+        public string DeploymentHeadline => InstallPosture.UsesDirectJavaTemplate ? "Direct Java" : "Batch fallback";
+
+        public string RecoverySummary => BackupCount == 0
+            ? "No backup archives recorded for this profile."
+            : InstallPosture.BackupSafetySummary;
+
+        public string BackupSummary => BackupCount == 0
+            ? "No backup archives recorded for this profile."
+            : LatestBackup is null
+                ? $"{BackupCount} backup archive(s) recorded."
+                : $"{BackupCount} backup archive(s) recorded. Latest: {LatestBackup}.";
+    }
+}

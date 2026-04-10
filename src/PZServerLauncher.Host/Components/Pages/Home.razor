@@ -1,0 +1,339 @@
+@page "/"
+@page "/dashboard"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@using PZServerLauncher.Contracts.Profiles
+@using PZServerLauncher.Core.Settings
+@using PZServerLauncher.Infrastructure.Planning
+@using PZServerLauncher.Host.Services
+@inject HostSettingsStore HostSettingsStore
+@inject ProfileStore ProfileStore
+@inject RuntimeStateStore RuntimeStateStore
+@inject UserManagementService UserManagementService
+@inject ServerBackupService BackupService
+@inject StructuredSettingsService StructuredSettingsService
+
+<PageTitle>PZ Server Launcher Host</PageTitle>
+
+<div class="home-shell">
+    <section class="workspace-panel hero-panel">
+        <div class="workspace-panel__copy">
+            <p class="eyebrow">Host Dashboard</p>
+            <h1>PZServerLauncher Host</h1>
+            <p class="muted-text">The orchestration host is running and ready to manage Project Zomboid server profiles, web admin access, and shared operator tasks. The fleet posture below summarizes access, trust, and recovery so you can spot risk fast.</p>
+        </div>
+
+        @if (_settings is null)
+        {
+            <p class="muted-text">Loading host state...</p>
+        }
+        else
+        {
+            <div class="workspace-actions">
+                <span class="pill">Loopback @_settings.LoopbackPort</span>
+                <span class="pill">Profiles @_rows.Count</span>
+                <span class="pill">Users @_users.Count</span>
+                <span class="pill">@(_settings.RemoteAccess.IsEnabled ? "Remote access enabled" : "Remote access disabled")</span>
+            </div>
+        }
+    </section>
+
+    @if (_settings is null)
+    {
+        <section class="card">
+            <p class="muted-text">Loading host state...</p>
+        </section>
+    }
+    else
+    {
+        <section class="metric-grid metric-grid--host">
+            <article class="metric-card">
+                <span class="metric-label">Profiles</span>
+                <strong class="metric-value">@_rows.Count</strong>
+                <span class="metric-note">Managed server workspaces</span>
+            </article>
+            <article class="metric-card">
+                <span class="metric-label">Running</span>
+                <strong class="metric-value">@RunningProfileCount</strong>
+                <span class="metric-note">Active server processes</span>
+            </article>
+            <article class="metric-card">
+                <span class="metric-label">Recovery Ready</span>
+                <strong class="metric-value">@RecoveryReadyCount</strong>
+                <span class="metric-note">@ProfilesMissingBackupCount profile(s) still missing a backup archive</span>
+            </article>
+            <article class="metric-card">
+                <span class="metric-label">Fleet Access</span>
+                <strong class="metric-value">@_fleetAccessSummary.PublicOpenCount public/open</strong>
+                <span class="metric-note">@_fleetAccessSummary.AccessHeadline</span>
+            </article>
+        </section>
+
+        <section class="card callout-card">
+            <div class="card-heading">
+                <div>
+                    <p class="eyebrow">Fleet Posture</p>
+                    <h2>Access, Trust, And Recovery Snapshot</h2>
+                </div>
+            </div>
+            <p>@FleetSummary</p>
+            <p>@FleetRiskSummary</p>
+            <p>@_fleetAccessSummary.OperatorSummary</p>
+            <div class="workspace-actions">
+                <span class="pill">@_fleetAccessSummary.TrustHeadline</span>
+                <span class="pill">@_fleetAccessSummary.CommunicationHeadline</span>
+            </div>
+            <ul>
+                @foreach (var item in _fleetAccessSummary.Checklist)
+                {
+                    <li>@item</li>
+                }
+            </ul>
+        </section>
+
+        <div class="cards cards--wide">
+            <section class="card">
+                <div class="card-heading">
+                    <div>
+                        <p class="eyebrow">Host</p>
+                        <h2>Control Plane</h2>
+                    </div>
+                    <span class="pill">@(_settings.StartHostWithWindows ? "Starts with Windows" : "Manual start")</span>
+                </div>
+
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">Loopback port</span>
+                        <span class="info-value">@_settings.LoopbackPort</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Start with Windows</span>
+                        <span class="info-value">@(_settings.StartHostWithWindows ? "On" : "Off")</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Remote access</span>
+                        <span class="info-value">@(_settings.RemoteAccess.IsEnabled ? "Enabled" : "Disabled")</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Remote endpoint</span>
+                        <span class="info-value">@(_settings.RemoteAccess.IsEnabled ? $"https://{(_settings.RemoteAccess.PublicHostname ?? _settings.RemoteAccess.BindAddress)}:{_settings.RemoteAccess.HttpsPort}" : "Not exposed")</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Profiles missing install</span>
+                        <span class="info-value">@ProfilesMissingInstallCount</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Profiles missing backup</span>
+                        <span class="info-value">@ProfilesMissingBackupCount</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card">
+                <div class="card-heading">
+                    <div>
+                        <p class="eyebrow">Owner Bootstrap</p>
+                        <h2>Security Setup</h2>
+                    </div>
+                    <span class="pill">@(_settings.OwnerBootstrap.IsConfigured ? "Configured" : "Pending")</span>
+                </div>
+
+                <div class="status-banner">
+                    <strong>Owner account</strong>
+                    <p>@(_settings.OwnerBootstrap.OwnerUserName ?? "Not set yet")</p>
+                </div>
+
+                <div class="info-grid info-grid--compact">
+                    <div class="info-item">
+                        <span class="info-label">Privileged accounts</span>
+                        <span class="info-value">@_users.Count(user => user.Roles.Any(role => role is PZServerLauncher.Core.Runtime.UserRole.Owner or PZServerLauncher.Core.Runtime.UserRole.Admin))</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">2FA protected owners/admins</span>
+                        <span class="info-value">@_users.Count(user => user.TwoFactorEnabled && user.Roles.Any(role => role is PZServerLauncher.Core.Runtime.UserRole.Owner or PZServerLauncher.Core.Runtime.UserRole.Admin))</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card">
+                <div class="card-heading">
+                    <div>
+                        <p class="eyebrow">Web Admin Readiness</p>
+                        <h2>Remote Operator Surface</h2>
+                    </div>
+                </div>
+
+                <p class="muted-text">Use Remote Access to expose the HTTPS endpoint and Users to manage roles for operators, admins, and viewers. The current fleet posture is @_fleetAccessSummary.CommunicationHeadline.</p>
+
+                <div class="workspace-actions">
+                    <a class="nav-button secondary-button" href="/remote">Remote Access</a>
+                    <a class="nav-button secondary-button" href="/users">Users</a>
+                    <a class="nav-button secondary-button" href="/profiles">Profiles</a>
+                </div>
+            </section>
+        </div>
+
+        <section class="card callout-card">
+            <div class="card-heading">
+                <div>
+                    <p class="eyebrow">Recommended Next Steps</p>
+                    <h2>Get To A Safe Remote Setup</h2>
+                </div>
+            </div>
+
+            <ol>
+                <li>Configure an authenticator app for your owner account under <a href="/Account/Manage/TwoFactorAuthentication">2FA</a>.</li>
+                <li>Open <a href="/remote">Remote Access</a> and add your HTTPS certificate details.</li>
+                <li>Create additional operators or viewers under <a href="/users">Users</a> if you want shared administration.</li>
+            </ol>
+        </section>
+
+        <section class="profiles card">
+            <div class="card-heading">
+                <div>
+                    <p class="eyebrow">Profiles</p>
+                    <h2>Managed Servers</h2>
+                </div>
+                <span class="pill">@(_profiles.Count == 0 ? "No profiles yet" : $"{_profiles.Count} profiles")</span>
+            </div>
+
+            @if (_profiles.Count == 0)
+            {
+                <div class="empty-state">
+                    <p>No profiles have been created yet. Use the desktop app to create the first server profile, then return here for web-side operator access.</p>
+                </div>
+            }
+            else
+            {
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Branch</th>
+                            <th>Ports</th>
+                            <th>Runtime</th>
+                            <th>Access</th>
+                            <th>Trust</th>
+                            <th>Voice</th>
+                            <th>Recovery</th>
+                            <th>Workspace</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in _rows)
+                        {
+                            var profile = row.Profile;
+                            var runtime = row.Runtime;
+                            <tr>
+                                <td>@profile.DisplayName</td>
+                                <td>@profile.Branch</td>
+                                <td>@profile.DefaultPort / @profile.UdpPort / @profile.RconPort</td>
+                                <td>@runtime.State</td>
+                                <td>@row.Posture.CommunitySummary</td>
+                                <td>@row.Posture.NetworkSummary</td>
+                                <td>@(row.Posture.IsVoiceEnabled ? "Voice on" : "Voice off")</td>
+                                <td>@(row.HasBackup ? "Protected" : "Needs backup")</td>
+                                <td>
+                                    <div class="actions-cell">
+                                        <a class="nav-button secondary-button" href="@BuildProfileHref(profile.ProfileId, "overview")">Overview</a>
+                                        <a class="nav-button secondary-button" href="@BuildProfileHref(profile.ProfileId, "install-update")">Install</a>
+                                        <a class="nav-button secondary-button" href="@BuildProfileHref(profile.ProfileId, "general")">General</a>
+                                        <a class="nav-button secondary-button" href="@BuildProfileHref(profile.ProfileId, "sandbox")">Sandbox</a>
+                                        <a class="nav-button secondary-button" href="@BuildProfileHref(profile.ProfileId, "mods-maps")">Mods &amp; Maps</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </section>
+
+        <section class="card callout-card">
+            <h2>Workspace Map</h2>
+            <p>Desktop and web both converge on Overview, Install &amp; Update, General, Sandbox, Mods &amp; Maps, Network &amp; Admin, Backups, Logs, and Advanced Files. Pick a profile above to jump straight into that workspace.</p>
+        </section>
+    }
+</div>
+
+@code {
+    private PZServerLauncher.Core.Runtime.HostSettings? _settings;
+    private IReadOnlyList<PZServerLauncher.Core.Profiles.ServerProfile> _profiles = [];
+    private IReadOnlyList<PZServerLauncher.Contracts.Runtime.UserAccountDto> _users = [];
+    private IReadOnlyList<HomeProfileRow> _rows = [];
+    private ProjectZomboidFleetAccessPostureSummary _fleetAccessSummary = ProjectZomboidFleetAccessPostureSummaryBuilder.Build(Array.Empty<ProjectZomboidProfilePostureSummary>(), false);
+
+    private int RunningProfileCount => _rows.Count(row => row.Runtime.State == PZServerLauncher.Core.Runtime.ServerRuntimeState.Running);
+
+    private int RecoveryReadyCount => _rows.Count(row => row.HasBackup);
+
+    private int ProfilesMissingBackupCount => _rows.Count(row => !row.HasBackup);
+
+    private int DirectJavaReadyCount => _rows.Count(row => row.UsesDirectJavaTemplate);
+
+    private int FallbackLaunchCount => _rows.Count(row => row.LauncherDetected && !row.UsesDirectJavaTemplate);
+
+    private int ProfilesMissingInstallCount => _rows.Count(row => !row.InstallDetected);
+
+    private string FleetSummary => _rows.Count == 0
+        ? "No fleet posture is available until the first server profile exists."
+        : $"{_rows.Count - ProfilesMissingInstallCount}/{_rows.Count} installed | {RecoveryReadyCount} recovery-ready | {_fleetAccessSummary.PublicProfileCount} public | {_fleetAccessSummary.OpenAccessCount} open access.";
+
+    private string FleetRiskSummary => _rows.Count == 0
+        ? "Create or import a profile from the desktop app to start building the fleet."
+        : ProfilesMissingBackupCount > 0
+            ? $"{ProfilesMissingBackupCount} profile(s) still need a backup before deeper update or mod work."
+            : ProfilesMissingInstallCount > 0
+                ? $"{ProfilesMissingInstallCount} profile(s) still need a detected install footprint."
+                : FallbackLaunchCount > 0
+                    ? $"{FallbackLaunchCount} installed profile(s) are still falling back to the vendor batch launcher."
+                    : _fleetAccessSummary.PublicOpenWithoutSafetyCount > 0
+                        ? $"{_fleetAccessSummary.PublicOpenWithoutSafetyCount} public/open profile(s) still need PvP safety coverage."
+                        : "Install, recovery, and fleet access posture look healthy across the current server group.";
+
+    protected override async Task OnInitializedAsync()
+    {
+        _settings = await HostSettingsStore.GetAsync();
+        _profiles = await ProfileStore.ListAsync();
+        _users = await UserManagementService.ListAsync();
+
+        _rows = _profiles.Select(profile =>
+        {
+            var runtime = RuntimeStateStore.GetOrDefault(profile.ProfileId);
+            var backups = BackupService.ListBackups(profile.ProfileId);
+            var generalValues = StructuredSettingsService.GetPage(profile, "general").Values;
+            var networkValues = StructuredSettingsService.GetPage(profile, "network-admin").Values;
+            var sandboxValues = StructuredSettingsService.GetPage(profile, "sandbox").Values;
+            var posture = ProjectZomboidProfilePostureSummaryBuilder.Build(profile.DisplayName, generalValues, networkValues, sandboxValues);
+            var installPosture = ProjectZomboidInstallPostureSummaryBuilder.Build(
+                profile,
+                runtime.State.ToString(),
+                backups.Count > 0,
+                backups.FirstOrDefault() ?? "No backups");
+
+            return new HomeProfileRow(
+                profile,
+                runtime,
+                backups.Count > 0,
+                installPosture.InstallDetected,
+                installPosture.LauncherDetected,
+                installPosture.UsesDirectJavaTemplate,
+                posture);
+        }).ToArray();
+
+        _fleetAccessSummary = ProjectZomboidFleetAccessPostureSummaryBuilder.Build(
+            _rows.Select(row => row.Posture).ToArray(),
+            _settings.RemoteAccess.IsEnabled);
+    }
+
+    private static string BuildProfileHref(string profileId, string page) =>
+        $"/profiles/{Uri.EscapeDataString(profileId)}/{page}";
+
+    private sealed record HomeProfileRow(
+        PZServerLauncher.Core.Profiles.ServerProfile Profile,
+        PZServerLauncher.Core.Runtime.ServerRuntimeStatus Runtime,
+        bool HasBackup,
+        bool InstallDetected,
+        bool LauncherDetected,
+        bool UsesDirectJavaTemplate,
+        ProjectZomboidProfilePostureSummary Posture);
+}

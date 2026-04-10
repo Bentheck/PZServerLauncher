@@ -1,0 +1,638 @@
+@page "/profiles/{ProfileId}/mods-maps"
+@attribute [Authorize(Roles="Owner,Admin")]
+@using PZServerLauncher.Contracts.Profiles
+@inject ProfileStore ProfileStore
+@inject StructuredSettingsService StructuredSettingsService
+@inject WorkshopPresetScannerService WorkshopPresetScannerService
+@inject NamedWorkshopPresetStore NamedWorkshopPresetStore
+@inject RuntimeStateStore RuntimeStateStore
+
+<PageTitle>Mods &amp; Maps</PageTitle>
+
+@if (_profile is null)
+{
+    <div class="home-shell">
+        <div class="card">
+            <p class="eyebrow">Profile Workspace</p>
+            <h1>Profile not found</h1>
+            <p class="muted-text">The selected profile could not be loaded.</p>
+            <a class="nav-button" href="/profiles">Back to profiles</a>
+        </div>
+    </div>
+}
+else
+{
+    <ProfileWorkspaceShell Profile="@_profile"
+                           ActivePage="mods-maps"
+                           RuntimeStatus="@_runtimeStatus"
+                           InstallDetected="@_installDetected"
+                           CacheDetected="@_cacheDetected">
+        <Actions>
+            <a class="nav-button secondary-button" href="@OverviewHref">Overview</a>
+            <a class="nav-button secondary-button" href="@SandboxHref">Sandbox</a>
+            <a class="nav-button secondary-button" href="@AdvancedFilesHref">Advanced Files</a>
+            <button class="nav-button" @onclick="ScanAsync" disabled="@_busy">Scan Workshop</button>
+            <button class="nav-button secondary-button" @onclick="SaveAsync" disabled="@(_busy || _requiresAdvancedFilesFallback)">Save Live Preset</button>
+            <button class="nav-button secondary-button" @onclick="ApplyScanResultAsync" disabled="@(_busy || _scanResult is null || _requiresAdvancedFilesFallback)">Apply Scan Result</button>
+        </Actions>
+        <ChildContent>
+            <section class="workspace-panel hero-panel">
+                <div class="workspace-panel__copy">
+                    <p class="eyebrow">Mods &amp; Maps</p>
+                    <h1>@_profile.DisplayName</h1>
+                    <p class="muted-text">This is the operator console for workshop loadouts, mod order, and map order. Scan Workshop normalizes the lists against what is actually installed, then Save Live Preset writes the live Project Zomboid keys back out.</p>
+                    <p class="muted-text">Named loadouts are for recovery and reuse. If the file is forced into raw fallback, open Advanced Files rather than pushing structured edits through an unsupported config.</p>
+                </div>
+
+                <div class="workspace-actions">
+                    <span class="pill">@_profile.Branch</span>
+                    <span class="pill">@(_installDetected ? "Install detected" : "Install missing")</span>
+                    <span class="pill">@(_cacheDetected ? "Cache ready" : "Cache missing")</span>
+                    <span class="pill">@(_namedPresets.Count == 0 ? "No saved loadouts" : $"{_namedPresets.Count} saved loadouts")</span>
+                    <span class="pill">@(_scanResult is null ? "Scan idle" : "Scan normalized")</span>
+                    <span class="pill">@(_hasChanges ? "Unsaved changes" : "In sync")</span>
+                </div>
+            </section>
+
+            <section class="metric-grid metric-grid--host">
+                <article class="metric-card">
+                    <span class="metric-label">Workshop Items</span>
+                    <strong class="metric-value">@_profile.WorkshopPreset.WorkshopItemIds.Count</strong>
+                    <span class="metric-note">Ordered workshop IDs</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Enabled Mods</span>
+                    <strong class="metric-value">@_profile.WorkshopPreset.EnabledModIds.Count</strong>
+                    <span class="metric-note">Enabled mod IDs in load order</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Map Folders</span>
+                    <strong class="metric-value">@_profile.WorkshopPreset.MapFolders.Count</strong>
+                    <span class="metric-note">Map load order</span>
+                </article>
+                <article class="metric-card">
+                    <span class="metric-label">Saved Loadouts</span>
+                    <strong class="metric-value">@_namedPresets.Count</strong>
+                    <span class="metric-note">@(_namedPresets.Count == 0 ? "No reusable loadouts yet." : "Reusable recovery points and loadouts.")</span>
+                </article>
+            </section>
+
+            <div class="cards cards--wide">
+                <section class="card">
+                    <div class="card-heading">
+                        <div>
+                            <p class="eyebrow">Mods &amp; Maps</p>
+                            <h2>Preset Editor</h2>
+                        </div>
+                        <span class="pill">@(_scanResult is null ? "No normalized scan" : "Normalized scan ready")</span>
+                    </div>
+
+                    <p class="muted-text">Edit the ordered workshop item IDs, enabled mod IDs, and map folders directly. This page keeps the real Project Zomboid <code>WorkshopItems</code>, <code>Mods</code>, and <code>Map</code> INI keys in sync with the launcher preset while preserving the operator order you see here.</p>
+
+                    @if (_requiresAdvancedFilesFallback)
+                    {
+                        <div class="settings-banner settings-banner--warning">
+                            <strong>Structured Mods &amp; Maps editing is unavailable for this file.</strong>
+                            <p>@(_fallbackReason ?? "Use Advanced Files for the raw Project Zomboid INI.")</p>
+                            <a class="nav-button secondary-button" href="@AdvancedFilesHref">Open Advanced Files</a>
+                        </div>
+                    }
+
+                    <div class="status-banner status-banner--warm">
+                        <strong>Operator flow</strong>
+                        <p>1. Scan Workshop to normalize local content and catch missing pieces.</p>
+                        <p>2. Save Live Preset to write the live server loadout back to the profile.</p>
+                        <p>3. Save a named loadout when you want a reusable recovery point or alternate mod set.</p>
+                        <p>4. Use Advanced Files only when this file is too raw for structured editing.</p>
+                    </div>
+
+                    <div class="profile-section">
+                        <div class="profile-section__header">
+                            <h3>Workshop Item IDs</h3>
+                            <p class="muted-text">One workshop URL or numeric ID per line. The scanner will normalize URLs to numeric IDs.</p>
+                        </div>
+                        <textarea class="raw-editor" rows="8" @bind="WorkshopItemIdsText" @bind:event="oninput" disabled="@_busy"></textarea>
+                    </div>
+
+                    <div class="profile-section">
+                        <div class="profile-section__header">
+                            <h3>Enabled Mod IDs</h3>
+                            <p class="muted-text">One mod ID per line, in the order the server should load them.</p>
+                        </div>
+                        <textarea class="raw-editor" rows="8" @bind="EnabledModIdsText" @bind:event="oninput" disabled="@_busy"></textarea>
+                    </div>
+
+                    <div class="profile-section">
+                        <div class="profile-section__header">
+                            <h3>Map Folders</h3>
+                            <p class="muted-text">One map folder per line. Keep the order aligned with the server's map load order.</p>
+                        </div>
+                        <textarea class="raw-editor" rows="6" @bind="MapFoldersText" @bind:event="oninput" disabled="@_busy"></textarea>
+                    </div>
+
+                    <div class="file-toolbar">
+                        <span class="muted-text">Live preset hash: @_presetHash</span>
+                        <span class="muted-text">@ScanStateSummary</span>
+                    </div>
+                </section>
+
+                <section class="card">
+                    <div class="card-heading">
+                        <div>
+                            <p class="eyebrow">Recovery</p>
+                            <h2>Workspace Snapshot</h2>
+                        </div>
+                        <span class="pill">@RecoveryStateSummary</span>
+                    </div>
+
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">Runtime</span>
+                            <span class="info-value">@(_runtimeStatus?.State.ToString() ?? "Unknown")</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Install</span>
+                            <span class="info-value">@(_installDetected ? "Detected" : "Missing")</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Cache</span>
+                            <span class="info-value">@(_cacheDetected ? "Detected" : "Missing")</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Scan result</span>
+                            <span class="info-value">@(_scanResult is null ? "Not run yet" : "Normalized and ready")</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Recovery</span>
+                            <span class="info-value">@RecoveryHintSummary</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Saved loadouts</span>
+                            <span class="info-value">@(_namedPresets.Count == 0 ? "No saved loadouts" : $"{_namedPresets.Count} available")</span>
+                        </div>
+                    </div>
+
+                    <div class="status-banner status-banner--warm">
+                        <strong>Recovery posture</strong>
+                        <p>@RecoveryGuidanceSummary</p>
+                        <p>@LoadoutGuidanceSummary</p>
+                    </div>
+
+                    <div class="profile-section">
+                        <div class="profile-section__header">
+                            <h3>Saved Loadouts</h3>
+                            <p class="muted-text">Capture the current editor state as a named recovery point, then load it back into the editor whenever you need to rebuild the live preset.</p>
+                        </div>
+
+                        <div class="file-toolbar">
+                            <input @bind="_newPresetName" placeholder="Loadout name" />
+                            <button class="nav-button secondary-button" @onclick="SaveNamedPresetAsync" disabled="@(_busy || string.IsNullOrWhiteSpace(_newPresetName))">Save Loadout</button>
+                        </div>
+
+                        @if (_namedPresets.Count == 0)
+                        {
+                            <div class="empty-state">
+                                <p class="muted-text">No saved loadouts yet. Use the current editor state to create a recovery point before making a risky mod or map change.</p>
+                            </div>
+                        }
+                        else
+                        {
+                            <ul class="job-list">
+                                @foreach (var preset in _namedPresets)
+                                {
+                                    <li class="job-list__item">
+                                        <div class="job-list__title">
+                                            <strong>@preset.Name</strong>
+                                            <span>@preset.UpdatedAtUtc.ToLocalTime().ToString("g")</span>
+                                        </div>
+                                        <div class="muted-text">@BuildPresetCompositionSummary(preset.Preset)</div>
+                                        <div class="workspace-actions">
+                                            <button class="nav-button secondary-button" @onclick="() => LoadNamedPreset(preset)" disabled="@_busy">Load To Editor</button>
+                                            <button class="nav-button secondary-button" @onclick="() => DeleteNamedPresetAsync(preset)" disabled="@_busy">Delete</button>
+                                        </div>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                    </div>
+                </section>
+            </div>
+
+            <div class="cards cards--wide">
+                <section class="card">
+                    <div class="card-heading">
+                        <div>
+                            <p class="eyebrow">Scan Result</p>
+                            <h2>Normalized Preset</h2>
+                        </div>
+                        <span class="pill">@ScanResultSummary</span>
+                    </div>
+
+                    @if (_scanResult is null)
+                    {
+                        <div class="empty-state">
+                            <p class="muted-text">No normalized scan has been captured yet. Run Scan Workshop to compare the live editor state against local content and populate this summary.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="info-grid info-grid--compact">
+                            <div class="info-item">
+                                <span class="info-label">Workshop items</span>
+                                <span class="info-value">@_scanResult.Preset.WorkshopItemIds.Count</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Enabled mods</span>
+                                <span class="info-value">@_scanResult.Preset.EnabledModIds.Count</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Map folders</span>
+                                <span class="info-value">@_scanResult.Preset.MapFolders.Count</span>
+                            </div>
+                        </div>
+
+                        <p class="muted-text">This normalized loadout is what you can push into the live preset with Apply Scan Result after the scanner has reconciled local workshop content.</p>
+                    }
+                </section>
+
+                <section class="card">
+                    <div class="card-heading">
+                        <div>
+                            <p class="eyebrow">Diagnostics</p>
+                            <h2>Scanner Feedback</h2>
+                        </div>
+                        <span class="pill">@DiagnosticsSummary</span>
+                    </div>
+
+                    @if (_scanDiagnostics.Count == 0)
+                    {
+                        <div class="empty-state">
+                            <p class="muted-text">No scanner diagnostics yet. Run a scan to surface missing workshop items, duplicate entries, and map validation messages here.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <ul class="stack-list">
+                            @foreach (var diagnostic in _scanDiagnostics)
+                            {
+                                <li>@diagnostic</li>
+                            }
+                        </ul>
+                    }
+                </section>
+            </div>
+
+            <p class="status-line">@_statusMessage</p>
+        </ChildContent>
+    </ProfileWorkspaceShell>
+}
+
+@code {
+    [Parameter]
+    public string ProfileId { get; set; } = string.Empty;
+
+    private PZServerLauncher.Core.Profiles.ServerProfile? _profile;
+    private ServerRuntimeStatus? _runtimeStatus;
+    private bool _busy;
+    private string? _statusMessage;
+    private bool _installDetected;
+    private bool _cacheDetected;
+    private string workshopItemIdsText = string.Empty;
+    private string enabledModIdsText = string.Empty;
+    private string mapFoldersText = string.Empty;
+    private string _presetHash = string.Empty;
+    private WorkshopScanResultDto? _scanResult;
+    private IReadOnlyList<string> _scanDiagnostics = [];
+    private IReadOnlyList<NamedWorkshopPresetDto> _namedPresets = [];
+    private bool _hasChanges;
+    private bool _suppressChangeTracking;
+    private bool _requiresAdvancedFilesFallback;
+    private string? _fallbackReason;
+    private string _newPresetName = string.Empty;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        _profile = await ProfileStore.GetAsync(ProfileId);
+        if (_profile is null)
+        {
+            return;
+        }
+
+        _runtimeStatus = RuntimeStateStore.GetOrDefault(ProfileId);
+        _installDetected = Directory.Exists(_profile.InstallDirectory);
+        _cacheDetected = Directory.Exists(_profile.CacheDirectory);
+        var valueSet = StructuredSettingsService.GetPage(_profile, ProfileWorkspacePageIds.ModsAndMaps);
+        _requiresAdvancedFilesFallback = valueSet.RequiresAdvancedFilesFallback;
+        _fallbackReason = valueSet.FallbackReason;
+
+        var preset = StructuredSettingsService.GetWorkshopPreset(_profile);
+        _profile = _profile with { WorkshopPreset = preset };
+        LoadPreset(preset);
+        _namedPresets = await NamedWorkshopPresetStore.ListAsync(ProfileId);
+        _scanResult = null;
+        _scanDiagnostics = [];
+        _statusMessage = _requiresAdvancedFilesFallback
+            ? _fallbackReason ?? "Structured Mods & Maps editing is unavailable. Use Advanced Files."
+            : "Workshop preset loaded.";
+    }
+
+    private async Task ScanAsync()
+    {
+        if (_profile is null)
+        {
+            return;
+        }
+
+        if (_requiresAdvancedFilesFallback)
+        {
+            _statusMessage = _fallbackReason ?? "Structured Mods & Maps editing is unavailable. Use Advanced Files.";
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var preset = BuildPresetFromEditor();
+            _scanResult = WorkshopPresetScannerService.Scan(_profile.InstallDirectory, preset);
+            _scanDiagnostics = _scanResult.Diagnostics;
+            _statusMessage = _scanDiagnostics.Count == 0
+                ? "Workshop scan completed successfully."
+                : "Workshop scan completed with diagnostics.";
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        if (_profile is null)
+        {
+            return;
+        }
+
+        if (_requiresAdvancedFilesFallback)
+        {
+            _statusMessage = _fallbackReason ?? "Structured Mods & Maps editing is unavailable. Use Advanced Files.";
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var normalizedPreset = await StructuredSettingsService.SaveWorkshopPresetAsync(_profile, BuildPresetFromEditor());
+            _scanResult = WorkshopPresetScannerService.Scan(_profile.InstallDirectory, normalizedPreset);
+            _scanDiagnostics = _scanResult.Diagnostics;
+
+            _profile = await ProfileStore.GetAsync(ProfileId);
+            if (_profile is not null)
+            {
+                _profile = _profile with { WorkshopPreset = normalizedPreset };
+            }
+
+            LoadPreset(normalizedPreset);
+            _statusMessage = _scanDiagnostics.Count == 0
+                ? "Workshop preset saved."
+                : "Workshop preset saved with diagnostics.";
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task ApplyScanResultAsync()
+    {
+        if (_profile is null || _scanResult is null)
+        {
+            return;
+        }
+
+        if (_requiresAdvancedFilesFallback)
+        {
+            _statusMessage = _fallbackReason ?? "Structured Mods & Maps editing is unavailable. Use Advanced Files.";
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var normalizedPreset = await StructuredSettingsService.SaveWorkshopPresetAsync(_profile, _scanResult.Preset);
+            _profile = await ProfileStore.GetAsync(ProfileId);
+            if (_profile is not null)
+            {
+                _profile = _profile with { WorkshopPreset = normalizedPreset };
+            }
+
+            LoadPreset(normalizedPreset);
+            _statusMessage = _scanDiagnostics.Count == 0
+                ? "Scanned workshop preset applied."
+                : "Scanned workshop preset applied with diagnostics.";
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task SaveNamedPresetAsync()
+    {
+        if (_profile is null || string.IsNullOrWhiteSpace(_newPresetName))
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var normalizedPreset = WorkshopPresetScannerService.Scan(_profile.InstallDirectory, BuildPresetFromEditor()).Preset;
+            await NamedWorkshopPresetStore.UpsertAsync(ProfileId, _profile.Branch, _newPresetName, normalizedPreset);
+            _namedPresets = await NamedWorkshopPresetStore.ListAsync(ProfileId);
+            _newPresetName = string.Empty;
+            _statusMessage = "Named loadout saved.";
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void LoadNamedPreset(NamedWorkshopPresetDto preset)
+    {
+        LoadPreset(preset.Preset);
+        _hasChanges = true;
+        _statusMessage = $"Loaded named loadout '{preset.Name}' into the editor. Save Live Preset to push it live.";
+    }
+
+    private async Task DeleteNamedPresetAsync(NamedWorkshopPresetDto preset)
+    {
+        _busy = true;
+        try
+        {
+            await NamedWorkshopPresetStore.DeleteAsync(ProfileId, preset.PresetId);
+            _namedPresets = await NamedWorkshopPresetStore.ListAsync(ProfileId);
+            _statusMessage = $"Deleted named preset '{preset.Name}'.";
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void LoadPreset(PZServerLauncher.Core.Profiles.WorkshopPreset preset)
+    {
+        _suppressChangeTracking = true;
+        try
+        {
+            WorkshopItemIdsText = string.Join(Environment.NewLine, preset.WorkshopItemIds);
+            EnabledModIdsText = string.Join(Environment.NewLine, preset.EnabledModIds);
+            MapFoldersText = string.Join(Environment.NewLine, preset.MapFolders);
+        }
+        finally
+        {
+            _suppressChangeTracking = false;
+        }
+
+        _presetHash = BuildPresetHash(BuildPresetFromEditor());
+        _hasChanges = false;
+    }
+
+    private PZServerLauncher.Core.Profiles.WorkshopPreset BuildPresetFromEditor() =>
+        new()
+        {
+            WorkshopItemIds = ParseLines(WorkshopItemIdsText),
+            EnabledModIds = ParseLines(EnabledModIdsText),
+            MapFolders = ParseLines(MapFoldersText),
+        };
+
+    private static IReadOnlyList<string> ParseLines(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return [];
+        }
+
+        return text
+            .ReplaceLineEndings("\n")
+            .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .SelectMany(line => line.Split(';', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
+            .Select(value => value.Trim())
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+    }
+
+    private static string BuildPresetHash(PZServerLauncher.Core.Profiles.WorkshopPreset preset)
+    {
+        var source = string.Join("|",
+            string.Join(",", preset.WorkshopItemIds),
+            string.Join(",", preset.EnabledModIds),
+            string.Join(",", preset.MapFolders));
+        return Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(source)));
+    }
+
+    private static string BuildPresetCompositionSummary(PZServerLauncher.Core.Profiles.WorkshopPreset preset) =>
+        $"{preset.WorkshopItemIds.Count} workshop | {preset.EnabledModIds.Count} mods | {preset.MapFolders.Count} maps";
+
+    private string DiagnosticsSummary => _scanDiagnostics.Count == 0
+        ? "No diagnostics"
+        : $"{_scanDiagnostics.Count} findings";
+
+    private string RecoveryStateSummary => _requiresAdvancedFilesFallback
+        ? "Raw fallback"
+        : _hasChanges
+            ? "Recovery needed"
+            : "Ready";
+
+    private string RecoveryHintSummary => _requiresAdvancedFilesFallback
+        ? "Use Advanced Files for this profile's raw INI."
+        : _scanResult is null
+            ? "Run a scan before relying on the current loadout as a recovery point."
+            : "Use the scanner output or a saved loadout as the safest rollback path.";
+
+    private string RecoveryGuidanceSummary => _requiresAdvancedFilesFallback
+        ? _fallbackReason ?? "This file is in raw fallback; structured edits are unavailable."
+        : "Keep at least one named loadout before changing workshop IDs, mod order, or map order so you can roll back without rebuilding from scratch.";
+
+    private string LoadoutGuidanceSummary => _namedPresets.Count == 0
+        ? "No saved loadouts exist yet, so the current editor state is your only recovery point."
+        : $"You have {_namedPresets.Count} named loadout{(_namedPresets.Count == 1 ? string.Empty : "s")} ready for fast reload into the editor.";
+
+    private string ScanStateSummary => _scanResult is null
+        ? $"Scan diagnostics: {_scanDiagnostics.Count}"
+        : $"Scan diagnostics: {_scanDiagnostics.Count} | Normalized preset ready";
+
+    private string ScanResultSummary => _scanResult is null
+        ? "Not scanned"
+        : BuildPresetCompositionSummary(_scanResult.Preset);
+
+    private string OverviewHref => $"/profiles/{Uri.EscapeDataString(ProfileId)}/overview";
+
+    private string SandboxHref => $"/profiles/{Uri.EscapeDataString(ProfileId)}/sandbox";
+
+    private string AdvancedFilesHref => $"/profiles/{Uri.EscapeDataString(ProfileId)}/advanced-files";
+
+    private string WorkshopItemIdsText
+    {
+        get => workshopItemIdsText;
+        set
+        {
+            workshopItemIdsText = value;
+            MarkChanged();
+        }
+    }
+
+    private string EnabledModIdsText
+    {
+        get => enabledModIdsText;
+        set
+        {
+            enabledModIdsText = value;
+            MarkChanged();
+        }
+    }
+
+    private string MapFoldersText
+    {
+        get => mapFoldersText;
+        set
+        {
+            mapFoldersText = value;
+            MarkChanged();
+        }
+    }
+
+    private void MarkChanged()
+    {
+        if (_busy || _suppressChangeTracking)
+        {
+            return;
+        }
+
+        _hasChanges = true;
+        _presetHash = BuildPresetHash(BuildPresetFromEditor());
+        _statusMessage = "Workshop preset changed locally.";
+    }
+}
