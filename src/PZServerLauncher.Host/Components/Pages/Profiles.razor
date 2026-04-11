@@ -197,7 +197,7 @@
 
         public string RecoveryHeadline => BackupCount > 0 ? "Recovery ready" : "No recovery";
 
-        public string DeploymentHeadline => InstallPosture.UsesDirectJavaTemplate ? "Direct Java" : "Batch fallback";
+        public string DeploymentHeadline => InstallPosture.UsesDirectJavaTemplate ? "Direct Java" : "Launch blocked";
 
         public string RecoverySummary => BackupCount == 0
             ? "No backup archives recorded for this profile."

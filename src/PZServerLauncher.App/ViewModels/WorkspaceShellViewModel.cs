@@ -1,6 +1,5 @@
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
-using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PZServerLauncher.App.Services;
@@ -10,11 +9,8 @@ namespace PZServerLauncher.App.ViewModels;
 
 public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHeader
 {
-    private static readonly TimeSpan AutoRefreshInterval = TimeSpan.FromSeconds(5);
-
     private readonly DesktopShellService _desktopShellService;
     private readonly LocalHostApiClient _hostApiClient;
-    private readonly DispatcherTimer _autoRefreshTimer;
     private readonly SemaphoreSlim _refreshGate = new(1, 1);
 
     public WorkspaceShellViewModel()
@@ -22,7 +18,7 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
             new MainWindowViewModel(),
             new LocalHostApiClient(),
             new RuntimeEventStream(new LocalHostApiClient()),
-            new DesktopShellService(),
+            new DesktopShellService(new DesktopLogService()),
             new FolderPickerService())
     {
     }
@@ -45,7 +41,9 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
             legacy,
             () => SelectGlobalPageByKey(WorkspacePageIds.Profiles),
             () => SelectGlobalPageByKey(WorkspacePageIds.Users));
-        Host = new HostWorkspaceViewModel(legacy);
+        Host = new HostWorkspaceViewModel(
+            legacy,
+            () => SelectGlobalPageByKey(WorkspacePageIds.Users));
         RemoteAccess = new RemoteAccessWorkspaceViewModel(legacy);
         Users = new UsersWorkspaceViewModel(legacy, hostApiClient);
         Profiles = new ProfilesWorkspaceViewModel(legacy, hostApiClient, runtimeEventStream, folderPickerService);
@@ -79,13 +77,6 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
         CancelNavigationCommand = new RelayCommand(CancelNavigation);
         ExitDesktopCommand = new RelayCommand(() => _desktopShellService.ExitDesktop());
         RefreshLegacyCommand = new AsyncRelayCommand(RefreshWorkspaceAsync);
-
-        _autoRefreshTimer = new DispatcherTimer
-        {
-            Interval = AutoRefreshInterval,
-        };
-        _autoRefreshTimer.Tick += OnAutoRefreshTick;
-        _autoRefreshTimer.Start();
 
         _ = InitializeAsync();
     }
@@ -211,7 +202,7 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
 
     private async Task RefreshWorkspaceAsync()
     {
-        await RefreshWorkspaceAsync(CurrentPage, isAutoRefresh: false);
+        await RefreshWorkspaceAsync(CurrentPage);
     }
 
     private async Task RefreshLegacyStateAsync()
@@ -323,7 +314,7 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
             MarkNavigationSelection(key);
         }
 
-        await RefreshWorkspaceAsync(next, isAutoRefresh: false);
+        await RefreshWorkspaceAsync(next);
     }
 
     private ViewModelBase? ResolvePage(string key) =>
@@ -383,47 +374,18 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
         UpdateCurrentStatus();
     }
 
-    private async Task RefreshWorkspaceAsync(ViewModelBase page, bool isAutoRefresh)
+    private async Task RefreshWorkspaceAsync(ViewModelBase page)
     {
-        if (isAutoRefresh)
-        {
-            if (!_refreshGate.Wait(0))
-            {
-                return;
-            }
-        }
-        else
-        {
-            await _refreshGate.WaitAsync();
-        }
+        await _refreshGate.WaitAsync();
 
         try
         {
-            if (isAutoRefresh && (HasPendingNavigation || CurrentPageHasUnsavedChanges()))
-            {
-                return;
-            }
-
             await RefreshLegacyStateAsync();
             await RefreshPageAsync(page);
         }
         finally
         {
             _refreshGate.Release();
-        }
-    }
-
-    private bool CurrentPageHasUnsavedChanges() =>
-        CurrentPage is IWorkspaceDirtyState dirtyState && dirtyState.HasUnsavedChanges;
-
-    private async void OnAutoRefreshTick(object? sender, EventArgs e)
-    {
-        try
-        {
-            await RefreshWorkspaceAsync(CurrentPage, isAutoRefresh: true);
-        }
-        catch
-        {
         }
     }
 }

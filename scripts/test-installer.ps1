@@ -100,8 +100,8 @@ $tempRoot = if ([string]::IsNullOrWhiteSpace($env:RUNNER_TEMP)) { $env:TEMP } el
 $installRoot = Join-Path $tempRoot "PZServerLauncher-Smoke"
 
 $installDirectory = Join-Path $installRoot "install"
-$dataRoot = Join-Path $env:LOCALAPPDATA "PZServerLauncher"
-$sentinelFile = Join-Path $dataRoot "data\upgrade-sentinel.txt"
+$dataRoot = Join-Path $installDirectory "data"
+$sentinelFile = Join-Path $dataRoot "upgrade-sentinel.txt"
 
 if (Test-Path $installRoot) {
     Remove-Item -LiteralPath $installRoot -Recurse -Force
@@ -224,6 +224,10 @@ finally {
 
 if ((Test-Path $desktopExe) -or (Test-Path $hostExe)) {
     throw "Installed binaries still exist after uninstall."
+}
+
+if (Test-Path $sentinelFile) {
+    throw "Expected launcher app data to be removed during uninstall."
 }
 
 Write-Host "Installer smoke test completed successfully."

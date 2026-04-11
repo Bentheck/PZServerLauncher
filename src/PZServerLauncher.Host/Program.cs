@@ -52,6 +52,9 @@ public class Program
         builder.Services.AddSingleton(appPaths);
         builder.Services.AddSingleton(bootstrapStateStore);
         builder.Services.AddSingleton(new StartupMetadata(DateTimeOffset.UtcNow, typeof(Program).Assembly.GetName().Version?.ToString() ?? "0.0.0"));
+        builder.Services.AddSingleton<PersistentLogService>();
+        builder.Services.AddSingleton<IRuntimeLogSink>(serviceProvider => serviceProvider.GetRequiredService<PersistentLogService>());
+        builder.Services.AddSingleton<ILoggerProvider, RollingFileLoggerProvider>();
         builder.Services.AddSingleton<ProjectZomboidLiveOperationsInterpreter>();
         builder.Services.AddSingleton<RuntimeStateStore>();
         builder.Services.AddSingleton<ProjectZomboidServerPlanner>();
@@ -940,9 +943,16 @@ public class Program
                 return Results.NotFound();
             }
 
-            await supervisor.StartAsync(profile, cancellationToken);
-            await auditStore.WriteAsync("runtime.started", profileId, "local", "Started server process.", cancellationToken: cancellationToken);
-            return Results.Ok(new OperationResultDto(true, "Server started."));
+            try
+            {
+                await supervisor.StartAsync(profile, cancellationToken);
+                await auditStore.WriteAsync("runtime.started", profileId, "local", "Started server process.", cancellationToken: cancellationToken);
+                return Results.Ok(new OperationResultDto(true, "Server started."));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.BadRequest(new OperationResultDto(false, ex.Message));
+            }
         }).RequireAuthorization("DesktopOrOperator");
 
         api.MapPost("/profiles/{profileId}/stop", async (

@@ -3,7 +3,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latestMajor</LangVersion>
-    <PZServerLauncherVersion>0.2.0</PZServerLauncherVersion>
+    <PZServerLauncherVersion>0.3.2</PZServerLauncherVersion>
     <Version>$(PZServerLauncherVersion)</Version>
     <PackageVersion>$(PZServerLauncherVersion)</PackageVersion>
     <InformationalVersion>$(PZServerLauncherVersion)</InformationalVersion>

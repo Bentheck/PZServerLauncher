@@ -9,95 +9,34 @@
              x:Class="PZServerLauncher.App.Views.SandboxWorkspaceView"
              x:DataType="vm:SandboxWorkspaceViewModel">
     <ScrollViewer>
-        <Grid RowDefinitions="Auto,Auto,*" RowSpacing="18">
-            <Grid ColumnDefinitions="1.42*,340" ColumnSpacing="18">
-                <Border Classes="card" Padding="26">
-                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18">
-                        <StackPanel Spacing="8">
-                            <TextBlock Classes="kicker" Text="World Pressure Console" />
-                            <TextBlock Classes="panel-title" FontSize="30" Text="{Binding ProfileDisplayName}" />
-                            <TextBlock Classes="body" FontSize="16" Foreground="#45382E" Text="{Binding WorkspaceSummary}" TextWrapping="Wrap" />
-                            <TextBlock Classes="caption" Text="{Binding ActionSummary}" TextWrapping="Wrap" />
-                            <WrapPanel Margin="0,8,0,0" Orientation="Horizontal" ItemHeight="30">
-                                <Border Background="#2A2927" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
-                                    <TextBlock Foreground="#F7F0E7" FontSize="11" Text="{Binding Branch}" />
-                                </Border>
-                                <Border Background="#EAD6BF" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
-                                    <TextBlock Foreground="#5A4330" FontSize="11" Text="{Binding WorldStateHeadline}" />
-                                </Border>
-                                <Border Background="#EAD6BF" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
-                                    <TextBlock Foreground="#5A4330" FontSize="11" Text="{Binding ZombiePressureHeadline}" />
-                                </Border>
-                            </WrapPanel>
+        <Grid RowDefinitions="Auto,*" RowSpacing="18">
+            <Border Classes="card" Padding="26">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18">
+                    <StackPanel Spacing="8">
+                        <TextBlock Classes="kicker" Text="World Pressure Console" />
+                        <TextBlock Classes="panel-title" FontSize="30" Text="{Binding ProfileDisplayName}" />
+                        <TextBlock Classes="body" FontSize="16" Foreground="#45382E" Text="{Binding WorkspaceSummary}" TextWrapping="Wrap" />
+                        <TextBlock Classes="caption" Text="{Binding ActionSummary}" TextWrapping="Wrap" />
+                        <WrapPanel Margin="0,8,0,0" Orientation="Horizontal" ItemHeight="30">
+                            <Border Background="#2A2927" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                <TextBlock Foreground="#F7F0E7" FontSize="11" Text="{Binding Branch}" />
+                            </Border>
+                            <Border Background="#EAD6BF" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                <TextBlock Foreground="#5A4330" FontSize="11" Text="{Binding CatalogSummary}" />
+                            </Border>
+                        </WrapPanel>
+                    </StackPanel>
+                    <Border Grid.Column="1" Classes="metric-card" Padding="16" Width="220">
+                        <StackPanel Spacing="6">
+                            <TextBlock Classes="kicker" Text="Recovery" />
+                            <TextBlock Classes="body" FontWeight="SemiBold" Text="{Binding RecoveryHeadline}" TextWrapping="Wrap" />
                         </StackPanel>
-                        <Border Grid.Column="1" Classes="metric-card" Padding="16" Width="220">
-                            <StackPanel Spacing="6">
-                                <TextBlock Classes="kicker" Text="Recovery" />
-                                <TextBlock Classes="body" FontWeight="SemiBold" Text="{Binding RecoveryHeadline}" TextWrapping="Wrap" />
-                            </StackPanel>
-                        </Border>
-                    </Grid>
-                </Border>
-
-                <Border Grid.Column="1" Classes="surface-dark" Padding="18">
-                    <StackPanel Spacing="10">
-                        <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Scenario Watch" />
-                        <TextBlock FontSize="22" FontWeight="SemiBold" Foreground="#F7F0E7" Text="{Binding SurvivorRulesHeadline}" TextWrapping="Wrap" />
-                        <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding ValidationSummary}" TextWrapping="Wrap" />
-                        <TextBlock Classes="caption" Foreground="#CCB9A8" Text="{Binding FallbackSummary}" TextWrapping="Wrap" />
-                    </StackPanel>
-                </Border>
-            </Grid>
-
-            <Grid Grid.Row="1" ColumnDefinitions="*,*,*,*" ColumnSpacing="14">
-                <Border Classes="metric-card" Padding="16">
-                    <StackPanel Spacing="6">
-                        <TextBlock Classes="kicker" Text="World State" />
-                        <TextBlock Classes="panel-title" FontSize="22" Text="{Binding WorldStateHeadline}" TextWrapping="Wrap" />
-                    </StackPanel>
-                </Border>
-                <Border Grid.Column="1" Classes="metric-card" Padding="16">
-                    <StackPanel Spacing="6">
-                        <TextBlock Classes="kicker" Text="Zombie Pressure" />
-                        <TextBlock Classes="panel-title" FontSize="22" Text="{Binding ZombiePressureHeadline}" TextWrapping="Wrap" />
-                    </StackPanel>
-                </Border>
-                <Border Grid.Column="2" Classes="metric-card" Padding="16">
-                    <StackPanel Spacing="6">
-                        <TextBlock Classes="kicker" Text="Survival Economy" />
-                        <TextBlock Classes="panel-title" FontSize="22" Text="{Binding SurvivalEconomyHeadline}" TextWrapping="Wrap" />
-                    </StackPanel>
-                </Border>
-                <Border Grid.Column="3" Classes="metric-card" Padding="16">
-                    <StackPanel Spacing="6">
-                        <TextBlock Classes="kicker" Text="Events &amp; Climate" />
-                        <TextBlock Classes="panel-title" FontSize="22" Text="{Binding EventAndClimateHeadline}" TextWrapping="Wrap" />
-                    </StackPanel>
-                </Border>
-            </Grid>
-
-            <Grid Grid.Row="2" ColumnDefinitions="1.22*,.78*" ColumnSpacing="18">
-                <StackPanel Spacing="18">
-                    <Border Classes="surface-dark" Padding="22">
-                        <Grid ColumnDefinitions="1.08*,.92*" ColumnSpacing="18">
-                            <StackPanel Spacing="10">
-                                <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Scenario Situation" />
-                                <TextBlock FontSize="26" FontWeight="SemiBold" Foreground="#F7F0E7" Text="{Binding WorldStateHeadline}" TextWrapping="Wrap" />
-                                <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding ZombiePressureHeadline}" TextWrapping="Wrap" />
-                                <TextBlock Classes="caption" Foreground="#CCB9A8" Text="{Binding SurvivalEconomyHeadline}" TextWrapping="Wrap" />
-                            </StackPanel>
-                            <ItemsControl Grid.Column="1" ItemsSource="{Binding SandboxChecklist}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Border Background="#F0E2D0" CornerRadius="14" Padding="12" Margin="0,0,0,8">
-                                            <TextBlock Classes="caption" Foreground="#5E4735" Text="{Binding .}" TextWrapping="Wrap" />
-                                        </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </Grid>
                     </Border>
+                </Grid>
+            </Border>
 
+            <Grid Grid.Row="1" ColumnDefinitions="1.22*,.78*" ColumnSpacing="18">
+                <StackPanel Spacing="18">
                     <Border Background="#FFF8F1" CornerRadius="14" Padding="16" IsVisible="{Binding RequiresAdvancedFilesFallback}">
                         <StackPanel Spacing="6">
                             <TextBlock Classes="kicker" Text="Fallback Required" />

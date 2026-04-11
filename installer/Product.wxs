@@ -34,6 +34,34 @@
                  Before="RestartHostAfterInstall"
                  Sequence="execute"
                  Value="[HOSTFOLDER]PZServerLauncher.Host.exe" />
+    <SetProperty Id="PZSERVERLAUNCHERDATAROOT"
+                 Before="CostInitialize"
+                 Sequence="execute"
+                 Value="[INSTALLFOLDER]data" />
+    <SetProperty Id="PZSERVERLAUNCHERSTATEDIR"
+                 Before="CostInitialize"
+                 Sequence="execute"
+                 Value="[INSTALLFOLDER]state" />
+    <SetProperty Id="PZSERVERLAUNCHERLOGSDIR"
+                 Before="CostInitialize"
+                 Sequence="execute"
+                 Value="[INSTALLFOLDER]logs" />
+    <SetProperty Id="PZSERVERLAUNCHERRUNTIMEDIR"
+                 Before="CostInitialize"
+                 Sequence="execute"
+                 Value="[INSTALLFOLDER]runtime" />
+    <SetProperty Id="PZSERVERLAUNCHERTOOLSDIR"
+                 Before="CostInitialize"
+                 Sequence="execute"
+                 Value="[INSTALLFOLDER]tools" />
+    <SetProperty Id="PZSERVERLAUNCHERBACKUPSDIR"
+                 Before="CostInitialize"
+                 Sequence="execute"
+                 Value="[INSTALLFOLDER]backups" />
+    <SetProperty Id="PZSERVERLAUNCHERLEGACYDATAROOT"
+                 Before="CostInitialize"
+                 Sequence="execute"
+                 Value="[LocalAppDataFolder]PZServerLauncher" />
     <CustomAction Id="RestartHostAfterInstall"
                   Property="HOST_RESTART_PATH"
                   ExeCommand=""
@@ -71,6 +99,34 @@
           Description="Launch the Project Zomboid server installer, configurator, and launcher."
           Target="[APPFOLDER]PZServerLauncher.App.exe"
           WorkingDirectory="APPFOLDER" />
+        <util:RemoveFolderEx
+          Property="PZSERVERLAUNCHERDATAROOT"
+          On="uninstall"
+          Condition="REMOVE=&quot;ALL&quot; AND NOT UPGRADINGPRODUCTCODE" />
+        <util:RemoveFolderEx
+          Property="PZSERVERLAUNCHERSTATEDIR"
+          On="uninstall"
+          Condition="REMOVE=&quot;ALL&quot; AND NOT UPGRADINGPRODUCTCODE" />
+        <util:RemoveFolderEx
+          Property="PZSERVERLAUNCHERLOGSDIR"
+          On="uninstall"
+          Condition="REMOVE=&quot;ALL&quot; AND NOT UPGRADINGPRODUCTCODE" />
+        <util:RemoveFolderEx
+          Property="PZSERVERLAUNCHERRUNTIMEDIR"
+          On="uninstall"
+          Condition="REMOVE=&quot;ALL&quot; AND NOT UPGRADINGPRODUCTCODE" />
+        <util:RemoveFolderEx
+          Property="PZSERVERLAUNCHERTOOLSDIR"
+          On="uninstall"
+          Condition="REMOVE=&quot;ALL&quot; AND NOT UPGRADINGPRODUCTCODE" />
+        <util:RemoveFolderEx
+          Property="PZSERVERLAUNCHERBACKUPSDIR"
+          On="uninstall"
+          Condition="REMOVE=&quot;ALL&quot; AND NOT UPGRADINGPRODUCTCODE" />
+        <util:RemoveFolderEx
+          Property="PZSERVERLAUNCHERLEGACYDATAROOT"
+          On="uninstall"
+          Condition="REMOVE=&quot;ALL&quot; AND NOT UPGRADINGPRODUCTCODE" />
         <RemoveFolder Id="RemoveProgramMenuDir" On="uninstall" />
         <RegistryValue Root="HKCU" Key="Software\Bentheck\PZServerLauncher" Name="Installed" Type="integer" Value="1" KeyPath="yes" />
       </Component>

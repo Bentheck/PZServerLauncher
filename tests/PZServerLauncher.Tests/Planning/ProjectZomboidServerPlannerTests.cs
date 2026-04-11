@@ -86,7 +86,41 @@ public sealed class ProjectZomboidServerPlannerTests
     }
 
     [Fact]
-    public void CreateLaunchPlan_FallsBackToVendorBatchWhenTemplateCannotBeParsed()
+    public void CreateLaunchPlan_WhenUdpPortMatchesDefaultPort_UsesFallbackUdpPort()
+    {
+        var installDirectory = CreateInstallDirectory(
+            """
+            @echo off
+            setlocal
+            set "JAVA_HOME=%~dp0jre64"
+            "%JAVA_HOME%\bin\java.exe" -cp "%~dp0zombie.jar;%~dp0lib\*" zombie.network.GameServer -servername servertest
+            """);
+
+        var profile = ServerProfileFactory.CreateStarterProfile() with
+        {
+            InstallDirectory = installDirectory,
+            DefaultPort = 16261,
+            UdpPort = 16261,
+        };
+
+        try
+        {
+            var plan = _planner.CreateLaunchPlan(profile);
+            var udpPortSwitchIndex = plan.Arguments.ToList().IndexOf("-udpport");
+
+            Assert.Equal(ServerLaunchStrategy.DirectJavaTemplate, plan.Strategy);
+            Assert.True(udpPortSwitchIndex >= 0);
+            Assert.Equal("16262", plan.Arguments[udpPortSwitchIndex + 1]);
+            Assert.Contains("launch is using 16262 temporarily", plan.Notes, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            Directory.Delete(installDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void CreateLaunchPlan_BlocksWhenTemplateCannotBeParsed()
     {
         var installDirectory = CreateInstallDirectory(
             """
@@ -103,14 +137,52 @@ public sealed class ProjectZomboidServerPlannerTests
         {
             var plan = _planner.CreateLaunchPlan(profile);
 
-            Assert.Equal(ServerLaunchStrategy.VendorBatchFallback, plan.Strategy);
-            Assert.EndsWith("StartServer64.bat", plan.LauncherPath, StringComparison.OrdinalIgnoreCase);
-            Assert.Contains("Falling back", plan.Notes, StringComparison.OrdinalIgnoreCase);
-            Assert.DoesNotContain(plan.Arguments, argument => argument.StartsWith("-Xms", StringComparison.OrdinalIgnoreCase));
+            Assert.Equal(ServerLaunchStrategy.LaunchBlocked, plan.Strategy);
+            Assert.True(plan.IsLaunchBlocked);
+            Assert.False(plan.IsLaunchable);
+            Assert.True(string.IsNullOrWhiteSpace(plan.LauncherPath));
+            Assert.Empty(plan.Arguments);
+            Assert.Contains("Launch blocked", plan.Notes, StringComparison.OrdinalIgnoreCase);
         }
         finally
         {
             Directory.Delete(installDirectory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void CreateLaunchPlan_DoesNotResolveLauncherFromNestedSteamSubfolder()
+    {
+        var installRoot = Path.Combine(Path.GetTempPath(), $"pz-launch-plan-parent-{Guid.NewGuid():N}");
+        var actualInstallDirectory = Path.Combine(installRoot, "Project Zomboid Dedicated Server");
+        Directory.CreateDirectory(Path.Combine(actualInstallDirectory, "jre64", "bin"));
+        File.WriteAllText(Path.Combine(actualInstallDirectory, "jre64", "bin", "java.exe"), string.Empty);
+        File.WriteAllText(
+            Path.Combine(actualInstallDirectory, "StartServer64.bat"),
+            """
+            @echo off
+            setlocal
+            set "JAVA_HOME=%~dp0jre64"
+            "%JAVA_HOME%\bin\java.exe" -cp "%~dp0zombie.jar;%~dp0lib\*" zombie.network.GameServer -servername servertest
+            """);
+
+        var profile = ServerProfileFactory.CreateStarterProfile() with
+        {
+            InstallDirectory = installRoot,
+            CacheDirectory = @"D:\Servers\Profiles\resolved-install",
+        };
+
+        try
+        {
+            var plan = _planner.CreateLaunchPlan(profile);
+
+            Assert.Equal(ServerLaunchStrategy.LaunchBlocked, plan.Strategy);
+            Assert.Equal(installRoot, plan.WorkingDirectory);
+            Assert.Contains("missing from the install root", plan.Notes, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            Directory.Delete(installRoot, recursive: true);
         }
     }
 

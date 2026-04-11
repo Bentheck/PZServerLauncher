@@ -196,6 +196,10 @@
                         <Button Classes="action-secondary"
                                 Command="{Binding Legacy.ExitDesktopCommand}"
                                 Content="Exit Desktop" />
+                        <Button Classes="action-secondary"
+                                Command="{Binding OpenUsersWorkspaceCommand}"
+                                Content="Open Users"
+                                IsVisible="{Binding ShowOwnerSetupAction}" />
                     </WrapPanel>
 
                     <Border Classes="command-card" Padding="14">

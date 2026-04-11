@@ -553,6 +553,15 @@ public sealed class StructuredSettingsService(
         ValidatePort(values, $"{branchPrefix}.server.port", fieldErrors);
         ValidatePort(values, $"{branchPrefix}.server.udp-port", fieldErrors);
         ValidatePort(values, $"{branchPrefix}.server.rcon-port", fieldErrors);
+        var defaultPortKey = $"{branchPrefix}.server.port";
+        var udpPortKey = $"{branchPrefix}.server.udp-port";
+        if (TryParseInt(values, defaultPortKey, out var defaultPort) &&
+            TryParseInt(values, udpPortKey, out var udpPort) &&
+            defaultPort == udpPort)
+        {
+            fieldErrors[udpPortKey] = ["UDP port must be different from the default game port. Example: 16261 game port with 16262 UDP."];
+        }
+
         ValidatePositiveInteger(values, $"{branchPrefix}.server.max-players", "Max players must be a whole number greater than zero.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.server.public", "Public listing must be true or false.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.server.open", "Open access must be true or false.", fieldErrors);

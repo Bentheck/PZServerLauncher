@@ -142,6 +142,14 @@
                     <p>@(_settings.OwnerBootstrap.OwnerUserName ?? "Not set yet")</p>
                 </div>
 
+                @if (!_settings.OwnerBootstrap.IsConfigured)
+                {
+                    <div class="status-banner status-banner--warm">
+                        <strong>Desktop action required</strong>
+                        <p>Owner bootstrap is desktop-only right now. Open the desktop launcher and go to Users, then use Create Owner Account.</p>
+                    </div>
+                }
+
                 <div class="info-grid info-grid--compact">
                     <div class="info-item">
                         <span class="info-label">Privileged accounts</span>
@@ -285,7 +293,7 @@
             : ProfilesMissingInstallCount > 0
                 ? $"{ProfilesMissingInstallCount} profile(s) still need a detected install footprint."
                 : FallbackLaunchCount > 0
-                    ? $"{FallbackLaunchCount} installed profile(s) are still falling back to the vendor batch launcher."
+                    ? $"{FallbackLaunchCount} installed profile(s) are launch blocked until direct Java extraction succeeds."
                     : _fleetAccessSummary.PublicOpenWithoutSafetyCount > 0
                         ? $"{_fleetAccessSummary.PublicOpenWithoutSafetyCount} public/open profile(s) still need PvP safety coverage."
                         : "Install, recovery, and fleet access posture look healthy across the current server group.";

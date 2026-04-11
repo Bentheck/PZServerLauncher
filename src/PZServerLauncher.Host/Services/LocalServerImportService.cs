@@ -78,6 +78,9 @@ public sealed partial class LocalServerImportService(
         var existingProfiles = await profileStore.ListAsync(cancellationToken);
         var profileId = EnsureUniqueProfileId(candidate.ServerName, existingProfiles.Select(x => x.ProfileId));
 
+        var defaultPort = ParseInt(settings, "DefaultPort", 16261);
+        var fallbackUdpPort = defaultPort < 65535 ? defaultPort + 1 : 65534;
+
         var profile = new ServerProfile
         {
             ProfileId = profileId,
@@ -86,8 +89,8 @@ public sealed partial class LocalServerImportService(
             CacheDirectory = candidate.CacheDirectory,
             InstallDirectory = candidate.InstallDirectory ?? GetFallbackInstallDirectory(),
             Branch = candidate.Branch,
-            DefaultPort = ParseInt(settings, "DefaultPort", 16261),
-            UdpPort = ParseInt(settings, "UDPPort", ParseInt(settings, "DefaultPort", 16261)),
+            DefaultPort = defaultPort,
+            UdpPort = ParseInt(settings, "UDPPort", fallbackUdpPort),
             RconPort = ParseInt(settings, "RCONPort", 27015),
             UseSteam = true,
             AdminUsername = GetValue(settings, "AdminUsername"),

@@ -49,12 +49,27 @@ public sealed class ServerProcessSupervisor(
             await hubContext.Clients.All.SendAsync("logLine", profile.ProfileId, launchPlan.Notes, cancellationToken);
         }
 
+        if (launchPlan.IsLaunchBlocked)
+        {
+            var blockedStatus = runtimeStateStore.GetOrDefault(profile.ProfileId) with
+            {
+                State = ServerRuntimeState.Crashed,
+                ProcessId = null,
+                StoppedAtUtc = DateTimeOffset.UtcNow,
+                LastExitReason = launchPlan.Notes,
+                LatestLogLine = launchPlan.Notes,
+            };
+            runtimeStateStore.Update(blockedStatus);
+            await hubContext.Clients.All.SendAsync("statusChanged", blockedStatus, cancellationToken);
+            throw new InvalidOperationException(launchPlan.Notes);
+        }
+
         var launchCommand = planner.FormatLaunchCommand(launchPlan);
         var scriptContent = $"""
             @echo off
             setlocal
             cd /d "{launchPlan.WorkingDirectory}"
-            {(launchPlan.UsesVendorBatch ? "call " : string.Empty)}{launchCommand}
+            {launchCommand}
             """;
         await File.WriteAllTextAsync(wrapperPath, scriptContent, cancellationToken);
 

@@ -155,17 +155,19 @@
                             <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
                                 <StackPanel Spacing="4">
                                     <TextBlock Classes="kicker" Text="Username" />
-                                    <TextBox Text="{Binding Legacy.OwnerUserName}" PlaceholderText="owner" />
+                                    <TextBox Text="{Binding Legacy.OwnerUserName, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="owner" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Spacing="4">
                                     <TextBlock Classes="kicker" Text="Password" />
-                                    <TextBox Text="{Binding Legacy.OwnerPassword}" PasswordChar="*" PlaceholderText="Choose a password" />
+                                    <TextBox Text="{Binding Legacy.OwnerPassword, UpdateSourceTrigger=PropertyChanged}" PasswordChar="*" PlaceholderText="Choose a password" />
                                 </StackPanel>
                             </Grid>
 
                             <Button HorizontalAlignment="Left"
+                                    Classes="action-primary"
                                     Command="{Binding Legacy.BootstrapOwnerCommand}"
-                                    Content="Create Owner Account" />
+                                    IsEnabled="{Binding Legacy.CanBootstrapOwner}"
+                                    Content="Save Owner Account" />
                         </StackPanel>
 
                         <Border Grid.Column="1" Background="#F5E8DA" CornerRadius="14" Padding="16">

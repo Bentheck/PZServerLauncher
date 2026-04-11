@@ -135,6 +135,22 @@
             <Setter Property="Padding" Value="14" />
             <Setter Property="MinHeight" Value="140" />
         </Style>
+        <Style Selector="CheckBox">
+            <Setter Property="Foreground" Value="#243238" />
+            <Setter Property="FontSize" Value="13" />
+        </Style>
+        <Style Selector="CheckBox /template/ ContentPresenter">
+            <Setter Property="Foreground" Value="#243238" />
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="CheckBox:disabled">
+            <Setter Property="Foreground" Value="#6A7276" />
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="CheckBox:disabled /template/ ContentPresenter">
+            <Setter Property="Foreground" Value="#6A7276" />
+            <Setter Property="Opacity" Value="1" />
+        </Style>
         <Style Selector="Button.action-primary">
             <Setter Property="Background" Value="#355B4C" />
             <Setter Property="Foreground" Value="#F7F8F6" />

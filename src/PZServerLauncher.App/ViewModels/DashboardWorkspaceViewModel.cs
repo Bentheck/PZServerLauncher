@@ -163,7 +163,7 @@ public sealed class DashboardWorkspaceViewModel : WorkspacePageViewModelBase
     public int LaunchReadyProfileCount => Legacy.Profiles.Count(profile => profile.IsInstallDetected && profile.ConfigDirectoryDetected && profile.IniDetected && profile.SandboxDetected);
 
     public string FleetSummary => HasProfiles
-        ? $"{InstalledProfileCount}/{Legacy.Profiles.Count} installed | {LaunchReadyProfileCount} launch-ready | {BackupCoverageCount} recovery-ready | {DirectJavaReadyProfileCount} direct-Java | {FallbackLaunchProfileCount} fallback launch | {ModdedProfileCount} modded"
+        ? $"{InstalledProfileCount}/{Legacy.Profiles.Count} installed | {LaunchReadyProfileCount} launch-ready | {BackupCoverageCount} recovery-ready | {DirectJavaReadyProfileCount} direct-Java | {FallbackLaunchProfileCount} launch blocked | {ModdedProfileCount} modded"
         : "No server fleet posture is available until the first profile exists.";
 
     public string FleetRiskSummary => !HasProfiles
@@ -173,10 +173,10 @@ public sealed class DashboardWorkspaceViewModel : WorkspacePageViewModelBase
             : ProfilesMissingInstallCount > 0
                 ? $"{ProfilesMissingInstallCount} profile(s) still do not have a detected install footprint."
             : FallbackLaunchProfileCount > 0
-                ? $"{FallbackLaunchProfileCount} installed profile(s) are still falling back to the vendor batch launcher."
-            : LaunchReadyProfileCount < InstalledProfileCount
-                ? $"{InstalledProfileCount - LaunchReadyProfileCount} installed profile(s) still have partial config or cache footprints."
-                : "Backups and launch footprints look healthy across the current fleet.";
+                ? $"{FallbackLaunchProfileCount} installed profile(s) are currently launch blocked until direct Java extraction succeeds."
+                : LaunchReadyProfileCount < InstalledProfileCount
+                    ? $"{InstalledProfileCount - LaunchReadyProfileCount} installed profile(s) still have partial config or cache footprints."
+                    : "Backups and launch footprints look healthy across the current fleet.";
 
     public string FleetNextStepSummary => !HasProfiles
         ? "Create or import the first profile to start building a real server fleet."
@@ -185,10 +185,10 @@ public sealed class DashboardWorkspaceViewModel : WorkspacePageViewModelBase
             : ProfilesMissingInstallCount > 0
                 ? "Finish installing the remaining profiles so every branch has a real server footprint before deeper tuning."
             : FallbackLaunchProfileCount > 0
-                ? "Open Install & Update on the fallback profiles next so the launch path and maintenance posture can be tightened."
-            : ModdedProfileCount > 0
-                ? "Review the modded profiles next so Workshop, Mods, and Map order still match the local cache."
-                : "The fleet looks clean. The next useful move is tuning Sandbox or General settings on the profile you plan to launch next.";
+                ? "Open Install & Update on the blocked profiles next to resolve launch diagnostics and restore direct Java readiness."
+                : ModdedProfileCount > 0
+                    ? "Review the modded profiles next so Workshop, Mods, and Map order still match the local cache."
+                    : "The fleet looks clean. The next useful move is tuning Sandbox or General settings on the profile you plan to launch next.";
 
     public string FleetAccessHeadline => _fleetAccessPosture.AccessHeadline;
 

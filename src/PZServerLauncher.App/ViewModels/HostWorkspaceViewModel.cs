@@ -1,6 +1,7 @@
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Linq;
+using CommunityToolkit.Mvvm.Input;
 using PZServerLauncher.Contracts.Profiles;
 using PZServerLauncher.Core.Runtime;
 
@@ -8,7 +9,7 @@ namespace PZServerLauncher.App.ViewModels;
 
 public sealed class HostWorkspaceViewModel : WorkspacePageViewModelBase
 {
-    public HostWorkspaceViewModel(MainWindowViewModel legacy)
+    public HostWorkspaceViewModel(MainWindowViewModel legacy, Action openUsersWorkspace)
         : base(
             "Host",
             "Local host lifecycle controls, startup behavior, and high-level runtime status.",
@@ -18,6 +19,7 @@ public sealed class HostWorkspaceViewModel : WorkspacePageViewModelBase
         Legacy = legacy;
         Legacy.PropertyChanged += OnLegacyPropertyChanged;
         Legacy.Profiles.CollectionChanged += OnProfilesCollectionChanged;
+        OpenUsersWorkspaceCommand = new RelayCommand(openUsersWorkspace);
         foreach (var profile in Legacy.Profiles)
         {
             profile.PropertyChanged += OnProfilePropertyChanged;
@@ -25,6 +27,8 @@ public sealed class HostWorkspaceViewModel : WorkspacePageViewModelBase
     }
 
     public MainWindowViewModel Legacy { get; }
+
+    public IRelayCommand OpenUsersWorkspaceCommand { get; }
 
     public string HostStatusSummary => Legacy.HostSummary;
 
@@ -79,6 +83,8 @@ public sealed class HostWorkspaceViewModel : WorkspacePageViewModelBase
     public string HostRiskSummary => CurrentSummary.RiskHeadline;
 
     public string HostNextStepSummary => CurrentSummary.NextStepSummary;
+
+    public bool ShowOwnerSetupAction => Legacy.OwnerBootstrapRequired;
 
     public IReadOnlyList<ProjectZomboidOperatorChecklistItem> HostChecklist => CurrentSummary.Checklist;
 
@@ -168,6 +174,7 @@ public sealed class HostWorkspaceViewModel : WorkspacePageViewModelBase
         OnPropertyChanged(nameof(HostActionSummary));
         OnPropertyChanged(nameof(HostRiskSummary));
         OnPropertyChanged(nameof(HostNextStepSummary));
+        OnPropertyChanged(nameof(ShowOwnerSetupAction));
         OnPropertyChanged(nameof(HostChecklist));
         OnPropertyChanged(nameof(ManagedProfiles));
         OnPropertyChanged(nameof(HasManagedProfiles));

@@ -58,7 +58,7 @@ public sealed class ProjectZomboidInstallPostureSummaryBuilderTests : IDisposabl
     }
 
     [Fact]
-    public void Build_ReportsUnstableFallbackWhenLauncherTemplateCannotBeExtracted()
+    public void Build_ReportsUnstableLaunchBlockedWhenLauncherTemplateCannotBeExtracted()
     {
         var profile = CreateProfile("unstable-fallback", ProjectZomboidBranch.Unstable42);
 
@@ -80,10 +80,10 @@ public sealed class ProjectZomboidInstallPostureSummaryBuilderTests : IDisposabl
         Assert.Contains("Build 42 Unstable", summary.BranchChannelSummary);
         Assert.Contains("-beta unstable", summary.SteamCmdCommandSummary);
         Assert.Contains("-beta unstable validate", summary.SteamCmdScriptPreview);
-        Assert.Contains(ProjectZomboidDefaults.StableBatchFileName, summary.LaunchCommandPreview);
-        Assert.Contains("Vendor batch fallback is active", summary.LaunchReadinessSummary);
+        Assert.Contains("Launch blocked", summary.LaunchCommandPreview, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Launch blocked", summary.LaunchReadinessSummary, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("No backup archive exists yet", summary.BackupSafetySummary);
-        Assert.Contains("vendor batch script", summary.DeploymentPostureSummary);
+        Assert.Contains("launch is blocked", summary.DeploymentPostureSummary, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Unstable 42", summary.BranchIsolationSummary);
     }
 
@@ -134,6 +134,26 @@ public sealed class ProjectZomboidInstallPostureSummaryBuilderTests : IDisposabl
         Assert.Contains("Maintenance window required", summary.MaintenanceWindowSummary);
         Assert.Contains("Announce maintenance", summary.OperatorSequenceSummary);
         Assert.Contains(summary.PreflightChecks, check => check.Contains("Runtime window: Running", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void Build_DoesNotTreatNestedLauncherAsConfiguredInstallRootLauncher()
+    {
+        var profile = CreateProfile("nested-launcher", ProjectZomboidBranch.Stable41);
+        var nestedInstallDirectory = Path.Combine(profile.InstallDirectory, "Project Zomboid Dedicated Server");
+
+        Directory.CreateDirectory(nestedInstallDirectory);
+        File.WriteAllText(
+            Path.Combine(nestedInstallDirectory, ProjectZomboidDefaults.StableBatchFileName),
+            """
+            @echo off
+            echo launcher exists but no java template can be extracted
+            """);
+
+        var summary = ProjectZomboidInstallPostureSummaryBuilder.Build(profile, "Stopped", hasBackup: false, latestBackup: "No backups");
+
+        Assert.False(summary.LauncherDetected);
+        Assert.EndsWith(ProjectZomboidDefaults.StableBatchFileName, summary.ExpectedLauncherPath, StringComparison.OrdinalIgnoreCase);
     }
 
     private ServerProfile CreateProfile(string id, ProjectZomboidBranch branch) =>

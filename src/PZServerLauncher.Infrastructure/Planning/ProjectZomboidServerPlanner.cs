@@ -43,20 +43,35 @@ public sealed class ProjectZomboidServerPlanner : IProjectZomboidServerPlanner
         var launcherFileName = profile.UseSteam
             ? ProjectZomboidDefaults.StableBatchFileName
             : ProjectZomboidDefaults.NonSteamBatchFileName;
-        var batchLauncherPath = Path.Combine(profile.InstallDirectory, launcherFileName);
-        var managedArguments = BuildManagedServerArguments(profile);
+        var launcherProbe = ResolveLauncherScript(profile.InstallDirectory, launcherFileName);
+        var batchLauncherPath = launcherProbe.LauncherPath;
+        var effectiveUdpPort = ResolveEffectiveUdpPort(profile.DefaultPort, profile.UdpPort);
+        var managedArguments = BuildManagedServerArguments(profile, effectiveUdpPort);
 
-        if (TryCreateDirectJavaPlan(profile, batchLauncherPath, managedArguments, out var directJavaPlan))
+        if (launcherProbe.Found &&
+            TryCreateDirectJavaPlan(profile, batchLauncherPath, launcherProbe.EffectiveInstallDirectory, managedArguments, out var directJavaPlan))
         {
+            if (effectiveUdpPort != profile.UdpPort)
+            {
+                directJavaPlan = directJavaPlan with
+                {
+                    Notes = $"{directJavaPlan.Notes} UDP port {profile.UdpPort} conflicts with game port {profile.DefaultPort}; launch is using {effectiveUdpPort} temporarily. Save General settings to persist a dedicated UDP port.",
+                };
+            }
+
             return directJavaPlan;
         }
 
+        var missingLauncherReason = launcherProbe.Found
+            ? $"Could not extract a safe Java launch template from {launcherFileName} under '{launcherProbe.EffectiveInstallDirectory}'."
+            : $"{launcherFileName} is missing from the install root '{profile.InstallDirectory}'.";
+
         return new ServerLaunchPlan(
-            WorkingDirectory: profile.InstallDirectory,
-            LauncherPath: batchLauncherPath,
-            Arguments: managedArguments,
-            Notes: $"Could not extract the Java launch template from {launcherFileName}. Falling back to the official batch launcher with vendor-managed memory settings.",
-            Strategy: ServerLaunchStrategy.VendorBatchFallback);
+            WorkingDirectory: launcherProbe.EffectiveInstallDirectory,
+            LauncherPath: string.Empty,
+            Arguments: [],
+            Notes: $"Launch blocked. {missingLauncherReason} Install or update the branch and review the Install & Update workspace diagnostics before starting.",
+            Strategy: ServerLaunchStrategy.LaunchBlocked);
     }
 
     public ServerPaths ResolvePaths(ServerProfile profile)
@@ -95,7 +110,7 @@ public sealed class ProjectZomboidServerPlanner : IProjectZomboidServerPlanner
     private static string QuoteForSteamCmd(string value) =>
         value.Contains(' ', StringComparison.Ordinal) ? $"\"{value}\"" : value;
 
-    private static List<string> BuildManagedServerArguments(ServerProfile profile)
+    private static List<string> BuildManagedServerArguments(ServerProfile profile, int effectiveUdpPort)
     {
         var arguments = new List<string>
         {
@@ -105,7 +120,7 @@ public sealed class ProjectZomboidServerPlanner : IProjectZomboidServerPlanner
             "-port",
             profile.DefaultPort.ToString(CultureInfo.InvariantCulture),
             "-udpport",
-            profile.UdpPort.ToString(CultureInfo.InvariantCulture),
+            effectiveUdpPort.ToString(CultureInfo.InvariantCulture),
         };
 
         if (!string.IsNullOrWhiteSpace(profile.AdminUsername))
@@ -129,9 +144,20 @@ public sealed class ProjectZomboidServerPlanner : IProjectZomboidServerPlanner
         return arguments;
     }
 
+    private static int ResolveEffectiveUdpPort(int defaultPort, int udpPort)
+    {
+        if (defaultPort != udpPort)
+        {
+            return udpPort;
+        }
+
+        return defaultPort < 65535 ? defaultPort + 1 : 65534;
+    }
+
     private static bool TryCreateDirectJavaPlan(
         ServerProfile profile,
         string batchLauncherPath,
+        string installDirectory,
         IReadOnlyList<string> managedArguments,
         out ServerLaunchPlan plan)
     {
@@ -143,7 +169,7 @@ public sealed class ProjectZomboidServerPlanner : IProjectZomboidServerPlanner
         }
 
         var batchContent = File.ReadAllText(batchLauncherPath);
-        if (!TryExtractJavaTemplate(batchContent, profile.InstallDirectory, out var template))
+        if (!TryExtractJavaTemplate(batchContent, installDirectory, out var template))
         {
             return false;
         }
@@ -160,13 +186,21 @@ public sealed class ProjectZomboidServerPlanner : IProjectZomboidServerPlanner
         arguments.AddRange(managedArguments);
 
         plan = new ServerLaunchPlan(
-            WorkingDirectory: profile.InstallDirectory,
+            WorkingDirectory: installDirectory,
             LauncherPath: template.JavaExecutablePath,
             Arguments: arguments,
             Notes: $"Using the installed {Path.GetFileName(batchLauncherPath)} template with launcher-managed memory set to {profile.PreferredMemoryInGigabytes} GB.",
             Strategy: ServerLaunchStrategy.DirectJavaTemplate);
 
         return true;
+    }
+
+    internal static LauncherScriptProbe ResolveLauncherScript(string configuredInstallDirectory, string launcherFileName)
+    {
+        var launcherPath = Path.Combine(configuredInstallDirectory, launcherFileName);
+        return File.Exists(launcherPath)
+            ? new LauncherScriptProbe(true, launcherPath, configuredInstallDirectory, [configuredInstallDirectory])
+            : new LauncherScriptProbe(false, string.Empty, configuredInstallDirectory, [configuredInstallDirectory]);
     }
 
     private static bool TryExtractJavaTemplate(string batchContent, string installDirectory, out JavaLaunchTemplate template)
@@ -476,4 +510,10 @@ public sealed class ProjectZomboidServerPlanner : IProjectZomboidServerPlanner
         IReadOnlyList<string> JvmArguments,
         string MainClass,
         IReadOnlyList<string> ServerArguments);
+
+    internal sealed record LauncherScriptProbe(
+        bool Found,
+        string LauncherPath,
+        string EffectiveInstallDirectory,
+        IReadOnlyList<string> CheckedRoots);
 }

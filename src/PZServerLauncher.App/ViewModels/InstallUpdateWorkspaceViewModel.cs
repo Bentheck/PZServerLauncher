@@ -119,7 +119,7 @@ public sealed partial class InstallUpdateWorkspaceViewModel : ProfileWorkspacePa
         : SelectedProfile.UsesDirectJavaTemplate
             ? "Direct Java"
             : SelectedProfile.LauncherDetected
-                ? "Batch fallback"
+                ? "Launch blocked"
                 : "Launcher missing";
 
     public string LaunchModeSummary => SelectedProfile is null
@@ -127,7 +127,7 @@ public sealed partial class InstallUpdateWorkspaceViewModel : ProfileWorkspacePa
         : SelectedProfile.UsesDirectJavaTemplate
             ? "The host can launch through extracted JVM arguments and keep memory management under launcher control."
             : SelectedProfile.LauncherDetected
-                ? "The host has a launcher, but template extraction is not safe yet, so it will fall back to the vendor batch flow."
+                ? "The host has a launcher, but template extraction is not safe yet, so launch is currently blocked."
                 : "No launcher entrypoint was detected in the install footprint yet.";
 
     public string ConfigStateHeadline => SelectedProfile is null
@@ -256,7 +256,7 @@ public sealed partial class InstallUpdateWorkspaceViewModel : ProfileWorkspacePa
             ? "Blocked"
             : SelectedProfile.UsesDirectJavaTemplate
                 ? "Direct Java"
-                : "Batch fallback";
+                : "Launch blocked";
 
     public string LaunchModeSignalSummary => LaunchReadiness;
 

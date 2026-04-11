@@ -52,7 +52,7 @@ else
                     <span class="pill">@_profile.Branch</span>
                         <span class="pill">@(_installDetected ? "Install detected" : "Install missing")</span>
                         <span class="pill">@(_cacheDetected ? "Cache ready" : "Cache missing")</span>
-                        <span class="pill">@(_installPosture?.UsesDirectJavaTemplate == true ? "Direct Java ready" : "Batch fallback")</span>
+                        <span class="pill">@(_installPosture?.UsesDirectJavaTemplate == true ? "Direct Java ready" : "Launch blocked")</span>
                         <span class="pill">Desktop install only</span>
                         <span class="pill">@RuntimeStateLabel</span>
                     </div>
@@ -73,7 +73,7 @@ else
                 </article>
                 <article class="metric-card">
                     <span class="metric-label">Launch Mode</span>
-                    <strong class="metric-value">@(_installPosture?.UsesDirectJavaTemplate == true ? "Direct Java" : "Fallback")</strong>
+                    <strong class="metric-value">@(_installPosture?.UsesDirectJavaTemplate == true ? "Direct Java" : "Launch blocked")</strong>
                     <span class="metric-note">@(_installPosture?.LaunchReadinessSummary ?? "No launch summary.")</span>
                 </article>
                 <article class="metric-card">
@@ -225,7 +225,7 @@ else
                         </div>
                     </div>
 
-                    <p class="muted-text">This preview reflects whether the host can launch via direct Java template extraction or has to fall back to the vendor batch file.</p>
+                    <p class="muted-text">This preview reflects whether the host can launch through direct Java extraction or is currently launch blocked.</p>
                     <pre class="raw-editor">@(_installPosture?.LaunchCommandPreview ?? "No launch command preview available.")</pre>
                 </section>
             </div>
@@ -423,7 +423,7 @@ else
             ? "Blocked"
             : _installPosture.UsesDirectJavaTemplate
                 ? "Direct Java"
-                : "Batch fallback";
+                : "Launch blocked";
 
     private string MaintenanceSignalLabel => _profile is null
         ? "No profile"

@@ -148,7 +148,7 @@ public partial class ProfileCardViewModel : ViewModelBase
     public string LaunchModeLabel => UsesDirectJavaTemplate
         ? "Direct Java"
         : LauncherDetected
-            ? "Batch fallback"
+            ? "Launch blocked"
             : "Launcher missing";
 
     public string RecoveryStateHeadline => HasBackup ? "Recovery ready" : "No backup";

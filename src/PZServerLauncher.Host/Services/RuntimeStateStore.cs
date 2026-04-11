@@ -3,7 +3,9 @@ using PZServerLauncher.Core.Runtime;
 
 namespace PZServerLauncher.Host.Services;
 
-public sealed class RuntimeStateStore(ProjectZomboidLiveOperationsInterpreter liveOperationsInterpreter)
+public sealed class RuntimeStateStore(
+    ProjectZomboidLiveOperationsInterpreter liveOperationsInterpreter,
+    IRuntimeLogSink? runtimeLogSink = null)
 {
     private readonly ConcurrentDictionary<string, ServerRuntimeStatus> _statuses = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, ConcurrentQueue<string>> _logs = new(StringComparer.OrdinalIgnoreCase);
@@ -28,6 +30,8 @@ public sealed class RuntimeStateStore(ProjectZomboidLiveOperationsInterpreter li
 
     public ProfileLiveOperationsSnapshot? AppendLog(string profileId, string line)
     {
+        runtimeLogSink?.WriteProfileLine(profileId, line);
+
         var queue = _logs.GetOrAdd(profileId, _ => new ConcurrentQueue<string>());
         queue.Enqueue(line);
 

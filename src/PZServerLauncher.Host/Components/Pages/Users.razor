@@ -39,6 +39,14 @@
         </section>
     }
 
+    @if (!_ownerBootstrapConfigured)
+    {
+        <section class="card status-card">
+            <strong>Desktop action required</strong>
+            <p>Owner bootstrap is desktop-only. Open the desktop launcher and use Users > Create Owner Account.</p>
+        </section>
+    }
+
     <section class="metric-grid metric-grid--host">
         <article class="metric-card">
             <span class="metric-label">Users</span>

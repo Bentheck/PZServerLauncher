@@ -53,4 +53,33 @@ public sealed class RuntimeStateStoreTests
         Assert.Equal("Broadcast sent: Restart in five", status.LastOperatorCommandSummary);
         Assert.Equal("Broadcast", snapshot.RecentOperatorActions[0].Kind);
     }
+
+    [Fact]
+    public void AppendLog_PreservesRecentBufferWhileWritingToSink()
+    {
+        var sink = new InMemoryRuntimeLogSink();
+        var store = new RuntimeStateStore(new ProjectZomboidLiveOperationsInterpreter(), sink);
+
+        for (var index = 1; index <= 260; index++)
+        {
+            store.AppendLog("alpha", $"line {index}");
+        }
+
+        var recent = store.GetRecentLogs("alpha");
+
+        Assert.Equal(260, sink.LineCount);
+        Assert.Equal(250, recent.Count);
+        Assert.Equal("line 11", recent[0]);
+        Assert.Equal("line 260", recent[^1]);
+    }
+
+    private sealed class InMemoryRuntimeLogSink : IRuntimeLogSink
+    {
+        public int LineCount { get; private set; }
+
+        public void WriteProfileLine(string profileId, string line)
+        {
+            LineCount++;
+        }
+    }
 }

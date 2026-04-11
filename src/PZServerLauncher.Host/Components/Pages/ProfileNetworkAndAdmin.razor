@@ -30,7 +30,6 @@ else
             <a class="nav-button secondary-button" href="@GeneralHref">General</a>
             <a class="nav-button secondary-button" href="@AdvancedFilesHref">Advanced Files</a>
             <button class="nav-button" @onclick="ValidateAsync" disabled="@(!_canEdit || _busy)">Validate</button>
-            <button class="nav-button secondary-button" @onclick="SaveDraftAsync" disabled="@(!_canEdit || _busy || !_pageSupportsDrafts)">Save Draft</button>
             <button class="nav-button secondary-button" @onclick="ApplyAsync" disabled="@(!_canEdit || _busy)">Apply Changes</button>
         </Actions>
         <ChildContent>
@@ -369,29 +368,6 @@ else
             _statusMessage = _pageValidation.IsValid
                 ? "Network and admin validation completed successfully."
                 : _pageValidation.FallbackReason ?? "Network and admin validation reported issues.";
-            RefreshPostureSummary();
-        }
-        finally
-        {
-            _busy = false;
-        }
-    }
-
-    private async Task SaveDraftAsync()
-    {
-        if (_profile is null || _page is null || !_canEdit || !_pageSupportsDrafts)
-        {
-            return;
-        }
-
-        _busy = true;
-        try
-        {
-            _pageValidation = StructuredSettingsService.Validate(_profile, "network-admin", _values);
-            _fieldErrors = new Dictionary<string, IReadOnlyList<string>>(_pageValidation.FieldErrors, StringComparer.Ordinal);
-            _statusMessage = _pageValidation.IsValid
-                ? "Network and admin draft saved locally."
-                : _pageValidation.FallbackReason ?? "Network and admin draft could not be saved.";
             RefreshPostureSummary();
         }
         finally

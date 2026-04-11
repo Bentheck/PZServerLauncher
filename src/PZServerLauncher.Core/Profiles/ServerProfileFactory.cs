@@ -12,7 +12,7 @@ public static class ServerProfileFactory
             CacheDirectory = @"D:\PZServers\Profiles\main-server",
             Branch = ProjectZomboidBranch.Unstable42,
             DefaultPort = 16261,
-            UdpPort = 16261,
+            UdpPort = 16262,
             RconPort = 27015,
             UseSteam = true,
             AdminUsername = "admin",

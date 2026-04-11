@@ -1,3 +1,5 @@
+using PZServerLauncher.Core.Runtime;
+
 namespace PZServerLauncher.Host.Infrastructure;
 
 public sealed class AppPaths
@@ -5,9 +7,7 @@ public sealed class AppPaths
     public AppPaths(string? rootDirectory = null)
     {
         RootDirectory = string.IsNullOrWhiteSpace(rootDirectory)
-            ? Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "PZServerLauncher")
+            ? LauncherStorageRootResolver.Resolve()
             : rootDirectory;
         DataDirectory = Path.Combine(RootDirectory, "data");
         StateDirectory = Path.Combine(RootDirectory, "state");

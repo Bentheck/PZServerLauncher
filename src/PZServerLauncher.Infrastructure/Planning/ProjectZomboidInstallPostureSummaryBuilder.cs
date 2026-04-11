@@ -11,13 +11,17 @@ public static class ProjectZomboidInstallPostureSummaryBuilder
 
         var planner = new ProjectZomboidServerPlanner();
         var paths = planner.ResolvePaths(profile);
-        var expectedLauncherPath = Path.Combine(
-            profile.InstallDirectory,
-            profile.UseSteam ? ProjectZomboidDefaults.StableBatchFileName : ProjectZomboidDefaults.NonSteamBatchFileName);
+        var expectedLauncherFileName = profile.UseSteam
+            ? ProjectZomboidDefaults.StableBatchFileName
+            : ProjectZomboidDefaults.NonSteamBatchFileName;
+        var launcherProbe = ProjectZomboidServerPlanner.ResolveLauncherScript(profile.InstallDirectory, expectedLauncherFileName);
+        var expectedLauncherPath = launcherProbe.Found
+            ? launcherProbe.LauncherPath
+            : Path.Combine(profile.InstallDirectory, expectedLauncherFileName);
 
         var installDetected = Directory.Exists(profile.InstallDirectory) || Directory.Exists(Path.Combine(profile.InstallDirectory, "server"));
         var cacheDetected = Directory.Exists(profile.CacheDirectory);
-        var launcherDetected = File.Exists(expectedLauncherPath);
+        var launcherDetected = launcherProbe.Found;
         var configDirectoryDetected = Directory.Exists(paths.ServerConfigDirectory);
         var iniDetected = File.Exists(paths.IniFilePath);
         var sandboxDetected = File.Exists(paths.SandboxVarsFilePath);
@@ -25,9 +29,12 @@ public static class ProjectZomboidInstallPostureSummaryBuilder
 
         var launchPlan = planner.CreateLaunchPlan(profile);
         var usesDirectJava = launchPlan.Strategy == ServerLaunchStrategy.DirectJavaTemplate;
+        var launchBlocked = launchPlan.IsLaunchBlocked;
         var installScript = planner.CreateInstallScript(profile);
         var steamCmdScriptPreview = planner.FormatSteamCmdScript(installScript);
-        var launchCommandPreview = planner.FormatLaunchCommand(launchPlan);
+        var launchCommandPreview = launchBlocked
+            ? launchPlan.Notes
+            : planner.FormatLaunchCommand(launchPlan);
 
         var branchChannelSummary = profile.Branch switch
         {
@@ -61,7 +68,7 @@ public static class ProjectZomboidInstallPostureSummaryBuilder
             ? "Launch readiness is blocked because the expected launcher script is missing."
             : usesDirectJava
                 ? $"Direct Java template is ready with launcher-managed memory set to {profile.PreferredMemoryInGigabytes} GB."
-                : "Vendor batch fallback is active. The server can still launch, but memory remains vendor-managed until the Java template can be extracted.";
+                : launchPlan.Notes;
 
         var runtimePolicySummary = $"{runtimeState} | start with host {(profile.StartWithHost ? "on" : "off")} | auto-restart {(profile.AutoRestartOnCrash ? "on" : "off")} | preferred memory {profile.PreferredMemoryInGigabytes} GB";
 
@@ -78,8 +85,8 @@ public static class ProjectZomboidInstallPostureSummaryBuilder
                     : !configDirectoryDetected || !iniDetected || !sandboxDetected
                         ? "Dedicated-server files are present, but the cache/config footprint is only partially initialized."
                         : usesDirectJava
-                            ? "Install, config, and launch template look ready for a clean update cycle."
-                            : "Install and config look ready, but launch will currently use vendor batch fallback.";
+                        ? "Install, config, and launch template look ready for a clean update cycle."
+                            : "Install and config are present, but launch is blocked until the direct Java template can be extracted safely.";
 
         var deploymentPostureSummary = !installDetected
             ? "This profile still needs its first dedicated-server install. SteamCMD will create the branch footprint, then the cache/config layer can be initialized on first launch."
@@ -87,7 +94,7 @@ public static class ProjectZomboidInstallPostureSummaryBuilder
                 ? "The branch footprint is present and the server is live. Treat update work as a maintenance operation so the runtime can stop cleanly and pre-update safety backup can complete."
                 : usesDirectJava
                     ? "The branch footprint, cache layer, and launcher-managed Java template are aligned for a predictable deployment cycle."
-                    : "The branch footprint is present, but launch still falls back to the vendor batch script. Deployment remains viable, but runtime tuning is less deterministic.";
+                    : "The branch footprint is present, but launch is blocked until the launcher can construct a safe direct Java command.";
 
         var maintenanceWindowSummary = string.Equals(runtimeState, "Running", StringComparison.OrdinalIgnoreCase)
             ? "Maintenance window required: stop or restart traffic before queueing update work so SteamCMD and the pre-update backup can run against a quiet server."
@@ -117,7 +124,7 @@ public static class ProjectZomboidInstallPostureSummaryBuilder
             $"World state: {(worldDetected ? "world save detected" : "world save not created yet")}",
             $"Backup posture: {(hasBackup ? $"latest backup {latestBackup}" : "no backup archive yet")}",
             $"Runtime window: {runtimeState}",
-            $"Launch mode: {(usesDirectJava ? "direct Java template" : "vendor batch fallback")}",
+            $"Launch mode: {(usesDirectJava ? "direct Java ready" : "launch blocked")}",
         };
 
         return new ProjectZomboidInstallPostureSummary(

@@ -22,7 +22,10 @@ public partial class MainWindowViewModel : ViewModelBase
     private bool _attemptedInitialImportDiscovery;
 
     public MainWindowViewModel()
-        : this(new LocalHostApiClient(), new RuntimeEventStream(new LocalHostApiClient()), new DesktopShellService())
+        : this(
+            new LocalHostApiClient(),
+            new RuntimeEventStream(new LocalHostApiClient()),
+            new DesktopShellService(new DesktopLogService()))
     {
     }
 
@@ -48,7 +51,7 @@ public partial class MainWindowViewModel : ViewModelBase
         RefreshCommand = new AsyncRelayCommand(RefreshAsync);
         CreateStarterProfileCommand = new AsyncRelayCommand(CreateStarterProfileAsync);
         DiscoverImportsCommand = new AsyncRelayCommand(DiscoverImportsAsync);
-        BootstrapOwnerCommand = new AsyncRelayCommand(BootstrapOwnerAsync);
+        BootstrapOwnerCommand = new AsyncRelayCommand(BootstrapOwnerAsync, () => CanBootstrapOwner);
         ImportCandidateCommand = new AsyncRelayCommand<ImportCandidateViewModel>(ImportCandidateAsync);
         InstallCommand = new AsyncRelayCommand<ProfileCardViewModel>(profile => RunProfileActionAsync(profile, _hostApiClient.InstallAsync, "Install"));
         UpdateCommand = new AsyncRelayCommand<ProfileCardViewModel>(profile => RunProfileActionAsync(profile, _hostApiClient.UpdateAsync, "Update"));
@@ -188,6 +191,10 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public IRelayCommand ExitDesktopCommand { get; }
 
+    public bool CanBootstrapOwner =>
+        !IsBusy &&
+        OwnerBootstrapRequired;
+
     public event EventHandler<WorkspaceNavigationRequest>? WorkspaceNavigationRequested;
 
     private async Task InitializeAsync()
@@ -314,8 +321,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private async Task BootstrapOwnerAsync()
     {
-        if (string.IsNullOrWhiteSpace(OwnerUserName) ||
-            string.IsNullOrWhiteSpace(OwnerPassword))
+        if (!CanBootstrapOwner)
         {
             StatusMessage = "Owner username and password are both required.";
             return;
@@ -328,6 +334,30 @@ public partial class MainWindowViewModel : ViewModelBase
             StatusMessage = result?.Message ?? "Owner account created.";
             await RefreshAsync();
         }, "Bootstrapping owner account...");
+    }
+
+    partial void OnOwnerUserNameChanged(string value)
+    {
+        OnPropertyChanged(nameof(CanBootstrapOwner));
+        BootstrapOwnerCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnOwnerPasswordChanged(string value)
+    {
+        OnPropertyChanged(nameof(CanBootstrapOwner));
+        BootstrapOwnerCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnIsBusyChanged(bool value)
+    {
+        OnPropertyChanged(nameof(CanBootstrapOwner));
+        BootstrapOwnerCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnOwnerBootstrapRequiredChanged(bool value)
+    {
+        OnPropertyChanged(nameof(CanBootstrapOwner));
+        BootstrapOwnerCommand.NotifyCanExecuteChanged();
     }
 
     private async Task ImportCandidateAsync(ImportCandidateViewModel? candidate)

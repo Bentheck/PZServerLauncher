@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.AspNetCore.DataProtection;
@@ -19,9 +20,7 @@ public sealed class LocalHostApiClient
 
     public LocalHostApiClient()
     {
-        _rootDirectory = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "PZServerLauncher");
+        _rootDirectory = LauncherStorageRootResolver.Resolve();
         _stateDirectory = Path.Combine(_rootDirectory, "state");
         _stateFilePath = Path.Combine(_stateDirectory, "host-state.json");
     }
@@ -81,7 +80,7 @@ public sealed class LocalHostApiClient
         string profileId,
         string pageId,
         CancellationToken cancellationToken = default) =>
-        GetAsync<SettingsDraftDto>($"/api/profiles/{profileId}/settings/draft/{pageId}", cancellationToken);
+        GetAsync<SettingsDraftDto>($"/api/profiles/{profileId}/settings/draft/{pageId}", cancellationToken, allowNotFound: true);
 
     public Task<SettingsDraftDto?> SaveSettingsDraftAsync(
         string profileId,
@@ -397,11 +396,18 @@ public sealed class LocalHostApiClient
         }
     }
 
-    private async Task<T?> GetAsync<T>(string path, CancellationToken cancellationToken)
+    private async Task<T?> GetAsync<T>(string path, CancellationToken cancellationToken, bool allowNotFound = false)
     {
         var state = await LoadStateAsync(cancellationToken);
         using var client = CreateHttpClient(state);
-        return await client.GetFromJsonAsync<T>(path, JsonOptions, cancellationToken);
+        using var response = await client.GetAsync(path, cancellationToken);
+        if (allowNotFound && response.StatusCode == HttpStatusCode.NotFound)
+        {
+            return default;
+        }
+
+        await EnsureSuccessAsync(response, cancellationToken);
+        return await response.Content.ReadFromJsonAsync<T>(JsonOptions, cancellationToken);
     }
 
     private async Task PostAsync(string path, object payload, CancellationToken cancellationToken)

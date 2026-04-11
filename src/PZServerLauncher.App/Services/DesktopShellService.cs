@@ -5,7 +5,7 @@ using Avalonia.Platform;
 
 namespace PZServerLauncher.App.Services;
 
-public sealed class DesktopShellService : IDisposable
+public sealed class DesktopShellService(DesktopLogService logService) : IDisposable
 {
     private IClassicDesktopStyleApplicationLifetime? _desktopLifetime;
     private Window? _mainWindow;
@@ -17,6 +17,7 @@ public sealed class DesktopShellService : IDisposable
         _desktopLifetime = desktopLifetime;
         _mainWindow = mainWindow;
         _mainWindow.Closing += OnMainWindowClosing;
+        logService.Info("Desktop shell initialized.");
 
         var menu = new NativeMenu();
         var openItem = new NativeMenuItem("Open Launcher");
@@ -44,6 +45,7 @@ public sealed class DesktopShellService : IDisposable
             return;
         }
 
+        logService.Info("Showing launcher window.");
         _mainWindow.Show();
         _mainWindow.WindowState = WindowState.Normal;
         _mainWindow.Activate();
@@ -57,6 +59,7 @@ public sealed class DesktopShellService : IDisposable
         }
 
         _allowExit = true;
+        logService.Info("Exit requested from desktop shell.");
         _mainWindow.Close();
         _desktopLifetime.Shutdown();
     }
@@ -69,6 +72,7 @@ public sealed class DesktopShellService : IDisposable
         }
 
         _trayIcon?.Dispose();
+        logService.Info("Desktop shell disposed.");
     }
 
     private void OnMainWindowClosing(object? sender, WindowClosingEventArgs e)
@@ -80,6 +84,7 @@ public sealed class DesktopShellService : IDisposable
 
         e.Cancel = true;
         _mainWindow?.Hide();
+        logService.Info("Launcher window hidden to tray.");
     }
 
     private static WindowIcon LoadWindowIcon()

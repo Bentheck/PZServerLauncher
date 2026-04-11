@@ -3,7 +3,7 @@ namespace PZServerLauncher.Core.Planning;
 public enum ServerLaunchStrategy
 {
     DirectJavaTemplate,
-    VendorBatchFallback,
+    LaunchBlocked,
 }
 
 public sealed record ServerLaunchPlan(
@@ -13,5 +13,7 @@ public sealed record ServerLaunchPlan(
     string Notes,
     ServerLaunchStrategy Strategy)
 {
-    public bool UsesVendorBatch => Strategy == ServerLaunchStrategy.VendorBatchFallback;
+    public bool IsLaunchable => Strategy == ServerLaunchStrategy.DirectJavaTemplate;
+
+    public bool IsLaunchBlocked => Strategy == ServerLaunchStrategy.LaunchBlocked;
 }

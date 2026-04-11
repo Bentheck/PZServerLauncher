@@ -2,6 +2,7 @@
 @attribute [Authorize(Roles="Owner,Admin")]
 @inject ProfileStore ProfileStore
 @inject StructuredSettingsService StructuredSettingsService
+@inject SettingsDraftStore SettingsDraftStore
 @inject RuntimeStateStore RuntimeStateStore
 
 <PageTitle>Sandbox</PageTitle>
@@ -30,6 +31,7 @@ else
             <a class="nav-button secondary-button" href="@AdvancedFilesHref">Advanced Files</a>
             <button class="nav-button" @onclick="ValidateAsync" disabled="@(!_canEdit || _busy)">Validate</button>
             <button class="nav-button secondary-button" @onclick="SaveDraftAsync" disabled="@(!_canEdit || _busy || !_pageSupportsDrafts)">Save Workspace Draft</button>
+            <button class="nav-button secondary-button" @onclick="DiscardDraftAsync" disabled="@(!_canEdit || _busy || !_pageSupportsDrafts)">Discard Draft</button>
             <button class="nav-button secondary-button" @onclick="ApplyAsync" disabled="@(!_canEdit || _busy)">Apply To File</button>
         </Actions>
         <ChildContent>
@@ -330,6 +332,7 @@ else
         _fieldErrors = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
         _installDetected = Directory.Exists(_profile.InstallDirectory);
         _cacheDetected = Directory.Exists(_profile.CacheDirectory);
+        _statusMessage = null;
 
         _catalogSummary = _catalog is null ? null : $"{_catalog.CatalogId} v{_catalog.CatalogVersion} | {_catalog.Branch}";
         _pageSupportsDrafts = _page?.SupportsDrafts == true;
@@ -345,9 +348,14 @@ else
         _sourceSha256 = _valueSet.SourceSha256;
         _values = new Dictionary<string, string?>(_valueSet.Values, StringComparer.Ordinal);
 
-        _statusMessage = _valueSet.RequiresAdvancedFilesFallback
-            ? _valueSet.FallbackReason ?? "Structured sandbox editing is not available yet."
-            : "Sandbox settings loaded. Validate before applying, or save a workspace draft for a local checkpoint.";
+        await LoadDraftIfAvailableAsync();
+
+        if (string.IsNullOrWhiteSpace(_statusMessage))
+        {
+            _statusMessage = _valueSet.RequiresAdvancedFilesFallback
+                ? _valueSet.FallbackReason ?? "Structured sandbox editing is not available yet."
+                : "Sandbox settings loaded. Validate before applying, or save a workspace draft for a local checkpoint.";
+        }
     }
 
     private async Task ValidateAsync()
@@ -374,7 +382,7 @@ else
 
     private async Task SaveDraftAsync()
     {
-        if (_profile is null || _page is null || !_canEdit || !_pageSupportsDrafts)
+        if (_profile is null || _page is null || _catalog is null || !_canEdit || !_pageSupportsDrafts)
         {
             return;
         }
@@ -384,9 +392,57 @@ else
         {
             _pageValidation = StructuredSettingsService.Validate(_profile, "sandbox", _values);
             _fieldErrors = new Dictionary<string, IReadOnlyList<string>>(_pageValidation.FieldErrors, StringComparer.Ordinal);
+            await SettingsDraftStore.UpsertAsync(new SettingsDraftDto(
+                _profile.ProfileId,
+                _profile.Branch,
+                _catalog.CatalogId,
+                _catalog.CatalogVersion,
+                _page.PageId,
+                new Dictionary<string, string?>(_values, StringComparer.Ordinal),
+                _sourceSha256,
+                true,
+                DateTimeOffset.UtcNow));
             _statusMessage = _pageValidation.IsValid
                 ? "Sandbox draft saved locally."
-                : _pageValidation.FallbackReason ?? "Sandbox draft could not be saved.";
+                : _pageValidation.FallbackReason ?? "Sandbox draft saved with validation warnings.";
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task DiscardDraftAsync()
+    {
+        if (_profile is null || _page is null || _catalog is null || !_canEdit || !_pageSupportsDrafts)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            await SettingsDraftStore.DeleteAsync(
+                _profile.ProfileId,
+                _profile.Branch,
+                _catalog.CatalogId,
+                _catalog.CatalogVersion,
+                _page.PageId);
+
+            _valueSet = StructuredSettingsService.GetPage(_profile, "sandbox");
+            _sourceSha256 = _valueSet.SourceSha256;
+            _values = new Dictionary<string, string?>(_valueSet.Values, StringComparer.Ordinal);
+            _fieldErrors = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
+            _pageValidation = null;
+            _statusMessage = "Sandbox draft discarded.";
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
         }
         finally
         {
@@ -641,5 +697,27 @@ else
         }
 
         return string.Join(" | ", details);
+    }
+
+    private async Task LoadDraftIfAvailableAsync()
+    {
+        if (_profile is null || _page is null || _catalog is null || !_pageSupportsDrafts)
+        {
+            return;
+        }
+
+        var draft = await SettingsDraftStore.GetAsync(
+            _profile.ProfileId,
+            _profile.Branch,
+            _catalog.CatalogId,
+            _catalog.CatalogVersion,
+            _page.PageId);
+        if (draft is null)
+        {
+            return;
+        }
+
+        _values = new Dictionary<string, string?>(draft.Values, StringComparer.Ordinal);
+        _statusMessage = $"Loaded saved Sandbox draft from {draft.UpdatedAtUtc.ToLocalTime():g}.";
     }
 }
