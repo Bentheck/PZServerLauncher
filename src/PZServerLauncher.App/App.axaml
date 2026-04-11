@@ -135,6 +135,16 @@
             <Setter Property="Padding" Value="14" />
             <Setter Property="MinHeight" Value="140" />
         </Style>
+        <Style Selector="TextBox.console-stream">
+            <Setter Property="FontFamily" Value="Cascadia Code,Consolas,monospace" />
+            <Setter Property="Background" Value="#171310" />
+            <Setter Property="Foreground" Value="#E9DED2" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="IsReadOnly" Value="True" />
+            <Setter Property="AcceptsReturn" Value="True" />
+            <Setter Property="Padding" Value="14" />
+        </Style>
         <Style Selector="CheckBox">
             <Setter Property="Foreground" Value="#243238" />
             <Setter Property="FontSize" Value="13" />

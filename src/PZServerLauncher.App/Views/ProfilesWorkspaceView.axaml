@@ -11,13 +11,13 @@
              x:DataType="vm:ProfilesWorkspaceViewModel">
     <Grid ColumnDefinitions="360,*" ColumnSpacing="18">
         <Border Classes="surface-dark" Padding="18">
-            <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="16">
+            <Grid RowDefinitions="Auto,Auto,*" RowSpacing="16">
                 <StackPanel Spacing="6">
                     <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Servers" />
                     <TextBlock Classes="panel-title" FontSize="28" Foreground="#F7F0E7" Text="{Binding PageTitle}" />
                     <TextBlock Classes="body"
                                Foreground="#D3C8BA"
-                               Text="Pick a server on the left, then use the pages on the right to work through setup, settings, backups, and logs."
+                               Text="Pick a server, then jump straight into the page you need."
                                TextWrapping="Wrap" />
                 </StackPanel>
 
@@ -122,13 +122,6 @@
                     </StackPanel>
                 </Border>
 
-                <Border Grid.Row="3" Classes="command-card" Padding="16" IsVisible="{Binding HasProfiles}">
-                    <StackPanel Spacing="6">
-                        <TextBlock Classes="kicker" Foreground="#E5A26B" Text="{Binding ProfileCountSummary}" />
-                        <TextBlock Classes="body" Foreground="#F1E8DE" Text="{Binding SelectedProfileSummary}" TextWrapping="Wrap" />
-                        <TextBlock Classes="caption" Foreground="#CCB9A8" Text="{Binding SelectedLaunchSummary}" TextWrapping="Wrap" />
-                    </StackPanel>
-                </Border>
             </Grid>
         </Border>
 
@@ -137,11 +130,10 @@
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18">
                     <StackPanel Spacing="8">
                         <TextBlock Classes="kicker" Text="Selected Server" />
-                        <TextBlock Classes="panel-title" FontSize="30" Text="{Binding WorkspaceHeadline}" />
+                        <TextBlock Classes="panel-title" FontSize="28" Text="{Binding WorkspaceHeadline}" />
                         <TextBlock Classes="body"
-                                   FontSize="16"
                                    Foreground="#45382E"
-                                   Text="{Binding WorkspaceGuidance}"
+                                   Text="{Binding SelectedLaunchSummary}"
                                    TextWrapping="Wrap" />
                     </StackPanel>
 
@@ -175,16 +167,14 @@
                 </StackPanel>
             </Border>
 
-            <Grid Grid.Row="1" ColumnDefinitions="240,*" ColumnSpacing="16" IsVisible="{Binding HasSelectedProfile}">
+                <Grid Grid.Row="1" ColumnDefinitions="240,*" ColumnSpacing="16" IsVisible="{Binding HasSelectedProfile}">
                 <Grid RowDefinitions="Auto,Auto,*" RowSpacing="16">
                     <Border Classes="surface-soft" Padding="16">
                         <StackPanel Spacing="6">
                             <TextBlock Classes="kicker" Text="At a Glance" />
                             <TextBlock Classes="body" Text="{Binding SelectedProfilePathSummary}" TextWrapping="Wrap" />
-                            <TextBlock Classes="body" Text="{Binding SelectedCommunitySummary}" TextWrapping="Wrap" />
-                            <TextBlock Classes="body" Text="{Binding SelectedNetworkSummary}" TextWrapping="Wrap" />
-                            <TextBlock Classes="body" Text="{Binding SelectedWorldSummary}" TextWrapping="Wrap" />
-                            <TextBlock Classes="caption" Text="{Binding SelectedProfilePortsSummary}" />
+                            <TextBlock Classes="caption" Text="{Binding SelectedProfilePortsSummary}" TextWrapping="Wrap" />
+                            <TextBlock Classes="caption" Text="{Binding SelectedDeploymentSummary}" TextWrapping="Wrap" />
                             <TextBlock Classes="caption" Text="{Binding SelectedRecoverySummary}" TextWrapping="Wrap" />
                         </StackPanel>
                     </Border>
@@ -206,7 +196,7 @@
                             <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Sections" />
                             <TextBlock Classes="caption"
                                        Foreground="#CCB9A8"
-                                       Text="Jump between the selected server's main pages."
+                                       Text="Jump directly to the page that matches the task."
                                        TextWrapping="Wrap" />
 
                             <ItemsControl ItemsSource="{Binding SectionItems}">

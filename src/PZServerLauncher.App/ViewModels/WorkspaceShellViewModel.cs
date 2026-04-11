@@ -40,10 +40,14 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
         Dashboard = new DashboardWorkspaceViewModel(
             legacy,
             () => SelectGlobalPageByKey(WorkspacePageIds.Profiles),
+            () => SelectGlobalPageByKey(WorkspacePageIds.Consoles),
+            () => SelectGlobalPageByKey(WorkspacePageIds.Host),
+            () => SelectGlobalPageByKey(WorkspacePageIds.RemoteAccess),
             () => SelectGlobalPageByKey(WorkspacePageIds.Users));
         Host = new HostWorkspaceViewModel(
             legacy,
             () => SelectGlobalPageByKey(WorkspacePageIds.Users));
+        Consoles = new ConsolesWorkspaceViewModel(legacy, hostApiClient, runtimeEventStream);
         RemoteAccess = new RemoteAccessWorkspaceViewModel(legacy);
         Users = new UsersWorkspaceViewModel(legacy, hostApiClient);
         Profiles = new ProfilesWorkspaceViewModel(legacy, hostApiClient, runtimeEventStream, folderPickerService);
@@ -52,6 +56,7 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
         {
             [WorkspacePageIds.Dashboard] = Dashboard,
             [WorkspacePageIds.Profiles] = Profiles,
+            [WorkspacePageIds.Consoles] = Consoles,
             [WorkspacePageIds.Host] = Host,
             [WorkspacePageIds.RemoteAccess] = RemoteAccess,
             [WorkspacePageIds.Users] = Users,
@@ -61,6 +66,7 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
         [
             new WorkspaceNavigationItemViewModel(WorkspacePageIds.Dashboard, "Home", Dashboard.PageSummary),
             new WorkspaceNavigationItemViewModel(WorkspacePageIds.Profiles, "Servers", Profiles.PageSummary),
+            new WorkspaceNavigationItemViewModel(WorkspacePageIds.Consoles, "Consoles", Consoles.PageSummary),
             new WorkspaceNavigationItemViewModel(WorkspacePageIds.Host, "App", Host.PageSummary),
             new WorkspaceNavigationItemViewModel(WorkspacePageIds.RemoteAccess, "Web Access", RemoteAccess.PageSummary),
             new WorkspaceNavigationItemViewModel(WorkspacePageIds.Users, "Users", Users.PageSummary),
@@ -96,6 +102,7 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
     public string WorkspaceGuidance => CurrentPage switch
     {
         ProfilesWorkspaceViewModel => "Choose a server, then walk through install, settings, mods, backups, and logs without leaving the same area.",
+        ConsolesWorkspaceViewModel => "Pin the live servers you care about, keep up to four consoles open at once, and swap them from the roster without drilling through profile pages.",
         DashboardWorkspaceViewModel => "Start here to create a new server, import an existing one, or jump back into the last thing you were doing.",
         HostWorkspaceViewModel => "App settings live here so startup, background host behavior, and machine-wide controls stay in one place.",
         RemoteAccessWorkspaceViewModel => "Web access is optional. Turn it on only when you want to use this machine from a browser.",
@@ -118,6 +125,8 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
     public DashboardWorkspaceViewModel Dashboard { get; }
 
     public ProfilesWorkspaceViewModel Profiles { get; }
+
+    public ConsolesWorkspaceViewModel Consoles { get; }
 
     public HostWorkspaceViewModel Host { get; }
 

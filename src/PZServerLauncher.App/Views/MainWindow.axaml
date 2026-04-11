@@ -4,76 +4,80 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        d:DesignWidth="1440"
-        d:DesignHeight="960"
+        d:DesignWidth="1920"
+        d:DesignHeight="1080"
         x:Class="PZServerLauncher.App.Views.MainWindow"
         x:Name="RootWindow"
         x:DataType="vm:WorkspaceShellViewModel"
         Icon="/Assets/avalonia-logo.ico"
         Title="PZ Server Launcher"
-        Width="1440"
-        Height="960"
-        MinWidth="1180"
-        MinHeight="780">
+        Width="1680"
+        Height="1000"
+        MinWidth="1280"
+        MinHeight="820">
 
     <Design.DataContext>
         <vm:WorkspaceShellViewModel />
     </Design.DataContext>
 
-    <Grid RowDefinitions="Auto,Auto,*" ColumnDefinitions="280,*" RowSpacing="14" ColumnSpacing="16" Margin="20">
+    <Grid RowDefinitions="Auto,Auto,*" ColumnDefinitions="260,*" RowSpacing="14" ColumnSpacing="16" Margin="18">
         <Border Grid.ColumnSpan="2"
                 Classes="card"
-                Padding="20">
-            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
-                <StackPanel Spacing="6">
-                    <TextBlock Classes="kicker" Text="Project Zomboid Server Manager" />
-                    <TextBlock FontSize="34"
-                               FontWeight="Bold"
-                               Foreground="#172024"
-                               Text="Create, configure, and run local servers" />
-                    <TextBlock Classes="body"
-                               FontSize="16"
-                               Foreground="#455154"
-                               Text="{Binding WorkspaceGuidance}"
-                               TextWrapping="Wrap" />
-                    <TextBlock Classes="caption"
-                               Foreground="#6A7477"
-                               Text="{Binding RemotePostureSummary}"
-                               TextWrapping="Wrap" />
-                    <WrapPanel Margin="0,6,0,0" Orientation="Horizontal">
-                        <Border Classes="pill-dark" Margin="0,0,8,8">
-                            <TextBlock Classes="pill-text-light" Text="{Binding ProfileCountSummary}" />
-                        </Border>
-                        <Border Classes="pill-soft-green" Margin="0,0,8,8">
-                            <TextBlock Classes="pill-text-green" Text="{Binding RecentActivitySummary}" />
-                        </Border>
-                    </WrapPanel>
-                </StackPanel>
+                Padding="18">
+            <Grid RowDefinitions="Auto,Auto" RowSpacing="12">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="20">
+                    <StackPanel Spacing="4">
+                        <TextBlock Classes="kicker" Text="Workspace" />
+                        <TextBlock FontSize="30"
+                                   FontWeight="Bold"
+                                   Foreground="#172024"
+                                   Text="{Binding CurrentPageTitle}" />
+                        <TextBlock Classes="caption"
+                                   FontSize="13"
+                                   Foreground="#6A7477"
+                                   Text="{Binding CurrentPageSummary}"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
 
-                <StackPanel Grid.Column="1"
-                            Width="280"
-                            Spacing="12"
-                            HorizontalAlignment="Right">
-                    <TextBlock Classes="kicker"
-                               HorizontalAlignment="Right"
-                               Text="Signed In As" />
-                    <TextBlock Classes="body"
-                               FontWeight="SemiBold"
-                               HorizontalAlignment="Right"
-                               TextAlignment="Right"
-                               Foreground="#1E2A2E"
-                               Text="{Binding ActorSummary}"
-                               TextWrapping="Wrap" />
+                    <StackPanel Grid.Column="1"
+                                Width="320"
+                                Spacing="8"
+                                HorizontalAlignment="Right">
+                        <TextBlock Classes="kicker"
+                                   HorizontalAlignment="Right"
+                                   Text="Signed In As" />
+                        <TextBlock Classes="body"
+                                   FontWeight="SemiBold"
+                                   HorizontalAlignment="Right"
+                                   TextAlignment="Right"
+                                   Foreground="#1E2A2E"
+                                   Text="{Binding ActorSummary}"
+                                   TextWrapping="Wrap" />
+                        <WrapPanel Orientation="Horizontal" HorizontalAlignment="Right" ItemHeight="38">
+                            <Button Classes="action-secondary"
+                                    Command="{Binding RefreshLegacyCommand}"
+                                    Content="Refresh" />
+                            <Button Classes="action-danger"
+                                    Command="{Binding ExitDesktopCommand}"
+                                    Content="Exit Desktop" />
+                        </WrapPanel>
+                    </StackPanel>
+                </Grid>
 
-                    <WrapPanel Orientation="Horizontal" HorizontalAlignment="Right" ItemHeight="38">
-                        <Button Classes="action-secondary"
-                                Command="{Binding RefreshLegacyCommand}"
-                                Content="Refresh" />
-                        <Button Classes="action-danger"
-                                Command="{Binding ExitDesktopCommand}"
-                                Content="Exit Desktop" />
-                    </WrapPanel>
-                </StackPanel>
+                <WrapPanel Grid.Row="1" Orientation="Horizontal">
+                    <Border Classes="pill-dark" Margin="0,0,8,8">
+                        <TextBlock Classes="pill-text-light" Text="{Binding ProfileCountSummary}" />
+                    </Border>
+                    <Border Classes="pill-soft-green" Margin="0,0,8,8">
+                        <TextBlock Classes="pill-text-green" Text="{Binding RecentActivitySummary}" />
+                    </Border>
+                    <Border Classes="pill-soft-neutral" Margin="0,0,8,8">
+                        <TextBlock Classes="pill-text-neutral" Text="{Binding RemotePostureSummary}" />
+                    </Border>
+                    <Border Classes="pill-soft-neutral" Margin="0,0,8,8">
+                        <TextBlock Classes="pill-text-neutral" Text="{Binding WorkspaceGuidance}" />
+                    </Border>
+                </WrapPanel>
             </Grid>
         </Border>
 
@@ -99,16 +103,13 @@
         <Border Grid.Row="2"
                 Classes="card"
                 Padding="14">
-            <Grid RowDefinitions="Auto,*" RowSpacing="14">
+            <Grid RowDefinitions="Auto,*" RowSpacing="12">
                 <StackPanel Spacing="4">
                     <TextBlock Classes="kicker" Text="Navigation" />
-                    <TextBlock Classes="panel-title" FontSize="24" Text="Workspaces" />
-                    <TextBlock Classes="caption"
-                               Text="Open the area you want, then stay focused on the current task."
-                               TextWrapping="Wrap" />
+                    <TextBlock Classes="panel-title" FontSize="22" Text="Workspaces" />
                 </StackPanel>
 
-                <StackPanel Grid.Row="1" Spacing="10">
+                <StackPanel Grid.Row="1" Spacing="8">
                     <ItemsControl ItemsSource="{Binding GlobalNavigation}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="vm:WorkspaceNavigationItemViewModel">
@@ -124,12 +125,12 @@
                                         <Border Background="#355B4C"
                                                 CornerRadius="16,0,0,16"
                                                 IsVisible="{Binding IsSelected}" />
-                                                <Border Grid.Column="1"
+                                        <Border Grid.Column="1"
                                                 Background="#F7F3EC"
                                                 BorderBrush="#D9D0C4"
                                                 BorderThickness="1"
                                                 CornerRadius="0,16,16,0"
-                                                Padding="14,10">
+                                                Padding="14,12">
                                             <StackPanel Spacing="3">
                                                 <TextBlock FontSize="16"
                                                            FontWeight="SemiBold"
@@ -146,7 +147,6 @@
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
-
                 </StackPanel>
             </Grid>
         </Border>

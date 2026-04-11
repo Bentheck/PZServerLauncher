@@ -4,25 +4,128 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d"
-             d:DesignWidth="1180"
+             d:DesignWidth="1400"
              d:DesignHeight="940"
              x:Class="PZServerLauncher.App.Views.DashboardWorkspaceView"
              x:Name="DashboardRoot"
              x:DataType="vm:DashboardWorkspaceViewModel">
     <ScrollViewer HorizontalScrollBarVisibility="Disabled">
         <StackPanel Spacing="18">
-            <Border Classes="card" Padding="28">
-                <Grid ColumnDefinitions="1.2*,.8*" ColumnSpacing="20">
-                    <StackPanel Spacing="10">
-                        <TextBlock Classes="kicker" Text="Dashboard" />
-                        <TextBlock Classes="panel-title" FontSize="34" Text="{Binding PageTitle}" />
-                        <TextBlock Classes="body"
-                                   FontSize="16"
-                                   Text="{Binding PageSummary}"
-                                   TextWrapping="Wrap" />
-                        <TextBlock Classes="caption"
-                                   Text="{Binding LaunchPadSummary}"
-                                   TextWrapping="Wrap" />
+            <Grid ColumnDefinitions="1.15*,.85*" ColumnSpacing="18">
+                <Border Classes="card" Padding="22">
+                    <StackPanel Spacing="14">
+                        <StackPanel Spacing="6">
+                            <TextBlock Classes="kicker" Text="Home" />
+                            <TextBlock Classes="panel-title" FontSize="30" Text="Workspaces" />
+                            <TextBlock Classes="body" Text="{Binding NextActionSummary}" TextWrapping="Wrap" />
+                        </StackPanel>
+
+                        <WrapPanel Orientation="Horizontal" ItemWidth="260" ItemHeight="112">
+                            <Button Width="250"
+                                    Margin="0,0,10,10"
+                                    Padding="0"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    Command="{Binding OpenProfilesWorkspaceCommand}">
+                                <Border Background="#FBF7F1"
+                                        BorderBrush="#DDD2C6"
+                                        BorderThickness="1"
+                                        CornerRadius="16"
+                                        Padding="16">
+                                    <StackPanel Spacing="6">
+                                        <TextBlock Classes="kicker" Text="Servers" />
+                                        <TextBlock Classes="panel-title" FontSize="20" Text="Open Server Workspaces" TextWrapping="Wrap" />
+                                        <TextBlock Classes="caption" Text="{Binding ServersWorkspaceSummary}" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </Border>
+                            </Button>
+
+                            <Button Width="250"
+                                    Margin="0,0,10,10"
+                                    Padding="0"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    Command="{Binding OpenConsolesWorkspaceCommand}">
+                                <Border Background="#FBF7F1"
+                                        BorderBrush="#DDD2C6"
+                                        BorderThickness="1"
+                                        CornerRadius="16"
+                                        Padding="16">
+                                    <StackPanel Spacing="6">
+                                        <TextBlock Classes="kicker" Text="Consoles" />
+                                        <TextBlock Classes="panel-title" FontSize="20" Text="Open The 4-Up Board" TextWrapping="Wrap" />
+                                        <TextBlock Classes="caption" Text="{Binding ConsolesWorkspaceSummary}" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </Border>
+                            </Button>
+
+                            <Button Width="250"
+                                    Margin="0,0,10,10"
+                                    Padding="0"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    Command="{Binding OpenHostWorkspaceCommand}">
+                                <Border Background="#FBF7F1"
+                                        BorderBrush="#DDD2C6"
+                                        BorderThickness="1"
+                                        CornerRadius="16"
+                                        Padding="16">
+                                    <StackPanel Spacing="6">
+                                        <TextBlock Classes="kicker" Text="App" />
+                                        <TextBlock Classes="panel-title" FontSize="20" Text="Host And Machine Controls" TextWrapping="Wrap" />
+                                        <TextBlock Classes="caption" Text="{Binding AppWorkspaceSummary}" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </Border>
+                            </Button>
+
+                            <Button Width="250"
+                                    Margin="0,0,10,10"
+                                    Padding="0"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    Command="{Binding OpenRemoteAccessWorkspaceCommand}">
+                                <Border Background="#FBF7F1"
+                                        BorderBrush="#DDD2C6"
+                                        BorderThickness="1"
+                                        CornerRadius="16"
+                                        Padding="16">
+                                    <StackPanel Spacing="6">
+                                        <TextBlock Classes="kicker" Text="Web Access" />
+                                        <TextBlock Classes="panel-title" FontSize="20" Text="Remote HTTPS Surface" TextWrapping="Wrap" />
+                                        <TextBlock Classes="caption" Text="{Binding WebAccessWorkspaceSummary}" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </Border>
+                            </Button>
+
+                            <Button Width="250"
+                                    Margin="0,0,10,10"
+                                    Padding="0"
+                                    Background="Transparent"
+                                    BorderThickness="0"
+                                    Command="{Binding OpenUsersWorkspaceCommand}">
+                                <Border Background="#FBF7F1"
+                                        BorderBrush="#DDD2C6"
+                                        BorderThickness="1"
+                                        CornerRadius="16"
+                                        Padding="16">
+                                    <StackPanel Spacing="6">
+                                        <TextBlock Classes="kicker" Text="Users" />
+                                        <TextBlock Classes="panel-title" FontSize="20" Text="Accounts And Owner Bootstrap" TextWrapping="Wrap" />
+                                        <TextBlock Classes="caption" Text="{Binding UsersWorkspaceSummary}" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </Border>
+                            </Button>
+                        </WrapPanel>
+                    </StackPanel>
+                </Border>
+
+                <Border Classes="card" Padding="22">
+                    <StackPanel Spacing="12">
+                        <StackPanel Spacing="6">
+                            <TextBlock Classes="kicker" Text="Quick Start" />
+                            <TextBlock Classes="panel-title" FontSize="28" Text="{Binding SetupModeHeadline}" TextWrapping="Wrap" />
+                            <TextBlock Classes="body" Text="{Binding SetupModeSummary}" TextWrapping="Wrap" />
+                        </StackPanel>
 
                         <WrapPanel Orientation="Horizontal" ItemHeight="38">
                             <Button Classes="action-primary"
@@ -35,85 +138,104 @@
                                     Margin="0,0,10,10" />
                             <Button Classes="action-secondary"
                                     Command="{Binding OpenProfilesWorkspaceCommand}"
-                                    Content="Open Profiles"
+                                    Content="Open Servers"
                                     Margin="0,0,10,10" />
                             <Button Classes="action-secondary"
-                                    Command="{Binding OpenUsersWorkspaceCommand}"
-                                    Content="Open Users"
-                                    IsVisible="{Binding ShowOwnerSetupAction}"
+                                    Command="{Binding OpenConsolesWorkspaceCommand}"
+                                    Content="Open Consoles"
                                     Margin="0,0,10,10" />
                         </WrapPanel>
-                    </StackPanel>
-
-                    <Border Grid.Column="1" Background="#F6EFE6" CornerRadius="18" Padding="18">
-                        <StackPanel Spacing="10">
-                            <TextBlock Classes="kicker" Text="Next Step" />
-                            <TextBlock Classes="panel-title" FontSize="22" Text="{Binding LaunchPadHeadline}" TextWrapping="Wrap" />
-                            <TextBlock Classes="body" Text="{Binding FirstRunActionPlan}" TextWrapping="Wrap" />
-                            <TextBlock Classes="caption" Text="{Binding LaunchPadActionHint}" TextWrapping="Wrap" />
-                        </StackPanel>
-                    </Border>
-                </Grid>
-            </Border>
-
-            <Grid ColumnDefinitions="1.1*,.9*" ColumnSpacing="18">
-                <Border Classes="card" Padding="22">
-                    <StackPanel Spacing="12">
-                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                            <StackPanel Spacing="4">
-                                <TextBlock Classes="kicker" Text="Getting Started" />
-                                <TextBlock Classes="panel-title" FontSize="24" Text="{Binding SetupModeHeadline}" TextWrapping="Wrap" />
-                                <TextBlock Classes="body" Text="{Binding SetupModeSummary}" TextWrapping="Wrap" />
-                            </StackPanel>
-                            <Border Grid.Column="1" Background="#EAD6BF" CornerRadius="999" Padding="10,6" VerticalAlignment="Top">
-                                <TextBlock Foreground="#5A4330" FontSize="11" Text="{Binding ProfileCount, StringFormat='Profiles: {0}'}" />
-                            </Border>
-                        </Grid>
-
-                        <StackPanel Spacing="10">
-                            <Border Background="#FBF7F1" CornerRadius="14" Padding="14">
-                                <StackPanel Spacing="4">
-                                    <TextBlock Classes="kicker" Text="Step 1" />
-                                    <TextBlock Classes="body" Text="{Binding LaunchPadStepOne}" TextWrapping="Wrap" />
-                                </StackPanel>
-                            </Border>
-                            <Border Background="#FBF7F1" CornerRadius="14" Padding="14">
-                                <StackPanel Spacing="4">
-                                    <TextBlock Classes="kicker" Text="Step 2" />
-                                    <TextBlock Classes="body" Text="{Binding LaunchPadStepTwo}" TextWrapping="Wrap" />
-                                </StackPanel>
-                            </Border>
-                            <Border Background="#FBF7F1" CornerRadius="14" Padding="14">
-                                <StackPanel Spacing="4">
-                                    <TextBlock Classes="kicker" Text="Step 3" />
-                                    <TextBlock Classes="body" Text="{Binding LaunchPadStepThree}" TextWrapping="Wrap" />
-                                </StackPanel>
-                            </Border>
-                        </StackPanel>
-                    </StackPanel>
-                </Border>
-
-                <Border Classes="card" Padding="22">
-                    <StackPanel Spacing="10">
-                        <TextBlock Classes="kicker" Text="Host Snapshot" />
-                        <TextBlock Classes="panel-title" FontSize="24" Text="{Binding HostStateSummary}" TextWrapping="Wrap" />
-                        <TextBlock Classes="body" Text="{Binding RemoteAccessSummary}" TextWrapping="Wrap" />
-                        <TextBlock Classes="body" Text="{Binding OwnerSummary}" TextWrapping="Wrap" />
-                        <TextBlock Classes="caption" Text="{Binding StatusSummary}" TextWrapping="Wrap" />
 
                         <Border Background="#F6EFE6" CornerRadius="14" Padding="14">
-                            <StackPanel Spacing="4">
-                                <TextBlock Classes="kicker" Text="Fleet Summary" />
-                                <TextBlock Classes="body" Text="{Binding FleetSummary}" TextWrapping="Wrap" />
-                                <TextBlock Classes="body" Text="{Binding FleetRiskSummary}" TextWrapping="Wrap" />
-                                <TextBlock Classes="body" Text="{Binding FleetNextStepSummary}" TextWrapping="Wrap" />
+                            <StackPanel Spacing="6">
+                                <TextBlock Classes="kicker" Text="Current Focus" />
+                                <TextBlock Classes="body" Text="{Binding LaunchPadSummary}" TextWrapping="Wrap" />
+                                <TextBlock Classes="caption" Text="{Binding LaunchPadActionHint}" TextWrapping="Wrap" />
                             </StackPanel>
                         </Border>
+
+                        <TextBlock Classes="caption" Text="{Binding StatusSummary}" TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
             </Grid>
 
-            <Grid ColumnDefinitions="*,*" ColumnSpacing="18" IsVisible="{Binding HasGuidedLaunchPad}">
+            <Grid ColumnDefinitions="1.05*,.95*" ColumnSpacing="18">
+                <Border Classes="card" Padding="22">
+                    <StackPanel Spacing="12">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                            <StackPanel Spacing="4">
+                                <TextBlock Classes="kicker" Text="Fleet Status" />
+                                <TextBlock Classes="panel-title" FontSize="24" Text="What needs attention next" />
+                                <TextBlock Classes="caption" Text="{Binding FleetRiskSummary}" TextWrapping="Wrap" />
+                            </StackPanel>
+                            <Border Grid.Column="1" Background="#2A2927" CornerRadius="999" Padding="10,6" VerticalAlignment="Top">
+                                <TextBlock Foreground="#F7F0E7" FontSize="11" Text="{Binding ProfileCount, StringFormat='Servers: {0}'}" />
+                            </Border>
+                        </Grid>
+
+                        <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="14">
+                            <Border Classes="metric-card" Padding="16">
+                                <StackPanel Spacing="6">
+                                    <TextBlock Classes="kicker" Text="Installed" />
+                                    <TextBlock Classes="panel-title" FontSize="24" Text="{Binding InstalledProfileCount}" />
+                                </StackPanel>
+                            </Border>
+                            <Border Grid.Column="1" Classes="metric-card" Padding="16">
+                                <StackPanel Spacing="6">
+                                    <TextBlock Classes="kicker" Text="Running" />
+                                    <TextBlock Classes="panel-title" FontSize="24" Text="{Binding RunningProfileCount}" />
+                                </StackPanel>
+                            </Border>
+                            <Border Grid.Column="2" Classes="metric-card" Padding="16">
+                                <StackPanel Spacing="6">
+                                    <TextBlock Classes="kicker" Text="Launch Ready" />
+                                    <TextBlock Classes="panel-title" FontSize="24" Text="{Binding LaunchReadyProfileCount}" />
+                                </StackPanel>
+                            </Border>
+                            <Border Grid.Column="3" Classes="metric-card" Padding="16">
+                                <StackPanel Spacing="6">
+                                    <TextBlock Classes="kicker" Text="Recovery Ready" />
+                                    <TextBlock Classes="panel-title" FontSize="24" Text="{Binding BackupCoverageCount}" />
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+
+                        <Border Background="#FBF7F1" CornerRadius="14" Padding="14">
+                            <StackPanel Spacing="6">
+                                <TextBlock Classes="kicker" Text="Next Action" />
+                                <TextBlock Classes="body" Text="{Binding FleetNextStepSummary}" TextWrapping="Wrap" />
+                                <TextBlock Classes="caption" Text="{Binding FleetSummary}" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <Border Classes="card" Padding="22">
+                    <StackPanel Spacing="12">
+                        <TextBlock Classes="kicker" Text="Host Snapshot" />
+                        <TextBlock Classes="panel-title" FontSize="24" Text="{Binding HostStateSummary}" TextWrapping="Wrap" />
+                        <TextBlock Classes="body" Text="{Binding RemoteAccessSummary}" TextWrapping="Wrap" />
+                        <TextBlock Classes="body" Text="{Binding OwnerSummary}" TextWrapping="Wrap" />
+
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                            <Border Background="#F6EFE6" CornerRadius="14" Padding="14">
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="kicker" Text="Console Access" />
+                                    <TextBlock Classes="body" Text="{Binding ConsolesWorkspaceSummary}" TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Border>
+                            <Border Grid.Column="1" Background="#F6EFE6" CornerRadius="14" Padding="14">
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="kicker" Text="Users" />
+                                    <TextBlock Classes="body" Text="{Binding UsersWorkspaceSummary}" TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="18">
                 <Border Classes="card" Padding="22">
                     <StackPanel Spacing="10">
                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
@@ -126,10 +248,6 @@
                                     Command="{Binding Legacy.DiscoverImportsCommand}"
                                     Content="Scan Again" />
                         </Grid>
-
-                        <TextBlock Classes="body"
-                                   Text="If this machine already hosts Project Zomboid, import it so the launcher adopts the existing files instead of rebuilding everything."
-                                   TextWrapping="Wrap" />
 
                         <ItemsControl ItemsSource="{Binding Legacy.ImportCandidates}" IsVisible="{Binding HasImportCandidates}">
                             <ItemsControl.ItemTemplate>
@@ -161,7 +279,7 @@
                                 Padding="14"
                                 IsVisible="{Binding HasNoImportCandidates}">
                             <TextBlock Classes="body"
-                                       Text="No local server candidates are loaded yet. Use the scan action to look through the standard Project Zomboid locations on this machine."
+                                       Text="No local server candidates are loaded yet. Run a scan when you want Home to surface existing Project Zomboid footprints on this machine."
                                        TextWrapping="Wrap" />
                         </Border>
                     </StackPanel>
@@ -169,23 +287,9 @@
 
                 <Border Classes="card" Padding="22">
                     <StackPanel Spacing="10">
-                        <TextBlock Classes="kicker" Text="Quick Actions" />
-                        <TextBlock Classes="panel-title" FontSize="24" Text="Open the next workspace" />
-                        <TextBlock Classes="body" Text="Use Profiles to choose a server, or jump straight to the first-run actions below." TextWrapping="Wrap" />
-
-                        <WrapPanel Orientation="Horizontal" ItemHeight="38">
-                            <Button Classes="action-primary" Command="{Binding OpenProfilesWorkspaceCommand}" Content="Open Profiles" Margin="0,0,10,10" />
-                            <Button Classes="action-secondary" Command="{Binding Legacy.RefreshCommand}" Content="Refresh Host" Margin="0,0,10,10" />
-                            <Button Classes="action-secondary" Command="{Binding Legacy.CreateStarterProfileCommand}" Content="Create Profile" Margin="0,0,10,10" />
-                        </WrapPanel>
-
-                        <Border Background="#F6EFE6" CornerRadius="14" Padding="14">
-                            <StackPanel Spacing="4">
-                                <TextBlock Classes="kicker" Text="Recent Jobs" />
-                                <TextBlock Classes="body" Text="{Binding RecentJobSummary}" TextWrapping="Wrap" />
-                                <TextBlock Classes="caption" Text="{Binding NextActionSummary}" TextWrapping="Wrap" />
-                            </StackPanel>
-                        </Border>
+                        <TextBlock Classes="kicker" Text="Recent Activity" />
+                        <TextBlock Classes="panel-title" FontSize="24" Text="{Binding RecentJobSummary}" TextWrapping="Wrap" />
+                        <TextBlock Classes="caption" Text="{Binding StatusSummary}" TextWrapping="Wrap" />
 
                         <ItemsControl ItemsSource="{Binding Legacy.RecentJobs}" IsVisible="{Binding HasRecentJobs}">
                             <ItemsControl.ItemTemplate>
@@ -205,54 +309,12 @@
                                 Padding="14"
                                 IsVisible="{Binding HasNoRecentJobs}">
                             <TextBlock Classes="body"
-                                       Text="No recent host jobs have been recorded yet. Install, update, start, or back up a server to populate this feed."
+                                       Text="No recent host jobs are recorded yet. Start, stop, install, update, back up, or import a server and the latest work will show up here."
                                        TextWrapping="Wrap" />
                         </Border>
                     </StackPanel>
                 </Border>
             </Grid>
-
-            <Border Classes="card" Padding="22">
-                <StackPanel Spacing="10">
-                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                        <StackPanel Spacing="4">
-                            <TextBlock Classes="kicker" Text="Managed Servers" />
-                            <TextBlock Classes="panel-title" FontSize="24" Text="Fleet Overview" />
-                            <TextBlock Classes="body" Text="Desktop and web converge on the same profile workspaces. Pick a profile above to jump straight into the next task." TextWrapping="Wrap" />
-                        </StackPanel>
-                        <Border Grid.Column="1" Background="#2A2927" CornerRadius="999" Padding="10,6" VerticalAlignment="Top">
-                            <TextBlock Foreground="#F7F0E7" FontSize="11" Text="{Binding ProfileCount}" />
-                        </Border>
-                    </Grid>
-
-                    <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="14">
-                        <Border Classes="metric-card" Padding="16">
-                            <StackPanel Spacing="6">
-                                <TextBlock Classes="kicker" Text="Installed" />
-                                <TextBlock Classes="panel-title" FontSize="24" Text="{Binding InstalledProfileCount}" />
-                            </StackPanel>
-                        </Border>
-                        <Border Grid.Column="1" Classes="metric-card" Padding="16">
-                            <StackPanel Spacing="6">
-                                <TextBlock Classes="kicker" Text="Launch Ready" />
-                                <TextBlock Classes="panel-title" FontSize="24" Text="{Binding LaunchReadyProfileCount}" />
-                            </StackPanel>
-                        </Border>
-                        <Border Grid.Column="2" Classes="metric-card" Padding="16">
-                            <StackPanel Spacing="6">
-                                <TextBlock Classes="kicker" Text="Recovery Ready" />
-                                <TextBlock Classes="panel-title" FontSize="24" Text="{Binding BackupCoverageCount}" />
-                            </StackPanel>
-                        </Border>
-                        <Border Grid.Column="3" Classes="metric-card" Padding="16">
-                            <StackPanel Spacing="6">
-                                <TextBlock Classes="kicker" Text="Modded" />
-                                <TextBlock Classes="panel-title" FontSize="24" Text="{Binding ModdedProfileCount}" />
-                            </StackPanel>
-                        </Border>
-                    </Grid>
-                </StackPanel>
-            </Border>
         </StackPanel>
     </ScrollViewer>
 </UserControl>

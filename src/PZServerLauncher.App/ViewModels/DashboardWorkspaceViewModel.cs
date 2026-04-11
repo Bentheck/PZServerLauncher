@@ -13,6 +13,9 @@ public sealed class DashboardWorkspaceViewModel : WorkspacePageViewModelBase
     public DashboardWorkspaceViewModel(
         MainWindowViewModel legacy,
         Action openProfilesWorkspace,
+        Action openConsolesWorkspace,
+        Action openHostWorkspace,
+        Action openRemoteAccessWorkspace,
         Action openUsersWorkspace)
         : base(
             "Dashboard",
@@ -32,6 +35,9 @@ public sealed class DashboardWorkspaceViewModel : WorkspacePageViewModelBase
         }
 
         OpenProfilesWorkspaceCommand = new RelayCommand(openProfilesWorkspace);
+        OpenConsolesWorkspaceCommand = new RelayCommand(openConsolesWorkspace);
+        OpenHostWorkspaceCommand = new RelayCommand(openHostWorkspace);
+        OpenRemoteAccessWorkspaceCommand = new RelayCommand(openRemoteAccessWorkspace);
         OpenUsersWorkspaceCommand = new RelayCommand(openUsersWorkspace);
         RefreshFleetAccessPosture();
     }
@@ -39,6 +45,12 @@ public sealed class DashboardWorkspaceViewModel : WorkspacePageViewModelBase
     public MainWindowViewModel Legacy { get; }
 
     public IRelayCommand OpenProfilesWorkspaceCommand { get; }
+
+    public IRelayCommand OpenConsolesWorkspaceCommand { get; }
+
+    public IRelayCommand OpenHostWorkspaceCommand { get; }
+
+    public IRelayCommand OpenRemoteAccessWorkspaceCommand { get; }
 
     public IRelayCommand OpenUsersWorkspaceCommand { get; }
 
@@ -79,6 +91,24 @@ public sealed class DashboardWorkspaceViewModel : WorkspacePageViewModelBase
     public string SetupPrimaryActionLabel => "New Managed Server";
 
     public string SetupSecondaryActionLabel => HasImportCandidates ? "Scan Again" : "Scan Local Servers";
+
+    public string ServersWorkspaceSummary => HasProfiles
+        ? "Pick a server and stay inside its setup, tuning, backup, and detailed log pages."
+        : "Create or import a server to unlock the full per-server workspace.";
+
+    public string ConsolesWorkspaceSummary => RunningProfileCount > 0
+        ? $"{RunningProfileCount} running server(s) can be pinned into the 4-up console board."
+        : "Pin up to four servers here so live runtime output is always one workspace away.";
+
+    public string AppWorkspaceSummary => "App-level startup behavior, local host controls, and machine-wide settings.";
+
+    public string WebAccessWorkspaceSummary => Legacy.RemoteAccessEnabled
+        ? "Remote access is currently enabled. Use this workspace to validate and tighten the HTTPS surface."
+        : "Remote access is optional. Turn it on only when you want browser-based control.";
+
+    public string UsersWorkspaceSummary => OwnerBootstrapPending
+        ? "Finish the owner bootstrap before treating browser-based admin as production-ready."
+        : "Manage the owner account and any browser users from one place.";
 
     public bool ShowOwnerSetupAction => OwnerBootstrapPending;
 
@@ -159,6 +189,8 @@ public sealed class DashboardWorkspaceViewModel : WorkspacePageViewModelBase
     public int DirectJavaReadyProfileCount => Legacy.Profiles.Count(profile => profile.UsesDirectJavaTemplate);
 
     public int FallbackLaunchProfileCount => Legacy.Profiles.Count(profile => profile.LauncherDetected && !profile.UsesDirectJavaTemplate);
+
+    public int RunningProfileCount => Legacy.Profiles.Count(profile => string.Equals(profile.RuntimeState, "Running", StringComparison.OrdinalIgnoreCase));
 
     public int LaunchReadyProfileCount => Legacy.Profiles.Count(profile => profile.IsInstallDetected && profile.ConfigDirectoryDetected && profile.IniDetected && profile.SandboxDetected);
 
@@ -282,6 +314,11 @@ public sealed class DashboardWorkspaceViewModel : WorkspacePageViewModelBase
         OnPropertyChanged(nameof(SetupModeSummary));
         OnPropertyChanged(nameof(SetupPrimaryActionLabel));
         OnPropertyChanged(nameof(SetupSecondaryActionLabel));
+        OnPropertyChanged(nameof(ServersWorkspaceSummary));
+        OnPropertyChanged(nameof(ConsolesWorkspaceSummary));
+        OnPropertyChanged(nameof(AppWorkspaceSummary));
+        OnPropertyChanged(nameof(WebAccessWorkspaceSummary));
+        OnPropertyChanged(nameof(UsersWorkspaceSummary));
         OnPropertyChanged(nameof(ShowOwnerSetupAction));
         OnPropertyChanged(nameof(ShowFleetMode));
         OnPropertyChanged(nameof(OwnerBootstrapPending));
@@ -304,6 +341,7 @@ public sealed class DashboardWorkspaceViewModel : WorkspacePageViewModelBase
         OnPropertyChanged(nameof(ProfilesMissingBackupCount));
         OnPropertyChanged(nameof(DirectJavaReadyProfileCount));
         OnPropertyChanged(nameof(FallbackLaunchProfileCount));
+        OnPropertyChanged(nameof(RunningProfileCount));
         OnPropertyChanged(nameof(LaunchReadyProfileCount));
         OnPropertyChanged(nameof(FleetSummary));
         OnPropertyChanged(nameof(FleetRiskSummary));
