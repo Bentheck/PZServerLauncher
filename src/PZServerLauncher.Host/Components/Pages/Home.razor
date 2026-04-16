@@ -142,14 +142,22 @@
                     <p>@(_settings.OwnerBootstrap.OwnerUserName ?? "Not set yet")</p>
                 </div>
 
+                @if (!_settings.OwnerBootstrap.IsConfigured)
+                {
+                    <div class="status-banner status-banner--warm">
+                        <strong>Desktop action required</strong>
+                        <p>Owner bootstrap is desktop-only right now. Open the desktop launcher and go to Users, then use Create Owner Account.</p>
+                    </div>
+                }
+
                 <div class="info-grid info-grid--compact">
                     <div class="info-item">
                         <span class="info-label">Privileged accounts</span>
                         <span class="info-value">@_users.Count(user => user.Roles.Any(role => role is PZServerLauncher.Core.Runtime.UserRole.Owner or PZServerLauncher.Core.Runtime.UserRole.Admin))</span>
                     </div>
                     <div class="info-item">
-                        <span class="info-label">2FA protected owners/admins</span>
-                        <span class="info-value">@_users.Count(user => user.TwoFactorEnabled && user.Roles.Any(role => role is PZServerLauncher.Core.Runtime.UserRole.Owner or PZServerLauncher.Core.Runtime.UserRole.Admin))</span>
+                        <span class="info-label">Owner bootstrap</span>
+                        <span class="info-value">@(_settings.OwnerBootstrap.IsConfigured ? "Complete" : "Pending")</span>
                     </div>
                 </div>
             </section>
@@ -181,7 +189,7 @@
             </div>
 
             <ol>
-                <li>Configure an authenticator app for your owner account under <a href="/Account/Manage/TwoFactorAuthentication">2FA</a>.</li>
+                <li>Finish owner bootstrap from the desktop launcher if it is still pending.</li>
                 <li>Open <a href="/remote">Remote Access</a> and add your HTTPS certificate details.</li>
                 <li>Create additional operators or viewers under <a href="/users">Users</a> if you want shared administration.</li>
             </ol>
@@ -285,7 +293,7 @@
             : ProfilesMissingInstallCount > 0
                 ? $"{ProfilesMissingInstallCount} profile(s) still need a detected install footprint."
                 : FallbackLaunchCount > 0
-                    ? $"{FallbackLaunchCount} installed profile(s) are still falling back to the vendor batch launcher."
+                    ? $"{FallbackLaunchCount} installed profile(s) are launch blocked until direct Java extraction succeeds."
                     : _fleetAccessSummary.PublicOpenWithoutSafetyCount > 0
                         ? $"{_fleetAccessSummary.PublicOpenWithoutSafetyCount} public/open profile(s) still need PvP safety coverage."
                         : "Install, recovery, and fleet access posture look healthy across the current server group.";

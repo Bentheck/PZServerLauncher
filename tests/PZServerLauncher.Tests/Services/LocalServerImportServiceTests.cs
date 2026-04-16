@@ -42,7 +42,8 @@ public sealed class LocalServerImportServiceTests : IDisposable
             new WorkshopPresetScannerService(),
             cacheRoot,
             installDirectory,
-            ProjectZomboidBranch.Unstable42);
+            ProjectZomboidBranch.Unstable42,
+            _tempRoot);
 
         var candidates = await service.DiscoverAsync();
         var candidate = Assert.Single(candidates);
@@ -85,7 +86,8 @@ public sealed class LocalServerImportServiceTests : IDisposable
             new WorkshopPresetScannerService(),
             cacheRoot,
             null,
-            ProjectZomboidBranch.Unstable42);
+            ProjectZomboidBranch.Unstable42,
+            _tempRoot);
 
         var candidates = await service.DiscoverAsync();
         var candidate = Assert.Single(candidates);
@@ -115,12 +117,48 @@ public sealed class LocalServerImportServiceTests : IDisposable
             new WorkshopPresetScannerService(),
             cacheRoot,
             null,
-            ProjectZomboidBranch.Stable41);
+            ProjectZomboidBranch.Unstable42,
+            _tempRoot);
 
         var candidates = await service.DiscoverAsync();
         var candidate = Assert.Single(candidates);
 
         Assert.Equal(["Muldraugh, KY"], candidate.WorkshopPreset.MapFolders);
+    }
+
+    [Fact]
+    public async Task ImportAsync_WhenUdpPortIsMissing_UsesDefaultPortPlusOne()
+    {
+        var cacheRoot = Path.Combine(_tempRoot, "Zomboid");
+        var serverDirectory = Path.Combine(cacheRoot, "Server");
+        Directory.CreateDirectory(serverDirectory);
+        File.WriteAllText(
+            Path.Combine(serverDirectory, "servertest.ini"),
+            """
+            DefaultPort=19000
+            RCONPort=29015
+            """);
+
+        var databasePath = Path.Combine(_tempRoot, "import-missing-udp-tests.db");
+        await using var dbContext = TestDatabaseFactory.Create(databasePath);
+        var profileStore = new ProfileStore(dbContext);
+        var service = new LocalServerImportService(
+            profileStore,
+            new WorkshopPresetScannerService(),
+            cacheRoot,
+            null,
+            ProjectZomboidBranch.Unstable42,
+            _tempRoot);
+
+        var candidate = Assert.Single(await service.DiscoverAsync());
+        var imported = await service.ImportAsync(candidate.CandidateId);
+
+        Assert.Equal(19000, imported.DefaultPort);
+        Assert.Equal(19001, imported.UdpPort);
+        Assert.Equal(29015, imported.RconPort);
+        Assert.Equal(
+            Path.Combine(_tempRoot, ServerProfileFactory.ManagedServersFolderName, ServerProfileFactory.InstallFolderName, "servertest"),
+            imported.InstallDirectory);
     }
 
     public void Dispose()

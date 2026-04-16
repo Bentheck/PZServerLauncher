@@ -172,6 +172,14 @@
                     <p>@(_settings.OwnerBootstrap.OwnerUserName ?? "Not set")</p>
                 </div>
 
+                @if (!_settings.OwnerBootstrap.IsConfigured)
+                {
+                    <div class="status-banner status-banner--warm">
+                        <strong>Desktop action required</strong>
+                        <p>Owner bootstrap is desktop-only. Open the desktop launcher and use Users > Create Owner Account.</p>
+                    </div>
+                }
+
                 <div class="info-grid info-grid--compact">
                     <div class="info-item">
                         <span class="info-label">Status</span>
@@ -203,6 +211,14 @@
                     <a class="nav-button secondary-button" href="/remote">Remote Access</a>
                     <a class="nav-button secondary-button" href="/users">Users</a>
                 </div>
+
+                @if (!_settings.OwnerBootstrap.IsConfigured)
+                {
+                    <div class="status-banner status-banner--warm">
+                        <strong>Bootstrap routing</strong>
+                        <p>This web host can show owner-bootstrap status, but the create/save action lives in the desktop Users workspace.</p>
+                    </div>
+                }
 
                 <div class="status-banner">
                     <strong>Recommended next step</strong>

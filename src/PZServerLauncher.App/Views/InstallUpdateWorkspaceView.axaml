@@ -9,12 +9,15 @@
              x:Class="PZServerLauncher.App.Views.InstallUpdateWorkspaceView"
              x:DataType="vm:InstallUpdateWorkspaceViewModel">
     <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-        <Grid RowDefinitions="Auto,Auto,Auto,*" RowSpacing="16">
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="16">
             <Border Classes="card" Padding="22">
-                <Grid ColumnDefinitions="*,300" ColumnSpacing="18">
+                <Grid ColumnDefinitions="*,260" ColumnSpacing="18">
                     <StackPanel Spacing="8">
                         <TextBlock Classes="kicker" Text="Install" />
-                        <TextBlock Classes="panel-title" FontSize="30" Text="{Binding ProfileDisplayName}" />
+                        <TextBlock Classes="panel-title"
+                                   FontSize="30"
+                                   Text="{Binding ProfileDisplayName}"
+                                   TextWrapping="Wrap" />
                         <TextBlock Classes="body"
                                    FontSize="16"
                                    Foreground="#465255"
@@ -56,7 +59,7 @@
                         <TextBlock Classes="kicker" Text="Step 1" />
                         <TextBlock Classes="panel-title" FontSize="22" Text="Choose where this server lives" />
                         <TextBlock Classes="caption"
-                                   Text="Pick a server install folder and a separate cache/config folder for this profile."
+                                   Text="By default the launcher creates PZServers\\Installs and PZServers\\Profiles inside its own install folder. Override either path only if you need a custom layout."
                                    TextWrapping="Wrap" />
 
                         <StackPanel Spacing="4">
@@ -69,7 +72,7 @@
                         </WrapPanel>
 
                         <StackPanel Spacing="4">
-                            <TextBlock Classes="body" Text="Cache and config folder" />
+                            <TextBlock Classes="body" Text="Profile data folder" />
                             <TextBox Text="{Binding EditableCacheDirectory}" />
                         </StackPanel>
                         <WrapPanel Orientation="Horizontal" ItemHeight="34">
@@ -107,12 +110,13 @@
                         </Grid>
 
                         <WrapPanel Orientation="Horizontal" ItemHeight="36">
-                            <Button Classes="action-primary" Command="{Binding InstallCommand}" Content="Install Server" />
-                            <Button Classes="action-secondary" Command="{Binding UpdateCommand}" Content="Update Server" />
+                            <Button Classes="action-primary" Command="{Binding InstallCommand}" Content="Install Server" IsEnabled="{Binding CanQueueInstall}" />
+                            <Button Classes="action-secondary" Command="{Binding UpdateCommand}" Content="Update Server" IsEnabled="{Binding CanQueueUpdate}" />
                             <Button Classes="action-secondary" Command="{Binding BackupCommand}" Content="Create Backup" />
                         </WrapPanel>
 
                         <TextBlock Classes="body" Text="{Binding BackupSafety}" TextWrapping="Wrap" />
+                        <TextBlock Classes="caption" Text="{Binding MaintenanceQueueSummary}" TextWrapping="Wrap" />
                         <TextBlock Classes="caption" Text="{Binding PreflightSummary}" TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
@@ -154,35 +158,7 @@
                 </Border>
             </Grid>
 
-            <Grid Grid.Row="2" ColumnDefinitions="1.1*,.9*" ColumnSpacing="16">
-                <Border Classes="surface-soft" Padding="18">
-                    <StackPanel Spacing="10">
-                        <TextBlock Classes="kicker" Text="Checks Before You Click Install" />
-                        <TextBlock Classes="panel-title" FontSize="22" Text="{Binding InstallPostureSummary}" TextWrapping="Wrap" />
-                        <ItemsControl ItemsSource="{Binding PreflightChecks}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Border Background="#FFFDFC" BorderBrush="#DCD1C4" BorderThickness="1" CornerRadius="12" Padding="10" Margin="0,0,0,8">
-                                        <TextBlock Classes="caption" Text="{Binding .}" TextWrapping="Wrap" />
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </StackPanel>
-                </Border>
-
-                <Border Grid.Column="1" Classes="surface-soft" Padding="18">
-                    <StackPanel Spacing="10">
-                        <TextBlock Classes="kicker" Text="Advanced Details" />
-                        <TextBlock Classes="body" Text="{Binding SteamCmdCommandSummary}" TextWrapping="Wrap" />
-                        <TextBlock Classes="caption" Text="{Binding ExpectedLauncherPath}" TextWrapping="Wrap" />
-                        <TextBlock Classes="caption" Text="{Binding ConfigFootprintSummary}" TextWrapping="Wrap" />
-                        <TextBlock Classes="caption" Text="{Binding BranchChannelSummary}" TextWrapping="Wrap" />
-                    </StackPanel>
-                </Border>
-            </Grid>
-
-            <Grid Grid.Row="3" ColumnDefinitions="*,*" ColumnSpacing="16">
+            <Grid Grid.Row="2" ColumnDefinitions="*,*" ColumnSpacing="16">
                 <Border Classes="card" Padding="18">
                     <StackPanel Spacing="8">
                         <TextBlock Classes="kicker" Text="Recent Install Jobs" />
@@ -225,6 +201,97 @@
                     </StackPanel>
                 </Border>
             </Grid>
+
+            <Border Grid.Row="3" Classes="card" Padding="18">
+                <StackPanel Spacing="14">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Danger Zone" />
+                        <TextBlock Classes="panel-title" FontSize="24" Text="Uninstall or delete this server" />
+                        <TextBlock Classes="body"
+                                   Foreground="#6A2C22"
+                                   Text="{Binding RetirementGuardrailSummary}"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
+
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
+                        <Border Background="#FBF1E8" BorderBrush="#D8B28D" BorderThickness="1" CornerRadius="16" Padding="16">
+                            <StackPanel Spacing="10">
+                                <TextBlock Classes="kicker" Text="Uninstall Server" />
+                                <TextBlock Classes="body" FontWeight="SemiBold" Text="Remove the dedicated-server files only" />
+                                <TextBlock Classes="caption" Text="{Binding UninstallServerSummary}" TextWrapping="Wrap" />
+
+                                <Button Classes="action-secondary"
+                                        Command="{Binding ArmUninstallServerCommand}"
+                                        Content="Uninstall Server"
+                                        IsEnabled="{Binding CanArmUninstallServer}"
+                                        IsVisible="{Binding ShowUninstallServerArmButton}" />
+
+                                <Border Background="#FFF6F0"
+                                        BorderBrush="#D48A6D"
+                                        BorderThickness="1"
+                                        CornerRadius="12"
+                                        Padding="12"
+                                        IsVisible="{Binding ShowUninstallServerConfirmation}">
+                                    <StackPanel Spacing="8">
+                                        <TextBlock Classes="body"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="#6A2C22"
+                                                   Text="Confirm uninstall. This keeps the profile, backups, and cache so you can reinstall later."
+                                                   TextWrapping="Wrap" />
+                                        <WrapPanel Orientation="Horizontal" ItemHeight="36">
+                                            <Button Classes="action-danger"
+                                                    Command="{Binding UninstallServerCommand}"
+                                                    Content="Confirm Uninstall"
+                                                    IsEnabled="{Binding CanArmUninstallServer}" />
+                                            <Button Classes="action-secondary"
+                                                    Command="{Binding CancelRetirementCommand}"
+                                                    Content="Cancel" />
+                                        </WrapPanel>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Grid.Column="1" Background="#FFF1ED" BorderBrush="#D48A6D" BorderThickness="1" CornerRadius="16" Padding="16">
+                            <StackPanel Spacing="10">
+                                <TextBlock Classes="kicker" Text="Delete Profile" />
+                                <TextBlock Classes="body" FontWeight="SemiBold" Text="Remove this server from the launcher" />
+                                <TextBlock Classes="caption" Text="{Binding DeleteProfileSummary}" TextWrapping="Wrap" />
+
+                                <Button Classes="action-danger"
+                                        Command="{Binding ArmDeleteProfileCommand}"
+                                        Content="Delete Profile"
+                                        IsEnabled="{Binding CanArmDeleteProfile}"
+                                        IsVisible="{Binding ShowDeleteProfileArmButton}" />
+
+                                <Border Background="#FFF6F0"
+                                        BorderBrush="#D48A6D"
+                                        BorderThickness="1"
+                                        CornerRadius="12"
+                                        Padding="12"
+                                        IsVisible="{Binding ShowDeleteProfileConfirmation}">
+                                    <StackPanel Spacing="8">
+                                        <TextBlock Classes="body"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="#6A2C22"
+                                                   Text="Confirm delete. The launcher will remove this profile and clean up launcher-managed folders, backups, logs, and runtime artifacts."
+                                                   TextWrapping="Wrap" />
+                                        <WrapPanel Orientation="Horizontal" ItemHeight="36">
+                                            <Button Classes="action-danger"
+                                                    Command="{Binding DeleteProfileCommand}"
+                                                    Content="Confirm Delete"
+                                                    IsEnabled="{Binding CanArmDeleteProfile}" />
+                                            <Button Classes="action-secondary"
+                                                    Command="{Binding CancelRetirementCommand}"
+                                                    Content="Cancel" />
+                                        </WrapPanel>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </StackPanel>
+            </Border>
         </Grid>
     </ScrollViewer>
 </UserControl>

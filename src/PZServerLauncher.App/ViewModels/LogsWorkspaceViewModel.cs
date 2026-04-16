@@ -1,12 +1,12 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using PZServerLauncher.App.Services;
 using PZServerLauncher.Contracts.Profiles;
 using PZServerLauncher.Contracts.Runtime;
 using PZServerLauncher.Core.Planning;
 using PZServerLauncher.Core.Runtime;
 using PZServerLauncher.Infrastructure.Planning;
+using PZServerLauncher.Runtime;
 
 namespace PZServerLauncher.App.ViewModels;
 
@@ -32,15 +32,13 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
         [],
         []);
 
-    private readonly LocalHostApiClient _hostApiClient;
-    private readonly RuntimeEventStream _runtimeEventStream;
+    private readonly ILauncherRuntime _runtime;
     private ServerRuntimeStatus? _runtimeStatus;
     private ProfileLiveOperationsSnapshot? _liveOperations;
 
     public LogsWorkspaceViewModel(
         MainWindowViewModel legacy,
-        LocalHostApiClient hostApiClient,
-        RuntimeEventStream runtimeEventStream)
+        ILauncherRuntime runtime)
         : base(
             ProfileWorkspacePageIds.Logs,
             "Logs",
@@ -49,8 +47,7 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
             legacy,
             ["Recent log buffer", "Live line feed", "Player roster", "Operator commands"])
     {
-        _hostApiClient = hostApiClient;
-        _runtimeEventStream = runtimeEventStream;
+        _runtime = runtime;
         ReloadCommand = new AsyncRelayCommand(ReloadAsync);
         SendBroadcastCommand = new AsyncRelayCommand(SendBroadcastAsync);
         SendConsoleCommand = new AsyncRelayCommand(SendConsoleCommandAsync);
@@ -60,9 +57,9 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
         KickPlayerCommand = new AsyncRelayCommand<ConnectedPlayerRowViewModel>(KickPlayerAsync);
         BanPlayerCommand = new AsyncRelayCommand<ConnectedPlayerRowViewModel>(BanPlayerAsync);
         WhitelistPlayerCommand = new AsyncRelayCommand<ConnectedPlayerRowViewModel>(WhitelistPlayerAsync);
-        _runtimeEventStream.LogLineReceived += OnLogLineReceivedAsync;
-        _runtimeEventStream.StatusChanged += OnStatusChangedAsync;
-        _runtimeEventStream.LiveOperationsChanged += OnLiveOperationsChangedAsync;
+        _runtime.LogLineReceived += OnLogLineReceivedAsync;
+        _runtime.StatusChanged += OnStatusChangedAsync;
+        _runtime.LiveOperationsChanged += OnLiveOperationsChangedAsync;
     }
 
     public override string PageSummary => SelectedProfile is null
@@ -303,9 +300,9 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
         }
 
         LoadStatus = $"Loading live console and ops for {profile.DisplayName}...";
-        var statusTask = _hostApiClient.GetStatusAsync(profile.ProfileId);
-        var logsTask = _hostApiClient.GetRecentLogsAsync(profile.ProfileId);
-        var operationsTask = _hostApiClient.GetLiveOperationsAsync(profile.ProfileId);
+        var statusTask = _runtime.GetStatusAsync(profile.ProfileId);
+        var logsTask = _runtime.GetRecentLogsAsync(profile.ProfileId);
+        var operationsTask = _runtime.GetLiveOperationsAsync(profile.ProfileId);
         await Task.WhenAll(statusTask, logsTask, operationsTask);
 
         _runtimeStatus = statusTask.Result
@@ -335,7 +332,7 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
 
         try
         {
-            var response = await _hostApiClient.SendBroadcastAsync(SelectedProfile.ProfileId, BroadcastMessage);
+            var response = await _runtime.SendBroadcastAsync(SelectedProfile.ProfileId, BroadcastMessage);
             ApplyLiveOperations(response);
             LoadStatus = $"Broadcast queued for {SelectedProfile.DisplayName}.";
             BroadcastMessage = string.Empty;
@@ -368,7 +365,7 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
 
         try
         {
-            var response = await _hostApiClient.SendConsoleCommandAsync(SelectedProfile.ProfileId, command);
+            var response = await _runtime.SendConsoleCommandAsync(SelectedProfile.ProfileId, command);
             ApplyLiveOperations(response);
             LoadStatus = statusMessage;
             NotifyComputedState();

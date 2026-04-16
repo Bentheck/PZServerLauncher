@@ -10,52 +10,41 @@ using PZServerLauncher.Core.Profiles;
 using PZServerLauncher.Core.Runtime;
 using PZServerLauncher.Core.Settings;
 using PZServerLauncher.Infrastructure.Planning;
+using PZServerLauncher.Runtime;
 
 namespace PZServerLauncher.App.ViewModels;
 
 public partial class MainWindowViewModel : ViewModelBase
 {
-    private readonly LocalHostApiClient _hostApiClient;
-    private readonly RuntimeEventStream _runtimeEventStream;
+    private readonly ILauncherRuntime _runtime;
     private readonly DesktopShellService _desktopShellService;
+    private readonly CreateProfileDialogService _createProfileDialogService;
     private HostSettings? _loadedHostSettings;
     private bool _attemptedInitialImportDiscovery;
 
-    public MainWindowViewModel()
-        : this(new LocalHostApiClient(), new RuntimeEventStream(new LocalHostApiClient()), new DesktopShellService())
-    {
-    }
-
     public MainWindowViewModel(
-        LocalHostApiClient hostApiClient,
-        RuntimeEventStream runtimeEventStream,
-        DesktopShellService desktopShellService)
+        ILauncherRuntime runtime,
+        DesktopShellService desktopShellService,
+        CreateProfileDialogService createProfileDialogService)
     {
-        _hostApiClient = hostApiClient;
-        _runtimeEventStream = runtimeEventStream;
+        _runtime = runtime;
         _desktopShellService = desktopShellService;
+        _createProfileDialogService = createProfileDialogService;
         Title = "Project Zomboid Server Launcher";
-        Subtitle = "Desktop control for the local PZServerLauncher host.";
-        HostSummary = "Waiting for local host...";
-        RemoteSummary = "Remote access status unavailable.";
-        OwnerSummary = "Owner bootstrap status unavailable.";
+        Subtitle = "Desktop control for the integrated PZServerLauncher runtime.";
+        HostSummary = "Starting integrated runtime...";
         StatusMessage = "Starting up...";
-        RemoteWizardStatus = "Remote access settings are ready for local validation.";
-        RemoteSelfTestChecks = "Run the local self-test after saving your HTTPS settings.";
-        RemoteBindAddress = "0.0.0.0";
-        RemoteHttpsPort = ProjectZomboidDefaults.DefaultRemotePort.ToString();
 
         RefreshCommand = new AsyncRelayCommand(RefreshAsync);
         CreateStarterProfileCommand = new AsyncRelayCommand(CreateStarterProfileAsync);
         DiscoverImportsCommand = new AsyncRelayCommand(DiscoverImportsAsync);
-        BootstrapOwnerCommand = new AsyncRelayCommand(BootstrapOwnerAsync);
         ImportCandidateCommand = new AsyncRelayCommand<ImportCandidateViewModel>(ImportCandidateAsync);
-        InstallCommand = new AsyncRelayCommand<ProfileCardViewModel>(profile => RunProfileActionAsync(profile, _hostApiClient.InstallAsync, "Install"));
-        UpdateCommand = new AsyncRelayCommand<ProfileCardViewModel>(profile => RunProfileActionAsync(profile, _hostApiClient.UpdateAsync, "Update"));
-        StartCommand = new AsyncRelayCommand<ProfileCardViewModel>(profile => RunProfileActionAsync(profile, _hostApiClient.StartAsync, "Start"));
-        StopCommand = new AsyncRelayCommand<ProfileCardViewModel>(profile => RunProfileActionAsync(profile, _hostApiClient.StopAsync, "Stop"));
-        RestartCommand = new AsyncRelayCommand<ProfileCardViewModel>(profile => RunProfileActionAsync(profile, _hostApiClient.RestartAsync, "Restart"));
-        BackupCommand = new AsyncRelayCommand<ProfileCardViewModel>(profile => RunProfileActionAsync(profile, _hostApiClient.BackupAsync, "Backup"));
+        InstallCommand = new AsyncRelayCommand<ProfileCardViewModel>(profile => RunProfileActionAsync(profile, _runtime.InstallAsync, "Install"));
+        UpdateCommand = new AsyncRelayCommand<ProfileCardViewModel>(profile => RunProfileActionAsync(profile, _runtime.UpdateAsync, "Update"));
+        StartCommand = new AsyncRelayCommand<ProfileCardViewModel>(profile => RunProfileActionAsync(profile, _runtime.StartAsync, "Start"));
+        StopCommand = new AsyncRelayCommand<ProfileCardViewModel>(profile => RunProfileActionAsync(profile, _runtime.StopAsync, "Stop"));
+        RestartCommand = new AsyncRelayCommand<ProfileCardViewModel>(profile => RunProfileActionAsync(profile, _runtime.RestartAsync, "Restart"));
+        BackupCommand = new AsyncRelayCommand<ProfileCardViewModel>(profile => RunProfileActionAsync(profile, _runtime.BackupAsync, "Backup"));
         RestoreCommand = new AsyncRelayCommand<ProfileCardViewModel>(RestoreLatestBackupAsync);
         SaveCommonConfigCommand = new AsyncRelayCommand<ProfileCardViewModel>(SaveCommonConfigAsync);
         ScanWorkshopCommand = new AsyncRelayCommand<ProfileCardViewModel>(ScanWorkshopAsync);
@@ -64,14 +53,11 @@ public partial class MainWindowViewModel : ViewModelBase
         SaveHostSettingsCommand = new AsyncRelayCommand(SaveHostSettingsAsync);
         StopHostCommand = new AsyncRelayCommand(() => StopHostAsync(stopRunningServers: false));
         StopAllAndHostCommand = new AsyncRelayCommand(() => StopHostAsync(stopRunningServers: true));
-        SaveRemoteAccessCommand = new AsyncRelayCommand(SaveRemoteAccessAsync);
-        RemoteSelfTestCommand = new AsyncRelayCommand(RunRemoteSelfTestAsync);
-        ApplyFirewallRuleCommand = new AsyncRelayCommand(ApplyFirewallRuleAsync);
         ExitDesktopCommand = new RelayCommand(() => _desktopShellService.ExitDesktop());
 
-        _runtimeEventStream.StatusChanged += OnStatusChangedAsync;
-        _runtimeEventStream.JobChanged += OnJobChangedAsync;
-        _runtimeEventStream.LogLineReceived += OnLogLineReceivedAsync;
+        _runtime.StatusChanged += OnStatusChangedAsync;
+        _runtime.JobChanged += OnJobChangedAsync;
+        _runtime.LogLineReceived += OnLogLineReceivedAsync;
 
         _ = InitializeAsync();
     }
@@ -84,21 +70,6 @@ public partial class MainWindowViewModel : ViewModelBase
     private string hostSummary;
 
     [ObservableProperty]
-    private string remoteSummary;
-
-    [ObservableProperty]
-    private string ownerSummary;
-
-    [ObservableProperty]
-    private bool ownerBootstrapRequired;
-
-    [ObservableProperty]
-    private string ownerUserName = "owner";
-
-    [ObservableProperty]
-    private string ownerPassword = string.Empty;
-
-    [ObservableProperty]
     private string statusMessage;
 
     [ObservableProperty]
@@ -106,33 +77,6 @@ public partial class MainWindowViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool hostStartWithWindows;
-
-    [ObservableProperty]
-    private bool remoteAccessEnabled;
-
-    [ObservableProperty]
-    private string remoteBindAddress;
-
-    [ObservableProperty]
-    private string remoteHttpsPort;
-
-    [ObservableProperty]
-    private string remotePublicHostname = string.Empty;
-
-    [ObservableProperty]
-    private string remoteCertificatePath = string.Empty;
-
-    [ObservableProperty]
-    private string remoteCertificatePassword = string.Empty;
-
-    [ObservableProperty]
-    private bool remoteCreateFirewallRule;
-
-    [ObservableProperty]
-    private string remoteWizardStatus;
-
-    [ObservableProperty]
-    private string remoteSelfTestChecks;
 
     public ObservableCollection<ProfileCardViewModel> Profiles { get; } = [];
 
@@ -147,8 +91,6 @@ public partial class MainWindowViewModel : ViewModelBase
     public IAsyncRelayCommand CreateStarterProfileCommand { get; }
 
     public IAsyncRelayCommand DiscoverImportsCommand { get; }
-
-    public IAsyncRelayCommand BootstrapOwnerCommand { get; }
 
     public IAsyncRelayCommand<ImportCandidateViewModel> ImportCandidateCommand { get; }
 
@@ -180,12 +122,6 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public IAsyncRelayCommand StopAllAndHostCommand { get; }
 
-    public IAsyncRelayCommand SaveRemoteAccessCommand { get; }
-
-    public IAsyncRelayCommand RemoteSelfTestCommand { get; }
-
-    public IAsyncRelayCommand ApplyFirewallRuleCommand { get; }
-
     public IRelayCommand ExitDesktopCommand { get; }
 
     public event EventHandler<WorkspaceNavigationRequest>? WorkspaceNavigationRequested;
@@ -197,111 +133,118 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private async Task RefreshAsync()
     {
-        await RunBusyAsync(async () =>
+        await RunBusyAsync(RefreshCoreAsync, "Refreshing runtime state...");
+    }
+
+    private async Task RefreshCoreAsync()
+    {
+        var snapshot = await _runtime.LoadSnapshotAsync();
+        _loadedHostSettings = snapshot.HostInfo.Settings;
+        HostSummary = $"Integrated runtime online | {snapshot.HostInfo.Health.RunningProfileCount} running | {snapshot.Profiles.Count} managed";
+        HostStartWithWindows = snapshot.HostInfo.Settings.StartHostWithWindows;
+
+        var postureTasks = snapshot.Profiles
+            .Select(profile => LoadProfilePostureSummaryAsync(profile.ProfileId, profile.DisplayName))
+            .ToArray();
+        var postureResults = await Task.WhenAll(postureTasks);
+        var postureLookup = postureResults.ToDictionary(result => result.ProfileId, result => result.Summary, StringComparer.OrdinalIgnoreCase);
+
+        Profiles.Clear();
+        foreach (var profile in snapshot.Profiles)
         {
-            var snapshot = await _hostApiClient.LoadSnapshotAsync();
-            _loadedHostSettings = snapshot.HostInfo.Settings;
-            HostSummary = $"Loopback {snapshot.HostInfo.Settings.LoopbackPort} | Running profiles {snapshot.HostInfo.Health.RunningProfileCount}";
-            RemoteSummary = snapshot.HostInfo.Settings.RemoteAccess.IsEnabled
-                ? $"Remote enabled on {snapshot.HostInfo.Settings.RemoteAccess.BindAddress}:{snapshot.HostInfo.Settings.RemoteAccess.HttpsPort}"
-                : "Remote access disabled";
-            OwnerBootstrapRequired = !snapshot.HostInfo.Settings.OwnerBootstrap.IsConfigured;
-            OwnerSummary = snapshot.HostInfo.Settings.OwnerBootstrap.IsConfigured
-                ? $"Owner account: {snapshot.HostInfo.Settings.OwnerBootstrap.OwnerUserName}"
-                : "Owner bootstrap is still required before optional web admin can be enabled.";
-            HostStartWithWindows = snapshot.HostInfo.Settings.StartHostWithWindows;
-            PopulateRemoteAccessSettings(snapshot.HostInfo.Settings.RemoteAccess);
+            snapshot.Statuses.TryGetValue(profile.ProfileId, out var status);
+            snapshot.Backups.TryGetValue(profile.ProfileId, out var backups);
+            var latestBackup = backups?.FirstOrDefault() ?? "No backups";
+            var posture = postureLookup.GetValueOrDefault(profile.ProfileId) ?? ProjectZomboidProfilePostureSummaryBuilder.Unavailable(profile.DisplayName);
+            var installPosture = ProjectZomboidInstallPostureSummaryBuilder.Build(
+                ToServerProfile(profile),
+                status?.State.ToString() ?? "Stopped",
+                backups is { Count: > 0 },
+                latestBackup);
 
-            var postureTasks = snapshot.Profiles
-                .Select(profile => LoadProfilePostureSummaryAsync(profile.ProfileId, profile.DisplayName))
-                .ToArray();
-            var postureResults = await Task.WhenAll(postureTasks);
-            var postureLookup = postureResults.ToDictionary(result => result.ProfileId, result => result.Summary, StringComparer.OrdinalIgnoreCase);
+            Profiles.Add(new ProfileCardViewModel(
+                profile.ProfileId,
+                profile.DisplayName,
+                profile.Branch.ToString(),
+                profile.Branch,
+                $"{profile.DefaultPort} / {profile.UdpPort} / {profile.RconPort}",
+                status?.State.ToString() ?? "Stopped",
+                profile.InstallDirectory,
+                profile.CacheDirectory,
+                latestBackup,
+                status?.LatestLogLine ?? "No recent log lines yet.",
+                backups is { Count: > 0 },
+                profile.BackupPolicy,
+                profile.ServerName,
+                profile.DefaultPort.ToString(),
+                profile.UdpPort.ToString(),
+                profile.RconPort.ToString(),
+                profile.BindIp ?? string.Empty,
+                profile.AdminUsername ?? string.Empty,
+                profile.PreferredMemoryInGigabytes.ToString(),
+                profile.StartWithHost,
+                profile.AutoRestartOnCrash,
+                FormatWorkshopSummary(profile.WorkshopPreset),
+                "Workshop validation has not been run yet.",
+                posture,
+                installPosture));
+        }
 
-            Profiles.Clear();
-            foreach (var profile in snapshot.Profiles)
-            {
-                snapshot.Statuses.TryGetValue(profile.ProfileId, out var status);
-                snapshot.Backups.TryGetValue(profile.ProfileId, out var backups);
-                var latestBackup = backups?.FirstOrDefault() ?? "No backups";
-                var posture = postureLookup.GetValueOrDefault(profile.ProfileId) ?? ProjectZomboidProfilePostureSummaryBuilder.Unavailable(profile.DisplayName);
-                var installPosture = ProjectZomboidInstallPostureSummaryBuilder.Build(
-                    ToServerProfile(profile),
-                    status?.State.ToString() ?? "Stopped",
-                    backups is { Count: > 0 },
-                    latestBackup);
+        RecentJobs.Clear();
+        RecentOperationJobs.Clear();
+        foreach (var job in snapshot.Jobs)
+        {
+            RecentOperationJobs.Add(job);
+            RecentJobs.Add(new ShellItemViewModel(
+                job.JobId.ToString("N"),
+                $"{job.Kind} - {job.Status}",
+                job.Detail ?? job.Summary));
+        }
 
-                Profiles.Add(new ProfileCardViewModel(
-                    profile.ProfileId,
-                    profile.DisplayName,
-                    profile.Branch.ToString(),
-                    profile.Branch,
-                    $"{profile.DefaultPort} / {profile.UdpPort} / {profile.RconPort}",
-                    status?.State.ToString() ?? "Stopped",
-                    profile.InstallDirectory,
-                    profile.CacheDirectory,
-                    latestBackup,
-                    status?.LatestLogLine ?? "No recent log lines yet.",
-                    backups is { Count: > 0 },
-                    profile.BackupPolicy,
-                    profile.ServerName,
-                    profile.DefaultPort.ToString(),
-                    profile.UdpPort.ToString(),
-                    profile.RconPort.ToString(),
-                    profile.BindIp ?? string.Empty,
-                    profile.AdminUsername ?? string.Empty,
-                    profile.PreferredMemoryInGigabytes.ToString(),
-                    profile.StartWithHost,
-                    profile.AutoRestartOnCrash,
-                    FormatWorkshopSummary(profile.WorkshopPreset),
-                    "Workshop validation has not been run yet.",
-                    posture,
-                    installPosture));
-            }
+        if (Profiles.Count == 0 && ImportCandidates.Count == 0 && !_attemptedInitialImportDiscovery)
+        {
+            _attemptedInitialImportDiscovery = true;
+            await DiscoverImportsCoreAsync(updateStatusMessage: false);
+        }
 
-            RecentJobs.Clear();
-            RecentOperationJobs.Clear();
-            foreach (var job in snapshot.Jobs)
-            {
-                RecentOperationJobs.Add(job);
-                RecentJobs.Add(new ShellItemViewModel(
-                    job.JobId.ToString("N"),
-                    $"{job.Kind} - {job.Status}",
-                    job.Detail ?? job.Summary));
-            }
+        StatusMessage = Profiles.Count == 0
+            ? ImportCandidates.Count > 0
+                ? $"Found {ImportCandidates.Count} local server candidate(s). Adopt one or create a new managed server."
+                : "The integrated runtime is online. Create a managed server or scan the machine for an existing local setup."
+            : $"Loaded {Profiles.Count} profile(s).";
 
-            if (Profiles.Count == 0 && ImportCandidates.Count == 0 && !_attemptedInitialImportDiscovery)
-            {
-                _attemptedInitialImportDiscovery = true;
-                await DiscoverImportsCoreAsync(updateStatusMessage: false);
-            }
-
-            StatusMessage = Profiles.Count == 0
-                ? ImportCandidates.Count > 0
-                    ? $"Found {ImportCandidates.Count} local server candidate(s). Adopt one or create a new managed server."
-                    : "Host is online. Create a managed server or scan the machine for an existing local host."
-                : $"Loaded {Profiles.Count} profile(s).";
-
-            try
-            {
-                await _runtimeEventStream.EnsureConnectedAsync();
-            }
-            catch (Exception ex)
-            {
-                StatusMessage = $"Live runtime stream unavailable: {ex.Message}";
-            }
-        }, "Refreshing host state...");
     }
 
     private async Task CreateStarterProfileAsync()
     {
+        var request = await _createProfileDialogService.ShowAsync(BuildCreateProfileReservations());
+        if (request is null)
+        {
+            return;
+        }
+
+        var previewProfile = ServerProfileFactory.CreateStarterProfile(
+            request.DisplayName,
+            ServerProfileFactory.FindNextAvailableStarterPort(
+                request.DefaultPort,
+                BuildReservedPorts()),
+            Profiles.Select(profile => profile.ProfileId),
+            preferredMemoryInGigabytes: request.PreferredMemoryInGigabytes);
+
         await RunBusyAsync(async () =>
         {
-            await _hostApiClient.CreateStarterProfileAsync();
-            await RefreshAsync();
-            StatusMessage = "Starter profile created.";
-            RequestProfileNavigation(ServerProfileFactory.CreateStarterProfile().ProfileId);
-        }, "Creating starter profile...");
+            var createdProfile = await _runtime.CreateStarterProfileAsync(
+                request.DisplayName,
+                request.DefaultPort,
+                request.PreferredMemoryInGigabytes,
+                request.MaxPlayers)
+                ?? throw new InvalidOperationException("Profile creation did not return the new profile.");
+            await RefreshCoreAsync();
+            StatusMessage = createdProfile.DefaultPort == request.DefaultPort
+                ? $"Created {createdProfile.DisplayName} on {createdProfile.DefaultPort}/{createdProfile.UdpPort}/{createdProfile.RconPort} with {request.PreferredMemoryInGigabytes} GB and {request.MaxPlayers} max players."
+                : $"Created {createdProfile.DisplayName} on {createdProfile.DefaultPort}/{createdProfile.UdpPort}/{createdProfile.RconPort} with {request.PreferredMemoryInGigabytes} GB and {request.MaxPlayers} max players after skipping ports already reserved by other profiles.";
+            RequestProfileNavigation(createdProfile.ProfileId);
+        }, $"Creating {previewProfile.DisplayName}...");
     }
 
     private async Task DiscoverImportsAsync()
@@ -310,24 +253,6 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             await DiscoverImportsCoreAsync(updateStatusMessage: true);
         }, "Scanning for existing local servers...");
-    }
-
-    private async Task BootstrapOwnerAsync()
-    {
-        if (string.IsNullOrWhiteSpace(OwnerUserName) ||
-            string.IsNullOrWhiteSpace(OwnerPassword))
-        {
-            StatusMessage = "Owner username and password are both required.";
-            return;
-        }
-
-        await RunBusyAsync(async () =>
-        {
-            var result = await _hostApiClient.BootstrapOwnerAsync(OwnerUserName, OwnerPassword, CancellationToken.None);
-            OwnerPassword = string.Empty;
-            StatusMessage = result?.Message ?? "Owner account created.";
-            await RefreshAsync();
-        }, "Bootstrapping owner account...");
     }
 
     private async Task ImportCandidateAsync(ImportCandidateViewModel? candidate)
@@ -339,8 +264,8 @@ public partial class MainWindowViewModel : ViewModelBase
 
         await RunBusyAsync(async () =>
         {
-            var importedProfile = await _hostApiClient.ImportLocalCandidateAsync(candidate.CandidateId, CancellationToken.None);
-            await RefreshAsync();
+            var importedProfile = await _runtime.ImportLocalCandidateAsync(candidate.CandidateId, CancellationToken.None);
+            await RefreshCoreAsync();
             await DiscoverImportsCoreAsync(updateStatusMessage: false);
             StatusMessage = $"Imported {candidate.DisplayName}.";
             if (importedProfile is not null)
@@ -360,11 +285,17 @@ public partial class MainWindowViewModel : ViewModelBase
             return;
         }
 
+        if (IsMaintenanceAction(actionName) && HasActiveLifecycleJob(profile.ProfileId))
+        {
+            StatusMessage = $"Install or update is already running for {profile.DisplayName}. SteamCMD can take a few minutes on first install, so let the current job finish before trying again.";
+            return;
+        }
+
         await RunBusyAsync(async () =>
         {
             var result = await action(profile.ProfileId, CancellationToken.None);
             StatusMessage = result?.Message ?? $"{actionName} completed.";
-            await RefreshAsync();
+            await RefreshCoreAsync();
         }, $"{actionName} {profile.DisplayName}...");
     }
 
@@ -378,9 +309,9 @@ public partial class MainWindowViewModel : ViewModelBase
 
         await RunBusyAsync(async () =>
         {
-            var result = await _hostApiClient.RestoreAsync(profile.ProfileId, profile.LastBackup, restartAfterRestore: true, CancellationToken.None);
+            var result = await _runtime.RestoreAsync(profile.ProfileId, profile.LastBackup, restartAfterRestore: true, CancellationToken.None);
             StatusMessage = result?.Message ?? "Restore queued.";
-            await RefreshAsync();
+            await RefreshCoreAsync();
         }, $"Restoring {profile.DisplayName} from {profile.LastBackup}...");
     }
 
@@ -399,8 +330,8 @@ public partial class MainWindowViewModel : ViewModelBase
 
         await RunBusyAsync(async () =>
         {
-            await _hostApiClient.UpdateCommonConfigAsync(profile.ProfileId, commonConfig!, CancellationToken.None);
-            await RefreshAsync();
+            await _runtime.UpdateCommonConfigAsync(profile.ProfileId, commonConfig!, CancellationToken.None);
+            await RefreshCoreAsync();
             StatusMessage = $"Saved common settings for {profile.DisplayName}.";
         }, $"Saving settings for {profile.DisplayName}...");
     }
@@ -414,7 +345,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
         await RunBusyAsync(async () =>
         {
-            var result = await _hostApiClient.ScanWorkshopAsync(profile.ProfileId, CancellationToken.None);
+            var result = await _runtime.ScanWorkshopAsync(profile.ProfileId, CancellationToken.None);
             if (result is null)
             {
                 StatusMessage = "Workshop scan did not return a result.";
@@ -438,7 +369,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
         await RunBusyAsync(async () =>
         {
-            var result = await _hostApiClient.GetRawConfigAsync(profile.ProfileId, profile.SelectedRawConfigKind.Kind, CancellationToken.None);
+            var result = await _runtime.GetRawConfigAsync(profile.ProfileId, profile.SelectedRawConfigKind.Kind, CancellationToken.None);
             if (result is null)
             {
                 StatusMessage = $"Unable to load {profile.SelectedRawConfigKind.Label}.";
@@ -471,7 +402,7 @@ public partial class MainWindowViewModel : ViewModelBase
                 profile.LoadedRawConfigSha256,
                 []);
 
-            var result = await _hostApiClient.SaveRawConfigAsync(profile.ProfileId, profile.SelectedRawConfigKind.Kind, payload, CancellationToken.None);
+            var result = await _runtime.SaveRawConfigAsync(profile.ProfileId, profile.SelectedRawConfigKind.Kind, payload, CancellationToken.None);
             if (result is null)
             {
                 StatusMessage = $"Unable to save {profile.SelectedRawConfigKind.Label}.";
@@ -487,10 +418,10 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         await RunBusyAsync(async () =>
         {
-            var current = _loadedHostSettings ?? await _hostApiClient.GetHostSettingsAsync(CancellationToken.None)
+            var current = _loadedHostSettings ?? await _runtime.GetHostSettingsAsync(CancellationToken.None)
                 ?? throw new InvalidOperationException("Host settings could not be loaded.");
 
-            var updated = await _hostApiClient.UpdateHostSettingsAsync(current with
+            var updated = await _runtime.UpdateHostSettingsAsync(current with
             {
                 StartHostWithWindows = HostStartWithWindows,
             }, CancellationToken.None);
@@ -498,8 +429,8 @@ public partial class MainWindowViewModel : ViewModelBase
             _loadedHostSettings = updated ?? current with { StartHostWithWindows = HostStartWithWindows };
             HostStartWithWindows = _loadedHostSettings.StartHostWithWindows;
             StatusMessage = HostStartWithWindows
-                ? "The local host will start with Windows for this user."
-                : "The local host will no longer start with Windows.";
+                ? "The launcher will start with Windows for this user."
+                : "The launcher will no longer start with Windows.";
         }, "Saving host settings...");
     }
 
@@ -507,92 +438,11 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         await RunBusyAsync(async () =>
         {
-            var result = await _hostApiClient.StopHostAsync(stopRunningServers, CancellationToken.None);
-            await _runtimeEventStream.DisconnectAsync();
+            var result = await _runtime.StopRuntimeAsync(stopRunningServers, CancellationToken.None);
 
-            HostSummary = "Local host stopped. Use Refresh to start it again.";
-            RemoteSummary = "Remote access is unavailable while the local host is stopped.";
-            RemoteWizardStatus = "Host stopped. Start the host again before running a live HTTPS self-test.";
-            StatusMessage = result?.Message ?? "Local host shutdown requested.";
-        }, stopRunningServers ? "Stopping all servers and the local host..." : "Stopping the local host...");
-    }
-
-    private async Task SaveRemoteAccessAsync()
-    {
-        if (!TryBuildRemoteAccessSettings(out var settings, out var errorMessage))
-        {
-            RemoteWizardStatus = errorMessage ?? "Remote access settings are invalid.";
-            StatusMessage = RemoteWizardStatus;
-            return;
-        }
-
-        await RunBusyAsync(async () =>
-        {
-            var saved = await _hostApiClient.UpdateRemoteAccessSettingsAsync(settings!, CancellationToken.None)
-                ?? throw new InvalidOperationException("Remote access settings could not be saved.");
-
-            PopulateRemoteAccessSettings(new RemoteAccessSettings
-            {
-                IsEnabled = saved.IsEnabled,
-                BindAddress = saved.BindAddress,
-                HttpsPort = saved.HttpsPort,
-                PublicHostname = saved.PublicHostname,
-                CertificatePath = saved.CertificatePath,
-                CreateFirewallRule = saved.CreateFirewallRule,
-                RequiresHostRestart = true,
-            });
-            RemoteCertificatePassword = string.Empty;
-            RemoteWizardStatus = saved.IsEnabled
-                ? "Remote access settings saved. Restart the host to apply HTTPS binding changes."
-                : "Remote access settings saved. The HTTPS listener remains disabled.";
-
-            if (saved.IsEnabled && saved.CreateFirewallRule)
-            {
-                var firewall = await _hostApiClient.ApplyRemoteFirewallRuleAsync(settings!, CancellationToken.None);
-                RemoteWizardStatus = $"{RemoteWizardStatus} {firewall?.Message}";
-            }
-
-            StatusMessage = RemoteWizardStatus;
-            await RefreshAsync();
-        }, "Saving remote access settings...");
-    }
-
-    private async Task RunRemoteSelfTestAsync()
-    {
-        if (!TryBuildRemoteAccessSettings(out var settings, out var errorMessage))
-        {
-            RemoteWizardStatus = errorMessage ?? "Remote access settings are invalid.";
-            StatusMessage = RemoteWizardStatus;
-            return;
-        }
-
-        await RunBusyAsync(async () =>
-        {
-            var result = await _hostApiClient.RunRemoteAccessSelfTestAsync(settings!, CancellationToken.None)
-                ?? throw new InvalidOperationException("Remote self-test did not return a result.");
-
-            RemoteWizardStatus = result.Summary;
-            RemoteSelfTestChecks = string.Join(Environment.NewLine, result.Checks);
-            StatusMessage = result.Summary;
-        }, "Running local HTTPS self-test...");
-    }
-
-    private async Task ApplyFirewallRuleAsync()
-    {
-        if (!TryBuildRemoteAccessSettings(out var settings, out var errorMessage))
-        {
-            RemoteWizardStatus = errorMessage ?? "Remote access settings are invalid.";
-            StatusMessage = RemoteWizardStatus;
-            return;
-        }
-
-        await RunBusyAsync(async () =>
-        {
-            var result = await _hostApiClient.ApplyRemoteFirewallRuleAsync(settings!, CancellationToken.None)
-                ?? throw new InvalidOperationException("Firewall rule update did not return a result.");
-            RemoteWizardStatus = result.Message;
-            StatusMessage = result.Message;
-        }, "Updating the Windows Firewall rule...");
+            HostSummary = "Integrated runtime stopped. Use Refresh to start it again.";
+            StatusMessage = result?.Message ?? "Integrated runtime shutdown requested.";
+        }, stopRunningServers ? "Stopping all servers and the integrated runtime..." : "Stopping the integrated runtime...");
     }
 
     private Task OnStatusChangedAsync(ServerRuntimeStatus status)
@@ -700,7 +550,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private async Task DiscoverImportsCoreAsync(bool updateStatusMessage)
     {
-        var candidates = await _hostApiClient.DiscoverLocalImportsAsync(CancellationToken.None) ?? [];
+        var candidates = await _runtime.DiscoverLocalImportsAsync(CancellationToken.None) ?? [];
         ImportCandidates.Clear();
 
         foreach (var candidate in candidates)
@@ -749,6 +599,20 @@ public partial class MainWindowViewModel : ViewModelBase
     private static string FormatWorkshopSummary(WorkshopPreset preset) =>
         $"{preset.WorkshopItemIds.Count} workshop / {preset.EnabledModIds.Count} mods / {preset.MapFolders.Count} maps";
 
+    private IReadOnlyList<CreateProfilePortReservation> BuildCreateProfileReservations() =>
+        Profiles
+            .Select(profile => new CreateProfilePortReservation(
+                profile.ProfileId,
+                profile.DisplayName,
+                ParsePort(profile.EditableDefaultPort),
+                ParsePort(profile.EditableUdpPort),
+                ParsePort(profile.EditableRconPort)))
+            .ToArray();
+
+    private IEnumerable<int> BuildReservedPorts() =>
+        BuildCreateProfileReservations()
+            .SelectMany(profile => profile.ReservedPorts);
+
     private static ServerProfile ToServerProfile(ProfileDto profile) =>
         new()
         {
@@ -775,9 +639,9 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         try
         {
-            var generalTask = _hostApiClient.GetSettingsPageAsync(profileId, ProfileWorkspacePageIds.General, CancellationToken.None);
-            var networkTask = _hostApiClient.GetSettingsPageAsync(profileId, ProfileWorkspacePageIds.NetworkAndAdmin, CancellationToken.None);
-            var sandboxTask = _hostApiClient.GetSettingsPageAsync(profileId, ProfileWorkspacePageIds.Sandbox, CancellationToken.None);
+            var generalTask = _runtime.GetSettingsPageAsync(profileId, ProfileWorkspacePageIds.General, CancellationToken.None);
+            var networkTask = _runtime.GetSettingsPageAsync(profileId, ProfileWorkspacePageIds.NetworkAndAdmin, CancellationToken.None);
+            var sandboxTask = _runtime.GetSettingsPageAsync(profileId, ProfileWorkspacePageIds.Sandbox, CancellationToken.None);
             await Task.WhenAll(generalTask, networkTask, sandboxTask);
 
             var generalValues = generalTask.Result?.Values ?? new Dictionary<string, string?>(StringComparer.Ordinal);
@@ -831,36 +695,18 @@ public partial class MainWindowViewModel : ViewModelBase
         return true;
     }
 
-    private bool TryBuildRemoteAccessSettings(out RemoteAccessSettingsDto? settings, out string? errorMessage)
-    {
-        settings = null;
-        errorMessage = null;
+    private static int ParsePort(string value) =>
+        int.TryParse(value, out var port)
+            ? port
+            : 0;
 
-        if (!int.TryParse(RemoteHttpsPort, out var httpsPort))
-        {
-            errorMessage = "Remote HTTPS port must be a whole number.";
-            return false;
-        }
+    private bool HasActiveLifecycleJob(string profileId) =>
+        RecentOperationJobs.Any(job =>
+            string.Equals(job.ProfileId, profileId, StringComparison.OrdinalIgnoreCase) &&
+            job.Kind is OperationJobKind.Install or OperationJobKind.Update &&
+            job.Status is OperationJobStatus.Queued or OperationJobStatus.Running);
 
-        settings = new RemoteAccessSettingsDto(
-            RemoteAccessEnabled,
-            string.IsNullOrWhiteSpace(RemoteBindAddress) ? "0.0.0.0" : RemoteBindAddress.Trim(),
-            httpsPort,
-            string.IsNullOrWhiteSpace(RemotePublicHostname) ? null : RemotePublicHostname.Trim(),
-            string.IsNullOrWhiteSpace(RemoteCertificatePath) ? null : RemoteCertificatePath.Trim(),
-            string.IsNullOrWhiteSpace(RemoteCertificatePassword) ? null : RemoteCertificatePassword,
-            RemoteCreateFirewallRule);
-        return true;
-    }
-
-    private void PopulateRemoteAccessSettings(RemoteAccessSettings settings)
-    {
-        RemoteAccessEnabled = settings.IsEnabled;
-        RemoteBindAddress = settings.BindAddress;
-        RemoteHttpsPort = settings.HttpsPort.ToString();
-        RemotePublicHostname = settings.PublicHostname ?? string.Empty;
-        RemoteCertificatePath = settings.CertificatePath ?? string.Empty;
-        RemoteCertificatePassword = string.Empty;
-        RemoteCreateFirewallRule = settings.CreateFirewallRule;
-    }
+    private static bool IsMaintenanceAction(string actionName) =>
+        string.Equals(actionName, "Install", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(actionName, "Update", StringComparison.OrdinalIgnoreCase);
 }

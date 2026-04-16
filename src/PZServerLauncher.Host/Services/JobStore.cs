@@ -35,6 +35,48 @@ public sealed class JobStore(ApplicationDbContext dbContext)
         return entity?.ToModel();
     }
 
+    public async Task<OperationJob?> GetActiveProfileLifecycleJobAsync(
+        string profileId,
+        CancellationToken cancellationToken = default)
+    {
+        var statuses = new[] { (int)OperationJobStatus.Queued, (int)OperationJobStatus.Running };
+        var kinds = new[] { (int)OperationJobKind.Install, (int)OperationJobKind.Update };
+
+        var entities = await dbContext.OperationJobs
+            .AsNoTracking()
+            .Where(job =>
+                job.ProfileId == profileId &&
+                statuses.Contains(job.Status) &&
+                kinds.Contains(job.Kind))
+            .ToListAsync(cancellationToken);
+
+        var entity = entities
+            .OrderByDescending(job => job.CreatedAtUtc)
+            .FirstOrDefault();
+
+        return entity?.ToModel();
+    }
+
+    public async Task<OperationJob?> GetActiveProfileJobAsync(
+        string profileId,
+        CancellationToken cancellationToken = default)
+    {
+        var statuses = new[] { (int)OperationJobStatus.Queued, (int)OperationJobStatus.Running };
+
+        var entities = await dbContext.OperationJobs
+            .AsNoTracking()
+            .Where(job =>
+                job.ProfileId == profileId &&
+                statuses.Contains(job.Status))
+            .ToListAsync(cancellationToken);
+
+        var entity = entities
+            .OrderByDescending(job => job.CreatedAtUtc)
+            .FirstOrDefault();
+
+        return entity?.ToModel();
+    }
+
     public async Task<IReadOnlyList<OperationJob>> ListRecentAsync(int take = 20, CancellationToken cancellationToken = default) =>
         (await dbContext.OperationJobs
             .AsNoTracking()

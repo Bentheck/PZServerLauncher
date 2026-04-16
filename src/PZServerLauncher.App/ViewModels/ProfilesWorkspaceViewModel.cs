@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PZServerLauncher.App.Services;
 using PZServerLauncher.Contracts.Runtime;
+using PZServerLauncher.Runtime;
 
 namespace PZServerLauncher.App.ViewModels;
 
@@ -14,8 +15,7 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
 
     public ProfilesWorkspaceViewModel(
         MainWindowViewModel legacy,
-        LocalHostApiClient hostApiClient,
-        RuntimeEventStream runtimeEventStream,
+        ILauncherRuntime runtime,
         FolderPickerService folderPickerService)
     {
         Legacy = legacy;
@@ -29,15 +29,15 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
             importCandidates.CollectionChanged += OnImportCandidatesChanged;
         }
 
-        Overview = new OverviewWorkspaceViewModel(legacy, hostApiClient, runtimeEventStream);
-        InstallAndUpdate = new InstallUpdateWorkspaceViewModel(legacy, hostApiClient, folderPickerService);
-        General = new GeneralWorkspaceViewModel(legacy, hostApiClient);
-        Sandbox = new SandboxWorkspaceViewModel(legacy, hostApiClient);
-        ModsAndMaps = new ModsAndMapsWorkspaceViewModel(legacy, hostApiClient);
-        NetworkAndAdmin = new NetworkAndAdminWorkspaceViewModel(legacy, hostApiClient);
-        Backups = new BackupsWorkspaceViewModel(legacy, hostApiClient);
-        Logs = new LogsWorkspaceViewModel(legacy, hostApiClient, runtimeEventStream);
-        AdvancedFiles = new AdvancedFilesWorkspaceViewModel(legacy, hostApiClient);
+        Overview = new OverviewWorkspaceViewModel(legacy, runtime);
+        InstallAndUpdate = new InstallUpdateWorkspaceViewModel(legacy, runtime, folderPickerService);
+        General = new GeneralWorkspaceViewModel(legacy, runtime);
+        Sandbox = new SandboxWorkspaceViewModel(legacy, runtime);
+        ModsAndMaps = new ModsAndMapsWorkspaceViewModel(legacy, runtime);
+        NetworkAndAdmin = new NetworkAndAdminWorkspaceViewModel(legacy, runtime);
+        Backups = new BackupsWorkspaceViewModel(legacy, runtime);
+        Logs = new LogsWorkspaceViewModel(legacy, runtime);
+        AdvancedFiles = new AdvancedFilesWorkspaceViewModel(legacy, runtime);
 
         _sections = new Dictionary<string, ViewModelBase>(StringComparer.Ordinal)
         {
@@ -410,7 +410,13 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
 
     partial void OnSelectedProfileChanged(ProfileCardViewModel? value)
     {
-        _selectedProfileId = value?.ProfileId;
+        // The legacy refresh path clears and repopulates the roster.
+        // Preserve the last concrete selection across that transient empty state.
+        if (value is not null)
+        {
+            _selectedProfileId = value.ProfileId;
+        }
+
         foreach (var profile in Legacy.Profiles)
         {
             profile.IsSelected = ReferenceEquals(profile, value);

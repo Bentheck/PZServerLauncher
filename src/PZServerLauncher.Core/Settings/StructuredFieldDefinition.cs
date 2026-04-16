@@ -7,4 +7,5 @@ public sealed record StructuredFieldDefinition(
     StructuredConfigTarget Target,
     string? DefaultValue = null,
     bool RestartRequired = false,
-    string? HelpText = null);
+    string? HelpText = null,
+    IReadOnlyList<StructuredFieldOptionDefinition>? Options = null);

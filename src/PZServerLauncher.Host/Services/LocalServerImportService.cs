@@ -10,7 +10,8 @@ public sealed partial class LocalServerImportService(
     WorkshopPresetScannerService workshopScannerService,
     string? cacheRootOverride = null,
     string? installDirectoryOverride = null,
-    ProjectZomboidBranch? branchOverride = null)
+    ProjectZomboidBranch? branchOverride = null,
+    string? launcherRootOverride = null)
 {
     public async Task<IReadOnlyList<ProfileImportCandidateDto>> DiscoverAsync(CancellationToken cancellationToken = default)
     {
@@ -48,7 +49,7 @@ public sealed partial class LocalServerImportService(
             var diagnostics = new List<string>(scanResult.Diagnostics);
             if (string.IsNullOrWhiteSpace(installProbe.InstallDirectory))
             {
-                diagnostics.Add("No dedicated server install was detected. Import will use the default install path until you run install or update.");
+                diagnostics.Add("No dedicated server install was detected. Import will stage this server in the launcher's managed install folder until you run install or update.");
             }
 
             results.Add(new ProfileImportCandidateDto(
@@ -78,16 +79,19 @@ public sealed partial class LocalServerImportService(
         var existingProfiles = await profileStore.ListAsync(cancellationToken);
         var profileId = EnsureUniqueProfileId(candidate.ServerName, existingProfiles.Select(x => x.ProfileId));
 
+        var defaultPort = ParseInt(settings, "DefaultPort", 16261);
+        var fallbackUdpPort = defaultPort < 65535 ? defaultPort + 1 : 65534;
+
         var profile = new ServerProfile
         {
             ProfileId = profileId,
             DisplayName = candidate.DisplayName,
             ServerName = candidate.ServerName,
             CacheDirectory = candidate.CacheDirectory,
-            InstallDirectory = candidate.InstallDirectory ?? GetFallbackInstallDirectory(),
+            InstallDirectory = candidate.InstallDirectory ?? GetFallbackInstallDirectory(profileId),
             Branch = candidate.Branch,
-            DefaultPort = ParseInt(settings, "DefaultPort", 16261),
-            UdpPort = ParseInt(settings, "UDPPort", ParseInt(settings, "DefaultPort", 16261)),
+            DefaultPort = defaultPort,
+            UdpPort = ParseInt(settings, "UDPPort", fallbackUdpPort),
             RconPort = ParseInt(settings, "RCONPort", 27015),
             UseSteam = true,
             AdminUsername = GetValue(settings, "AdminUsername"),
@@ -105,13 +109,8 @@ public sealed partial class LocalServerImportService(
     private static string GetDefaultCacheRoot() =>
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Zomboid");
 
-    private static string GetFallbackInstallDirectory() =>
-        Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
-            "Steam",
-            "steamapps",
-            "common",
-            "Project Zomboid Dedicated Server");
+    private string GetFallbackInstallDirectory(string profileId) =>
+        ServerProfileFactory.BuildInstallDirectory(profileId, launcherRootOverride);
 
     private static IReadOnlyDictionary<string, string> ParseIni(string path)
     {
@@ -217,7 +216,7 @@ public sealed partial class LocalServerImportService(
     {
         if (!string.IsNullOrWhiteSpace(installDirectoryOverride))
         {
-            return new InstallProbeResult(installDirectoryOverride, branchOverride ?? ProjectZomboidBranch.Stable41);
+            return new InstallProbeResult(installDirectoryOverride, branchOverride ?? ProjectZomboidBranch.Unstable42);
         }
 
         foreach (var libraryRoot in DiscoverSteamLibraries())
@@ -228,15 +227,10 @@ public sealed partial class LocalServerImportService(
                 continue;
             }
 
-            var manifestPath = Path.Combine(libraryRoot, "steamapps", "appmanifest_380870.acf");
-            var branch = File.Exists(manifestPath) && File.ReadAllText(manifestPath).Contains("\"betakey\"\t\t\"unstable\"", StringComparison.OrdinalIgnoreCase)
-                ? ProjectZomboidBranch.Unstable42
-                : ProjectZomboidBranch.Stable41;
-
-            return new InstallProbeResult(installDirectory, branch);
+            return new InstallProbeResult(installDirectory, ProjectZomboidBranch.Unstable42);
         }
 
-        return new InstallProbeResult(null, ProjectZomboidBranch.Stable41);
+        return new InstallProbeResult(null, ProjectZomboidBranch.Unstable42);
     }
 
     private static IReadOnlyList<string> DiscoverSteamLibraries()

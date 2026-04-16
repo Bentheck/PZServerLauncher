@@ -18,7 +18,7 @@ public static class EntityMappingExtensions
             ServerName = entity.ServerName,
             InstallDirectory = entity.InstallDirectory,
             CacheDirectory = entity.CacheDirectory,
-            Branch = (ProjectZomboidBranch)entity.Branch,
+            Branch = ProjectZomboidBranchSupport.FromPersistedValue(entity.Branch),
             DefaultPort = entity.DefaultPort,
             UdpPort = entity.UdpPort,
             RconPort = entity.RconPort,
@@ -39,6 +39,8 @@ public static class EntityMappingExtensions
             {
                 ScheduledBackupsEnabled = entity.ScheduledBackupsEnabled,
                 ScheduledBackupRetentionCount = entity.ScheduledBackupRetentionCount,
+                ScheduledBackupIntervalHours = entity.ScheduledBackupIntervalHours,
+                ScheduledBackupStartLocalTime = entity.ScheduledBackupStartLocalTime,
                 PreUpdateBackupRetentionCount = entity.PreUpdateBackupRetentionCount,
                 KeepManualBackupsForever = entity.KeepManualBackupsForever,
                 PreUpdateBackupEnabled = entity.PreUpdateBackupEnabled,
@@ -71,6 +73,8 @@ public static class EntityMappingExtensions
             MapFoldersJson = SerializeList(model.WorkshopPreset.MapFolders),
             ScheduledBackupsEnabled = model.BackupPolicy.ScheduledBackupsEnabled,
             ScheduledBackupRetentionCount = model.BackupPolicy.ScheduledBackupRetentionCount,
+            ScheduledBackupIntervalHours = model.BackupPolicy.ScheduledBackupIntervalHours,
+            ScheduledBackupStartLocalTime = model.BackupPolicy.ScheduledBackupStartLocalTime,
             PreUpdateBackupRetentionCount = model.BackupPolicy.PreUpdateBackupRetentionCount,
             KeepManualBackupsForever = model.BackupPolicy.KeepManualBackupsForever,
             PreUpdateBackupEnabled = model.BackupPolicy.PreUpdateBackupEnabled,
@@ -100,6 +104,8 @@ public static class EntityMappingExtensions
         entity.MapFoldersJson = SerializeList(model.WorkshopPreset.MapFolders);
         entity.ScheduledBackupsEnabled = model.BackupPolicy.ScheduledBackupsEnabled;
         entity.ScheduledBackupRetentionCount = model.BackupPolicy.ScheduledBackupRetentionCount;
+        entity.ScheduledBackupIntervalHours = model.BackupPolicy.ScheduledBackupIntervalHours;
+        entity.ScheduledBackupStartLocalTime = model.BackupPolicy.ScheduledBackupStartLocalTime;
         entity.PreUpdateBackupRetentionCount = model.BackupPolicy.PreUpdateBackupRetentionCount;
         entity.KeepManualBackupsForever = model.BackupPolicy.KeepManualBackupsForever;
         entity.PreUpdateBackupEnabled = model.BackupPolicy.PreUpdateBackupEnabled;
@@ -186,7 +192,7 @@ public static class EntityMappingExtensions
             entity.PresetId,
             entity.ProfileId,
             entity.Name,
-            (ProjectZomboidBranch)entity.Branch,
+            ProjectZomboidBranchSupport.FromPersistedValue(entity.Branch),
             new WorkshopPreset
             {
                 WorkshopItemIds = DeserializeList(entity.WorkshopItemIdsJson),

@@ -3,6 +3,7 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\avalonia-logo.ico</ApplicationIcon>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
   </PropertyGroup>
 
@@ -20,9 +21,6 @@
       <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
     </PackageReference>
     <PackageReference Include="CommunityToolkit.Mvvm" />
-    <PackageReference Include="Microsoft.AspNetCore.DataProtection" />
-    <PackageReference Include="Microsoft.AspNetCore.DataProtection.Extensions" />
-    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
   </ItemGroup>
 
@@ -30,5 +28,6 @@
     <ProjectReference Include="..\PZServerLauncher.Core\PZServerLauncher.Core.csproj" />
     <ProjectReference Include="..\PZServerLauncher.Contracts\PZServerLauncher.Contracts.csproj" />
     <ProjectReference Include="..\PZServerLauncher.Infrastructure\PZServerLauncher.Infrastructure.csproj" />
+    <ProjectReference Include="..\PZServerLauncher.Runtime\PZServerLauncher.Runtime.csproj" />
   </ItemGroup>
 </Project>

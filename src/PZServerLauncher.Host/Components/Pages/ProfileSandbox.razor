@@ -2,7 +2,11 @@
 @attribute [Authorize(Roles="Owner,Admin")]
 @inject ProfileStore ProfileStore
 @inject StructuredSettingsService StructuredSettingsService
+@inject SettingsDraftStore SettingsDraftStore
 @inject RuntimeStateStore RuntimeStateStore
+@inject ServerWorldResetService ServerWorldResetService
+@inject ServerProcessSupervisor ProcessSupervisor
+@inject SandboxPresetLibraryService SandboxPresetLibraryService
 
 <PageTitle>Sandbox</PageTitle>
 
@@ -30,6 +34,7 @@ else
             <a class="nav-button secondary-button" href="@AdvancedFilesHref">Advanced Files</a>
             <button class="nav-button" @onclick="ValidateAsync" disabled="@(!_canEdit || _busy)">Validate</button>
             <button class="nav-button secondary-button" @onclick="SaveDraftAsync" disabled="@(!_canEdit || _busy || !_pageSupportsDrafts)">Save Workspace Draft</button>
+            <button class="nav-button secondary-button" @onclick="DiscardDraftAsync" disabled="@(!_canEdit || _busy || !_pageSupportsDrafts)">Discard Draft</button>
             <button class="nav-button secondary-button" @onclick="ApplyAsync" disabled="@(!_canEdit || _busy)">Apply To File</button>
         </Actions>
         <ChildContent>
@@ -37,15 +42,14 @@ else
                 <div class="workspace-panel__copy">
                     <p class="eyebrow">Sandbox</p>
                     <h1>@_profile.DisplayName</h1>
-                    <p class="muted-text">Branch-aware structured sandbox settings for world pressure, survival pace, and the other SandboxVars.lua controls this host can safely round-trip. If the host marks the file unsupported, use Advanced Files to finish the raw edit.</p>
+                    <p class="muted-text">Browse sandbox settings by game category, compare everything against shipped or custom Lua presets, and keep the actual file write behind the same validate, draft, and apply flow.</p>
                 </div>
 
                 <div class="workspace-actions">
                     <span class="pill">@_profile.Branch</span>
-                    <span class="pill">@(_installDetected ? "Install detected" : "Install missing")</span>
-                    <span class="pill">@(_cacheDetected ? "Cache ready" : "Cache missing")</span>
-                    <span class="pill">@(_canEdit ? "Structured editing enabled" : "Structured editing unavailable")</span>
-                    <span class="pill">@(_pageSupportsDrafts ? "Drafts supported" : "Drafts unavailable")</span>
+                    <span class="pill">@(_runtimeStatus?.State.ToString() ?? "Unknown runtime")</span>
+                    <span class="pill">@(_canEdit ? "Structured editing enabled" : "Read only")</span>
+                    <span class="pill">@PresetStatusLabel</span>
                 </div>
             </section>
 
@@ -53,237 +57,272 @@ else
                 <article class="metric-card">
                     <span class="metric-label">Catalog</span>
                     <strong class="metric-value">@(_catalogSummary ?? "Loading...")</strong>
-                    <span class="metric-note">Branch-aware structured catalog</span>
+                    <span class="metric-note">Shared sandbox schema and preset metadata</span>
                 </article>
                 <article class="metric-card">
-                    <span class="metric-label">Runtime</span>
-                    <strong class="metric-value">@(_runtimeStatus?.State.ToString() ?? "Unknown")</strong>
-                    <span class="metric-note">Current server state</span>
+                    <span class="metric-label">Preset</span>
+                    <strong class="metric-value">@ActivePresetLabel</strong>
+                    <span class="metric-note">@PresetSummary</span>
                 </article>
                 <article class="metric-card">
-                    <span class="metric-label">Drafts</span>
-                    <strong class="metric-value">@(_pageSupportsDrafts ? "Available" : "Unavailable")</strong>
-                    <span class="metric-note">Local draft persistence</span>
+                    <span class="metric-label">Search</span>
+                    <strong class="metric-value">@VisibleCategoryCount</strong>
+                    <span class="metric-note">@SearchSummary</span>
                 </article>
                 <article class="metric-card">
                     <span class="metric-label">Fallback</span>
                     <strong class="metric-value">@(_valueSet?.RequiresAdvancedFilesFallback == true ? "Required" : "Not needed")</strong>
-                    <span class="metric-note">@(_valueSet?.FallbackReason ?? "Structured editing is ready")</span>
+                    <span class="metric-note">@(_valueSet?.FallbackReason ?? "Structured sandbox editing is active.")</span>
                 </article>
             </section>
 
-            <section class="metric-grid">
-                <article class="metric-card">
-                    <span class="metric-label">World Pressure</span>
-                    <strong class="metric-value">@SandboxPressureValue</strong>
-                    <span class="metric-note">@SandboxPressureSummary</span>
-                </article>
-                <article class="metric-card">
-                    <span class="metric-label">Survival Rules</span>
-                    <strong class="metric-value">@SandboxSurvivalValue</strong>
-                    <span class="metric-note">@SandboxSurvivalSummary</span>
-                </article>
-                <article class="metric-card">
-                    <span class="metric-label">World Timeline</span>
-                    <strong class="metric-value">@SandboxTimelineValue</strong>
-                    <span class="metric-note">@SandboxTimelineSummary</span>
-                </article>
-                <article class="metric-card">
-                    <span class="metric-label">Recovery &amp; Cleanup</span>
-                    <strong class="metric-value">@SandboxRecoveryValue</strong>
-                    <span class="metric-note">@SandboxRecoverySummary</span>
-                </article>
-            </section>
-
-            <div class="cards cards--wide">
-                <section class="card">
-                    <div class="card-heading">
-                        <div>
-                            <p class="eyebrow">Sandbox</p>
-                            <h2>Structured Editor</h2>
-                        </div>
-                        <span class="pill">@(_canEdit ? "Editable" : "Read only")</span>
+            <section class="card">
+                <div class="card-heading">
+                    <div>
+                        <p class="eyebrow">World Reset</p>
+                        <h2>Generate A Fresh Map</h2>
                     </div>
+                    <span class="pill">@(_runtimeStatus?.State.ToString() ?? "Unknown runtime")</span>
+                </div>
 
-                    <p class="muted-text">Use this page to shape zombie pressure, survival pacing, and the rest of the branch-aware sandbox catalog. Validate first, save a draft for a checkpoint, then apply only when the structured editor stays supported.</p>
+                <p class="muted-text">Delete the current multiplayer world so the next start generates a fresh map from the current sandbox settings. This action also bumps <code>ResetID</code> and randomizes <code>Seed</code>.</p>
 
-                    @if (_catalog is null || _page is null || _valueSet is null)
-                    {
-                        <div class="empty-state">
-                            <p>Loading sandbox editor...</p>
+                <div class="field-grid">
+                    <label>
+                        <span class="field-label">Safety Backup</span>
+                        <input type="checkbox" @bind="_createBackupBeforeReset" disabled="@_busy" />
+                        <span class="muted-text">Create a manual backup before deleting the world.</span>
+                    </label>
+
+                    <label>
+                        <span class="field-label">Restart After Reset</span>
+                        <input type="checkbox" @bind="_restartAfterWorldReset" disabled="@_busy" />
+                        <span class="muted-text">Start the server again immediately after the fresh-world reset completes.</span>
+                    </label>
+                </div>
+
+                <div class="workspace-actions">
+                    <button class="nav-button danger-button" @onclick="ResetWorldAsync" disabled="@(_busy || _profile is null)">Reset World</button>
+                    <span class="muted-text">World folder: <code>@WorldDirectoryLabel</code></span>
+                </div>
+            </section>
+
+            @if (_page is null || _valueSet is null)
+            {
+                <section class="card">
+                    <div class="empty-state">
+                        <p>Loading sandbox editor...</p>
+                    </div>
+                </section>
+            }
+            else
+            {
+                @if (_valueSet.RequiresAdvancedFilesFallback)
+                {
+                    <div class="settings-banner settings-banner--warning">
+                        <strong>Structured editing is unavailable for this file.</strong>
+                        <p>@(_valueSet.FallbackReason ?? "Open Advanced Files to edit SandboxVars.lua directly.")</p>
+                        <a class="nav-button secondary-button" href="@AdvancedFilesHref">Open Advanced Files</a>
+                    </div>
+                }
+                else
+                {
+                    <section class="card sandbox-toolbar">
+                        <div class="sandbox-toolbar__row">
+                            <label class="sandbox-toolbar__search">
+                                <span class="field-label">Search sandbox settings</span>
+                                <input type="text"
+                                       @bind="SearchText"
+                                       @bind:event="oninput"
+                                       placeholder="Search fields, values, or section names" />
+                            </label>
+
+                            @if (HasPresets)
+                            {
+                                <label class="sandbox-toolbar__preset">
+                                    <span class="field-label">Preset</span>
+                                    <select @bind="SelectedPresetId">
+                                        @foreach (var preset in _presets)
+                                        {
+                                            <option value="@preset.PresetId">@(preset.IsBuiltIn ? $"{preset.Label} (Shipped)" : $"{preset.Label} (Custom)")</option>
+                                        }
+                                    </select>
+                                </label>
+                            }
+
+                            <label class="sandbox-toolbar__preset-name">
+                                <span class="field-label">Custom Preset Name</span>
+                                <input type="text" @bind="_presetName" placeholder="Save current settings as..." />
+                            </label>
                         </div>
-                    }
-                    else
-                    {
-                        if (_valueSet.RequiresAdvancedFilesFallback)
+
+                        <div class="sandbox-toolbar__actions">
+                            <button class="nav-button secondary-button" @onclick="ApplyPreset" disabled="@(!_canEdit || !HasActivePreset)">Apply preset</button>
+                            <button class="nav-button secondary-button" @onclick="ResetSelectedCategoryToPreset" disabled="@(!_canEdit || !HasActivePreset || SelectedCategory is null)">Reset category to preset</button>
+                            <button class="nav-button secondary-button" @onclick="ResetAllToPreset" disabled="@(!_canEdit || !HasActivePreset)">Reset all to preset</button>
+                            <button class="nav-button" @onclick="SavePresetAsync" disabled="@(!_canEdit || string.IsNullOrWhiteSpace(_presetName) || _busy)">Save custom preset</button>
+                            <button class="nav-button danger-button" @onclick="DeletePresetAsync" disabled="@(!_canEdit || !CanDeleteSelectedPreset || _busy)">Delete selected preset</button>
+                        </div>
+
+                        <p class="muted-text">@PresetSummary</p>
+                        <p class="muted-text">@PresetLibrarySummary</p>
+                    </section>
+                }
+
+                <section class="sandbox-layout">
+                    <aside class="sandbox-categories card">
+                        <div class="card-heading">
+                            <div>
+                                <p class="eyebrow">Categories</p>
+                                <h2>Sandbox Pages</h2>
+                            </div>
+                        </div>
+
+                        @if (_categories.Count == 0)
                         {
-                            <div class="settings-banner settings-banner--warning">
-                                <strong>Structured editing is unavailable for this page.</strong>
-                                <p>@SandboxFallbackSummary</p>
-                                <a class="nav-button secondary-button" href="@AdvancedFilesHref">Open Advanced Files</a>
+                            <div class="empty-state">
+                                <p>No sandbox categories match the current search.</p>
                             </div>
                         }
                         else
                         {
-                            <div class="status-banner status-banner--warm">
-                                <strong>Operator workflow</strong>
-                                <p>@SandboxEditorGuidance</p>
+                            @foreach (var category in _categories)
+                            {
+                                <button class="@GetCategoryButtonClass(category)"
+                                        @onclick="@(() => SelectCategory(category.CategoryId))">
+                                    <span class="sandbox-category-button__title">@category.Title</span>
+                                    <span class="sandbox-category-button__meta">@GetCategoryStatus(category)</span>
+                                </button>
+                            }
+                        }
+                    </aside>
+
+                    <section class="sandbox-main card">
+                        @if (SelectedCategory is null)
+                        {
+                            <div class="empty-state">
+                                <p>Select a category to browse its sandbox settings.</p>
                             </div>
                         }
-
-                        @foreach (var sectionDef in _page.Sections)
+                        else
                         {
-                            <div class="profile-section">
-                                <div class="profile-section__header">
-                                    <h3>@sectionDef.Title</h3>
-                                    <p class="muted-text">@GetSectionSummary(sectionDef)</p>
+                            <div class="card-heading">
+                                <div>
+                                    <p class="eyebrow">Selected Category</p>
+                                    <h2>@SelectedCategory.Title</h2>
                                 </div>
+                                <span class="pill">@GetCategoryStatus(SelectedCategory)</span>
+                            </div>
 
-                                <div class="field-grid">
-                                    @foreach (var field in sectionDef.Fields)
-                                    {
-                                        <label class="field-card">
-                                            <span class="field-label">@field.Label</span>
-                                            @if (_canEdit && !field.IsReadOnly)
-                                            {
-                                                @RenderField(field)
-                                            }
-                                            else
-                                            {
-                                                <div class="field-value field-value--readonly">
-                                                    @FormatReadOnlyValue(field)
+                            @foreach (var section in SelectedCategory.Sections)
+                            {
+                                <div class="sandbox-section">
+                                    <div class="sandbox-section__header">
+                                        <h3>@(section.Section.Title)</h3>
+                                        @if (!string.IsNullOrWhiteSpace(section.Section.Description))
+                                        {
+                                            <p class="muted-text">@(section.Section.Description)</p>
+                                        }
+                                    </div>
+
+                                    <div class="sandbox-section__fields">
+                                        @foreach (var field in section.Fields)
+                                        {
+                                            <label class="sandbox-field-row">
+                                                <div class="sandbox-field-row__copy">
+                                                    <span class="field-label">@field.Field.Label</span>
+
+                                                    @if (!string.IsNullOrWhiteSpace(field.Field.HelpText))
+                                                    {
+                                                        <small class="muted-text">@field.Field.HelpText</small>
+                                                    }
+
+                                                    <div class="field-meta">
+                                                        @if (field.Field.RequiresRestart)
+                                                        {
+                                                            <span class="field-pill">Restart required</span>
+                                                        }
+                                                        @if (field.HasPresetValue)
+                                                        {
+                                                            <span class="field-pill @(field.MatchesPreset ? string.Empty : "field-pill--readonly")">
+                                                                @(field.MatchesPreset ? "Matches preset" : $"Preset: {field.PresetValue}")
+                                                            </span>
+                                                        }
+                                                    </div>
+
+                                                    @if (_fieldErrors.TryGetValue(field.Field.FieldId, out var errors))
+                                                    {
+                                                        @foreach (var error in errors)
+                                                        {
+                                                            <span class="validation-message">@error</span>
+                                                        }
+                                                    }
                                                 </div>
-                                            }
 
-                                            <div class="field-meta">
-                                                @if (field.RequiresRestart)
-                                                {
-                                                    <span class="field-pill">Restart required</span>
-                                                }
-                                                @if (field.IsReadOnly)
-                                                {
-                                                    <span class="field-pill field-pill--readonly">Read only</span>
-                                                }
-                                            </div>
-
-                                            @if (!string.IsNullOrWhiteSpace(field.HelpText))
-                                            {
-                                                <small class="muted-text">@field.HelpText</small>
-                                            }
-
-                                            @if (_fieldErrors.TryGetValue(field.FieldId, out var errors))
-                                            {
-                                                @foreach (var error in errors)
-                                                {
-                                                    <span class="validation-message">@error</span>
-                                                }
-                                            }
-                                        </label>
-                                    }
+                                                <div class="sandbox-field-row__control">
+                                                    @if (!_canEdit || field.Field.IsReadOnly)
+                                                    {
+                                                        <div class="field-value field-value--readonly">@FormatReadOnlyValue(field)</div>
+                                                    }
+                                                    else
+                                                    {
+                                                        @RenderEditor(field)
+                                                    }
+                                                </div>
+                                            </label>
+                                        }
+                                    </div>
                                 </div>
-                            </div>
+                            }
                         }
+                    </section>
+                </section>
 
-                        if (_pageValidation is not null)
+                @if (_pageValidation is not null)
+                {
+                    <section class="card">
+                        <div class="card-heading">
+                            <div>
+                                <p class="eyebrow">Validation</p>
+                                <h2>Editor Feedback</h2>
+                            </div>
+                            <span class="pill">@ValidationSummary</span>
+                        </div>
+
+                        @if (_pageValidation.PageErrors.Count == 0 && _pageValidation.FieldErrors.Count == 0)
                         {
-                            <div class="card inner-card">
-                                <div class="card-heading">
-                                    <div>
-                                        <p class="eyebrow">Validation</p>
-                                        <h3>Editor Feedback</h3>
-                                    </div>
-                                    <span class="pill">@ValidationSummary</span>
-                                </div>
-
-                                <div class="info-grid info-grid--compact">
-                                    <div class="info-item">
-                                        <span class="info-label">Page issues</span>
-                                        <span class="info-value">@PageErrorCount</span>
-                                    </div>
-                                    <div class="info-item">
-                                        <span class="info-label">Field issues</span>
-                                        <span class="info-value">@FieldErrorCount</span>
-                                    </div>
-                                    <div class="info-item">
-                                        <span class="info-label">State</span>
-                                        <span class="info-value">@(_pageValidation.IsValid ? "Ready" : "Needs attention")</span>
-                                    </div>
-                                </div>
-
-                                @if (_pageValidation.PageErrors.Count == 0 && _pageValidation.FieldErrors.Count == 0)
-                                {
-                                    <p class="muted-text">No validation errors are currently blocking the Sandbox page.</p>
-                                }
-                                else
-                                {
-                                    @if (_pageValidation.PageErrors.Count > 0)
-                                    {
-                                        <p class="eyebrow">Page Issues</p>
-                                        <ul class="stack-list">
-                                            @foreach (var error in _pageValidation.PageErrors)
-                                            {
-                                                <li>@error</li>
-                                            }
-                                        </ul>
-                                    }
-
-                                    @if (_pageValidation.FieldErrors.Count > 0)
-                                    {
-                                        <p class="eyebrow">Field Issues</p>
-                                        <ul class="stack-list">
-                                            @foreach (var entry in _pageValidation.FieldErrors)
-                                            {
-                                                @foreach (var error in entry.Value)
-                                                {
-                                                    <li><strong>@entry.Key</strong> - @error</li>
-                                                }
-                                            }
-                                        </ul>
-                                    }
-                                }
-                            </div>
+                            <p class="muted-text">No validation issues are currently blocking the sandbox page.</p>
                         }
-                    }
-                </section>
+                        else
+                        {
+                            @if (_pageValidation.PageErrors.Count > 0)
+                            {
+                                <ul class="stack-list">
+                                    @foreach (var error in _pageValidation.PageErrors)
+                                    {
+                                        <li>@error</li>
+                                    }
+                                </ul>
+                            }
 
-                <section class="card">
-                    <div class="card-heading">
-                        <div>
-                            <p class="eyebrow">Sandbox Status</p>
-                            <h2>Workspace Snapshot</h2>
-                        </div>
-                    </div>
+                            @if (_pageValidation.FieldErrors.Count > 0)
+                            {
+                                <ul class="stack-list">
+                                    @foreach (var entry in _pageValidation.FieldErrors)
+                                    {
+                                        @foreach (var error in entry.Value)
+                                        {
+                                            <li><strong>@entry.Key</strong> - @error</li>
+                                        }
+                                    }
+                                </ul>
+                            }
+                        }
+                    </section>
+                }
 
-                    <div class="info-grid">
-                        <div class="info-item">
-                            <span class="info-label">Branch</span>
-                            <span class="info-value">@_profile.Branch</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">Structured editing</span>
-                            <span class="info-value">@(_canEdit ? "Enabled" : "Unavailable")</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">Drafts</span>
-                            <span class="info-value">@(_pageSupportsDrafts ? "Available" : "Unavailable")</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">Fallback</span>
-                            <span class="info-value">@(_valueSet?.RequiresAdvancedFilesFallback == true ? "Yes" : "No")</span>
-                        </div>
-                    </div>
-
-                    <div class="status-banner status-banner--warm">
-                        <strong>Runtime and file posture</strong>
-                        <p>Runtime: @(_runtimeStatus?.State.ToString() ?? "Unknown")</p>
-                        <p>Install: @(_installDetected ? "Detected" : "Missing")</p>
-                        <p>Cache: @(_cacheDetected ? "Detected" : "Missing")</p>
-                        <p>@SandboxSnapshotSummary</p>
-                    </div>
-                </section>
-            </div>
-
-            <p class="status-line">@_statusMessage</p>
+                <p class="status-line">@_statusMessage</p>
+            }
         </ChildContent>
     </ProfileWorkspaceShell>
 }
@@ -300,6 +339,9 @@ else
     private SettingsValidationResultDto? _pageValidation;
     private Dictionary<string, string?> _values = new(StringComparer.Ordinal);
     private Dictionary<string, IReadOnlyList<string>> _fieldErrors = new(StringComparer.Ordinal);
+    private IReadOnlyList<SandboxPresetDto> _presets = [];
+    private IReadOnlyList<SandboxCategoryPresentation> _categories = [];
+    private IReadOnlyList<SandboxCategoryPresentation> _allCategories = [];
     private bool _busy;
     private string? _statusMessage;
     private bool _installDetected;
@@ -308,11 +350,102 @@ else
     private bool _pageSupportsDrafts;
     private string? _catalogSummary;
     private string? _sourceSha256;
+    private string _searchText = string.Empty;
+    private string? _selectedPresetId;
+    private string? _selectedCategoryId;
+    private string _presetName = string.Empty;
+    private bool _createBackupBeforeReset = true;
+    private bool _restartAfterWorldReset;
 
     protected override async Task OnParametersSetAsync()
     {
         await ReloadAsync();
     }
+
+    private string SearchText
+    {
+        get => _searchText;
+        set
+        {
+            var normalized = value ?? string.Empty;
+            if (string.Equals(_searchText, normalized, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            _searchText = normalized;
+            RefreshPresentation();
+        }
+    }
+
+    private string? SelectedPresetId
+    {
+        get => _selectedPresetId;
+        set
+        {
+            if (string.Equals(_selectedPresetId, value, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            _selectedPresetId = value;
+            _presetName = ActivePreset is { IsBuiltIn: false } customPreset ? customPreset.Label : string.Empty;
+            RefreshPresentation();
+        }
+    }
+
+    private SandboxCategoryPresentation? SelectedCategory =>
+        _categories.FirstOrDefault(category => string.Equals(category.CategoryId, _selectedCategoryId, StringComparison.Ordinal))
+        ?? _categories.FirstOrDefault();
+
+    private SandboxPresetDto? ActivePreset =>
+        SandboxPagePresentationBuilder.ResolvePreset(_presets, _selectedPresetId);
+
+    private bool HasPresets => _presets.Count > 0;
+
+    private bool HasActivePreset => ActivePreset is not null;
+
+    private bool CanDeleteSelectedPreset => ActivePreset is { IsBuiltIn: false };
+
+    private int VisibleCategoryCount => _categories.Count;
+
+    private string ActivePresetLabel => ActivePreset?.Label ?? "No preset";
+
+    private string PresetStatusLabel =>
+        !HasActivePreset
+            ? "Preset unavailable"
+            : PageMatchesPreset
+                ? $"Matches {ActivePresetLabel}"
+                : $"Modified from {ActivePresetLabel}";
+
+    private string PresetSummary =>
+        !HasActivePreset
+            ? "This branch has no sandbox preset library loaded yet."
+            : PageMatchesPreset
+                ? $"The current sandbox values match the {ActivePresetLabel} preset."
+                : $"The current sandbox values diverge from {ActivePresetLabel}. Apply the preset, reset a category, or keep the local overrides.";
+
+    private string PresetLibrarySummary =>
+        !HasPresets
+            ? "No shipped or custom presets are available yet."
+            : ActivePreset?.IsBuiltIn == true
+                ? "Shipped preset selected. Type a new name to save the current editor state as a custom preset."
+                : "Custom preset selected. Save with the same name to update it, or delete it if you no longer need it.";
+
+    private bool PageMatchesPreset =>
+        !_allCategories.Any(category => category.HasPresetComparison && !category.MatchesPreset);
+
+    private string SearchSummary =>
+        string.IsNullOrWhiteSpace(_searchText)
+            ? "Showing every sandbox category."
+            : $"Showing categories that match \"{_searchText.Trim()}\".";
+
+    private string ValidationSummary =>
+        _pageValidation is null
+            ? "Run Validate to check the sandbox page."
+            : _pageValidation.IsValid
+                ? "Validation clean"
+                : $"{_pageValidation.PageErrors.Count} page / {_pageValidation.FieldErrors.Sum(entry => entry.Value.Count)} field issue(s)";
 
     private async Task ReloadAsync()
     {
@@ -324,35 +457,75 @@ else
 
         _runtimeStatus = RuntimeStateStore.GetOrDefault(ProfileId);
         _catalog = StructuredSettingsService.GetCatalog(_profile);
-        _page = _catalog.Pages.FirstOrDefault(page => string.Equals(page.PageId, "sandbox", StringComparison.OrdinalIgnoreCase));
-        _valueSet = StructuredSettingsService.GetPage(_profile, "sandbox");
+        _page = _catalog.Pages.FirstOrDefault(page => string.Equals(page.PageId, ProfileWorkspacePageIds.Sandbox, StringComparison.OrdinalIgnoreCase));
+        _valueSet = StructuredSettingsService.GetPage(_profile, ProfileWorkspacePageIds.Sandbox);
         _pageValidation = null;
         _fieldErrors = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
         _installDetected = Directory.Exists(_profile.InstallDirectory);
         _cacheDetected = Directory.Exists(_profile.CacheDirectory);
+        _statusMessage = null;
 
         _catalogSummary = _catalog is null ? null : $"{_catalog.CatalogId} v{_catalog.CatalogVersion} | {_catalog.Branch}";
         _pageSupportsDrafts = _page?.SupportsDrafts == true;
         _canEdit = _page?.SupportsStructuredEditing == true && _valueSet is not null && !_valueSet.RequiresAdvancedFilesFallback;
+        _presets = SandboxPresetLibraryService.List(_profile);
 
         if (_valueSet is null)
         {
             _statusMessage = "Sandbox settings could not be loaded.";
             _values = new Dictionary<string, string?>(StringComparer.Ordinal);
+            _categories = [];
             return;
         }
 
         _sourceSha256 = _valueSet.SourceSha256;
         _values = new Dictionary<string, string?>(_valueSet.Values, StringComparer.Ordinal);
 
-        _statusMessage = _valueSet.RequiresAdvancedFilesFallback
-            ? _valueSet.FallbackReason ?? "Structured sandbox editing is not available yet."
-            : "Sandbox settings loaded. Validate before applying, or save a workspace draft for a local checkpoint.";
+        if (HasPresets &&
+            (string.IsNullOrWhiteSpace(_selectedPresetId) ||
+             !_presets.Any(preset => string.Equals(preset.PresetId, _selectedPresetId, StringComparison.Ordinal))))
+        {
+            _selectedPresetId = _presets[0].PresetId;
+        }
+
+        _presetName = ActivePreset is { IsBuiltIn: false } customPreset ? customPreset.Label : string.Empty;
+
+        await LoadDraftIfAvailableAsync();
+        RefreshPresentation();
+
+        if (string.IsNullOrWhiteSpace(_statusMessage))
+        {
+            _statusMessage = _valueSet.RequiresAdvancedFilesFallback
+                ? _valueSet.FallbackReason ?? "Structured sandbox editing is not available yet."
+                : "Sandbox settings loaded. Compare against the preset, validate changes, and apply only when you are ready.";
+        }
+    }
+
+    private async Task LoadDraftIfAvailableAsync()
+    {
+        if (_profile is null || _page is null || _catalog is null || !_pageSupportsDrafts)
+        {
+            return;
+        }
+
+        var draft = await SettingsDraftStore.GetAsync(
+            _profile.ProfileId,
+            _profile.Branch,
+            _catalog.CatalogId,
+            _catalog.CatalogVersion,
+            _page.PageId);
+        if (draft is null)
+        {
+            return;
+        }
+
+        _values = new Dictionary<string, string?>(draft.Values, StringComparer.Ordinal);
+        _statusMessage = $"Loaded saved sandbox draft from {draft.UpdatedAtUtc.ToLocalTime():g}.";
     }
 
     private async Task ValidateAsync()
     {
-        if (_profile is null || _page is null || !_canEdit)
+        if (_profile is null || !_canEdit)
         {
             return;
         }
@@ -360,7 +533,7 @@ else
         _busy = true;
         try
         {
-            _pageValidation = StructuredSettingsService.Validate(_profile, "sandbox", _values);
+            _pageValidation = StructuredSettingsService.Validate(_profile, ProfileWorkspacePageIds.Sandbox, _values);
             _fieldErrors = new Dictionary<string, IReadOnlyList<string>>(_pageValidation.FieldErrors, StringComparer.Ordinal);
             _statusMessage = _pageValidation.IsValid
                 ? "Sandbox validation completed successfully."
@@ -374,7 +547,7 @@ else
 
     private async Task SaveDraftAsync()
     {
-        if (_profile is null || _page is null || !_canEdit || !_pageSupportsDrafts)
+        if (_profile is null || _page is null || _catalog is null || !_canEdit || !_pageSupportsDrafts)
         {
             return;
         }
@@ -382,11 +555,60 @@ else
         _busy = true;
         try
         {
-            _pageValidation = StructuredSettingsService.Validate(_profile, "sandbox", _values);
+            _pageValidation = StructuredSettingsService.Validate(_profile, ProfileWorkspacePageIds.Sandbox, _values);
             _fieldErrors = new Dictionary<string, IReadOnlyList<string>>(_pageValidation.FieldErrors, StringComparer.Ordinal);
+            await SettingsDraftStore.UpsertAsync(new SettingsDraftDto(
+                _profile.ProfileId,
+                _profile.Branch,
+                _catalog.CatalogId,
+                _catalog.CatalogVersion,
+                _page.PageId,
+                new Dictionary<string, string?>(_values, StringComparer.Ordinal),
+                _sourceSha256,
+                true,
+                DateTimeOffset.UtcNow));
             _statusMessage = _pageValidation.IsValid
                 ? "Sandbox draft saved locally."
-                : _pageValidation.FallbackReason ?? "Sandbox draft could not be saved.";
+                : _pageValidation.FallbackReason ?? "Sandbox draft saved with validation warnings.";
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task DiscardDraftAsync()
+    {
+        if (_profile is null || _page is null || _catalog is null || !_pageSupportsDrafts)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            await SettingsDraftStore.DeleteAsync(
+                _profile.ProfileId,
+                _profile.Branch,
+                _catalog.CatalogId,
+                _catalog.CatalogVersion,
+                _page.PageId);
+
+            _valueSet = StructuredSettingsService.GetPage(_profile, ProfileWorkspacePageIds.Sandbox);
+            _sourceSha256 = _valueSet.SourceSha256;
+            _values = new Dictionary<string, string?>(_valueSet.Values, StringComparer.Ordinal);
+            _pageValidation = null;
+            _fieldErrors = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
+            RefreshPresentation();
+            _statusMessage = "Sandbox draft discarded.";
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
         }
         finally
         {
@@ -396,7 +618,7 @@ else
 
     private async Task ApplyAsync()
     {
-        if (_profile is null || _page is null || !_canEdit)
+        if (_profile is null || !_canEdit)
         {
             return;
         }
@@ -404,9 +626,14 @@ else
         _busy = true;
         try
         {
-            var result = await StructuredSettingsService.SaveAsync(_profile, "sandbox", _values);
+            var result = await StructuredSettingsService.SaveAsync(_profile, ProfileWorkspacePageIds.Sandbox, _values);
             _pageValidation = result.Validation;
             _fieldErrors = new Dictionary<string, IReadOnlyList<string>>(result.Validation.FieldErrors, StringComparer.Ordinal);
+            _valueSet = result.ValueSet;
+            _sourceSha256 = result.ValueSet.SourceSha256;
+            _values = new Dictionary<string, string?>(result.ValueSet.Values, StringComparer.Ordinal);
+            _canEdit = !result.ValueSet.RequiresAdvancedFilesFallback;
+            RefreshPresentation();
             _statusMessage = result.Validation.IsValid && !result.Validation.RequiresAdvancedFilesFallback
                 ? "Sandbox settings saved."
                 : result.Validation.FallbackReason ?? "Sandbox settings require Advanced Files.";
@@ -417,51 +644,220 @@ else
         }
     }
 
-    private RenderFragment RenderField(SettingsFieldDto field) => builder =>
+    private void ApplyPreset()
+    {
+        if (!_canEdit || ActivePreset is null)
+        {
+            return;
+        }
+
+        foreach (var entry in ActivePreset.Values)
+        {
+            _values[entry.Key] = entry.Value;
+        }
+
+        ClearValidationAndRefresh($"Applied the {ActivePreset.Label} preset to local editor state.");
+    }
+
+    private void ResetSelectedCategoryToPreset()
+    {
+        if (!_canEdit || ActivePreset is null || SelectedCategory is null)
+        {
+            return;
+        }
+
+        foreach (var fieldId in GetCategoryFieldIds(SelectedCategory.CategoryId))
+        {
+            if (ActivePreset.Values.TryGetValue(fieldId, out var presetValue))
+            {
+                _values[fieldId] = presetValue;
+            }
+        }
+
+        ClearValidationAndRefresh($"Reset {SelectedCategory.Title} to the {ActivePreset.Label} preset.");
+    }
+
+    private void ResetAllToPreset()
+    {
+        if (!_canEdit || ActivePreset is null)
+        {
+            return;
+        }
+
+        foreach (var entry in ActivePreset.Values)
+        {
+            _values[entry.Key] = entry.Value;
+        }
+
+        ClearValidationAndRefresh($"Reset all sandbox values to the {ActivePreset.Label} preset.");
+    }
+
+    private void SetValue(string fieldId, string? value)
+    {
+        _values[fieldId] = value;
+        ClearValidationAndRefresh();
+    }
+
+    private void SetCheckboxValue(string fieldId, object? rawValue)
+    {
+        var value = rawValue switch
+        {
+            bool boolValue => boolValue,
+            string stringValue when bool.TryParse(stringValue, out var parsed) => parsed,
+            _ => false,
+        };
+
+        SetValue(fieldId, value ? "true" : "false");
+    }
+
+    private void SelectCategory(string categoryId)
+    {
+        _selectedCategoryId = categoryId;
+    }
+
+    private void RefreshPresentation()
+    {
+        if (_page is null)
+        {
+            _allCategories = [];
+            _categories = [];
+            return;
+        }
+
+        _allCategories = SandboxPagePresentationBuilder.Build(_page, _values, ActivePreset, null);
+        _categories = SandboxPagePresentationBuilder.Build(_page, _values, ActivePreset, _searchText);
+        if (_categories.Count == 0)
+        {
+            _selectedCategoryId = null;
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_selectedCategoryId) ||
+            !_categories.Any(category => string.Equals(category.CategoryId, _selectedCategoryId, StringComparison.Ordinal)))
+        {
+            _selectedCategoryId = _categories[0].CategoryId;
+        }
+    }
+
+    private void ClearValidationAndRefresh(string? statusMessage = null)
+    {
+        _pageValidation = null;
+        _fieldErrors = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
+        RefreshPresentation();
+        _statusMessage = statusMessage;
+    }
+
+    private Task SavePresetAsync()
+    {
+        if (_profile is null || !_canEdit)
+        {
+            return Task.CompletedTask;
+        }
+
+        _busy = true;
+        try
+        {
+            var savedPreset = SandboxPresetLibraryService.Save(_profile, _presetName, _values);
+            _presets = SandboxPresetLibraryService.List(_profile);
+            _selectedPresetId = savedPreset.PresetId;
+            _presetName = savedPreset.Label;
+            RefreshPresentation();
+            _statusMessage = $"Saved sandbox preset '{savedPreset.Label}'.";
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private Task DeletePresetAsync()
+    {
+        if (_profile is null || !CanDeleteSelectedPreset || ActivePreset is null)
+        {
+            return Task.CompletedTask;
+        }
+
+        _busy = true;
+        var deletedLabel = ActivePreset.Label;
+        try
+        {
+            var deleted = SandboxPresetLibraryService.Delete(_profile, ActivePreset.PresetId);
+            if (!deleted)
+            {
+                _statusMessage = $"Sandbox preset '{deletedLabel}' was not found.";
+                return Task.CompletedTask;
+            }
+
+            _presets = SandboxPresetLibraryService.List(_profile);
+            _selectedPresetId = _presets.FirstOrDefault()?.PresetId;
+            _presetName = string.Empty;
+            RefreshPresentation();
+            _statusMessage = $"Deleted sandbox preset '{deletedLabel}'.";
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private IReadOnlyList<string> GetCategoryFieldIds(string categoryId)
+    {
+        if (_page is null)
+        {
+            return [];
+        }
+
+        return _page.Sections
+            .Where((section, index) => string.Equals(GetCategoryId(section, index), categoryId, StringComparison.Ordinal))
+            .SelectMany(section => section.Fields)
+            .Select(field => field.FieldId)
+            .ToArray();
+    }
+
+    private static string GetCategoryId(SettingsSectionDto section, int index) =>
+        string.IsNullOrWhiteSpace(section.CategoryId)
+            ? section.SectionId
+            : section.CategoryId;
+
+    private RenderFragment RenderEditor(SandboxFieldPresentation field) => builder =>
     {
         var seq = 0;
-        var value = GetFieldValue(field.FieldId);
-
-        switch (field.Control)
+        switch (field.Field.Control)
         {
             case SettingsFieldControlKind.Checkbox:
                 builder.OpenElement(seq++, "input");
                 builder.AddAttribute(seq++, "type", "checkbox");
-                builder.AddAttribute(seq++, "checked", bool.TryParse(value, out var parsed) && parsed);
-                builder.AddAttribute(seq++, "disabled", !_canEdit || field.IsReadOnly);
-                builder.AddAttribute(seq++, "onchange", EventCallback.Factory.Create<ChangeEventArgs>(this, args => SetValue(field.FieldId, args.Value?.ToString())));
+                builder.AddAttribute(seq++, "checked", IsChecked(field.CurrentValue));
+                builder.AddAttribute(seq++, "onchange", EventCallback.Factory.Create<ChangeEventArgs>(this, args => SetCheckboxValue(field.Field.FieldId, args.Value)));
                 builder.CloseElement();
                 break;
             case SettingsFieldControlKind.Numeric:
                 builder.OpenElement(seq++, "input");
                 builder.AddAttribute(seq++, "type", "number");
-                builder.AddAttribute(seq++, "value", value);
-                builder.AddAttribute(seq++, "disabled", !_canEdit || field.IsReadOnly);
-                builder.AddAttribute(seq++, "oninput", EventCallback.Factory.Create<ChangeEventArgs>(this, args => SetValue(field.FieldId, args.Value?.ToString())));
-                builder.CloseElement();
-                break;
-            case SettingsFieldControlKind.Password:
-                builder.OpenElement(seq++, "input");
-                builder.AddAttribute(seq++, "type", "password");
-                builder.AddAttribute(seq++, "value", value);
-                builder.AddAttribute(seq++, "disabled", !_canEdit || field.IsReadOnly);
-                builder.AddAttribute(seq++, "oninput", EventCallback.Factory.Create<ChangeEventArgs>(this, args => SetValue(field.FieldId, args.Value?.ToString())));
+                builder.AddAttribute(seq++, "value", field.CurrentValue);
+                builder.AddAttribute(seq++, "oninput", EventCallback.Factory.Create<ChangeEventArgs>(this, args => SetValue(field.Field.FieldId, args.Value?.ToString())));
                 builder.CloseElement();
                 break;
             case SettingsFieldControlKind.Select:
                 builder.OpenElement(seq++, "select");
-                builder.AddAttribute(seq++, "value", value);
-                builder.AddAttribute(seq++, "disabled", !_canEdit || field.IsReadOnly);
-                builder.AddAttribute(seq++, "onchange", EventCallback.Factory.Create<ChangeEventArgs>(this, args => SetValue(field.FieldId, args.Value?.ToString())));
+                builder.AddAttribute(seq++, "value", field.CurrentValue);
+                builder.AddAttribute(seq++, "onchange", EventCallback.Factory.Create<ChangeEventArgs>(this, args => SetValue(field.Field.FieldId, args.Value?.ToString())));
                 foreach (var option in field.Options)
                 {
                     builder.OpenElement(seq++, "option");
                     builder.AddAttribute(seq++, "value", option.Value);
-                    if (string.Equals(option.Value, value, StringComparison.Ordinal))
-                    {
-                        builder.AddAttribute(seq++, "selected", true);
-                    }
-
                     builder.AddContent(seq++, option.Label);
                     builder.CloseElement();
                 }
@@ -470,65 +866,64 @@ else
                 break;
             case SettingsFieldControlKind.MultiLineText:
                 builder.OpenElement(seq++, "textarea");
-                builder.AddAttribute(seq++, "rows", "5");
-                builder.AddAttribute(seq++, "value", value);
-                builder.AddAttribute(seq++, "disabled", !_canEdit || field.IsReadOnly);
-                builder.AddAttribute(seq++, "oninput", EventCallback.Factory.Create<ChangeEventArgs>(this, args => SetValue(field.FieldId, args.Value?.ToString())));
-                builder.AddContent(seq++, value);
+                builder.AddAttribute(seq++, "rows", "4");
+                builder.AddAttribute(seq++, "oninput", EventCallback.Factory.Create<ChangeEventArgs>(this, args => SetValue(field.Field.FieldId, args.Value?.ToString())));
+                builder.AddContent(seq++, field.CurrentValue);
+                builder.CloseElement();
+                break;
+            case SettingsFieldControlKind.Password:
+                builder.OpenElement(seq++, "input");
+                builder.AddAttribute(seq++, "type", "password");
+                builder.AddAttribute(seq++, "value", field.CurrentValue);
+                builder.AddAttribute(seq++, "oninput", EventCallback.Factory.Create<ChangeEventArgs>(this, args => SetValue(field.Field.FieldId, args.Value?.ToString())));
                 builder.CloseElement();
                 break;
             default:
                 builder.OpenElement(seq++, "input");
                 builder.AddAttribute(seq++, "type", "text");
-                builder.AddAttribute(seq++, "value", value);
-                builder.AddAttribute(seq++, "disabled", !_canEdit || field.IsReadOnly);
-                builder.AddAttribute(seq++, "oninput", EventCallback.Factory.Create<ChangeEventArgs>(this, args => SetValue(field.FieldId, args.Value?.ToString())));
+                builder.AddAttribute(seq++, "value", field.CurrentValue);
+                builder.AddAttribute(seq++, "oninput", EventCallback.Factory.Create<ChangeEventArgs>(this, args => SetValue(field.Field.FieldId, args.Value?.ToString())));
                 builder.CloseElement();
                 break;
         }
     };
 
-    private string FormatReadOnlyValue(SettingsFieldDto field)
+    private static bool IsChecked(string? value) =>
+        bool.TryParse(value, out var parsed) && parsed;
+
+    private static string FormatReadOnlyValue(SandboxFieldPresentation field)
     {
-        var value = GetFieldValue(field.FieldId);
-        if (string.IsNullOrWhiteSpace(value))
+        if (string.IsNullOrWhiteSpace(field.CurrentValue))
         {
-            return field.DefaultValue ?? "Not set";
+            return field.Field.DefaultValue ?? "Not set";
         }
 
-        if (field.Control == SettingsFieldControlKind.Checkbox && bool.TryParse(value, out var parsed))
+        if (field.Field.Control == SettingsFieldControlKind.Checkbox && bool.TryParse(field.CurrentValue, out var parsed))
         {
             return parsed ? "On" : "Off";
         }
 
-        return value;
+        return field.CurrentValue;
     }
 
-    private void SetValue(string fieldId, string? value)
+    private static string GetCategoryStatus(SandboxCategoryPresentation category)
     {
-        _values[fieldId] = value;
-        _statusMessage = null;
-    }
-
-    private string GetFieldValue(string fieldId) =>
-        GetFieldValue(fieldId, string.Empty);
-
-    private string GetFieldValue(string fieldId, string fallback)
-    {
-        if (!_values.TryGetValue(fieldId, out var currentValue) || string.IsNullOrWhiteSpace(currentValue))
+        if (!category.HasPresetComparison)
         {
-            return fallback;
+            return $"{category.Sections.Sum(section => section.Fields.Count)} field(s)";
         }
 
-        return currentValue;
+        return category.MatchesPreset
+            ? $"Matches preset ({category.MatchingFieldCount}/{category.ComparedFieldCount})"
+            : $"Changed ({category.MatchingFieldCount}/{category.ComparedFieldCount})";
     }
 
-    private string GetBooleanValue(string fieldId, string trueLabel = "Enabled", string falseLabel = "Disabled", string fallback = "Unknown")
+    private string GetCategoryButtonClass(SandboxCategoryPresentation category)
     {
-        var value = GetFieldValue(fieldId, fallback);
-        return bool.TryParse(value, out var parsed)
-            ? parsed ? trueLabel : falseLabel
-            : value;
+        var selected = string.Equals(category.CategoryId, SelectedCategory?.CategoryId, StringComparison.Ordinal);
+        return selected
+            ? "sandbox-category-button sandbox-category-button--selected"
+            : "sandbox-category-button";
     }
 
     private string OverviewHref => $"/profiles/{Uri.EscapeDataString(ProfileId)}/overview";
@@ -537,109 +932,46 @@ else
 
     private string AdvancedFilesHref => $"/profiles/{Uri.EscapeDataString(ProfileId)}/advanced-files";
 
-    private string SandboxEditorGuidance =>
-        _pageSupportsDrafts
-            ? "Validate first, save a draft if you want a checkpoint, then apply the file once you are confident in the branch-aware values."
-            : "Validate first, then apply only when you are ready. Drafts are not available on this page, so Advanced Files is the fallback for manual recovery.";
+    private string WorldDirectoryLabel => _profile is null
+        ? "Unavailable"
+        : Path.Combine(_profile.CacheDirectory, "Saves", "Multiplayer", _profile.ServerName);
 
-    private string SandboxFallbackSummary =>
-        _valueSet?.FallbackReason ?? "Structured editing is unavailable for this Sandbox file. Open Advanced Files to edit SandboxVars.lua directly.";
-
-    private string SandboxSnapshotSummary =>
-        _valueSet?.RequiresAdvancedFilesFallback == true
-            ? SandboxFallbackSummary
-            : "The snapshot reflects the live structured editor values, so operator decisions can be made before opening the raw file.";
-
-    private string SandboxPressureValue =>
-        _valueSet is null
-            ? "Loading..."
-            : $"{GetFieldValue(".sandbox.zombies", "Unknown")} / {GetFieldValue(".sandbox.population-multiplier", "Unknown")}";
-
-    private string SandboxPressureSummary =>
-        _valueSet is null
-            ? "Loading pressure summary..."
-            : $"{GetFieldValue(".sandbox.distribution", "Unknown")} distribution, peak day {GetFieldValue(".sandbox.population-peak-day", "Unknown")}, and sound radius {GetFieldValue(".sandbox.follow-sound-distance", "Unknown")} shape how quickly pressure reaches players.";
-
-    private string SandboxSurvivalValue =>
-        _valueSet is null
-            ? "Loading..."
-            : $"{GetFieldValue(".sandbox.water-shut-modifier", "Unknown")} / {GetFieldValue(".sandbox.electricity-shut-modifier", "Unknown")}";
-
-    private string SandboxSurvivalSummary =>
-        _valueSet is null
-            ? "Loading survival summary..."
-            : $"Food rot {GetFieldValue(".sandbox.food-rot-speed", "Unknown")}, temperature {GetFieldValue(".sandbox.temperature", "Unknown")}, rain {GetFieldValue(".sandbox.rain", "Unknown")}, and nutrition {GetBooleanValue(".sandbox.nutrition")} shape the survival posture.";
-
-    private string SandboxTimelineValue =>
-        _valueSet is null
-            ? "Loading..."
-            : $"{GetFieldValue(".sandbox.day-length", "Unknown")} day / {GetFieldValue(".sandbox.start-time", "Unknown")}";
-
-    private string SandboxTimelineSummary =>
-        _valueSet is null
-            ? "Loading world timeline..."
-            : $"Start date {GetFieldValue(".sandbox.start-year", "Unknown")}-{GetFieldValue(".sandbox.start-month", "Unknown")}-{GetFieldValue(".sandbox.start-day", "Unknown")} with erosion {GetFieldValue(".sandbox.erosion-speed", "Unknown")} and event pressure from helicopter, meta, and sleeping cycles.";
-
-    private string SandboxRecoveryValue =>
-        _valueSet is null
-            ? "Loading..."
-            : $"{GetFieldValue(".sandbox.respawn-hours", "Unknown")}h respawn";
-
-    private string SandboxRecoverySummary =>
-        _valueSet is null
-            ? "Loading recovery summary..."
-            : $"Respawn {GetFieldValue(".sandbox.respawn-hours", "Unknown")}h, unseen respawn {GetFieldValue(".sandbox.respawn-unseen-hours", "Unknown")}h, redistribute {GetFieldValue(".sandbox.redistribute-hours", "Unknown")}h, and corpse removal {GetFieldValue(".sandbox.hours-for-corpse-removal", "Unknown")}h define long-run recovery.";
-
-    private string ValidationSummary
+    private async Task ResetWorldAsync()
     {
-        get
+        if (_profile is null)
         {
-            if (_pageValidation is null)
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var wasRunning = ProcessSupervisor.IsRunning(_profile.ProfileId);
+            if (wasRunning)
             {
-                return "Run Validate to check the sandbox page.";
+                await ProcessSupervisor.StopAsync(_profile.ProfileId, CancellationToken.None);
             }
 
-            return _pageValidation.IsValid
-                ? "Validation clean"
-                : $"{PageErrorCount} page / {FieldErrorCount} field issue(s)";
+            var result = await ServerWorldResetService.ResetWorldAsync(
+                _profile.ProfileId,
+                _createBackupBeforeReset,
+                CancellationToken.None);
+
+            if (_restartAfterWorldReset)
+            {
+                await ProcessSupervisor.StartAsync(_profile, CancellationToken.None);
+            }
+
+            await ReloadAsync();
+            _statusMessage = ServerWorldResetService.BuildUserMessage(result, _restartAfterWorldReset);
         }
-    }
-
-    private int PageErrorCount => _pageValidation?.PageErrors.Count ?? 0;
-
-    private int FieldErrorCount => _pageValidation?.FieldErrors.Sum(entry => entry.Value.Count) ?? 0;
-
-    private string GetSectionSummary(SettingsSectionDto section)
-    {
-        var editableCount = section.Fields.Count(field => !field.IsReadOnly);
-        var restartCount = section.Fields.Count(field => field.RequiresRestart);
-        var readOnlyCount = section.Fields.Count(field => field.IsReadOnly);
-
-        var details = new List<string>
+        catch (Exception ex)
         {
-            $"{section.Fields.Count} fields",
-        };
-
-        if (editableCount > 0)
-        {
-            details.Add($"{editableCount} editable");
+            _statusMessage = ex.Message;
         }
-
-        if (restartCount > 0)
+        finally
         {
-            details.Add($"{restartCount} restart required");
+            _busy = false;
         }
-
-        if (readOnlyCount > 0)
-        {
-            details.Add($"{readOnlyCount} read only");
-        }
-
-        if (!string.IsNullOrWhiteSpace(section.Description))
-        {
-            details.Add(section.Description);
-        }
-
-        return string.Join(" | ", details);
     }
 }

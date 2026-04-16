@@ -22,9 +22,9 @@ public sealed class ProjectZomboidUserAccessSummaryBuilderTests
             nameof(UserRole.Admin));
 
         Assert.Contains("3 managed account", summary.RosterHeadline, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("still need TOTP", summary.SecurityHeadline, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("privileged", summary.SecurityHeadline, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Admin can manage configuration", summary.CreateRoleHeadline, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains(summary.Checklist, item => item.IsBlocking && item.Message.Contains("TOTP", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(summary.Checklist, item => item.IsFollowUp && item.Message.Contains("privileged", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]

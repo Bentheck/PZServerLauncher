@@ -29,11 +29,20 @@ public class Program
 {
     public static async Task Main(string[] args)
     {
+        var app = await BuildWebApplicationAsync(args);
+        await app.RunAsync();
+    }
+
+    public static async Task<WebApplication> BuildWebApplicationAsync(
+        string[] args,
+        string? contentRootPath = null,
+        CancellationToken cancellationToken = default)
+    {
         var appPaths = new AppPaths();
         var bootstrapStateStore = new HostBootstrapStateStore(appPaths);
-        var bootstrapState = await bootstrapStateStore.LoadAsync();
+        var bootstrapState = await bootstrapStateStore.LoadAsync(cancellationToken);
 
-        var builder = WebApplication.CreateBuilder(args);
+        var builder = CreateWebApplicationBuilder(args, contentRootPath);
         builder.WebHost.ConfigureKestrel(options =>
         {
             options.Listen(IPAddress.Loopback, bootstrapState.LoopbackPort);
@@ -52,6 +61,9 @@ public class Program
         builder.Services.AddSingleton(appPaths);
         builder.Services.AddSingleton(bootstrapStateStore);
         builder.Services.AddSingleton(new StartupMetadata(DateTimeOffset.UtcNow, typeof(Program).Assembly.GetName().Version?.ToString() ?? "0.0.0"));
+        builder.Services.AddSingleton<PersistentLogService>();
+        builder.Services.AddSingleton<IRuntimeLogSink>(serviceProvider => serviceProvider.GetRequiredService<PersistentLogService>());
+        builder.Services.AddSingleton<ILoggerProvider, RollingFileLoggerProvider>();
         builder.Services.AddSingleton<ProjectZomboidLiveOperationsInterpreter>();
         builder.Services.AddSingleton<RuntimeStateStore>();
         builder.Services.AddSingleton<ProjectZomboidServerPlanner>();
@@ -61,12 +73,19 @@ public class Program
         builder.Services.AddSingleton<ISettingsCatalogResolver, ProjectZomboidSettingsCatalogResolver>();
         builder.Services.AddSingleton<IIniDocumentService, IniDocumentService>();
         builder.Services.AddSingleton<ISandboxVarsDocumentService, SandboxVarsDocumentService>();
+        builder.Services.AddSingleton<ISandboxPresetDocumentService, SandboxPresetDocumentService>();
+        builder.Services.AddMemoryCache();
         builder.Services.AddHttpClient(nameof(SteamCmdToolService));
+        builder.Services.AddHttpClient(nameof(SteamWorkshopApiClient));
         builder.Services.AddSingleton<SteamCmdToolService>();
         builder.Services.AddSingleton<ServerProcessSupervisor>();
         builder.Services.AddSingleton<BackgroundJobDispatcher>();
         builder.Services.AddSingleton<WorkshopPresetScannerService>();
+        builder.Services.AddScoped<WorkshopBrowserSettingsStore>();
+        builder.Services.AddScoped<WorkshopCatalogService>();
+        builder.Services.AddScoped<SteamWorkshopApiClient>();
         builder.Services.AddHostedService<ProfileAutoStartService>();
+        builder.Services.AddHostedService<ScheduledBackupService>();
         builder.Services.AddSingleton<DatabaseInitializer>();
         builder.Services.AddSingleton<HostStartupRegistrationService>();
         builder.Services.AddScoped<ProfileStore>();
@@ -77,8 +96,11 @@ public class Program
         builder.Services.AddScoped<StructuredSettingsService>();
         builder.Services.AddScoped<SettingsDraftStore>();
         builder.Services.AddScoped<NamedWorkshopPresetStore>();
+        builder.Services.AddSingleton<SandboxPresetLibraryService>();
+        builder.Services.AddScoped<ProfileRetirementService>();
         builder.Services.AddScoped<ServerInstallService>();
         builder.Services.AddScoped<ServerBackupService>();
+        builder.Services.AddScoped<ServerWorldResetService>();
         builder.Services.AddScoped<LocalServerImportService>();
         builder.Services.AddScoped<UserManagementService>();
         builder.Services.AddScoped<RemoteAccessDiagnosticsService>();
@@ -91,6 +113,7 @@ public class Program
         builder.Services.AddScoped<IdentityRedirectManager>();
         builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
         builder.Services.AddSignalR();
+        builder.Services.AddSingleton<IRuntimeEventPublisher, SignalRRuntimeEventPublisher>();
 
         builder.Services.AddDbContext<ApplicationDbContext>(options =>
         {
@@ -309,7 +332,14 @@ public class Program
             AuditStore auditStore,
             CancellationToken cancellationToken) =>
         {
-            var profile = await store.UpsertAsync(request.ToModel(), cancellationToken);
+            var model = request.ToModel();
+            var portConflictMessage = await store.GetPortConflictMessageAsync(model, cancellationToken);
+            if (portConflictMessage is not null)
+            {
+                return Results.Conflict(new OperationResultDto(false, portConflictMessage));
+            }
+
+            var profile = await store.UpsertAsync(model, cancellationToken);
             await auditStore.WriteAsync("profile.created", profile.ProfileId, "local", $"Created profile {profile.DisplayName}.", cancellationToken: cancellationToken);
             return Results.Ok(profile.ToDto());
         }).RequireAuthorization(policy => policy.RequireRole(nameof(UserRole.Owner), nameof(UserRole.LocalSystem)));
@@ -366,20 +396,44 @@ public class Program
             return Results.Ok(updated.ToDto());
         }).RequireAuthorization("DesktopOrAdmin");
 
-        api.MapDelete("/profiles/{profileId}", async (
+        api.MapPost("/profiles/{profileId}/uninstall", async (
             string profileId,
-            ProfileStore store,
-            AuditStore auditStore,
+            ProfileRetirementService retirementService,
             CancellationToken cancellationToken) =>
         {
-            var deleted = await store.DeleteAsync(profileId, cancellationToken);
-            if (!deleted)
+            try
+            {
+                var result = await retirementService.UninstallServerAsync(profileId, "local", cancellationToken: cancellationToken);
+                return Results.Ok(new OperationResultDto(true, result.Message));
+            }
+            catch (KeyNotFoundException)
             {
                 return Results.NotFound();
             }
+            catch (InvalidOperationException ex)
+            {
+                return Results.Conflict(new OperationResultDto(false, ex.Message));
+            }
+        }).RequireAuthorization("DesktopOrAdmin");
 
-            await auditStore.WriteAsync("profile.deleted", profileId, "local", $"Deleted profile {profileId}.", cancellationToken: cancellationToken);
-            return Results.NoContent();
+        api.MapDelete("/profiles/{profileId}", async (
+            string profileId,
+            ProfileRetirementService retirementService,
+            CancellationToken cancellationToken) =>
+        {
+            try
+            {
+                var result = await retirementService.DeleteProfileAsync(profileId, "local", cancellationToken: cancellationToken);
+                return Results.Ok(new OperationResultDto(true, result.Message));
+            }
+            catch (KeyNotFoundException)
+            {
+                return Results.NotFound();
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.Conflict(new OperationResultDto(false, ex.Message));
+            }
         }).RequireAuthorization("DesktopOrAdmin");
 
         api.MapGet("/profiles/{profileId}/status", (string profileId, RuntimeStateStore runtimeStateStore) =>
@@ -604,6 +658,75 @@ public class Program
                 : Results.Ok(workshopScannerService.Scan(profile.InstallDirectory, structuredSettingsService.GetWorkshopPreset(profile)));
         }).RequireAuthorization("DesktopOrAdmin");
 
+        api.MapPost("/profiles/{profileId}/workshop-browser/search", async (
+            string profileId,
+            WorkshopCatalogSearchRequestDto request,
+            ProfileStore store,
+            StructuredSettingsService structuredSettingsService,
+            WorkshopCatalogService workshopCatalogService,
+            CancellationToken cancellationToken) =>
+        {
+            var profile = await store.GetAsync(profileId, cancellationToken);
+            if (profile is null)
+            {
+                return Results.NotFound();
+            }
+
+            var preset = request.CurrentPreset ?? structuredSettingsService.GetWorkshopPreset(profile);
+            return Results.Ok(await workshopCatalogService.SearchAsync(profile, preset, request, cancellationToken));
+        }).RequireAuthorization("DesktopOrViewer");
+
+        api.MapPost("/profiles/{profileId}/workshop-browser/items/{workshopId}", async (
+            string profileId,
+            string workshopId,
+            WorkshopCatalogPreviewRequestDto request,
+            ProfileStore store,
+            StructuredSettingsService structuredSettingsService,
+            WorkshopCatalogService workshopCatalogService,
+            CancellationToken cancellationToken) =>
+        {
+            var profile = await store.GetAsync(profileId, cancellationToken);
+            if (profile is null)
+            {
+                return Results.NotFound();
+            }
+
+            var preset = request.CurrentPreset ?? structuredSettingsService.GetWorkshopPreset(profile);
+            var preview = await workshopCatalogService.GetPreviewAsync(
+                profile,
+                preset,
+                workshopId,
+                request.SearchMode,
+                cancellationToken);
+
+            return preview is null ? Results.NotFound() : Results.Ok(preview);
+        }).RequireAuthorization("DesktopOrViewer");
+
+        api.MapGet("/profiles/{profileId}/workshop-browser/items/{workshopId}/image", async (
+            string profileId,
+            string workshopId,
+            WorkshopCatalogItemSource? source,
+            ProfileStore store,
+            WorkshopCatalogService workshopCatalogService,
+            CancellationToken cancellationToken) =>
+        {
+            var profile = await store.GetAsync(profileId, cancellationToken);
+            if (profile is null)
+            {
+                return Results.NotFound();
+            }
+
+            var image = await workshopCatalogService.GetImageAsync(
+                profile,
+                workshopId,
+                source ?? WorkshopCatalogItemSource.LocalAndSteam,
+                cancellationToken);
+
+            return image is null
+                ? Results.NotFound()
+                : Results.File(image.Content, image.ContentType);
+        }).AllowAnonymous();
+
         api.MapGet("/profiles/{profileId}/workshop-preset", async (
             string profileId,
             ProfileStore store,
@@ -827,6 +950,45 @@ public class Program
             return Results.Ok(settings.RemoteAccess.ToDto());
         }).RequireAuthorization("DesktopOrViewer");
 
+        api.MapGet("/settings/workshop-browser", async (
+            WorkshopBrowserSettingsStore store,
+            CancellationToken cancellationToken) =>
+            Results.Ok(await store.GetAsync(cancellationToken)))
+            .RequireAuthorization("DesktopOrViewer");
+
+        api.MapPut("/settings/workshop-browser/api-key", async (
+            SetSteamWebApiKeyRequestDto request,
+            WorkshopBrowserSettingsStore store,
+            AuditStore auditStore,
+            CancellationToken cancellationToken) =>
+        {
+            var updated = await store.SetSteamWebApiKeyAsync(request.ApiKey, cancellationToken);
+            await auditStore.WriteAsync(
+                "settings.workshop-browser.api-key.updated",
+                "host",
+                "local",
+                updated.HasSteamWebApiKeyConfigured
+                    ? "Stored or replaced the Steam Web API key for Workshop search."
+                    : "Cleared the Steam Web API key for Workshop search.",
+                cancellationToken: cancellationToken);
+            return Results.Ok(updated);
+        }).RequireAuthorization("DesktopOrAdmin");
+
+        api.MapDelete("/settings/workshop-browser/api-key", async (
+            WorkshopBrowserSettingsStore store,
+            AuditStore auditStore,
+            CancellationToken cancellationToken) =>
+        {
+            var updated = await store.RemoveSteamWebApiKeyAsync(cancellationToken);
+            await auditStore.WriteAsync(
+                "settings.workshop-browser.api-key.deleted",
+                "host",
+                "local",
+                "Removed the Steam Web API key for Workshop search.",
+                cancellationToken: cancellationToken);
+            return Results.Ok(updated);
+        }).RequireAuthorization("DesktopOrAdmin");
+
         api.MapPut("/settings/remote-access", async (
             RemoteAccessSettingsDto dto,
             HostSettingsStore store,
@@ -890,19 +1052,26 @@ public class Program
             BackgroundJobDispatcher dispatcher,
             CancellationToken cancellationToken) =>
         {
-            var job = await dispatcher.QueueAsync(
-                OperationJobKind.Install,
-                profileId,
-                $"Install {profileId}",
-                async (services, runningJob, token) =>
-                {
-                    var installer = services.GetRequiredService<ServerInstallService>();
-                    var jobStore = services.GetRequiredService<JobStore>();
-                    var runtimeStateStore = services.GetRequiredService<RuntimeStateStore>();
-                    await installer.ExecuteInstallAsync(profileId, runningJob, jobStore, runtimeStateStore, token);
-                },
-                cancellationToken);
-            return Results.Accepted($"/api/jobs/{job.JobId}", new OperationResultDto(true, "Install queued.", job.JobId));
+            try
+            {
+                var job = await dispatcher.QueueAsync(
+                    OperationJobKind.Install,
+                    profileId,
+                    $"Install {profileId}",
+                    async (services, runningJob, token) =>
+                    {
+                        var installer = services.GetRequiredService<ServerInstallService>();
+                        var jobStore = services.GetRequiredService<JobStore>();
+                        var runtimeStateStore = services.GetRequiredService<RuntimeStateStore>();
+                        await installer.ExecuteInstallAsync(profileId, runningJob, jobStore, runtimeStateStore, token);
+                    },
+                    cancellationToken);
+                return Results.Accepted($"/api/jobs/{job.JobId}", new OperationResultDto(true, "Install queued. SteamCMD may take a few minutes on first bootstrap.", job.JobId));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.Conflict(new OperationResultDto(false, ex.Message));
+            }
         }).RequireAuthorization("DesktopOrOperator");
 
         api.MapPost("/profiles/{profileId}/update", async (
@@ -910,21 +1079,28 @@ public class Program
             BackgroundJobDispatcher dispatcher,
             CancellationToken cancellationToken) =>
         {
-            var job = await dispatcher.QueueAsync(
-                OperationJobKind.Update,
-                profileId,
-                $"Update {profileId}",
-                async (services, runningJob, token) =>
-                {
-                    var installer = services.GetRequiredService<ServerInstallService>();
-                    var jobStore = services.GetRequiredService<JobStore>();
-                    var runtimeStateStore = services.GetRequiredService<RuntimeStateStore>();
-                    var backupService = services.GetRequiredService<ServerBackupService>();
-                    await backupService.CreateBackupAsync(profileId, BackupTrigger.PreUpdate, token);
-                    await installer.ExecuteInstallAsync(profileId, runningJob, jobStore, runtimeStateStore, token);
-                },
-                cancellationToken);
-            return Results.Accepted($"/api/jobs/{job.JobId}", new OperationResultDto(true, "Update queued.", job.JobId));
+            try
+            {
+                var job = await dispatcher.QueueAsync(
+                    OperationJobKind.Update,
+                    profileId,
+                    $"Update {profileId}",
+                    async (services, runningJob, token) =>
+                    {
+                        var installer = services.GetRequiredService<ServerInstallService>();
+                        var jobStore = services.GetRequiredService<JobStore>();
+                        var runtimeStateStore = services.GetRequiredService<RuntimeStateStore>();
+                        var backupService = services.GetRequiredService<ServerBackupService>();
+                        await backupService.CreateBackupAsync(profileId, BackupTrigger.PreUpdate, token);
+                        await installer.ExecuteInstallAsync(profileId, runningJob, jobStore, runtimeStateStore, token);
+                    },
+                    cancellationToken);
+                return Results.Accepted($"/api/jobs/{job.JobId}", new OperationResultDto(true, "Update queued. SteamCMD may take a few minutes on first bootstrap.", job.JobId));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.Conflict(new OperationResultDto(false, ex.Message));
+            }
         }).RequireAuthorization("DesktopOrOperator");
 
         api.MapPost("/profiles/{profileId}/start", async (
@@ -940,9 +1116,16 @@ public class Program
                 return Results.NotFound();
             }
 
-            await supervisor.StartAsync(profile, cancellationToken);
-            await auditStore.WriteAsync("runtime.started", profileId, "local", "Started server process.", cancellationToken: cancellationToken);
-            return Results.Ok(new OperationResultDto(true, "Server started."));
+            try
+            {
+                await supervisor.StartAsync(profile, cancellationToken);
+                await auditStore.WriteAsync("runtime.started", profileId, "local", "Started server process.", cancellationToken: cancellationToken);
+                return Results.Ok(new OperationResultDto(true, "Server started."));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.BadRequest(new OperationResultDto(false, ex.Message));
+            }
         }).RequireAuthorization("DesktopOrOperator");
 
         api.MapPost("/profiles/{profileId}/stop", async (
@@ -1048,6 +1231,48 @@ public class Program
                 },
                 cancellationToken);
             return Results.Accepted($"/api/jobs/{job.JobId}", new OperationResultDto(true, "Restore queued.", job.JobId));
+        }).RequireAuthorization("DesktopOrOperator");
+
+        api.MapPost("/profiles/{profileId}/world/reset", async (
+            string profileId,
+            ResetWorldRequestDto request,
+            ProfileStore profileStore,
+            ServerProcessSupervisor supervisor,
+            ServerWorldResetService worldResetService,
+            AuditStore auditStore,
+            CancellationToken cancellationToken) =>
+        {
+            var profile = await profileStore.GetAsync(profileId, cancellationToken);
+            if (profile is null)
+            {
+                return Results.NotFound();
+            }
+
+            try
+            {
+                var wasRunning = supervisor.IsRunning(profileId);
+                if (wasRunning)
+                {
+                    await supervisor.StopAsync(profileId, cancellationToken);
+                    await auditStore.WriteAsync("runtime.stopped", profileId, "local", "Stopped server process for world reset.", cancellationToken: cancellationToken);
+                }
+
+                var result = await worldResetService.ResetWorldAsync(profileId, request.CreateBackupBeforeReset, cancellationToken);
+
+                if (request.RestartAfterReset)
+                {
+                    await supervisor.StartAsync(profile, cancellationToken);
+                    await auditStore.WriteAsync("runtime.started", profileId, "local", "Started server process after world reset.", cancellationToken: cancellationToken);
+                }
+
+                return Results.Ok(new OperationResultDto(
+                    true,
+                    ServerWorldResetService.BuildUserMessage(result, request.RestartAfterReset)));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.BadRequest(new OperationResultDto(false, ex.Message));
+            }
         }).RequireAuthorization("DesktopOrOperator");
 
         api.MapGet("/users", async (
@@ -1184,7 +1409,7 @@ public class Program
             return Results.Ok(new OperationResultDto(true, "Owner account created."));
         }).RequireAuthorization("DesktopOnly");
 
-        await app.RunAsync();
+        return app;
     }
 
     private static async Task EnsureDatabaseAndRolesAsync(IServiceProvider services)
@@ -1208,6 +1433,33 @@ public class Program
     {
         var host = string.IsNullOrWhiteSpace(settings.PublicHostname) ? settings.BindAddress : settings.PublicHostname;
         return $"https://{host}:{settings.HttpsPort}";
+    }
+
+    private static WebApplicationBuilder CreateWebApplicationBuilder(string[] args, string? contentRootPath)
+    {
+        string? resolvedContentRootPath = null;
+        string? resolvedWebRootPath = null;
+
+        if (!string.IsNullOrWhiteSpace(contentRootPath))
+        {
+            resolvedContentRootPath = Path.GetFullPath(contentRootPath);
+
+            var webRootPath = Path.Combine(resolvedContentRootPath, "wwwroot");
+            if (Directory.Exists(webRootPath))
+            {
+                resolvedWebRootPath = webRootPath;
+            }
+        }
+
+        var options = new WebApplicationOptions
+        {
+            Args = args,
+            ApplicationName = typeof(Program).Assembly.GetName().Name,
+            ContentRootPath = resolvedContentRootPath,
+            WebRootPath = resolvedWebRootPath,
+        };
+
+        return WebApplication.CreateBuilder(options);
     }
 }
 

@@ -1,21 +1,21 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using PZServerLauncher.App.Services;
 using PZServerLauncher.Contracts.Profiles;
 using PZServerLauncher.Contracts.Runtime;
+using PZServerLauncher.Runtime;
 
 namespace PZServerLauncher.App.ViewModels;
 
 public partial class NetworkAndAdminWorkspaceViewModel : ProfileWorkspacePageViewModelBase
 {
-    private readonly LocalHostApiClient _hostApiClient;
+    private readonly ILauncherRuntime _runtime;
     private SettingsCatalogDto? _catalog;
     private string? _sourceSha256;
     private bool _isApplyingState;
     private ProjectZomboidNetworkAndAdminPostureSummary _postureSummary = ProjectZomboidNetworkAndAdminPostureSummaryBuilder.Empty();
 
-    public NetworkAndAdminWorkspaceViewModel(MainWindowViewModel legacy, LocalHostApiClient hostApiClient)
+    public NetworkAndAdminWorkspaceViewModel(MainWindowViewModel legacy, ILauncherRuntime runtime)
         : base(
             ProfileWorkspacePageIds.NetworkAndAdmin,
             "Network & Admin",
@@ -24,7 +24,7 @@ public partial class NetworkAndAdminWorkspaceViewModel : ProfileWorkspacePageVie
             legacy,
             ["Access passwords", "Compatibility and trust", "Identity and PvP safety", "Visibility and collision", "Account policy", "Voice chat", "Launcher admin bootstrap"])
     {
-        _hostApiClient = hostApiClient;
+        _runtime = runtime;
         SaveSettingsCommand = new AsyncRelayCommand(SaveSettingsAsync);
         ReloadCommand = new AsyncRelayCommand(ReloadAsync);
     }
@@ -237,7 +237,7 @@ public partial class NetworkAndAdminWorkspaceViewModel : ProfileWorkspacePageVie
             false,
             null);
 
-        var result = await _hostApiClient.SaveSettingsPageAsync(SelectedProfile.ProfileId, ProfileWorkspacePageIds.NetworkAndAdmin, payload);
+        var result = await _runtime.SaveSettingsPageAsync(SelectedProfile.ProfileId, ProfileWorkspacePageIds.NetworkAndAdmin, payload);
         if (result is null)
         {
             LoadStatus = "Network & Admin settings could not be saved.";
@@ -274,9 +274,9 @@ public partial class NetworkAndAdminWorkspaceViewModel : ProfileWorkspacePageVie
 
         try
         {
-            _catalog = await _hostApiClient.GetSettingsCatalogAsync(profile.ProfileId);
+            _catalog = await _runtime.GetSettingsCatalogAsync(profile.ProfileId);
             var page = _catalog?.Pages.FirstOrDefault(candidate => string.Equals(candidate.PageId, ProfileWorkspacePageIds.NetworkAndAdmin, StringComparison.Ordinal));
-            var valueSet = await _hostApiClient.GetSettingsPageAsync(profile.ProfileId, ProfileWorkspacePageIds.NetworkAndAdmin);
+            var valueSet = await _runtime.GetSettingsPageAsync(profile.ProfileId, ProfileWorkspacePageIds.NetworkAndAdmin);
 
             CatalogSummary = _catalog is null
                 ? "No structured catalog available."
@@ -368,7 +368,7 @@ public partial class NetworkAndAdminWorkspaceViewModel : ProfileWorkspacePageVie
 
     private IReadOnlyDictionary<string, string?> BuildValues()
     {
-        var prefix = SelectedProfile?.Branch.Contains("42", StringComparison.Ordinal) == true ? "b42" : "b41";
+        const string prefix = "b42";
         return new Dictionary<string, string?>(StringComparer.Ordinal)
         {
             [$"{prefix}.network.bind-ip"] = BindIp,

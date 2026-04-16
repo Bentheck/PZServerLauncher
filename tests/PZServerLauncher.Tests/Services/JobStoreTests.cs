@@ -1,4 +1,5 @@
 using Microsoft.Data.Sqlite;
+using PZServerLauncher.Core.Runtime;
 using PZServerLauncher.Host.Data.Entities;
 using PZServerLauncher.Host.Services;
 using PZServerLauncher.Tests.Testing;
@@ -55,6 +56,63 @@ public sealed class JobStoreTests : IDisposable
         var jobs = await store.ListRecentAsync();
 
         Assert.Equal(["newest", "middle", "oldest"], jobs.Select(job => job.Summary).ToArray());
+    }
+
+    [Fact]
+    public async Task GetActiveProfileLifecycleJobAsync_ReturnsNewestQueuedOrRunningInstallOrUpdate()
+    {
+        await using var dbContext = TestDatabaseFactory.Create(_databasePath);
+        dbContext.OperationJobs.AddRange(
+            new OperationJobEntity
+            {
+                JobId = Guid.NewGuid(),
+                Kind = (int)OperationJobKind.Install,
+                Status = (int)OperationJobStatus.Succeeded,
+                ProfileId = "profile-a",
+                Summary = "completed install",
+                ProgressPercent = 100,
+                CreatedAtUtc = new DateTimeOffset(2026, 4, 15, 18, 0, 0, TimeSpan.Zero),
+            },
+            new OperationJobEntity
+            {
+                JobId = Guid.NewGuid(),
+                Kind = (int)OperationJobKind.Update,
+                Status = (int)OperationJobStatus.Running,
+                ProfileId = "profile-b",
+                Summary = "other profile update",
+                ProgressPercent = 40,
+                CreatedAtUtc = new DateTimeOffset(2026, 4, 15, 18, 5, 0, TimeSpan.Zero),
+            },
+            new OperationJobEntity
+            {
+                JobId = Guid.NewGuid(),
+                Kind = (int)OperationJobKind.Install,
+                Status = (int)OperationJobStatus.Queued,
+                ProfileId = "profile-a",
+                Summary = "queued install",
+                ProgressPercent = 0,
+                CreatedAtUtc = new DateTimeOffset(2026, 4, 15, 18, 10, 0, TimeSpan.Zero),
+            },
+            new OperationJobEntity
+            {
+                JobId = Guid.NewGuid(),
+                Kind = (int)OperationJobKind.Update,
+                Status = (int)OperationJobStatus.Running,
+                ProfileId = "profile-a",
+                Summary = "running update",
+                ProgressPercent = 50,
+                CreatedAtUtc = new DateTimeOffset(2026, 4, 15, 18, 15, 0, TimeSpan.Zero),
+            });
+        await dbContext.SaveChangesAsync();
+
+        var store = new JobStore(dbContext);
+
+        var job = await store.GetActiveProfileLifecycleJobAsync("profile-a");
+
+        Assert.NotNull(job);
+        Assert.Equal(OperationJobKind.Update, job!.Kind);
+        Assert.Equal(OperationJobStatus.Running, job.Status);
+        Assert.Equal("running update", job.Summary);
     }
 
     public void Dispose()

@@ -28,7 +28,7 @@ public sealed class NamedWorkshopPresetStoreTests : IDisposable
             MapFolders = ["Muldraugh, KY"],
         };
 
-        var saved = await store.UpsertAsync("profile-a", ProjectZomboidBranch.Stable41, "Mainline", initialPreset);
+        var saved = await store.UpsertAsync("profile-a", ProjectZomboidBranch.Unstable42, "Mainline", initialPreset);
 
         Assert.Equal("Mainline", saved.Name);
         Assert.Single(saved.Preset.WorkshopItemIds);
@@ -40,7 +40,7 @@ public sealed class NamedWorkshopPresetStoreTests : IDisposable
             MapFolders = ["Muldraugh, KY", "BedfordFalls"],
         };
 
-        var updated = await store.UpsertAsync("profile-a", ProjectZomboidBranch.Stable41, "mainline", updatedPreset);
+        var updated = await store.UpsertAsync("profile-a", ProjectZomboidBranch.Unstable42, "mainline", updatedPreset);
         await store.UpsertAsync("profile-b", ProjectZomboidBranch.Unstable42, "Mainline", initialPreset);
         var all = await store.ListAsync("profile-a");
         var otherProfilePresets = await store.ListAsync("profile-b");
@@ -48,7 +48,7 @@ public sealed class NamedWorkshopPresetStoreTests : IDisposable
         Assert.Single(all);
         Assert.Equal(saved.PresetId, updated.PresetId);
         Assert.Equal(2, all[0].Preset.WorkshopItemIds.Count);
-        Assert.Equal(ProjectZomboidBranch.Stable41, all[0].Branch);
+        Assert.Equal(ProjectZomboidBranch.Unstable42, all[0].Branch);
         Assert.Single(otherProfilePresets);
         Assert.Equal(ProjectZomboidBranch.Unstable42, otherProfilePresets[0].Branch);
 

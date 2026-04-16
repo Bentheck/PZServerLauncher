@@ -1,4 +1,5 @@
 using PZServerLauncher.Core.Runtime;
+using PZServerLauncher.Core.Planning;
 using PZServerLauncher.Host.Infrastructure;
 using PZServerLauncher.Infrastructure.Planning;
 
@@ -41,8 +42,17 @@ public sealed class ServerInstallService(
             runtimeStateStore,
             cancellationToken);
 
-        var status = result.ExitCode == 0 ? OperationJobStatus.Succeeded : OperationJobStatus.Failed;
-        var detail = BuildJobDetail(result);
+        var installValidation = ValidateInstalledLauncher(profile);
+        var status = result.ExitCode == 0 && installValidation.IsValid ? OperationJobStatus.Succeeded : OperationJobStatus.Failed;
+        var detail = result.ExitCode == 0
+            ? installValidation.Detail ?? BuildJobDetail(result)
+            : BuildJobDetail(result);
+
+        if (!installValidation.IsValid && installValidation.Detail is { Length: > 0 } validationDetail)
+        {
+            runtimeStateStore.AppendLog(profileId, validationDetail);
+        }
+
         await jobStore.UpdateAsync(job with
         {
             Status = status,
@@ -105,5 +115,40 @@ public sealed class ServerInstallService(
         return result.LastRelevantLine is { Length: > 0 } line
             ? $"SteamCMD exited with code {result.ExitCode}: {line}"
             : $"SteamCMD exited with code {result.ExitCode}.";
+    }
+
+    private static InstallValidationResult ValidateInstalledLauncher(Core.Profiles.ServerProfile profile)
+    {
+        var launcherFileName = profile.UseSteam
+            ? ProjectZomboidDefaults.StableBatchFileName
+            : ProjectZomboidDefaults.NonSteamBatchFileName;
+        var expectedPath = Path.Combine(profile.InstallDirectory, launcherFileName);
+        if (File.Exists(expectedPath))
+        {
+            return InstallValidationResult.Valid();
+        }
+
+        var nestedCandidates = new[]
+        {
+            Path.Combine(profile.InstallDirectory, "Project Zomboid Dedicated Server", launcherFileName),
+            Path.Combine(profile.InstallDirectory, "steamapps", "common", "Project Zomboid Dedicated Server", launcherFileName),
+        };
+
+        var misplacedPath = nestedCandidates.FirstOrDefault(File.Exists);
+        if (misplacedPath is not null)
+        {
+            return InstallValidationResult.Invalid(
+                $"Install/update completed, but {launcherFileName} was found at '{misplacedPath}' instead of the configured install root '{profile.InstallDirectory}'. Set this profile Install Directory to the real server folder and run update again.");
+        }
+
+        return InstallValidationResult.Invalid(
+            $"Install/update completed, but {launcherFileName} is still missing from '{profile.InstallDirectory}'. Verify the Install Directory and rerun install/update.");
+    }
+
+    private sealed record InstallValidationResult(bool IsValid, string? Detail)
+    {
+        public static InstallValidationResult Valid() => new(true, null);
+
+        public static InstallValidationResult Invalid(string detail) => new(false, detail);
     }
 }

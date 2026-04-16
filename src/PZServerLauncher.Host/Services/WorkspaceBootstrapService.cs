@@ -21,6 +21,7 @@ public sealed class WorkspaceBootstrapService(ICapabilityResolver capabilityReso
         [
             BuildPage(WorkspacePageIds.Dashboard, "Dashboard", "/dashboard", WorkspacePageScope.Global, false, capabilities, Capability.ViewDashboard),
             BuildPage(WorkspacePageIds.Profiles, "Profiles", "/profiles", WorkspacePageScope.Global, false, capabilities, Capability.ViewProfiles),
+            BuildPage(WorkspacePageIds.Consoles, "Consoles", "/consoles", WorkspacePageScope.Global, false, capabilities, Capability.ViewLogs),
             BuildPage(WorkspacePageIds.Host, "Host", "/host", WorkspacePageScope.Global, false, capabilities, Capability.ViewHost),
             BuildPage(WorkspacePageIds.RemoteAccess, "Remote Access", "/remote-access", WorkspacePageScope.Global, false, capabilities, Capability.ViewRemoteAccess),
             BuildPage(WorkspacePageIds.Users, "Users", "/users", WorkspacePageScope.Global, false, capabilities, Capability.ViewUsers),

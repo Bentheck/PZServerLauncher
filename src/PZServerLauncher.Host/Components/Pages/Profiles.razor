@@ -26,6 +26,7 @@
             <span class="pill">Install &amp; Update</span>
             <span class="pill">Advanced Files</span>
         </div>
+
     </section>
 
     <section class="metric-grid metric-grid--host">
@@ -37,7 +38,7 @@
         <article class="metric-card">
             <span class="metric-label">Branches</span>
             <strong class="metric-value">@(_rows.Select(row => row.Profile.Branch).Distinct().Count())</strong>
-            <span class="metric-note">Build 41 / Build 42 mix</span>
+            <span class="metric-note">Build 42 fleet</span>
         </article>
         <article class="metric-card">
             <span class="metric-label">Running</span>
@@ -197,7 +198,7 @@
 
         public string RecoveryHeadline => BackupCount > 0 ? "Recovery ready" : "No recovery";
 
-        public string DeploymentHeadline => InstallPosture.UsesDirectJavaTemplate ? "Direct Java" : "Batch fallback";
+        public string DeploymentHeadline => InstallPosture.UsesDirectJavaTemplate ? "Direct Java" : "Launch blocked";
 
         public string RecoverySummary => BackupCount == 0
             ? "No backup archives recorded for this profile."

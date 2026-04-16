@@ -9,42 +9,42 @@ public sealed class ProjectZomboidSandboxPostureSummaryBuilderTests
     {
         var values = new Dictionary<string, string?>(StringComparer.Ordinal)
         {
-            ["b41.sandbox.zombies"] = "3",
-            ["b41.sandbox.distribution"] = "2",
-            ["b41.sandbox.day-length"] = "3",
-            ["b41.sandbox.start-time"] = "5",
-            ["b41.sandbox.start-month"] = "7",
-            ["b41.sandbox.population-multiplier"] = "2.0",
-            ["b41.sandbox.population-peak-multiplier"] = "3.0",
-            ["b41.sandbox.population-peak-day"] = "14",
-            ["b41.sandbox.respawn-hours"] = "48.0",
-            ["b41.sandbox.follow-sound-distance"] = "200",
-            ["b41.sandbox.rally-group-size"] = "30",
-            ["b41.sandbox.food-loot"] = "2",
-            ["b41.sandbox.weapon-loot"] = "1",
-            ["b41.sandbox.other-loot"] = "2",
-            ["b41.sandbox.loot-respawn"] = "5",
-            ["b41.sandbox.farming"] = "4",
-            ["b41.sandbox.nature-abundance"] = "2",
-            ["b41.sandbox.food-rot-speed"] = "2",
-            ["b41.sandbox.end-regen"] = "4",
-            ["b41.sandbox.helicopter"] = "3",
-            ["b41.sandbox.meta-event"] = "2",
-            ["b41.sandbox.sleeping-event"] = "3",
-            ["b41.sandbox.rain"] = "4",
-            ["b41.sandbox.temperature"] = "2",
-            ["b41.sandbox.alarm"] = "5",
-            ["b41.sandbox.locked-houses"] = "4",
-            ["b41.sandbox.water-shut-modifier"] = "60",
-            ["b41.sandbox.electricity-shut-modifier"] = "45",
-            ["b41.sandbox.multi-hit"] = "true",
-            ["b41.sandbox.fire-spread"] = "false",
-            ["b41.sandbox.enable-vehicles"] = "true",
-            ["b41.sandbox.starter-kit"] = "true",
-            ["b41.sandbox.nutrition"] = "true",
-            ["b41.sandbox.bone-fracture"] = "true",
-            ["b41.sandbox.player-damage-from-crash"] = "true",
-            ["b41.sandbox.vehicle-easy-use"] = "false",
+            ["b42.sandbox.zombies"] = "Normal",
+            ["b42.sandbox.distribution"] = "Urban Focused",
+            ["b42.sandbox.day-length"] = "1 Hour, 30 Minutes",
+            ["b42.sandbox.start-time"] = "9 AM",
+            ["b42.sandbox.start-month"] = "July",
+            ["b42.sandbox.population-multiplier"] = "Normal",
+            ["b42.sandbox.population-peak-multiplier"] = "High",
+            ["b42.sandbox.population-peak-day"] = "28",
+            ["b42.sandbox.respawn-hours"] = "0.0",
+            ["b42.sandbox.follow-sound-distance"] = "100",
+            ["b42.sandbox.rally-group-size"] = "20",
+            ["b42.sandbox.perishable-food-loot"] = "Custom",
+            ["b42.sandbox.ranged-weapons-loot"] = "Custom",
+            ["b42.sandbox.other-loot"] = "Normal",
+            ["b42.sandbox.hours-for-loot-respawn"] = "0",
+            ["b42.sandbox.farming"] = "1.0",
+            ["b42.sandbox.nature-abundance"] = "Normal",
+            ["b42.sandbox.food-spoilage"] = "Normal",
+            ["b42.sandbox.end-regen"] = "Normal",
+            ["b42.sandbox.helicopter"] = "Once",
+            ["b42.sandbox.meta-event"] = "Sometimes",
+            ["b42.sandbox.sleeping-event"] = "Never",
+            ["b42.sandbox.rain"] = "Normal",
+            ["b42.sandbox.temperature"] = "Normal",
+            ["b42.sandbox.alarm"] = "Sometimes",
+            ["b42.sandbox.locked-houses"] = "Very Often",
+            ["b42.sandbox.water-shut-modifier"] = "14",
+            ["b42.sandbox.electricity-shut-modifier"] = "14",
+            ["b42.sandbox.multi-hit"] = "false",
+            ["b42.sandbox.fire-spread"] = "true",
+            ["b42.sandbox.enable-vehicles"] = "true",
+            ["b42.sandbox.starter-kit"] = "false",
+            ["b42.sandbox.nutrition"] = "true",
+            ["b42.sandbox.bone-fracture"] = "true",
+            ["b42.sandbox.player-damage-from-crash"] = "true",
+            ["b42.sandbox.vehicle-easy-use"] = "false",
         };
 
         var summary = ProjectZomboidSandboxPostureSummaryBuilder.Build(
@@ -54,10 +54,10 @@ public sealed class ProjectZomboidSandboxPostureSummaryBuilderTests
             fieldErrorCount: 0);
 
         Assert.Contains("July", summary.WorldStateHeadline, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Population 2.0x to 3.0x by day 14", summary.ZombiePressureHeadline, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Loot F/W/O 2/1/2", summary.SurvivalEconomyHeadline, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Helicopter 3", summary.EventAndClimateHeadline, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Multi-hit on", summary.SurvivorRulesHeadline, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Population Normalx to Highx by day 28", summary.ZombiePressureHeadline, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Loot F/W/O Custom/Custom/Normal", summary.SurvivalEconomyHeadline, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Helicopter Once", summary.EventAndClimateHeadline, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Multi-hit off", summary.SurvivorRulesHeadline, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("staged locally", summary.RecoveryHeadline, StringComparison.OrdinalIgnoreCase);
         Assert.Contains(summary.Checklist, item => item.Contains("Save a draft or apply", StringComparison.OrdinalIgnoreCase));
     }

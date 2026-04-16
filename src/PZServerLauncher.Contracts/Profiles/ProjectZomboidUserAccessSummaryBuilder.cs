@@ -26,9 +26,7 @@ public static class ProjectZomboidUserAccessSummaryBuilder
         var admins = users.Count(account => account.Roles.Contains(UserRole.Admin));
         var operators = users.Count(account => account.Roles.Contains(UserRole.Operator));
         var viewers = users.Count(account => account.Roles.Contains(UserRole.Viewer));
-        var privileged = users.Count(account => account.Roles.Any(RoleRequiresTwoFactor));
-        var twoFactorEnabled = users.Count(account => account.TwoFactorEnabled);
-        var pendingTwoFactor = users.Count(account => account.Roles.Any(RoleRequiresTwoFactor) && !account.TwoFactorEnabled);
+        var privileged = users.Count(account => account.Roles.Any(RoleIsPrivileged));
 
         return new ProjectZomboidUserAccessSummary(
             !ownerBootstrapConfigured
@@ -40,9 +38,7 @@ public static class ProjectZomboidUserAccessSummaryBuilder
                 ? "Create the owner account first, then return here for access management."
                 : privileged == 0
                     ? "No privileged accounts exist yet."
-                    : pendingTwoFactor == 0
-                        ? "Every privileged account currently shown has TOTP enabled."
-                        : $"{pendingTwoFactor} privileged account(s) still need TOTP before web sign-in is safe.",
+                    : $"{privileged} privileged account(s) can change host or remote configuration.",
             !ownerBootstrapConfigured
                 ? "Owner protection becomes visible after bootstrap."
                 : owners == 0
@@ -55,12 +51,12 @@ public static class ProjectZomboidUserAccessSummaryBuilder
                 : $"{owners} owner | {admins} admin | {operators} operator | {viewers} viewer.",
             !ownerBootstrapConfigured
                 ? "Security review is unavailable until bootstrap completes."
-                : $"{privileged} privileged account(s) | {twoFactorEnabled} with TOTP | {pendingTwoFactor} still pending.",
+                : $"{privileged} privileged account(s) | {operators} operator(s) | {viewers} viewer(s).",
             BuildCreateRoleHeadline(createRoleName),
             BuildCreateRoleGuardrailHeadline(createRoleName),
-            BuildOperatorSummary(ownerBootstrapConfigured, users.Count, owners, privileged, pendingTwoFactor),
-            BuildNextStepSummary(ownerBootstrapConfigured, users.Count, pendingTwoFactor),
-            BuildChecklist(ownerBootstrapConfigured, users.Count, owners, privileged, pendingTwoFactor, createRoleName));
+            BuildOperatorSummary(ownerBootstrapConfigured, users.Count, owners, privileged),
+            BuildNextStepSummary(ownerBootstrapConfigured, users.Count),
+            BuildChecklist(ownerBootstrapConfigured, users.Count, owners, privileged, createRoleName));
     }
 
     public static ProjectZomboidUserAccessSummary Empty() =>
@@ -70,17 +66,11 @@ public static class ProjectZomboidUserAccessSummaryBuilder
         bool ownerBootstrapConfigured,
         int totalUsers,
         int owners,
-        int privileged,
-        int pendingTwoFactor)
+        int privileged)
     {
         if (!ownerBootstrapConfigured)
         {
             return "Finish owner bootstrap first so the account manager can become a real local security console.";
-        }
-
-        if (pendingTwoFactor > 0)
-        {
-            return $"{pendingTwoFactor} privileged account(s) still need TOTP before remote administration should be trusted.";
         }
 
         if (totalUsers == 0)
@@ -98,19 +88,14 @@ public static class ProjectZomboidUserAccessSummaryBuilder
             return "Every account shown is privileged. Consider shrinking elevated access by moving lower-risk users into Operator or Viewer roles.";
         }
 
-        return "The role mix is coherent. Keep elevated access narrow and review TOTP posture whenever you add an admin or owner.";
+        return "The role mix is coherent. Keep elevated access narrow and review admin and owner assignments whenever you add or promote users.";
     }
 
-    private static string BuildNextStepSummary(bool ownerBootstrapConfigured, int totalUsers, int pendingTwoFactor)
+    private static string BuildNextStepSummary(bool ownerBootstrapConfigured, int totalUsers)
     {
         if (!ownerBootstrapConfigured)
         {
             return "Create the owner account first, then come back here to add operators or admins.";
-        }
-
-        if (pendingTwoFactor > 0)
-        {
-            return "Finish TOTP enrollment for privileged users before you rely on the optional web admin.";
         }
 
         if (totalUsers == 0)
@@ -126,7 +111,6 @@ public static class ProjectZomboidUserAccessSummaryBuilder
         int totalUsers,
         int owners,
         int privileged,
-        int pendingTwoFactor,
         string createRoleName)
     {
         var checklist = new List<ProjectZomboidOperatorChecklistItem>();
@@ -135,11 +119,6 @@ public static class ProjectZomboidUserAccessSummaryBuilder
         {
             checklist.Add(new ProjectZomboidOperatorChecklistItem("Blocking", "Finish owner bootstrap before you try to manage shared web-admin accounts.", true, false));
             return checklist;
-        }
-
-        if (pendingTwoFactor > 0)
-        {
-            checklist.Add(new ProjectZomboidOperatorChecklistItem("Blocking", "Finish TOTP enrollment for every Owner and Admin account before you trust remote sign-in.", true, false));
         }
 
         if (owners == 1)
@@ -161,9 +140,9 @@ public static class ProjectZomboidUserAccessSummaryBuilder
             checklist.Add(new ProjectZomboidOperatorChecklistItem("Follow-up", "Every current account is privileged. Consider shifting lower-risk users into Operator or Viewer roles.", false, true));
         }
 
-        checklist.Add(RequiresTwoFactor(createRoleName)
-            ? new ProjectZomboidOperatorChecklistItem("Follow-up", "The selected create-role is privileged and will need TOTP before remote sign-in is safe.", false, true)
-            : new ProjectZomboidOperatorChecklistItem("Healthy", "The selected create-role is lower risk and does not require TOTP by policy.", false, false));
+        checklist.Add(RoleIsPrivileged(createRoleName)
+            ? new ProjectZomboidOperatorChecklistItem("Follow-up", "The selected create-role is privileged. Keep that role rare and assign it intentionally.", false, true)
+            : new ProjectZomboidOperatorChecklistItem("Healthy", "The selected create-role is lower risk and keeps configuration power narrow.", false, false));
 
         if (checklist.Count == 0)
         {
@@ -184,14 +163,14 @@ public static class ProjectZomboidUserAccessSummaryBuilder
         };
 
     private static string BuildCreateRoleGuardrailHeadline(string createRoleName) =>
-        RequiresTwoFactor(createRoleName)
-            ? "This is a privileged role. The account will require TOTP before web sign-in is considered safe."
-            : "This role is intentionally lower risk and does not require TOTP by policy.";
+        RoleIsPrivileged(createRoleName)
+            ? "This is a privileged role. Assign it only when the user truly needs configuration or recovery control."
+            : "This role is intentionally lower risk and better for visibility-first access.";
 
-    private static bool RequiresTwoFactor(string roleName) =>
+    private static bool RoleIsPrivileged(string roleName) =>
         string.Equals(roleName, nameof(UserRole.Owner), StringComparison.Ordinal) ||
         string.Equals(roleName, nameof(UserRole.Admin), StringComparison.Ordinal);
 
-    private static bool RoleRequiresTwoFactor(UserRole role) =>
+    private static bool RoleIsPrivileged(UserRole role) =>
         role is UserRole.Owner or UserRole.Admin;
 }

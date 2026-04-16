@@ -1,3 +1,4 @@
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using PZServerLauncher.Host.Data;
@@ -94,20 +95,23 @@ public sealed class DatabaseInitializerTests : IDisposable
 
     public void Dispose()
     {
+        SqliteConnection.ClearAllPools();
+
         if (!Directory.Exists(_tempRoot))
         {
             return;
         }
 
-        for (var attempt = 0; attempt < 5; attempt++)
+        for (var attempt = 0; attempt < 10; attempt++)
         {
             try
             {
                 Directory.Delete(_tempRoot, recursive: true);
                 return;
             }
-            catch (IOException) when (attempt < 4)
+            catch (IOException) when (attempt < 9)
             {
+                SqliteConnection.ClearAllPools();
                 Thread.Sleep(100);
             }
         }

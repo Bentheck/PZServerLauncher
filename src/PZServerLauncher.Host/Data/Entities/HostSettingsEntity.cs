@@ -27,4 +27,6 @@ public sealed class HostSettingsEntity
     public string? OwnerUserName { get; set; }
 
     public DateTimeOffset? OwnerConfiguredAtUtc { get; set; }
+
+    public string? ProtectedSteamWebApiKey { get; set; }
 }

@@ -1,41 +1,29 @@
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
-using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PZServerLauncher.App.Services;
 using PZServerLauncher.Contracts.Runtime;
+using PZServerLauncher.Runtime;
 
 namespace PZServerLauncher.App.ViewModels;
 
 public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHeader
 {
-    private static readonly TimeSpan AutoRefreshInterval = TimeSpan.FromSeconds(5);
-
     private readonly DesktopShellService _desktopShellService;
-    private readonly LocalHostApiClient _hostApiClient;
-    private readonly DispatcherTimer _autoRefreshTimer;
+    private readonly ILauncherRuntime _runtime;
     private readonly SemaphoreSlim _refreshGate = new(1, 1);
-
-    public WorkspaceShellViewModel()
-        : this(
-            new MainWindowViewModel(),
-            new LocalHostApiClient(),
-            new RuntimeEventStream(new LocalHostApiClient()),
-            new DesktopShellService(),
-            new FolderPickerService())
-    {
-    }
+    private const string SupportUrl = "https://buymeacoffee.com/bentheck";
 
     public WorkspaceShellViewModel(
         MainWindowViewModel legacy,
-        LocalHostApiClient hostApiClient,
-        RuntimeEventStream runtimeEventStream,
+        ILauncherRuntime runtime,
         DesktopShellService desktopShellService,
-        FolderPickerService folderPickerService)
+        FolderPickerService folderPickerService,
+        ConsoleWorkspaceStateService consoleWorkspaceStateService)
     {
         Legacy = legacy;
-        _hostApiClient = hostApiClient;
+        _runtime = runtime;
         _desktopShellService = desktopShellService;
         Legacy.Profiles.CollectionChanged += OnLegacyCollectionChanged;
         Legacy.RecentJobs.CollectionChanged += OnLegacyCollectionChanged;
@@ -44,28 +32,26 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
         Dashboard = new DashboardWorkspaceViewModel(
             legacy,
             () => SelectGlobalPageByKey(WorkspacePageIds.Profiles),
-            () => SelectGlobalPageByKey(WorkspacePageIds.Users));
+            () => SelectGlobalPageByKey(WorkspacePageIds.Consoles),
+            () => SelectGlobalPageByKey(WorkspacePageIds.Host));
         Host = new HostWorkspaceViewModel(legacy);
-        RemoteAccess = new RemoteAccessWorkspaceViewModel(legacy);
-        Users = new UsersWorkspaceViewModel(legacy, hostApiClient);
-        Profiles = new ProfilesWorkspaceViewModel(legacy, hostApiClient, runtimeEventStream, folderPickerService);
+        Consoles = new ConsolesWorkspaceViewModel(legacy, runtime, consoleWorkspaceStateService);
+        Profiles = new ProfilesWorkspaceViewModel(legacy, runtime, folderPickerService);
 
         _pages = new Dictionary<string, ViewModelBase>(StringComparer.Ordinal)
         {
             [WorkspacePageIds.Dashboard] = Dashboard,
             [WorkspacePageIds.Profiles] = Profiles,
+            [WorkspacePageIds.Consoles] = Consoles,
             [WorkspacePageIds.Host] = Host,
-            [WorkspacePageIds.RemoteAccess] = RemoteAccess,
-            [WorkspacePageIds.Users] = Users,
         };
 
         GlobalNavigation =
         [
             new WorkspaceNavigationItemViewModel(WorkspacePageIds.Dashboard, "Home", Dashboard.PageSummary),
             new WorkspaceNavigationItemViewModel(WorkspacePageIds.Profiles, "Servers", Profiles.PageSummary),
+            new WorkspaceNavigationItemViewModel(WorkspacePageIds.Consoles, "Consoles", Consoles.PageSummary),
             new WorkspaceNavigationItemViewModel(WorkspacePageIds.Host, "App", Host.PageSummary),
-            new WorkspaceNavigationItemViewModel(WorkspacePageIds.RemoteAccess, "Web Access", RemoteAccess.PageSummary),
-            new WorkspaceNavigationItemViewModel(WorkspacePageIds.Users, "Users", Users.PageSummary),
         ];
 
         CurrentPage = Dashboard;
@@ -78,14 +64,8 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
         ConfirmNavigationDiscardCommand = new AsyncRelayCommand(ConfirmNavigationDiscardAsync);
         CancelNavigationCommand = new RelayCommand(CancelNavigation);
         ExitDesktopCommand = new RelayCommand(() => _desktopShellService.ExitDesktop());
+        OpenSupportCommand = new RelayCommand(() => _desktopShellService.OpenExternalUrl(SupportUrl));
         RefreshLegacyCommand = new AsyncRelayCommand(RefreshWorkspaceAsync);
-
-        _autoRefreshTimer = new DispatcherTimer
-        {
-            Interval = AutoRefreshInterval,
-        };
-        _autoRefreshTimer.Tick += OnAutoRefreshTick;
-        _autoRefreshTimer.Start();
 
         _ = InitializeAsync();
     }
@@ -105,10 +85,9 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
     public string WorkspaceGuidance => CurrentPage switch
     {
         ProfilesWorkspaceViewModel => "Choose a server, then walk through install, settings, mods, backups, and logs without leaving the same area.",
+        ConsolesWorkspaceViewModel => "Pin the live servers you care about, keep up to four consoles open at once, and swap them from the roster without drilling through profile pages.",
         DashboardWorkspaceViewModel => "Start here to create a new server, import an existing one, or jump back into the last thing you were doing.",
-        HostWorkspaceViewModel => "App settings live here so startup, background host behavior, and machine-wide controls stay in one place.",
-        RemoteAccessWorkspaceViewModel => "Web access is optional. Turn it on only when you want to use this machine from a browser.",
-        UsersWorkspaceViewModel => "Manage the owner account and any browser users here when web access is enabled.",
+        HostWorkspaceViewModel => "App settings live here so startup behavior, integrated runtime controls, and shutdown choices stay in one place.",
         _ => CurrentPageSummary,
     };
 
@@ -120,7 +99,7 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
         ? "No recent activity"
         : $"{Legacy.RecentJobs.Count} recent task{(Legacy.RecentJobs.Count == 1 ? string.Empty : "s")}";
 
-    public string RemotePostureSummary => Legacy.RemoteSummary;
+    public string RuntimePostureSummary => Legacy.HostSummary;
 
     public ObservableCollection<WorkspaceNavigationItemViewModel> GlobalNavigation { get; }
 
@@ -128,11 +107,9 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
 
     public ProfilesWorkspaceViewModel Profiles { get; }
 
+    public ConsolesWorkspaceViewModel Consoles { get; }
+
     public HostWorkspaceViewModel Host { get; }
-
-    public RemoteAccessWorkspaceViewModel RemoteAccess { get; }
-
-    public UsersWorkspaceViewModel Users { get; }
 
     [ObservableProperty]
     private ViewModelBase currentPage = null!;
@@ -165,6 +142,8 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
     public IRelayCommand CancelNavigationCommand { get; }
 
     public IRelayCommand ExitDesktopCommand { get; }
+
+    public IRelayCommand OpenSupportCommand { get; }
 
     public IAsyncRelayCommand RefreshLegacyCommand { get; }
 
@@ -211,7 +190,7 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
 
     private async Task RefreshWorkspaceAsync()
     {
-        await RefreshWorkspaceAsync(CurrentPage, isAutoRefresh: false);
+        await RefreshWorkspaceAsync(CurrentPage);
     }
 
     private async Task RefreshLegacyStateAsync()
@@ -219,11 +198,11 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
         await Legacy.RefreshCommand.ExecuteAsync(null);
         OnPropertyChanged(nameof(ProfileCountSummary));
         OnPropertyChanged(nameof(RecentActivitySummary));
-        OnPropertyChanged(nameof(RemotePostureSummary));
+        OnPropertyChanged(nameof(RuntimePostureSummary));
 
         try
         {
-            var bootstrap = await _hostApiClient.GetWorkspaceBootstrapAsync();
+            var bootstrap = await _runtime.GetWorkspaceBootstrapAsync();
             if (bootstrap is not null)
             {
                 ApplyBootstrap(bootstrap);
@@ -312,6 +291,12 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
 
     private async Task NavigateToAsync(ViewModelBase next, string key)
     {
+        if (!ReferenceEquals(CurrentPage, next) &&
+            CurrentPage is ConsolesWorkspaceViewModel currentConsoles)
+        {
+            currentConsoles.SuspendLiveRefresh();
+        }
+
         if (!ReferenceEquals(CurrentPage, next))
         {
             CurrentPage = next;
@@ -323,7 +308,7 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
             MarkNavigationSelection(key);
         }
 
-        await RefreshWorkspaceAsync(next, isAutoRefresh: false);
+        await RefreshWorkspaceAsync(next);
     }
 
     private ViewModelBase? ResolvePage(string key) =>
@@ -383,47 +368,18 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
         UpdateCurrentStatus();
     }
 
-    private async Task RefreshWorkspaceAsync(ViewModelBase page, bool isAutoRefresh)
+    private async Task RefreshWorkspaceAsync(ViewModelBase page)
     {
-        if (isAutoRefresh)
-        {
-            if (!_refreshGate.Wait(0))
-            {
-                return;
-            }
-        }
-        else
-        {
-            await _refreshGate.WaitAsync();
-        }
+        await _refreshGate.WaitAsync();
 
         try
         {
-            if (isAutoRefresh && (HasPendingNavigation || CurrentPageHasUnsavedChanges()))
-            {
-                return;
-            }
-
             await RefreshLegacyStateAsync();
             await RefreshPageAsync(page);
         }
         finally
         {
             _refreshGate.Release();
-        }
-    }
-
-    private bool CurrentPageHasUnsavedChanges() =>
-        CurrentPage is IWorkspaceDirtyState dirtyState && dirtyState.HasUnsavedChanges;
-
-    private async void OnAutoRefreshTick(object? sender, EventArgs e)
-    {
-        try
-        {
-            await RefreshWorkspaceAsync(CurrentPage, isAutoRefresh: true);
-        }
-        catch
-        {
         }
     }
 }

@@ -14,7 +14,7 @@
             <Border Classes="card" Padding="26">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18">
                     <StackPanel Spacing="8">
-                        <TextBlock Classes="kicker" Text="Machine Control Console" />
+                        <TextBlock Classes="kicker" Text="App Control Console" />
                         <TextBlock Classes="panel-title" FontSize="30" Text="{Binding PageTitle}" />
                         <TextBlock Classes="body"
                                    FontSize="16"
@@ -39,7 +39,7 @@
                         </Border>
                         <Button Classes="action-secondary"
                                 Command="{Binding Legacy.SaveHostSettingsCommand}"
-                                Content="Save Host Settings" />
+                                Content="Save App Settings" />
                     </StackPanel>
                 </Grid>
             </Border>
@@ -103,7 +103,7 @@
                                 <TextBlock Classes="kicker" Text="Managed Profiles" />
                                 <TextBlock Classes="panel-title" FontSize="24" Text="{Binding HostStartupFleetSummary}" TextWrapping="Wrap" />
                                 <TextBlock Classes="body"
-                                           Text="These are the server profiles the local host supervises for startup, crash recovery, and stop-all operations."
+                                           Text="These are the server profiles the integrated runtime supervises for startup, crash recovery, and stop-all operations."
                                            TextWrapping="Wrap" />
                             </StackPanel>
                             <Border Grid.Column="1" Background="#2A2927" CornerRadius="999" Padding="10,5" VerticalAlignment="Top">
@@ -159,7 +159,7 @@
 
                 <Border Classes="card" Padding="20">
                     <StackPanel Spacing="10">
-                        <TextBlock Classes="kicker" Text="Machine Posture" />
+                        <TextBlock Classes="kicker" Text="App Posture" />
                         <TextBlock Classes="panel-title" FontSize="22" Text="{Binding Legacy.HostSummary}" TextWrapping="Wrap" />
                         <TextBlock Classes="body" Text="{Binding Legacy.StatusMessage}" TextWrapping="Wrap" />
                         <TextBlock Classes="body" Text="{Binding HostFleetSummary}" TextWrapping="Wrap" />
@@ -179,23 +179,23 @@
                                TextWrapping="Wrap" />
                     <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding HostShutdownSummary}" TextWrapping="Wrap" />
 
-                    <CheckBox Content="Start Host With Windows"
+                    <CheckBox Content="Start Launcher With Windows"
                               Foreground="#F1E8DE"
                               IsChecked="{Binding Legacy.HostStartWithWindows}" />
 
                     <WrapPanel Orientation="Horizontal" ItemWidth="154" ItemHeight="38">
                         <Button Classes="action-secondary"
                                 Command="{Binding Legacy.SaveHostSettingsCommand}"
-                                Content="Save Host Settings" />
+                                Content="Save App Settings" />
                         <Button Classes="action-secondary"
                                 Command="{Binding Legacy.StopHostCommand}"
-                                Content="Stop Host" />
+                                Content="Stop Runtime" />
                         <Button Classes="action-danger"
                                 Command="{Binding Legacy.StopAllAndHostCommand}"
-                                Content="Stop All + Host" />
+                                Content="Stop Servers + Runtime" />
                         <Button Classes="action-secondary"
                                 Command="{Binding Legacy.ExitDesktopCommand}"
-                                Content="Exit Desktop" />
+                                Content="Close App" />
                     </WrapPanel>
 
                     <Border Classes="command-card" Padding="14">
@@ -228,7 +228,7 @@
                     <Border Background="#2B221C" CornerRadius="16" Padding="14">
                         <TextBlock Classes="caption"
                                    Foreground="#CCBBA8"
-                                   Text="Closing the window still minimizes to tray. Exit Desktop closes only the UI and leaves the local host running until you explicitly stop it."
+                                   Text="Minimize keeps the launcher on the taskbar. Closing the app stops the embedded host, any running servers, and live launcher activity."
                                    TextWrapping="Wrap" />
                     </Border>
                 </StackPanel>

@@ -1,3 +1,5 @@
+using PZServerLauncher.Core.Profiles;
+
 namespace PZServerLauncher.Host.Data.Entities;
 
 public sealed class ServerProfileEntity
@@ -43,6 +45,10 @@ public sealed class ServerProfileEntity
     public bool ScheduledBackupsEnabled { get; set; }
 
     public int ScheduledBackupRetentionCount { get; set; }
+
+    public int ScheduledBackupIntervalHours { get; set; } = BackupPolicy.DefaultScheduledBackupIntervalHours;
+
+    public string ScheduledBackupStartLocalTime { get; set; } = BackupPolicy.DefaultScheduledBackupStartLocalTime;
 
     public int PreUpdateBackupRetentionCount { get; set; }
 

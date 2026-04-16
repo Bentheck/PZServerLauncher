@@ -6,32 +6,20 @@ namespace PZServerLauncher.Infrastructure.Settings;
 
 public sealed class ProjectZomboidSettingsCatalogResolver : ISettingsCatalogResolver
 {
-    private static readonly StructuredSettingsCatalog Stable41Catalog = BuildCatalog(
-        catalogId: "pz.settings.b41",
-        version: 1,
-        branch: ProjectZomboidBranch.Stable41,
-        branchPrefix: "b41");
-
     private static readonly StructuredSettingsCatalog Unstable42Catalog = BuildCatalog(
-        catalogId: "pz.settings.b42",
-        version: 1,
-        branch: ProjectZomboidBranch.Unstable42,
-        branchPrefix: "b42");
+        catalogId: ProjectZomboidBranchSupport.CurrentCatalogId,
+        version: ProjectZomboidBranchSupport.CurrentCatalogVersion,
+        branch: ProjectZomboidBranchSupport.CurrentBranch,
+        branchPrefix: ProjectZomboidBranchSupport.CurrentFieldPrefix);
 
-    public StructuredSettingsCatalog Resolve(ProjectZomboidBranch branch) =>
-        branch switch
-        {
-            ProjectZomboidBranch.Stable41 => Stable41Catalog,
-            ProjectZomboidBranch.Unstable42 => Unstable42Catalog,
-            _ => throw new ArgumentOutOfRangeException(nameof(branch), branch, "Unsupported Project Zomboid branch."),
-        };
+    public StructuredSettingsCatalog Resolve(ProjectZomboidBranch branch) => Unstable42Catalog;
 
     private static StructuredSettingsCatalog BuildCatalog(string catalogId, int version, ProjectZomboidBranch branch, string branchPrefix)
     {
         var pages = new[]
         {
             BuildGeneralPage(branchPrefix),
-            BuildSandboxPage(branchPrefix),
+            ProjectZomboidB42SandboxCatalog.BuildPage(branchPrefix),
             BuildModsAndMapsPage(branchPrefix),
             BuildNetworkPage(branchPrefix),
             new StructuredPageDefinition($"{branchPrefix}.advanced-files", "Advanced Files", Array.Empty<StructuredSectionDefinition>()),
@@ -142,154 +130,6 @@ public sealed class ProjectZomboidSettingsCatalogResolver : ISettingsCatalogReso
             });
     }
 
-    private static StructuredPageDefinition BuildSandboxPage(string branchPrefix)
-    {
-        return new StructuredPageDefinition(
-            $"{branchPrefix}.sandbox",
-            "Sandbox",
-            new[]
-            {
-                new StructuredSectionDefinition(
-                    $"{branchPrefix}.sandbox.world-setup",
-                    "World Setup",
-                    new[]
-                    {
-                        Field($"{branchPrefix}.sandbox.zombies", "Zombie Spawn Rate", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "Zombies", defaultValue: "4", helpText: "1 is most, 5 is none."),
-                        Field($"{branchPrefix}.sandbox.distribution", "Zombie Distribution", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "Distribution", defaultValue: "1", helpText: "1 is urban focused, 2 is uniform."),
-                        Field($"{branchPrefix}.sandbox.day-length", "Day Length", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "DayLength", defaultValue: "3", helpText: "1 is 15 minutes, 3 is 1 hour, 9 is real-time."),
-                        Field($"{branchPrefix}.sandbox.start-year", "Start Year", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "StartYear", defaultValue: "1", helpText: "1 is the first post-apocalypse year."),
-                        Field($"{branchPrefix}.sandbox.start-month", "Start Month", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "StartMonth", defaultValue: "4", helpText: "1 is January, 12 is December."),
-                        Field($"{branchPrefix}.sandbox.start-day", "Start Day", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "StartDay", defaultValue: "1", helpText: "1 is the first day of the month."),
-                        Field($"{branchPrefix}.sandbox.start-time", "Start Time", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "StartTime", defaultValue: "2", helpText: "1 is 7AM, 5 is 5PM, 9 is 5AM."),
-                    }),
-                new StructuredSectionDefinition(
-                    $"{branchPrefix}.sandbox.zombie-population",
-                    "Zombie Population",
-                    new[]
-                    {
-                        Field($"{branchPrefix}.sandbox.population-multiplier", "Population Multiplier", StructuredValueKind.Text, ConfigFileKind.SandboxVars, "ZombieConfig.PopulationMultiplier", defaultValue: "1.0", helpText: "Global zombie population multiplier across the map."),
-                        Field($"{branchPrefix}.sandbox.population-start-multiplier", "Start Population", StructuredValueKind.Text, ConfigFileKind.SandboxVars, "ZombieConfig.PopulationStartMultiplier", defaultValue: "1.0", helpText: "Population multiplier on day one."),
-                        Field($"{branchPrefix}.sandbox.population-peak-multiplier", "Peak Population", StructuredValueKind.Text, ConfigFileKind.SandboxVars, "ZombieConfig.PopulationPeakMultiplier", defaultValue: "1.5", helpText: "Population multiplier once the world reaches peak intensity."),
-                        Field($"{branchPrefix}.sandbox.population-peak-day", "Peak Day", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "ZombieConfig.PopulationPeakDay", defaultValue: "28", helpText: "Days after apocalypse start before peak population is reached."),
-                        Field($"{branchPrefix}.sandbox.respawn-hours", "Respawn Hours", StructuredValueKind.Text, ConfigFileKind.SandboxVars, "ZombieConfig.RespawnHours", defaultValue: "72.0", helpText: "Hours before cleared zones begin to respawn zombies."),
-                        Field($"{branchPrefix}.sandbox.respawn-unseen-hours", "Respawn Unseen Hours", StructuredValueKind.Text, ConfigFileKind.SandboxVars, "ZombieConfig.RespawnUnseenHours", defaultValue: "16.0", helpText: "Hours a cell must remain unseen before respawn can happen."),
-                        Field($"{branchPrefix}.sandbox.respawn-multiplier", "Respawn Multiplier", StructuredValueKind.Text, ConfigFileKind.SandboxVars, "ZombieConfig.RespawnMultiplier", defaultValue: "0.1", helpText: "Share of missing population restored on each respawn pass."),
-                        Field($"{branchPrefix}.sandbox.redistribute-hours", "Redistribute Hours", StructuredValueKind.Text, ConfigFileKind.SandboxVars, "ZombieConfig.RedistributeHours", defaultValue: "12.0", helpText: "Hours between zombie redistribution passes."),
-                        Field($"{branchPrefix}.sandbox.follow-sound-distance", "Follow Sound Distance", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "ZombieConfig.FollowSoundDistance", defaultValue: "100", helpText: "How far zombies follow a sound source before giving up."),
-                        Field($"{branchPrefix}.sandbox.rally-group-size", "Rally Group Size", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "ZombieConfig.RallyGroupSize", defaultValue: "20", helpText: "Maximum number of zombies in one rally group."),
-                        Field($"{branchPrefix}.sandbox.rally-travel-distance", "Rally Travel Distance", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "ZombieConfig.RallyTravelDistance", defaultValue: "20", helpText: "How far rally groups move when redistributing."),
-                        Field($"{branchPrefix}.sandbox.rally-group-separation", "Rally Group Separation", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "ZombieConfig.RallyGroupSeparation", defaultValue: "15", helpText: "Distance kept between neighboring rally groups."),
-                        Field($"{branchPrefix}.sandbox.rally-group-radius", "Rally Group Radius", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "ZombieConfig.RallyGroupRadius", defaultValue: "3", helpText: "Radius occupied by a rally group once it gathers."),
-                    }),
-                new StructuredSectionDefinition(
-                    $"{branchPrefix}.sandbox.zombie-lore",
-                    "Zombie Lore",
-                    new[]
-                    {
-                        Field($"{branchPrefix}.sandbox.zombie-lore-speed", "Zombie Speed", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "ZombieLore.Speed", defaultValue: "2", helpText: "Project Zomboid zombie speed preset value."),
-                        Field($"{branchPrefix}.sandbox.zombie-lore-strength", "Zombie Strength", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "ZombieLore.Strength", defaultValue: "2", helpText: "Project Zomboid zombie strength preset value."),
-                        Field($"{branchPrefix}.sandbox.zombie-lore-toughness", "Zombie Toughness", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "ZombieLore.Toughness", defaultValue: "2", helpText: "Project Zomboid zombie toughness preset value."),
-                        Field($"{branchPrefix}.sandbox.zombie-lore-transmission", "Infection Transmission", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "ZombieLore.Transmission", defaultValue: "1", helpText: "How bites and scratches transmit the Knox infection."),
-                        Field($"{branchPrefix}.sandbox.zombie-lore-mortality", "Infection Mortality", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "ZombieLore.Mortality", defaultValue: "5", helpText: "How quickly the infection becomes fatal."),
-                        Field($"{branchPrefix}.sandbox.zombie-lore-reanimate", "Reanimate Delay", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "ZombieLore.Reanimate", defaultValue: "2", helpText: "How quickly dead survivors reanimate."),
-                        Field($"{branchPrefix}.sandbox.zombie-lore-cognition", "Zombie Cognition", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "ZombieLore.Cognition", defaultValue: "3", helpText: "How well zombies interact with doors and obstacles."),
-                        Field($"{branchPrefix}.sandbox.zombie-lore-memory", "Zombie Memory", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "ZombieLore.Memory", defaultValue: "2", helpText: "How long zombies remember their target."),
-                        Field($"{branchPrefix}.sandbox.zombie-lore-decomp", "Zombie Decomp", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "ZombieLore.Decomp", defaultValue: "1", helpText: "How much decomposition slows and weakens zombies over time."),
-                        Field($"{branchPrefix}.sandbox.zombie-lore-sight", "Zombie Sight", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "ZombieLore.Sight", defaultValue: "2", helpText: "How quickly zombies spot survivors visually."),
-                        Field($"{branchPrefix}.sandbox.zombie-lore-hearing", "Zombie Hearing", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "ZombieLore.Hearing", defaultValue: "2", helpText: "How sensitive zombies are to sound cues."),
-                        Field($"{branchPrefix}.sandbox.zombie-lore-smell", "Zombie Smell", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "ZombieLore.Smell", defaultValue: "2", helpText: "How effectively zombies track survivors by scent."),
-                        Field($"{branchPrefix}.sandbox.zombie-lore-trigger-house-alarm", "Trigger House Alarm", StructuredValueKind.Boolean, ConfigFileKind.SandboxVars, "ZombieLore.TriggerHouseAlarm", defaultValue: "false", helpText: "Allow zombies to trigger house alarms while moving through homes."),
-                        Field($"{branchPrefix}.sandbox.zombie-lore-thump-no-chasing", "Thump Without Chasing", StructuredValueKind.Boolean, ConfigFileKind.SandboxVars, "ZombieLore.ThumpNoChasing", defaultValue: "false", helpText: "Allow zombies to thump doors and windows even when they are not actively chasing players."),
-                        Field($"{branchPrefix}.sandbox.zombie-lore-thump-on-construction", "Thump On Construction", StructuredValueKind.Boolean, ConfigFileKind.SandboxVars, "ZombieLore.ThumpOnConstruction", defaultValue: "true", helpText: "Allow zombies to attack player-built constructions."),
-                        Field($"{branchPrefix}.sandbox.zombie-lore-drag-down", "Drag Down", StructuredValueKind.Boolean, ConfigFileKind.SandboxVars, "ZombieLore.ZombiesDragDown", defaultValue: "true", helpText: "Allow groups of zombies to drag survivors to the ground."),
-                        Field($"{branchPrefix}.sandbox.zombie-lore-fence-lunge", "Fence Lunge", StructuredValueKind.Boolean, ConfigFileKind.SandboxVars, "ZombieLore.ZombiesFenceLunge", defaultValue: "true", helpText: "Allow zombies to lunge at survivors when climbing fences."),
-                    }),
-                new StructuredSectionDefinition(
-                    $"{branchPrefix}.sandbox.utilities",
-                    "Utilities",
-                    new[]
-                    {
-                        Field($"{branchPrefix}.sandbox.water-shut-modifier", "Water Shutoff Day", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "WaterShutModifier", defaultValue: "500", helpText: "-1 is instant. Otherwise use the number of days before water shuts off."),
-                        Field($"{branchPrefix}.sandbox.electricity-shut-modifier", "Electricity Shutoff Day", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "ElecShutModifier", defaultValue: "480", helpText: "-1 is instant. Otherwise use the number of days before electricity shuts off."),
-                        Field($"{branchPrefix}.sandbox.erosion-speed", "Erosion Speed", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "ErosionSpeed", defaultValue: "5", helpText: "1 is overgrown quickly, 5 is very slow."),
-                        Field($"{branchPrefix}.sandbox.loot-respawn", "Loot Respawn", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "LootRespawn", defaultValue: "2", helpText: "1 is none, 2 is every day, 5 is every two months."),
-                    }),
-                new StructuredSectionDefinition(
-                    $"{branchPrefix}.sandbox.loot-and-climate",
-                    "Loot & Climate",
-                    new[]
-                    {
-                        Field($"{branchPrefix}.sandbox.food-loot", "Food Loot", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "FoodLoot", defaultValue: "4", helpText: "1 is extremely rare, 5 is abundant."),
-                        Field($"{branchPrefix}.sandbox.weapon-loot", "Weapon Loot", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "WeaponLoot", defaultValue: "2", helpText: "1 is extremely rare, 5 is abundant."),
-                        Field($"{branchPrefix}.sandbox.other-loot", "Other Loot", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "OtherLoot", defaultValue: "3", helpText: "1 is extremely rare, 5 is abundant."),
-                        Field($"{branchPrefix}.sandbox.temperature", "Temperature", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "Temperature", defaultValue: "3", helpText: "1 is very cold, 5 is very hot."),
-                        Field($"{branchPrefix}.sandbox.rain", "Rain", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "Rain", defaultValue: "3", helpText: "1 is very dry, 5 is very rainy."),
-                        Field($"{branchPrefix}.sandbox.alarm", "House Alarm Frequency", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "Alarm", defaultValue: "6", helpText: "1 is never, 6 is very often."),
-                        Field($"{branchPrefix}.sandbox.locked-houses", "Locked Houses", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "LockedHouses", defaultValue: "6", helpText: "1 is never, 6 is very often."),
-                    }),
-                new StructuredSectionDefinition(
-                    $"{branchPrefix}.sandbox.survival-systems",
-                    "Survival Systems",
-                    new[]
-                    {
-                        Field($"{branchPrefix}.sandbox.farming", "Farming Speed", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "Farming", defaultValue: "1", helpText: "1 is very fast, 5 is very slow."),
-                        Field($"{branchPrefix}.sandbox.stats-decrease", "Stats Decrease", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "StatsDecrease", defaultValue: "4", helpText: "1 is very fast, 5 is very slow."),
-                        Field($"{branchPrefix}.sandbox.nature-abundance", "Nature Abundance", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "NatureAbundance", defaultValue: "3", helpText: "1 is very poor, 5 is very abundant."),
-                        Field($"{branchPrefix}.sandbox.food-rot-speed", "Food Rot Speed", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "FoodRotSpeed", defaultValue: "5", helpText: "1 is very fast, 5 is very slow."),
-                        Field($"{branchPrefix}.sandbox.fridge-factor", "Fridge Factor", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "FridgeFactor", defaultValue: "5", helpText: "1 is very low, 5 is very high."),
-                        Field($"{branchPrefix}.sandbox.plant-resilience", "Plant Resilience", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "PlantResilience", defaultValue: "3", helpText: "1 is very low, 5 is very high."),
-                        Field($"{branchPrefix}.sandbox.plant-abundance", "Plant Abundance", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "PlantAbundance", defaultValue: "3", helpText: "1 is very poor, 5 is very abundant."),
-                        Field($"{branchPrefix}.sandbox.end-regen", "Endurance Regen", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "EndRegen", defaultValue: "3", helpText: "1 is very fast, 5 is very slow."),
-                    }),
-                new StructuredSectionDefinition(
-                    $"{branchPrefix}.sandbox.world-events",
-                    "World Events",
-                    new[]
-                    {
-                        Field($"{branchPrefix}.sandbox.helicopter", "Helicopter Event", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "Helicopter", defaultValue: "2", helpText: "Controls how often the helicopter story event appears."),
-                        Field($"{branchPrefix}.sandbox.meta-event", "Meta Event Frequency", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "MetaEvent", defaultValue: "1", helpText: "Ambient events like distant screams or gunshots."),
-                        Field($"{branchPrefix}.sandbox.sleeping-event", "Sleeping Event Frequency", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "SleepingEvent", defaultValue: "1", helpText: "How often sleeping survivors are interrupted by world events."),
-                        Field($"{branchPrefix}.sandbox.generator-spawning", "Generator Spawn Rate", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "GeneratorSpawning", defaultValue: "3", helpText: "How often generators appear in the world."),
-                    }),
-                new StructuredSectionDefinition(
-                    $"{branchPrefix}.sandbox.survivor-boosts",
-                    "Survivor Boosts",
-                    new[]
-                    {
-                        Field($"{branchPrefix}.sandbox.character-free-points", "Character Free Points", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "CharacterFreePoints", defaultValue: "0", helpText: "Free trait points granted during character creation."),
-                        Field($"{branchPrefix}.sandbox.construction-bonus-points", "Construction Bonus Points", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "ConstructionBonusPoints", defaultValue: "3", helpText: "Bonus points available in the construction menu."),
-                        Field($"{branchPrefix}.sandbox.multi-hit", "Multi-Hit", StructuredValueKind.Boolean, ConfigFileKind.SandboxVars, "MultiHit", defaultValue: "false", helpText: "Allow melee weapons to strike multiple zombies."),
-                        Field($"{branchPrefix}.sandbox.allow-exterior-generator", "Allow Exterior Generator", StructuredValueKind.Boolean, ConfigFileKind.SandboxVars, "AllowExteriorGenerator", defaultValue: "false", helpText: "Permit generators to run while placed outside."),
-                        Field($"{branchPrefix}.sandbox.bone-fracture", "Bone Fracture", StructuredValueKind.Boolean, ConfigFileKind.SandboxVars, "BoneFracture", defaultValue: "true", helpText: "Allow serious injuries to cause broken bones."),
-                        Field($"{branchPrefix}.sandbox.attack-block-movements", "Attack Blocks Movement", StructuredValueKind.Boolean, ConfigFileKind.SandboxVars, "AttackBlockMovements", defaultValue: "true", helpText: "Let attack animations interrupt movement while fighting."),
-                        Field($"{branchPrefix}.sandbox.all-clothes-unlocked", "All Clothes Unlocked", StructuredValueKind.Boolean, ConfigFileKind.SandboxVars, "AllClothesUnlocked", defaultValue: "false", helpText: "Unlock all clothing choices in the character creator."),
-                        Field($"{branchPrefix}.sandbox.vehicle-easy-use", "Vehicle Easy Use", StructuredValueKind.Boolean, ConfigFileKind.SandboxVars, "VehicleEasyUse", defaultValue: "false", helpText: "Relax the normal restrictions around using vehicles."),
-                        Field($"{branchPrefix}.sandbox.player-damage-from-crash", "Player Damage From Crash", StructuredValueKind.Boolean, ConfigFileKind.SandboxVars, "PlayerDamageFromCrash", defaultValue: "true", helpText: "Allow vehicle crashes to injure the player."),
-                    }),
-                new StructuredSectionDefinition(
-                    $"{branchPrefix}.sandbox.cleanup-and-wear",
-                    "Cleanup & Wear",
-                    new[]
-                    {
-                        Field($"{branchPrefix}.sandbox.fire-spread", "Fire Spread", StructuredValueKind.Boolean, ConfigFileKind.SandboxVars, "FireSpread", defaultValue: "true", helpText: "Allow fires to spread through the world."),
-                        Field($"{branchPrefix}.sandbox.hours-for-corpse-removal", "Hours For Corpse Removal", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "HoursForCorpseRemoval", defaultValue: "216", helpText: "How long corpses remain before automatic cleanup."),
-                        Field($"{branchPrefix}.sandbox.decaying-corpse-health-impact", "Corpse Health Impact", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "DecayingCorpseHealthImpact", defaultValue: "2", helpText: "How much nearby corpses affect survivor health."),
-                        Field($"{branchPrefix}.sandbox.blood-level", "Blood Level", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "BloodLevel", defaultValue: "3", helpText: "How much blood remains in the world over time."),
-                        Field($"{branchPrefix}.sandbox.clothing-degradation", "Clothing Degradation", StructuredValueKind.Integer, ConfigFileKind.SandboxVars, "ClothingDegradation", defaultValue: "3", helpText: "How quickly clothing wears out during play."),
-                    }),
-                new StructuredSectionDefinition(
-                    $"{branchPrefix}.sandbox.player-experience",
-                    "Player Experience",
-                    new[]
-                    {
-                        Field($"{branchPrefix}.sandbox.starter-kit", "Starter Kit", StructuredValueKind.Boolean, ConfigFileKind.SandboxVars, "StarterKit", defaultValue: "false", helpText: "Enable the beginner starter kit."),
-                        Field($"{branchPrefix}.sandbox.nutrition", "Nutrition", StructuredValueKind.Boolean, ConfigFileKind.SandboxVars, "Nutrition", defaultValue: "false", helpText: "Track calories, weight, and nutrition in multiplayer."),
-                        Field($"{branchPrefix}.sandbox.enable-snow-on-ground", "Snow On Ground", StructuredValueKind.Boolean, ConfigFileKind.SandboxVars, "EnableSnowOnGround", defaultValue: "true", helpText: "Render persistent snow coverage when winter conditions allow."),
-                        Field($"{branchPrefix}.sandbox.enable-vehicles", "Vehicles Enabled", StructuredValueKind.Boolean, ConfigFileKind.SandboxVars, "EnableVehicles", defaultValue: "true", helpText: "Allow vehicles to exist and function in the world."),
-                    }),
-            });
-    }
-
     private static StructuredPageDefinition BuildModsAndMapsPage(string branchPrefix)
     {
         return new StructuredPageDefinition(
@@ -302,9 +142,9 @@ public sealed class ProjectZomboidSettingsCatalogResolver : ISettingsCatalogReso
                     "Collection",
                     new[]
                     {
-                        Field($"{branchPrefix}.mods.workshop-items", "Workshop Item IDs", StructuredValueKind.MultiLineText, ConfigFileKind.Ini, "WorkshopItems"),
-                        Field($"{branchPrefix}.mods.enabled-mods", "Enabled Mod IDs", StructuredValueKind.MultiLineText, ConfigFileKind.Ini, "Mods"),
-                        Field($"{branchPrefix}.mods.map-folders", "Map Folders", StructuredValueKind.MultiLineText, ConfigFileKind.Ini, "Map"),
+                        Field($"{branchPrefix}.mods.enabled-mods", "Enabled Mod IDs", StructuredValueKind.MultiLineText, ConfigFileKind.Ini, "Mods", helpText: @"Enter the mod loading ID here. It can be found in \Steam\steamapps\workshop\modID\mods\modName\info.txt"),
+                        Field($"{branchPrefix}.mods.workshop-items", "Workshop Item IDs", StructuredValueKind.MultiLineText, ConfigFileKind.Ini, "WorkshopItems", helpText: "List Workshop Mod IDs for the server to download. Separate each item with a semicolon when written back to the .ini."),
+                        Field($"{branchPrefix}.mods.map-folders", "Map Folders", StructuredValueKind.MultiLineText, ConfigFileKind.Ini, "Map", helpText: @"Enter the folder name of the mod found in \Steam\steamapps\workshop\modID\mods\modName\media\maps\"),
                     }),
             });
     }
@@ -398,6 +238,7 @@ public sealed class ProjectZomboidSettingsCatalogResolver : ISettingsCatalogReso
         string keyPath,
         bool restartRequired = false,
         string? defaultValue = null,
-        string? helpText = null) =>
-        new(fieldId, displayName, kind, new StructuredConfigTarget(fileKind, keyPath), defaultValue, restartRequired, helpText);
+        string? helpText = null,
+        IReadOnlyList<StructuredFieldOptionDefinition>? options = null) =>
+        new(fieldId, displayName, kind, new StructuredConfigTarget(fileKind, keyPath), defaultValue, restartRequired, helpText, options);
 }

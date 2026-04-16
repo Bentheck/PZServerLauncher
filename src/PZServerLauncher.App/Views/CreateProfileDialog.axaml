@@ -1,0 +1,153 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:PZServerLauncher.App.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        x:Class="PZServerLauncher.App.Views.CreateProfileDialog"
+        x:DataType="vm:CreateProfileDialogViewModel"
+        Width="560"
+        Height="690"
+        MinWidth="560"
+        MinHeight="690"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowDecorations="BorderOnly"
+        WindowStartupLocation="CenterOwner"
+        Title="Create Server Profile">
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                  VerticalScrollBarVisibility="Auto">
+        <Border Classes="card" Margin="18" Padding="20">
+            <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="16">
+                <StackPanel Spacing="6">
+                    <TextBlock Classes="kicker" Text="New Server" />
+                    <TextBlock Classes="panel-title" FontSize="28" Text="{Binding DialogTitle}" />
+                    <TextBlock Classes="body" Text="{Binding DialogSummary}" TextWrapping="Wrap" />
+                </StackPanel>
+
+                <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="14" RowDefinitions="Auto,Auto" RowSpacing="14">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Display Name" />
+                        <TextBox Text="{Binding DisplayName}" PlaceholderText="West Point PvE" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1" Spacing="6">
+                        <TextBlock Classes="kicker" Text="Base Port" />
+                        <TextBox Text="{Binding DefaultPortText}" PlaceholderText="16261" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Row="1" Spacing="6">
+                        <TextBlock Classes="kicker" Text="Preferred Memory (GB)" />
+                        <TextBox Text="{Binding PreferredMemoryInGigabytesText}" PlaceholderText="6" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Row="1" Grid.Column="1" Spacing="6">
+                        <TextBlock Classes="kicker" Text="Max Players" />
+                        <TextBox Text="{Binding MaxPlayersText}" PlaceholderText="16" />
+                    </StackPanel>
+                </Grid>
+
+                <TextBlock Grid.Row="2"
+                           Classes="caption"
+                           Foreground="#6A7477"
+                           Text="{Binding PortReservationSummary}"
+                           TextWrapping="Wrap" />
+
+                <Border Grid.Row="3" Background="#F6EFE6" CornerRadius="14" Padding="14">
+                    <TextBlock Classes="caption" Foreground="#5B4D3E" Text="{Binding ValidationMessage}" TextWrapping="Wrap" />
+                </Border>
+
+                <Border Grid.Row="4"
+                        Background="#FBF7F1"
+                        BorderBrush="#DDD2C6"
+                        BorderThickness="1"
+                        CornerRadius="16"
+                        Padding="16">
+                    <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+                          ColumnDefinitions="92,*"
+                          RowSpacing="10"
+                          ColumnSpacing="12">
+                        <TextBlock Classes="kicker" Text="Profile Id" />
+                        <TextBlock Grid.Column="1"
+                                   Classes="body"
+                                   MinWidth="0"
+                                   FontFamily="Cascadia Code,Consolas,monospace"
+                                   Text="{Binding ProfileIdPreview}"
+                                   TextWrapping="Wrap" />
+
+                        <TextBlock Grid.Row="1" Classes="kicker" Text="Server Name" />
+                        <TextBlock Grid.Row="1"
+                                   Grid.Column="1"
+                                   Classes="body"
+                                   MinWidth="0"
+                                   FontFamily="Cascadia Code,Consolas,monospace"
+                                   Text="{Binding ServerNamePreview}"
+                                   TextWrapping="Wrap" />
+
+                        <TextBlock Grid.Row="2" Classes="kicker" Text="Ports" />
+                        <TextBlock Grid.Row="2"
+                                   Grid.Column="1"
+                                   Classes="body"
+                                   MinWidth="0"
+                                   Text="{Binding PortPreview}"
+                                   TextWrapping="Wrap" />
+
+                        <TextBlock Grid.Row="3" Classes="kicker" Text="Memory" />
+                        <TextBlock Grid.Row="3"
+                                   Grid.Column="1"
+                                   Classes="body"
+                                   MinWidth="0"
+                                   Text="{Binding MemoryPreview}"
+                                   TextWrapping="Wrap" />
+
+                        <TextBlock Grid.Row="4" Classes="kicker" Text="Players" />
+                        <TextBlock Grid.Row="4"
+                                   Grid.Column="1"
+                                   Classes="body"
+                                   MinWidth="0"
+                                   Text="{Binding MaxPlayersPreview}"
+                                   TextWrapping="Wrap" />
+
+                        <TextBlock Grid.Row="5" Classes="kicker" Text="Install" />
+                        <TextBlock Grid.Row="5"
+                                   Grid.Column="1"
+                                   Classes="body"
+                                   MinWidth="0"
+                                   FontFamily="Cascadia Code,Consolas,monospace"
+                                   Text="{Binding InstallPathPreview}"
+                                   TextWrapping="Wrap" />
+
+                        <TextBlock Grid.Row="6" Classes="kicker" Text="Data Path" />
+                        <TextBlock Grid.Row="6"
+                                   Grid.Column="1"
+                                   Classes="body"
+                                   MinWidth="0"
+                                   FontFamily="Cascadia Code,Consolas,monospace"
+                                   Text="{Binding DataPathPreview}"
+                                   TextWrapping="Wrap" />
+
+                        <TextBlock Grid.Row="7"
+                                   Grid.ColumnSpan="2"
+                                   Classes="caption"
+                                   Foreground="#6A7477"
+                                   Text="{Binding FooterMessage}"
+                                   TextWrapping="Wrap" />
+                    </Grid>
+                </Border>
+
+                <Grid Grid.Row="5" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
+                    <Border Background="Transparent" />
+                    <Button Grid.Column="1"
+                            Classes="action-secondary"
+                            Click="CancelButton_OnClick"
+                            Content="Cancel" />
+                    <Button Grid.Column="2"
+                            Classes="action-primary"
+                            Click="CreateButton_OnClick"
+                            Content="Create Profile"
+                            IsEnabled="{Binding CanSubmit}" />
+                </Grid>
+            </Grid>
+        </Border>
+    </ScrollViewer>
+</Window>

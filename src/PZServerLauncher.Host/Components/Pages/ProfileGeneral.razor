@@ -2,6 +2,7 @@
 @attribute [Authorize(Roles="Owner,Admin")]
 @inject ProfileStore ProfileStore
 @inject StructuredSettingsService StructuredSettingsService
+@inject SettingsDraftStore SettingsDraftStore
 @inject RuntimeStateStore RuntimeStateStore
 
 <PageTitle>General</PageTitle>
@@ -27,6 +28,8 @@ else
         <Actions>
             <a class="nav-button secondary-button" href="@OverviewHref">Overview</a>
             <a class="nav-button secondary-button" href="@InstallHref">Install &amp; Update</a>
+            <button class="nav-button secondary-button" @onclick="SaveDraftAsync" disabled="@(!_pageSupportsDrafts || _busy)">Save Draft</button>
+            <button class="nav-button secondary-button" @onclick="DiscardDraftAsync" disabled="@(!_pageSupportsDrafts || _busy)">Discard Draft</button>
             <button class="nav-button" @onclick="SaveAsync" disabled="@_busy">Save General</button>
         </Actions>
         <ChildContent>
@@ -232,6 +235,7 @@ else
     private string? _statusMessage;
     private bool _installDetected;
     private bool _cacheDetected;
+    private bool _pageSupportsDrafts;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -253,8 +257,12 @@ else
         _values = new Dictionary<string, string?>(_valueSet.Values, StringComparer.Ordinal);
         _fieldErrors = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
         _pageValidation = null;
+        _pageSupportsDrafts = _page?.SupportsDrafts == true;
         _installDetected = Directory.Exists(_profile.InstallDirectory);
         _cacheDetected = Directory.Exists(_profile.CacheDirectory);
+        _statusMessage = "General settings loaded.";
+
+        await LoadDraftIfAvailableAsync();
     }
 
     private async Task SaveAsync()
@@ -289,6 +297,97 @@ else
         {
             _busy = false;
         }
+    }
+
+    private async Task SaveDraftAsync()
+    {
+        if (_profile is null || _page is null || _catalog is null || !_pageSupportsDrafts)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var validation = StructuredSettingsService.Validate(_profile, "general", _values);
+            await SettingsDraftStore.UpsertAsync(new SettingsDraftDto(
+                _profile.ProfileId,
+                _profile.Branch,
+                _catalog.CatalogId,
+                _catalog.CatalogVersion,
+                _page.PageId,
+                new Dictionary<string, string?>(_values, StringComparer.Ordinal),
+                _valueSet?.SourceSha256,
+                true,
+                DateTimeOffset.UtcNow));
+
+            _statusMessage = validation.IsValid
+                ? "General draft saved locally."
+                : validation.FallbackReason ?? "General draft saved with validation warnings.";
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task DiscardDraftAsync()
+    {
+        if (_profile is null || _page is null || _catalog is null || !_pageSupportsDrafts)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            await SettingsDraftStore.DeleteAsync(
+                _profile.ProfileId,
+                _profile.Branch,
+                _catalog.CatalogId,
+                _catalog.CatalogVersion,
+                _page.PageId);
+
+            _valueSet = StructuredSettingsService.GetPage(_profile, "general");
+            _values = new Dictionary<string, string?>(_valueSet.Values, StringComparer.Ordinal);
+            _fieldErrors = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
+            _pageValidation = null;
+            _statusMessage = "General draft discarded.";
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task LoadDraftIfAvailableAsync()
+    {
+        if (_profile is null || _page is null || _catalog is null || !_pageSupportsDrafts || _valueSet is null)
+        {
+            return;
+        }
+
+        var draft = await SettingsDraftStore.GetAsync(
+            _profile.ProfileId,
+            _profile.Branch,
+            _catalog.CatalogId,
+            _catalog.CatalogVersion,
+            _page.PageId);
+        if (draft is null)
+        {
+            return;
+        }
+
+        _values = new Dictionary<string, string?>(draft.Values, StringComparer.Ordinal);
+        _statusMessage = $"Loaded saved General draft from {draft.UpdatedAtUtc.ToLocalTime():g}.";
     }
 
     private RenderFragment RenderField(SettingsFieldDto field) => builder =>

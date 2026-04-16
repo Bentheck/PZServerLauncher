@@ -46,9 +46,9 @@ public static class ProjectZomboidModsAndMapsPostureSummaryBuilder
         var missingMapCount = CountDiagnostics(diagnostics, "Map folder '");
         var cacheDiagnosticCount = CountDiagnostics(diagnostics, "No local workshop content directory");
 
-        var loadoutHeadline = workshopCount == 0 && modCount == 0 && mapCount == 0
+        var loadoutHeadline = modCount == 0 && mapCount == 0
             ? "No live loadout queued yet."
-            : $"{workshopCount} workshop | {modCount} mods | {mapCount} maps in the active stack.";
+            : $"{modCount} mods | {mapCount} maps in the active server stack.";
 
         var validationHeadline = scanResult is null
             ? cacheDetected
@@ -157,9 +157,9 @@ public static class ProjectZomboidModsAndMapsPostureSummaryBuilder
             return "Install the dedicated server first so the launcher can validate workshop content against a real file footprint.";
         }
 
-        if (workshopCount == 0 && modCount == 0 && mapCount == 0)
+        if (modCount == 0 && mapCount == 0)
         {
-            return "Seed the loadout with at least one workshop item or map folder, then validate it against the install.";
+            return "Seed the loadout with at least one enabled mod or map folder, then validate it against the install.";
         }
 
         if (!cacheDetected)
@@ -210,9 +210,9 @@ public static class ProjectZomboidModsAndMapsPostureSummaryBuilder
             return checklist;
         }
 
-        if (workshopCount == 0 && modCount == 0 && mapCount == 0)
+        if (modCount == 0 && mapCount == 0)
         {
-            checklist.Add("Paste a workshop URL or numeric ID to seed the loadout.");
+            checklist.Add("Add at least one enabled mod ID or map folder to seed the loadout.");
         }
 
         if (hasUnsavedChanges)
@@ -249,7 +249,7 @@ public static class ProjectZomboidModsAndMapsPostureSummaryBuilder
             checklist.Add("Fix map load order so every folder exists in installed workshop content.");
         }
 
-        if (namedPresetCount == 0 && (workshopCount > 0 || modCount > 0 || mapCount > 0))
+        if (namedPresetCount == 0 && (modCount > 0 || mapCount > 0))
         {
             checklist.Add("Save the current stack as a named preset for rollback coverage.");
         }

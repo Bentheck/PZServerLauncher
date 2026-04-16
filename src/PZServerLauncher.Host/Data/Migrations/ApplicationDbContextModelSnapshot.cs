@@ -275,6 +275,9 @@ namespace PZServerLauncher.Host.Data.Migrations
                     b.Property<string>("OwnerUserName")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("ProtectedSteamWebApiKey")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("PublicHostname")
                         .HasMaxLength(255)
                         .HasColumnType("TEXT");
@@ -296,47 +299,6 @@ namespace PZServerLauncher.Host.Data.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("HostSettings");
-                });
-
-            modelBuilder.Entity("PZServerLauncher.Host.Data.Entities.OperationJobEntity", b =>
-                {
-                    b.Property<Guid>("JobId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTimeOffset?>("CompletedAtUtc")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTimeOffset>("CreatedAtUtc")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Detail")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("Kind")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("ProfileId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("ProgressPercent")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTimeOffset?>("StartedAtUtc")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("Summary")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("JobId");
-
-                    b.HasIndex("CreatedAtUtc");
-
-                    b.ToTable("OperationJobs");
                 });
 
             modelBuilder.Entity("PZServerLauncher.Host.Data.Entities.NamedWorkshopPresetEntity", b =>
@@ -383,12 +345,53 @@ namespace PZServerLauncher.Host.Data.Migrations
 
                     b.HasKey("PresetId");
 
+                    b.HasIndex("UpdatedAtUtc");
+
                     b.HasIndex("ProfileId", "NormalizedName")
                         .IsUnique();
 
-                    b.HasIndex("UpdatedAtUtc");
-
                     b.ToTable("NamedWorkshopPresets");
+                });
+
+            modelBuilder.Entity("PZServerLauncher.Host.Data.Entities.OperationJobEntity", b =>
+                {
+                    b.Property<Guid>("JobId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTimeOffset?>("CompletedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Detail")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ProfileId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ProgressPercent")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTimeOffset?>("StartedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Summary")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("JobId");
+
+                    b.HasIndex("CreatedAtUtc");
+
+                    b.ToTable("OperationJobs");
                 });
 
             modelBuilder.Entity("PZServerLauncher.Host.Data.Entities.ServerProfileEntity", b =>
@@ -458,6 +461,14 @@ namespace PZServerLauncher.Host.Data.Migrations
 
                     b.Property<int>("ScheduledBackupRetentionCount")
                         .HasColumnType("INTEGER");
+
+                    b.Property<int>("ScheduledBackupIntervalHours")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ScheduledBackupStartLocalTime")
+                        .IsRequired()
+                        .HasMaxLength(5)
+                        .HasColumnType("TEXT");
 
                     b.Property<bool>("ScheduledBackupsEnabled")
                         .HasColumnType("INTEGER");

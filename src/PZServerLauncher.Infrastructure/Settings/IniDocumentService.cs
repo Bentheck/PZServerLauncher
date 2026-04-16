@@ -5,6 +5,8 @@ namespace PZServerLauncher.Infrastructure.Settings;
 
 public sealed partial class IniDocumentService : IIniDocumentService
 {
+    private const string WorkshopItemsComment = "# List Workshop Mod IDs for the server to download. Each must be separated by a semicolon. Example: WorkshopItems=514427485;513111049";
+
     public StructuredConfigDocument Parse(string text)
     {
         var parsed = ParseInternal(text);
@@ -62,6 +64,8 @@ public sealed partial class IniDocumentService : IIniDocumentService
 
         if (missingEntries.Count > 0)
         {
+            InsertWorkshopItemsAfterMods(lines, parsed.Entries, missingEntries);
+
             if (lines.Count > 0 && !string.IsNullOrWhiteSpace(lines[^1]))
             {
                 lines.Add(string.Empty);
@@ -69,7 +73,7 @@ public sealed partial class IniDocumentService : IIniDocumentService
 
             foreach (var entry in missingEntries)
             {
-                lines.Add($"{entry.Key}={FormatValue(entry.Value)}");
+                AppendMissingEntry(lines, entry);
             }
         }
 
@@ -78,9 +82,25 @@ public sealed partial class IniDocumentService : IIniDocumentService
 
     private static string BuildDefaultDocument(IReadOnlyDictionary<string, string?> values)
     {
-        var lines = values
-            .Select(entry => $"{entry.Key}={FormatValue(entry.Value)}")
-            .ToList();
+        var lines = new List<string>();
+        var wroteModsBlock = false;
+
+        foreach (var entry in values)
+        {
+            if (IsModsBlockKey(entry.Key))
+            {
+                if (wroteModsBlock)
+                {
+                    continue;
+                }
+
+                wroteModsBlock = true;
+                AppendModsBlock(lines, values);
+                continue;
+            }
+
+            AppendMissingEntry(lines, entry);
+        }
 
         return string.Join(Environment.NewLine, lines);
     }
@@ -95,6 +115,60 @@ public sealed partial class IniDocumentService : IIniDocumentService
 
     private static string FormatValue(string? value) =>
         value?.Trim() ?? string.Empty;
+
+    private static void AppendModsBlock(List<string> lines, IReadOnlyDictionary<string, string?> values)
+    {
+        if (values.TryGetValue("Mods", out var mods))
+        {
+            AppendMissingEntry(lines, new KeyValuePair<string, string?>("Mods", mods));
+        }
+
+        if (values.TryGetValue("WorkshopItems", out var workshopItems))
+        {
+            AppendMissingEntry(lines, new KeyValuePair<string, string?>("WorkshopItems", workshopItems));
+        }
+
+        if (values.TryGetValue("Map", out var mapFolders))
+        {
+            AppendMissingEntry(lines, new KeyValuePair<string, string?>("Map", mapFolders));
+        }
+    }
+
+    private static void AppendMissingEntry(ICollection<string> lines, KeyValuePair<string, string?> entry)
+    {
+        if (IsWorkshopItemsKey(entry.Key))
+        {
+            lines.Add(WorkshopItemsComment);
+        }
+
+        lines.Add($"{entry.Key}={FormatValue(entry.Value)}");
+    }
+
+    private static void InsertWorkshopItemsAfterMods(
+        List<string> lines,
+        IReadOnlyDictionary<string, IniLineEntry> entries,
+        List<KeyValuePair<string, string?>> missingEntries)
+    {
+        var workshopIndex = missingEntries.FindIndex(entry => IsWorkshopItemsKey(entry.Key));
+        if (workshopIndex < 0 || !entries.TryGetValue("Mods", out var modsEntry))
+        {
+            return;
+        }
+
+        var workshopItemsEntry = missingEntries[workshopIndex];
+        var insertIndex = Math.Min(modsEntry.LineIndex + 1, lines.Count);
+        lines.Insert(insertIndex++, WorkshopItemsComment);
+        lines.Insert(insertIndex, $"{workshopItemsEntry.Key}={FormatValue(workshopItemsEntry.Value)}");
+        missingEntries.RemoveAt(workshopIndex);
+    }
+
+    private static bool IsModsBlockKey(string key) =>
+        string.Equals(key, "Mods", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(key, "WorkshopItems", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(key, "Map", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsWorkshopItemsKey(string key) =>
+        string.Equals(key, "WorkshopItems", StringComparison.OrdinalIgnoreCase);
 
     private static string DetectLineEnding(string text) =>
         text.Contains("\r\n", StringComparison.Ordinal) ? "\r\n" : "\n";

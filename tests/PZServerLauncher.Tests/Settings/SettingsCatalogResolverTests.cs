@@ -1,4 +1,3 @@
-using PZServerLauncher.Core.Planning;
 using PZServerLauncher.Core.Profiles;
 using PZServerLauncher.Core.Runtime;
 using PZServerLauncher.Core.Settings;
@@ -11,85 +10,64 @@ public sealed class SettingsCatalogResolverTests
     private readonly ISettingsCatalogResolver _resolver = new ProjectZomboidSettingsCatalogResolver();
 
     [Fact]
-    public void Resolve_ReturnsBranchSpecificCatalogMetadata()
+    public void Resolve_ReturnsB42CatalogMetadata()
     {
-        var stable = _resolver.Resolve(ProjectZomboidBranch.Stable41);
-        var unstable = _resolver.Resolve(ProjectZomboidBranch.Unstable42);
+        var catalog = _resolver.Resolve(ProjectZomboidBranch.Unstable42);
 
-        Assert.Equal("pz.settings.b41", stable.CatalogId);
-        Assert.Equal("pz.settings.b42", unstable.CatalogId);
-        Assert.Equal(ProjectZomboidBranch.Stable41, stable.Branch);
-        Assert.Equal(ProjectZomboidBranch.Unstable42, unstable.Branch);
-        Assert.Contains(stable.Pages, page => page.PageId == "b41.general");
-        Assert.Contains(stable.Pages, page => page.PageId == "b41.sandbox");
-        Assert.Contains(stable.Pages, page => page.PageId == "b41.mods-and-maps");
-        Assert.Contains(stable.Pages, page => page.PageId == "b41.network-and-admin");
-        Assert.Contains(unstable.Pages, page => page.PageId == "b42.general");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.runtime.memory");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.server.sleep-allowed");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.server.spawn-items" && field.Target.KeyPath == "SpawnItems");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.server.loot-respawn-hours" && field.Target.KeyPath == "HoursForLootRespawn");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.server.loot-respawn-max-items" && field.Target.KeyPath == "MaxItemsForLootRespawn");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.server.construction-prevents-loot-respawn" && field.Target.KeyPath == "ConstructionPreventsLootRespawn");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.server.respawn-with-self" && field.Target.KeyPath == "PlayerRespawnWithSelf");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.server.respawn-with-other" && field.Target.KeyPath == "PlayerRespawnWithOther");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.server.world-item-removal-hours" && field.Target.KeyPath == "HoursForWorldItemRemoval");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.server.world-item-removal-list" && field.Target.KeyPath == "WorldItemRemovalList");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.server.drop-whitelist-on-death" && field.Target.KeyPath == "DropOffWhiteListAfterDeath");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.server.allow-sledgehammer-destruction" && field.Target.KeyPath == "AllowDestructionBySledgehammer");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.server.player-safehouse");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.server.faction-enabled");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.zombies");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.erosion-speed");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.food-rot-speed");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.alarm");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.population-multiplier" && field.Target.KeyPath == "ZombieConfig.PopulationMultiplier");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.respawn-multiplier" && field.Target.KeyPath == "ZombieConfig.RespawnMultiplier");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.rally-group-size" && field.Target.KeyPath == "ZombieConfig.RallyGroupSize");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.helicopter");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.zombie-lore-speed" && field.Target.KeyPath == "ZombieLore.Speed");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.zombie-lore-transmission" && field.Target.KeyPath == "ZombieLore.Transmission");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.zombie-lore-decomp" && field.Target.KeyPath == "ZombieLore.Decomp");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.zombie-lore-hearing" && field.Target.KeyPath == "ZombieLore.Hearing");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.zombie-lore-smell" && field.Target.KeyPath == "ZombieLore.Smell");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.zombie-lore-trigger-house-alarm" && field.Target.KeyPath == "ZombieLore.TriggerHouseAlarm");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.zombie-lore-thump-no-chasing" && field.Target.KeyPath == "ZombieLore.ThumpNoChasing");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.zombie-lore-thump-on-construction" && field.Target.KeyPath == "ZombieLore.ThumpOnConstruction");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.zombie-lore-drag-down" && field.Target.KeyPath == "ZombieLore.ZombiesDragDown");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.zombie-lore-fence-lunge" && field.Target.KeyPath == "ZombieLore.ZombiesFenceLunge");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.multi-hit");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.bone-fracture" && field.Target.KeyPath == "BoneFracture");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.attack-block-movements" && field.Target.KeyPath == "AttackBlockMovements");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.all-clothes-unlocked" && field.Target.KeyPath == "AllClothesUnlocked");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.vehicle-easy-use" && field.Target.KeyPath == "VehicleEasyUse");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.player-damage-from-crash" && field.Target.KeyPath == "PlayerDamageFromCrash");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.fire-spread");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.sandbox.enable-vehicles");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.network.steam-vac");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.network.kick-fast-players");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.network.deny-login-overloaded" && field.Target.KeyPath == "DenyLoginOnOverloadedServer");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.network.player-save-on-damage" && field.Target.KeyPath == "PlayerSaveOnDamage");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.network.display-user-name");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.network.show-first-last-name");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.network.mouse-over-display-name" && field.Target.KeyPath == "MouseOverToSeeDisplayName");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.network.hide-players-behind-you" && field.Target.KeyPath == "HidePlayersBehindYou");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.network.player-bump-player" && field.Target.KeyPath == "PlayerBumpPlayer");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.network.safety-system");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.network.show-safety" && field.Target.KeyPath == "ShowSafety");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.network.safety-toggle-timer");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.network.safety-cooldown-timer");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.network.max-accounts-per-user" && field.Target.KeyPath == "MaxAccountsPerUser");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.network.allow-non-ascii-username" && field.Target.KeyPath == "AllowNonAsciiUsername");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.network.voice-enabled");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.network.voice-3d");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.network.voice-min-distance");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.network.voice-max-distance");
-        Assert.All(
-            stable.Pages.Single(page => page.PageId == "b41.mods-and-maps").Sections.SelectMany(section => section.Fields),
-            field => Assert.Equal(ConfigFileKind.Ini, field.Target.FileKind));
+        Assert.Equal("pz.settings.b42", catalog.CatalogId);
+        Assert.Equal(4, catalog.CatalogVersion);
+        Assert.Equal(ProjectZomboidBranch.Unstable42, catalog.Branch);
+        Assert.Contains(catalog.Pages, page => page.PageId == "b42.general");
+        Assert.Contains(catalog.Pages, page => page.PageId == "b42.sandbox");
+        Assert.Contains(catalog.Pages, page => page.PageId == "b42.mods-and-maps");
+        Assert.Contains(catalog.Pages, page => page.PageId == "b42.network-and-admin");
+    }
+
+    [Fact]
+    public void Resolve_SandboxIncludesCategoryMetadataAndFieldDefaults()
+    {
+        var sandbox = _resolver.Resolve(ProjectZomboidBranch.Unstable42)
+            .Pages
+            .Single(page => page.PageId == "b42.sandbox");
+
+        var dayLength = sandbox.Sections.SelectMany(section => section.Fields).Single(field => field.FieldId == "b42.sandbox.day-length");
+        Assert.Equal("DayLength", dayLength.Target.KeyPath);
+        Assert.Equal(StructuredValueKind.Choice, dayLength.ValueKind);
+        Assert.Contains(dayLength.Options ?? [], option => option.Value == "4" && option.Label == "1 Hour, 30 Minutes");
+        Assert.Equal("1 Hour, 30 Minutes", dayLength.DefaultValue);
+
+        var zombieSection = sandbox.Sections.First(section => section.SectionId == "b42.sandbox.zombie.basics");
+        Assert.Equal("Zombie", zombieSection.CategoryTitle);
+        Assert.Equal(2, zombieSection.CategoryOrder);
+
+        var metaMapSection = sandbox.Sections.First(section => section.SectionId == "b42.sandbox.meta.map");
+        Assert.Equal("Meta", metaMapSection.CategoryTitle);
+        Assert.Equal(6, metaMapSection.CategoryOrder);
+
         Assert.Contains(
-            stable.Pages.Single(page => page.PageId == "b41.mods-and-maps").Sections.SelectMany(section => section.Fields),
-            field => field.FieldId == "b41.mods.map-folders" && field.Target.KeyPath == "Map");
-        Assert.Contains(stable.Pages.SelectMany(page => page.Sections).SelectMany(section => section.Fields), field => field.FieldId == "b41.network.bind-ip");
+            sandbox.Sections.SelectMany(section => section.Fields),
+            field => field.FieldId == "b42.sandbox.allow-world-map" && field.Target.KeyPath == "Map.AllowWorldMap");
+        Assert.Contains(
+            sandbox.Sections.SelectMany(section => section.Fields),
+            field => field.FieldId == "b42.sandbox.xp-global-multiplier" && field.Target.KeyPath == "MultiplierConfig.Global");
+        Assert.Contains(
+            sandbox.Sections.SelectMany(section => section.Fields),
+            field => field.FieldId == "b42.sandbox.world-item-removal-list" && field.DefaultValue!.Contains("Base.Glasses", StringComparison.Ordinal));
+        Assert.All(
+            _resolver.Resolve(ProjectZomboidBranch.Unstable42)
+                .Pages
+                .Single(page => page.PageId == "b42.mods-and-maps")
+                .Sections
+                .SelectMany(section => section.Fields),
+            field => Assert.Equal(ConfigFileKind.Ini, field.Target.FileKind));
+    }
+
+    [Fact]
+    public void Resolve_LegacyBranchValueFallsBackToB42Catalog()
+    {
+        var catalog = _resolver.Resolve((ProjectZomboidBranch)0);
+
+        Assert.Equal("pz.settings.b42", catalog.CatalogId);
+        Assert.Equal(ProjectZomboidBranch.Unstable42, catalog.Branch);
     }
 }

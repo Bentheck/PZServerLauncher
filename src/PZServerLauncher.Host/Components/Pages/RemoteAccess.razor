@@ -15,7 +15,7 @@
         <div class="workspace-panel__copy">
             <p class="eyebrow">Web Admin</p>
             <h1>Remote Access</h1>
-            <p class="muted-text">Configure the optional HTTPS listener for remote administration. The host checks certificate details, bind posture, and owner 2FA readiness before you turn it on, so the exposed surface stays intentional.</p>
+            <p class="muted-text">Configure the optional HTTPS listener for remote administration. The host checks certificate details, bind posture, and owner-bootstrap readiness before you turn it on, so the exposed surface stays intentional.</p>
             <p class="muted-text">@_rolloutSummary.ModeHeadline</p>
             <p class="muted-text">@_rolloutSummary.OperatorSummary</p>
         </div>
@@ -47,12 +47,12 @@
         <article class="metric-card">
             <span class="metric-label">Readiness</span>
             <strong class="metric-value">@_rolloutSummary.ReadinessHeadline</strong>
-            <span class="metric-note">Owner 2FA and rollout prereqs for the optional listener.</span>
+            <span class="metric-note">Owner bootstrap, certificate, and rollout prereqs for the optional listener.</span>
         </article>
         <article class="metric-card">
             <span class="metric-label">Certificate</span>
             <strong class="metric-value">@_rolloutSummary.CertificateHeadline</strong>
-            <span class="metric-note">@_localTwoFactorPath</span>
+            <span class="metric-note">Choose a valid PFX before exposing HTTPS.</span>
         </article>
         <article class="metric-card">
             <span class="metric-label">Firewall</span>
@@ -63,58 +63,57 @@
 
     <div class="cards cards--wide">
         <section class="card">
-                <div class="card-heading">
-                    <div>
-                        <p class="eyebrow">Remote Listener</p>
-                        <h2>Exposure</h2>
-                    </div>
-                    <span class="pill">@(_currentRemoteAccess?.IsEnabled == true ? "Enabled" : "Disabled")</span>
+            <div class="card-heading">
+                <div>
+                    <p class="eyebrow">Remote Listener</p>
+                    <h2>Exposure</h2>
                 </div>
+                <span class="pill">@(_currentRemoteAccess?.IsEnabled == true ? "Enabled" : "Disabled")</span>
+            </div>
 
-                <div class="info-grid">
-                    <div class="info-item">
-                        <span class="info-label">Endpoint</span>
-                        <span class="info-value">@_rolloutSummary.EndpointHeadline</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Bind address</span>
-                        <span class="info-value">@(_currentRemoteAccess?.BindAddress ?? "Not configured")</span>
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="info-label">Endpoint</span>
+                    <span class="info-value">@_rolloutSummary.EndpointHeadline</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Bind address</span>
+                    <span class="info-value">@(_currentRemoteAccess?.BindAddress ?? "Not configured")</span>
                 </div>
                 <div class="info-item">
                     <span class="info-label">HTTPS port</span>
                     <span class="info-value">@(_currentRemoteAccess?.HttpsPort.ToString() ?? "Not configured")</span>
                 </div>
-                    <div class="info-item">
-                        <span class="info-label">Firewall intent</span>
-                        <span class="info-value">@_rolloutSummary.FirewallHeadline</span>
-                    </div>
+                <div class="info-item">
+                    <span class="info-label">Firewall intent</span>
+                    <span class="info-value">@_rolloutSummary.FirewallHeadline</span>
                 </div>
+            </div>
 
-                <div class="status-banner">
-                    <strong>Local setup link</strong>
-                    <p><code>@_localTwoFactorPath</code></p>
-                    <p>Use the local authenticator page first, then return here to enable the remote HTTPS listener with confidence.</p>
-                    <p>@_rolloutSummary.OperatorSummary</p>
+            <div class="status-banner">
+                <strong>Local staging guidance</strong>
+                <p>Keep remote access disabled until the certificate path, endpoint plan, and owner bootstrap all look right.</p>
+                <p>@_rolloutSummary.OperatorSummary</p>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card-heading">
+                <div>
+                    <p class="eyebrow">Readiness</p>
+                    <h2>Security Preconditions</h2>
                 </div>
-            </section>
+            </div>
 
-            <section class="card">
-                <div class="card-heading">
-                    <div>
-                        <p class="eyebrow">Readiness</p>
-                        <h2>Security Preconditions</h2>
-                    </div>
-                </div>
+            <div class="status-banner status-banner--warm">
+                <strong>Owner account readiness</strong>
+                <p>@(_ownerBootstrapConfigured ? "Owner bootstrap is complete." : "Owner bootstrap is still required.")</p>
+                <p>@_rolloutSummary.ReadinessHeadline</p>
+            </div>
 
-                <div class="status-banner status-banner--warm">
-                    <strong>Owner account readiness</strong>
-                    <p>Owner accounts with 2FA: @_ownerAccountsWithTwoFactor</p>
-                    <p>@_rolloutSummary.ReadinessHeadline</p>
-                </div>
-
-                <p class="muted-text">If this is 0, remote access should stay disabled. Set up TOTP locally first at <a href="/Account/Manage/EnableAuthenticator">Enable Authenticator</a>, then come back to expose HTTPS.</p>
-            </section>
-        </div>
+            <p class="muted-text">If owner bootstrap is still pending, finish it from the desktop launcher first. After that, focus on the certificate path, bind address, and restart flow before you expose HTTPS.</p>
+        </section>
+    </div>
 
     <section class="card">
         <div class="card-heading">
@@ -218,8 +217,7 @@
 @code {
     private readonly RemoteAccessInput _model = new();
     private RemoteAccessSettings? _currentRemoteAccess;
-    private string _localTwoFactorPath = string.Empty;
-    private int _ownerAccountsWithTwoFactor;
+    private bool _ownerBootstrapConfigured;
     private string? _statusMessage;
     private ProjectZomboidRemoteAccessRolloutSummary _rolloutSummary = ProjectZomboidRemoteAccessRolloutSummaryBuilder.Empty();
 
@@ -235,16 +233,11 @@
     {
         var settings = await HostSettingsStore.GetAsync();
         _currentRemoteAccess = settings.RemoteAccess;
-        _localTwoFactorPath = $"http://127.0.0.1:{settings.LoopbackPort}/Account/Manage/EnableAuthenticator";
+        _ownerBootstrapConfigured = settings.OwnerBootstrap.IsConfigured;
         _model.Load(settings.RemoteAccess);
-
-        var users = await UserManagementService.ListAsync();
-        _ownerAccountsWithTwoFactor = users.Count(user =>
-            user.TwoFactorEnabled &&
-            user.Roles.Contains(UserRole.Owner));
         _rolloutSummary = ProjectZomboidRemoteAccessRolloutSummaryBuilder.Build(
             _currentRemoteAccess,
-            _ownerAccountsWithTwoFactor,
+            _ownerBootstrapConfigured,
             BuildSelfTestMessages());
     }
 
@@ -298,7 +291,7 @@
     private string BuildLocalOnlyGuidance() =>
         _currentRemoteAccess?.IsEnabled == true
             ? "The listener is no longer local-only. Keep it staged until the certificate and firewall checks both pass."
-            : "Loopback-only mode is active. Use that time to validate the certificate path and TOTP posture before turning on exposure.";
+            : "Loopback-only mode is active. Use that time to validate the certificate path and endpoint plan before turning on exposure.";
 
     private string BuildChecklistStats()
     {
@@ -329,14 +322,9 @@
             messages.Add("Certificate path staged for validation.");
         }
 
-        if (_ownerAccountsWithTwoFactor == 0)
-        {
-            messages.Add("Owner TOTP is still missing.");
-        }
-        else
-        {
-            messages.Add("Owner TOTP readiness is in place.");
-        }
+        messages.Add(_ownerBootstrapConfigured
+            ? "Owner bootstrap is complete."
+            : "Owner bootstrap is still required.");
 
         if (_model.CreateFirewallRule)
         {

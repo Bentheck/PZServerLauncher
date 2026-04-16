@@ -11,13 +11,13 @@
              x:DataType="vm:ProfilesWorkspaceViewModel">
     <Grid ColumnDefinitions="360,*" ColumnSpacing="18">
         <Border Classes="surface-dark" Padding="18">
-            <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" RowSpacing="16">
+            <Grid RowDefinitions="Auto,Auto,*" RowSpacing="16">
                 <StackPanel Spacing="6">
                     <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Servers" />
                     <TextBlock Classes="panel-title" FontSize="28" Foreground="#F7F0E7" Text="{Binding PageTitle}" />
                     <TextBlock Classes="body"
                                Foreground="#D3C8BA"
-                               Text="Pick a server on the left, then use the pages on the right to work through setup, settings, backups, and logs."
+                               Text="Pick a server, then jump straight into the page you need."
                                TextWrapping="Wrap" />
                 </StackPanel>
 
@@ -31,31 +31,7 @@
                             Content="Scan Imports" />
                 </Grid>
 
-                <Border Grid.Row="2" Classes="command-card" Padding="16" IsVisible="{Binding HasProfiles}">
-                    <StackPanel Spacing="6">
-                        <TextBlock Classes="kicker" Foreground="#E5A26B" Text="{Binding ProfileCountSummary}" />
-                        <TextBlock Classes="body" Foreground="#F1E8DE" Text="{Binding WorkspaceGuidance}" TextWrapping="Wrap" />
-                        <WrapPanel Orientation="Horizontal" ItemHeight="26">
-                            <Border Background="#F0E2D0" CornerRadius="999" Padding="10,4" Margin="0,0,8,8">
-                                <TextBlock Foreground="#5E4735"
-                                           FontSize="11"
-                                           Text="{Binding InstalledProfileCount, StringFormat='Installed: {0}'}" />
-                            </Border>
-                            <Border Background="#F0E2D0" CornerRadius="999" Padding="10,4" Margin="0,0,8,8">
-                                <TextBlock Foreground="#5E4735"
-                                           FontSize="11"
-                                           Text="{Binding RecoveryReadyProfileCount, StringFormat='Recovery ready: {0}'}" />
-                            </Border>
-                            <Border Background="#F0E2D0" CornerRadius="999" Padding="10,4" Margin="0,0,8,8">
-                                <TextBlock Foreground="#5E4735"
-                                           FontSize="11"
-                                           Text="{Binding RunningProfileCount, StringFormat='Running: {0}'}" />
-                            </Border>
-                        </WrapPanel>
-                    </StackPanel>
-                </Border>
-
-                <ListBox Grid.Row="3"
+                <ListBox Grid.Row="2"
                          ItemsSource="{Binding Profiles}"
                          SelectedItem="{Binding SelectedProfile}"
                          Background="Transparent"
@@ -123,7 +99,7 @@
                     </ListBox.ItemTemplate>
                 </ListBox>
 
-                <Border Grid.Row="3" Classes="callout-card" Padding="18" IsVisible="{Binding HasNoProfiles}">
+                <Border Grid.Row="2" Classes="callout-card" Padding="18" IsVisible="{Binding HasNoProfiles}">
                     <StackPanel Spacing="8">
                         <TextBlock Classes="kicker" Text="Roster Empty" />
                         <TextBlock Classes="panel-title" FontSize="20" Text="{Binding FirstRunHeadline}" TextWrapping="Wrap" />
@@ -146,26 +122,18 @@
                     </StackPanel>
                 </Border>
 
-                <Border Grid.Row="4" Classes="command-card" Padding="16" IsVisible="{Binding HasProfiles}">
-                    <StackPanel Spacing="6">
-                        <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Selected Server" />
-                        <TextBlock Classes="body" Foreground="#F1E8DE" Text="{Binding SelectedProfileSummary}" TextWrapping="Wrap" />
-                        <TextBlock Classes="caption" Foreground="#CCB9A8" Text="{Binding SelectedLaunchSummary}" TextWrapping="Wrap" />
-                    </StackPanel>
-                </Border>
             </Grid>
         </Border>
 
-        <Grid Grid.Column="1" RowDefinitions="Auto,Auto,*" RowSpacing="16">
+        <Grid Grid.Column="1" RowDefinitions="Auto,*" RowSpacing="16">
             <Border Classes="card" Padding="22">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18">
                     <StackPanel Spacing="8">
                         <TextBlock Classes="kicker" Text="Selected Server" />
-                        <TextBlock Classes="panel-title" FontSize="30" Text="{Binding WorkspaceHeadline}" />
+                        <TextBlock Classes="panel-title" FontSize="28" Text="{Binding WorkspaceHeadline}" />
                         <TextBlock Classes="body"
-                                   FontSize="16"
                                    Foreground="#45382E"
-                                   Text="{Binding WorkspaceGuidance}"
+                                   Text="{Binding SelectedLaunchSummary}"
                                    TextWrapping="Wrap" />
                     </StackPanel>
 
@@ -180,28 +148,7 @@
                 </Grid>
             </Border>
 
-            <Grid Grid.Row="1" ColumnDefinitions="*,*,*" ColumnSpacing="14" IsVisible="{Binding HasSelectedProfile}">
-                <Border Classes="metric-card" Padding="16">
-                    <StackPanel Spacing="6">
-                        <TextBlock Classes="kicker" Text="Player access" />
-                        <TextBlock Classes="body" Text="{Binding SelectedCommunitySummary}" TextWrapping="Wrap" />
-                    </StackPanel>
-                </Border>
-                <Border Grid.Column="1" Classes="metric-card" Padding="16">
-                    <StackPanel Spacing="6">
-                        <TextBlock Classes="kicker" Text="Network" />
-                        <TextBlock Classes="body" Text="{Binding SelectedNetworkSummary}" TextWrapping="Wrap" />
-                    </StackPanel>
-                </Border>
-                <Border Grid.Column="2" Classes="metric-card" Padding="16">
-                    <StackPanel Spacing="6">
-                        <TextBlock Classes="kicker" Text="World" />
-                        <TextBlock Classes="body" Text="{Binding SelectedWorldSummary}" TextWrapping="Wrap" />
-                    </StackPanel>
-                </Border>
-            </Grid>
-
-            <Border Grid.Row="2" Classes="callout-card" Padding="22" IsVisible="{Binding HasNoSelectedProfile}">
+            <Border Grid.Row="1" Classes="callout-card" Padding="22" IsVisible="{Binding HasNoSelectedProfile}">
                 <StackPanel Spacing="10">
                     <TextBlock Classes="kicker" Text="No Server Selected" />
                     <TextBlock Classes="panel-title" FontSize="24" Text="Choose a profile to open its settings" />
@@ -220,13 +167,14 @@
                 </StackPanel>
             </Border>
 
-            <Grid Grid.Row="2" ColumnDefinitions="260,*" ColumnSpacing="16" IsVisible="{Binding HasSelectedProfile}">
+                <Grid Grid.Row="1" ColumnDefinitions="240,*" ColumnSpacing="16" IsVisible="{Binding HasSelectedProfile}">
                 <Grid RowDefinitions="Auto,Auto,*" RowSpacing="16">
                     <Border Classes="surface-soft" Padding="16">
                         <StackPanel Spacing="6">
-                            <TextBlock Classes="kicker" Text="Selected Server" />
+                            <TextBlock Classes="kicker" Text="At a Glance" />
                             <TextBlock Classes="body" Text="{Binding SelectedProfilePathSummary}" TextWrapping="Wrap" />
-                            <TextBlock Classes="caption" Text="{Binding SelectedProfilePortsSummary}" />
+                            <TextBlock Classes="caption" Text="{Binding SelectedProfilePortsSummary}" TextWrapping="Wrap" />
+                            <TextBlock Classes="caption" Text="{Binding SelectedDeploymentSummary}" TextWrapping="Wrap" />
                             <TextBlock Classes="caption" Text="{Binding SelectedRecoverySummary}" TextWrapping="Wrap" />
                         </StackPanel>
                     </Border>
@@ -248,13 +196,14 @@
                             <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Sections" />
                             <TextBlock Classes="caption"
                                        Foreground="#CCB9A8"
-                                       Text="Jump between the selected server's main pages."
+                                       Text="Jump directly to the page that matches the task."
                                        TextWrapping="Wrap" />
 
                             <ItemsControl ItemsSource="{Binding SectionItems}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="vm:WorkspaceNavigationItemViewModel">
-                                        <Button Margin="0,0,0,8"
+                                        <Button Classes="chrome-free"
+                                                Margin="0,0,0,8"
                                                 Padding="0"
                                                 Background="Transparent"
                                                 BorderThickness="0"
@@ -265,25 +214,25 @@
                                                     BorderBrush="#D8B28D"
                                                     BorderThickness="1"
                                                     CornerRadius="14"
+                                                    Height="96"
                                                     Padding="0">
-                                                <Grid ColumnDefinitions="8,*" ColumnSpacing="0">
+                                                <Grid ColumnDefinitions="6,*" ColumnSpacing="0">
                                                     <Border Background="#D27A3E"
                                                             CornerRadius="14,0,0,14"
                                                             IsVisible="{Binding IsSelected}" />
-                                                    <Grid Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="10" Margin="12,10">
-                                                        <StackPanel Spacing="3">
-                                                            <TextBlock FontWeight="SemiBold" Foreground="#1D1815" Text="{Binding Title}" />
-                                                            <TextBlock Classes="caption" Foreground="#5E4D3F" Text="{Binding Summary}" TextWrapping="Wrap" />
-                                                        </StackPanel>
-                                                        <Border Grid.Column="1"
-                                                                Background="#26201A"
-                                                                CornerRadius="999"
-                                                                Padding="8,3"
-                                                                VerticalAlignment="Top"
-                                                                IsVisible="{Binding IsSelected}">
-                                                            <TextBlock Foreground="#F7F0E7" FontSize="11" Text="Live" />
-                                                        </Border>
-                                                    </Grid>
+                                                    <StackPanel Grid.Column="1"
+                                                                Spacing="3"
+                                                                Margin="12,10"
+                                                                VerticalAlignment="Center">
+                                                        <TextBlock FontWeight="SemiBold"
+                                                                   Foreground="#1D1815"
+                                                                   Text="{Binding Title}" />
+                                                        <TextBlock Classes="caption"
+                                                                   Foreground="#5E4D3F"
+                                                                   MaxLines="2"
+                                                                   Text="{Binding Summary}"
+                                                                   TextWrapping="Wrap" />
+                                                    </StackPanel>
                                                 </Grid>
                                             </Border>
                                         </Button>

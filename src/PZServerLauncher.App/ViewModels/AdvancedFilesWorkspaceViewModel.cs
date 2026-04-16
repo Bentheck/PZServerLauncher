@@ -5,15 +5,16 @@ using PZServerLauncher.App.Services;
 using PZServerLauncher.Contracts.Profiles;
 using PZServerLauncher.Contracts.Runtime;
 using PZServerLauncher.Core.Runtime;
+using PZServerLauncher.Runtime;
 
 namespace PZServerLauncher.App.ViewModels;
 
 public partial class AdvancedFilesWorkspaceViewModel : ProfileWorkspacePageViewModelBase
 {
-    private readonly LocalHostApiClient _hostApiClient;
+    private readonly ILauncherRuntime _launcherRuntime;
     private string _loadedContentSnapshot = string.Empty;
 
-    public AdvancedFilesWorkspaceViewModel(MainWindowViewModel legacy, LocalHostApiClient hostApiClient)
+    public AdvancedFilesWorkspaceViewModel(MainWindowViewModel legacy, ILauncherRuntime launcherRuntime)
         : base(
             ProfileWorkspacePageIds.AdvancedFiles,
             "Advanced Files",
@@ -22,7 +23,7 @@ public partial class AdvancedFilesWorkspaceViewModel : ProfileWorkspacePageViewM
             legacy,
             ["Server INI", "SandboxVars.lua", "SpawnRegions.lua", "SpawnPoints.lua"])
     {
-        _hostApiClient = hostApiClient;
+        _launcherRuntime = launcherRuntime;
         FileKinds = ConfigFileOptionViewModel.All;
         SelectedKind = FileKinds.First(static option => option.Kind == ConfigFileKind.SandboxVars);
         LoadCommand = new AsyncRelayCommand(LoadAsync);
@@ -150,7 +151,7 @@ public partial class AdvancedFilesWorkspaceViewModel : ProfileWorkspacePageViewM
 
         await RunBusyAsync(async () =>
         {
-            var result = await _hostApiClient.GetRawConfigAsync(SelectedProfile.ProfileId, SelectedKind.Kind, CancellationToken.None);
+            var result = await _launcherRuntime.GetRawConfigAsync(SelectedProfile.ProfileId, SelectedKind.Kind, CancellationToken.None);
             if (result is null)
             {
                 LoadStatus = $"Unable to load {SelectedKind.Label}.";
@@ -184,7 +185,7 @@ public partial class AdvancedFilesWorkspaceViewModel : ProfileWorkspacePageViewM
                 CurrentSha256,
                 []);
 
-            var result = await _hostApiClient.SaveRawConfigAsync(SelectedProfile.ProfileId, SelectedKind.Kind, payload, CancellationToken.None);
+            var result = await _launcherRuntime.SaveRawConfigAsync(SelectedProfile.ProfileId, SelectedKind.Kind, payload, CancellationToken.None);
             if (result is null)
             {
                 LoadStatus = $"Unable to save {SelectedKind.Label}.";

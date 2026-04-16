@@ -43,10 +43,18 @@ Build the Windows installer with:
 Optional parameters:
 
 ```powershell
-./scripts/build-installer.ps1 -Configuration Release -RuntimeIdentifier win-x64 -InstallerVersion 0.2.0
+./scripts/build-installer.ps1 -Configuration Release -RuntimeIdentifier win-x64 -InstallerVersion 0.3.0
 ```
 
 The script stages published outputs under `artifacts/publish` and then builds the WiX MSI from those staged folders. If `-InstallerVersion` is omitted, it uses the repo version from `Directory.Build.props`.
+
+Versioning rule:
+
+- Follow Semantic Versioning.
+- Increase the patch version for backward-compatible fixes and small internal improvements.
+- Increase the minor version for backward-compatible features or noticeable workflow additions.
+- Increase the major version for breaking changes or incompatible installer/data-layout changes.
+- When packaging or installer behavior changes, bump `PZServerLauncherVersion` in `Directory.Build.props` before building release artifacts so the MSI version matches the code being tested.
 
 Run the local installer smoke test with:
 
