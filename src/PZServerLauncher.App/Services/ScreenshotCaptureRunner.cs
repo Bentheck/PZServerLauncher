@@ -6,6 +6,7 @@ using Avalonia.Threading;
 using PZServerLauncher.App.ViewModels;
 using PZServerLauncher.App.Views;
 using PZServerLauncher.Contracts.Runtime;
+using PZServerLauncher.Core.Profiles;
 using PZServerLauncher.Core.Runtime;
 using PZServerLauncher.Runtime;
 
@@ -103,7 +104,23 @@ public static class ScreenshotCaptureRunner
     {
         await shell.RefreshLegacyCommand.ExecuteAsync(null);
         await Task.Delay(1200);
-        return null;
+
+        if (shell.Profiles.HasProfiles && shell.Profiles.Profiles.Count > 0)
+        {
+            return null;
+        }
+
+        await using var launcherRuntime = new LauncherRuntime(LauncherStorageRootResolver.Resolve());
+        var createdProfile = await launcherRuntime.CreateStarterProfileAsync(
+            "Main Server",
+            ServerProfileFactory.DefaultStarterPort,
+            ServerProfileFactory.DefaultPreferredMemoryInGigabytes,
+            ServerProfileFactory.DefaultMaxPlayers);
+
+        await shell.RefreshLegacyCommand.ExecuteAsync(null);
+        await Task.Delay(1200);
+
+        return createdProfile?.ProfileId;
     }
 
     private static async Task WaitForInitialLoadAsync(WorkspaceShellViewModel shell)
