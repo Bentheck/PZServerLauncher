@@ -486,3 +486,20 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Local agent and SDK bootstraps
+.codex-build/
+.dotnet/
+.dotnet-build/
+.dotnet-home/
+.dotnet-local/
+
+# Local planning scratch files
+PROJECT_PLAN_*.md
+
+# Local runtime state
+data/*.db
+data/*.db-shm
+data/*.db-wal
+state/*.json
+state/*.lock
