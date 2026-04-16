@@ -202,7 +202,8 @@
                             <ItemsControl ItemsSource="{Binding SectionItems}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="vm:WorkspaceNavigationItemViewModel">
-                                        <Button Margin="0,0,0,8"
+                                        <Button Classes="chrome-free"
+                                                Margin="0,0,0,8"
                                                 Padding="0"
                                                 Background="Transparent"
                                                 BorderThickness="0"
@@ -213,14 +214,24 @@
                                                     BorderBrush="#D8B28D"
                                                     BorderThickness="1"
                                                     CornerRadius="14"
+                                                    Height="96"
                                                     Padding="0">
                                                 <Grid ColumnDefinitions="6,*" ColumnSpacing="0">
                                                     <Border Background="#D27A3E"
                                                             CornerRadius="14,0,0,14"
                                                             IsVisible="{Binding IsSelected}" />
-                                                    <StackPanel Grid.Column="1" Spacing="3" Margin="12,10">
-                                                        <TextBlock FontWeight="SemiBold" Foreground="#1D1815" Text="{Binding Title}" />
-                                                        <TextBlock Classes="caption" Foreground="#5E4D3F" Text="{Binding Summary}" TextWrapping="Wrap" />
+                                                    <StackPanel Grid.Column="1"
+                                                                Spacing="3"
+                                                                Margin="12,10"
+                                                                VerticalAlignment="Center">
+                                                        <TextBlock FontWeight="SemiBold"
+                                                                   Foreground="#1D1815"
+                                                                   Text="{Binding Title}" />
+                                                        <TextBlock Classes="caption"
+                                                                   Foreground="#5E4D3F"
+                                                                   MaxLines="2"
+                                                                   Text="{Binding Summary}"
+                                                                   TextWrapping="Wrap" />
                                                     </StackPanel>
                                                 </Grid>
                                             </Border>

@@ -1,11 +1,11 @@
-using Microsoft.AspNetCore.SignalR;
 using PZServerLauncher.Core.Runtime;
-using PZServerLauncher.Host.Hubs;
 
 namespace PZServerLauncher.Host.Services;
 
-public sealed class BackgroundJobDispatcher(IServiceScopeFactory scopeFactory, IHubContext<RuntimeHub> hubContext)
+public sealed class BackgroundJobDispatcher(IServiceScopeFactory scopeFactory, IRuntimeEventPublisher runtimeEventPublisher)
 {
+    private readonly SemaphoreSlim _queueGate = new(1, 1);
+
     public async Task<OperationJob> QueueAsync(
         OperationJobKind kind,
         string? profileId,
@@ -13,9 +13,29 @@ public sealed class BackgroundJobDispatcher(IServiceScopeFactory scopeFactory, I
         Func<IServiceProvider, OperationJob, CancellationToken, Task> work,
         CancellationToken cancellationToken = default)
     {
-        await using var initialScope = scopeFactory.CreateAsyncScope();
-        var jobStore = initialScope.ServiceProvider.GetRequiredService<JobStore>();
-        var job = await jobStore.CreateAsync(kind, profileId, summary, cancellationToken);
+        OperationJob job;
+        await _queueGate.WaitAsync(cancellationToken);
+        try
+        {
+            await using var initialScope = scopeFactory.CreateAsyncScope();
+            var jobStore = initialScope.ServiceProvider.GetRequiredService<JobStore>();
+
+            if (RequiresExclusiveLifecycleQueue(kind) && !string.IsNullOrWhiteSpace(profileId))
+            {
+                var activeJob = await jobStore.GetActiveProfileLifecycleJobAsync(profileId, cancellationToken);
+                if (activeJob is not null)
+                {
+                    throw new InvalidOperationException(
+                        $"An install or update is already running for '{profileId}'. Wait for job {activeJob.JobId:N} to finish before queueing another maintenance action.");
+                }
+            }
+
+            job = await jobStore.CreateAsync(kind, profileId, summary, cancellationToken);
+        }
+        finally
+        {
+            _queueGate.Release();
+        }
 
         _ = Task.Run(async () =>
         {
@@ -29,14 +49,14 @@ public sealed class BackgroundJobDispatcher(IServiceScopeFactory scopeFactory, I
                     StartedAtUtc = DateTimeOffset.UtcNow,
                     ProgressPercent = 5,
                 }, CancellationToken.None);
-                await hubContext.Clients.All.SendAsync("jobChanged", running);
+                await runtimeEventPublisher.PublishJobChangedAsync(running);
 
                 await work(scope.ServiceProvider, running, CancellationToken.None);
 
                 var completed = await scopedJobStore.GetAsync(job.JobId, CancellationToken.None);
                 if (completed is not null)
                 {
-                    await hubContext.Clients.All.SendAsync("jobChanged", completed);
+                    await runtimeEventPublisher.PublishJobChangedAsync(completed);
                 }
             }
             catch (Exception ex)
@@ -51,10 +71,13 @@ public sealed class BackgroundJobDispatcher(IServiceScopeFactory scopeFactory, I
                     StartedAtUtc = job.StartedAtUtc ?? DateTimeOffset.UtcNow,
                     CompletedAtUtc = DateTimeOffset.UtcNow,
                 }, CancellationToken.None);
-                await hubContext.Clients.All.SendAsync("jobChanged", failed);
+                await runtimeEventPublisher.PublishJobChangedAsync(failed);
             }
         }, CancellationToken.None);
 
         return job;
     }
+
+    private static bool RequiresExclusiveLifecycleQueue(OperationJobKind kind) =>
+        kind is OperationJobKind.Install or OperationJobKind.Update;
 }

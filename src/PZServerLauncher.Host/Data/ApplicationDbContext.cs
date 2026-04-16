@@ -31,6 +31,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             entity.Property(x => x.InstallDirectory).HasMaxLength(500);
             entity.Property(x => x.CacheDirectory).HasMaxLength(500);
             entity.Property(x => x.BindIp).HasMaxLength(64);
+            entity.Property(x => x.ScheduledBackupStartLocalTime).HasMaxLength(5);
         });
 
         builder.Entity<HostSettingsEntity>(entity =>
@@ -39,6 +40,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             entity.Property(x => x.RemoteBindAddress).HasMaxLength(64);
             entity.Property(x => x.PublicHostname).HasMaxLength(255);
             entity.Property(x => x.CertificatePath).HasMaxLength(500);
+            entity.Property(x => x.ProtectedSteamWebApiKey).HasColumnType("TEXT");
         });
 
         builder.Entity<OperationJobEntity>(entity =>

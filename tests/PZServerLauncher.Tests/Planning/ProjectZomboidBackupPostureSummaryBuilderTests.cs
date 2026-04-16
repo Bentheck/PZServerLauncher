@@ -16,6 +16,8 @@ public sealed class ProjectZomboidBackupPostureSummaryBuilderTests
             {
                 ScheduledBackupsEnabled = true,
                 ScheduledBackupRetentionCount = 8,
+                ScheduledBackupIntervalHours = 6,
+                ScheduledBackupStartLocalTime = "03:00",
                 PreUpdateBackupRetentionCount = 4,
             },
         };
@@ -42,6 +44,7 @@ public sealed class ProjectZomboidBackupPostureSummaryBuilderTests
         Assert.Contains("pre-update safety net", summary.SelectedArchiveSummary);
         Assert.Contains("keep the last 4", summary.RetentionSummary);
         Assert.Contains("keep the last 8", summary.RetentionSummary);
+        Assert.Contains("start at 03:00 local and repeat every 6 hours", summary.RetentionSummary);
         Assert.Contains("require a stop", summary.RestoreSafetySummary);
         Assert.Contains("looks healthy", summary.ContinuitySummary);
         Assert.Contains("1 manual | 1 pre-update | 1 scheduled", summary.ArchiveMixSummary);

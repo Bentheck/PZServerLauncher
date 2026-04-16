@@ -19,7 +19,7 @@
         <div class="workspace-panel__copy">
             <p class="eyebrow">Web Admin</p>
             <h1>User Management</h1>
-            <p class="muted-text">Create local username accounts, shape role coverage, and verify which privileged users still need an authenticator app before the optional remote surface is trusted. This page mirrors the desktop guardrails so the same access rules stay visible everywhere.</p>
+            <p class="muted-text">Create local username accounts, shape role coverage, and keep the remote operator surface grounded in simple, intentional access rules. This page mirrors the desktop guardrails so the same role posture stays visible everywhere.</p>
             <p class="muted-text">@summary.RosterHeadline</p>
             <p class="muted-text">@summary.SecurityHeadline</p>
         </div>
@@ -27,7 +27,7 @@
         <div class="workspace-actions">
             <span class="pill">@summary.OwnerHeadline</span>
             <span class="pill">@summary.RoleCoverageHeadline</span>
-            <span class="pill">@BuildPendingTwoFactorSummary()</span>
+            <span class="pill">@summary.ReviewHeadline</span>
             <span class="pill">@summary.CreateRoleHeadline</span>
         </div>
     </section>
@@ -59,14 +59,14 @@
             <span class="metric-note">@summary.SecurityHeadline</span>
         </article>
         <article class="metric-card">
-            <span class="metric-label">2FA Enabled</span>
-            <strong class="metric-value">@_users.Count(user => user.TwoFactorEnabled)</strong>
-            <span class="metric-note">@summary.ReviewHeadline</span>
+            <span class="metric-label">Owner Bootstrap</span>
+            <strong class="metric-value">@(_ownerBootstrapConfigured ? "Ready" : "Pending")</strong>
+            <span class="metric-note">Desktop owner creation gates first-time web admin recovery.</span>
         </article>
         <article class="metric-card">
-            <span class="metric-label">2FA Required</span>
-            <strong class="metric-value">@_users.Count(user => user.RequiresTwoFactor)</strong>
-            <span class="metric-note">@summary.CreateRoleGuardrailHeadline</span>
+            <span class="metric-label">Review</span>
+            <strong class="metric-value">@(string.IsNullOrWhiteSpace(summary.NextStepSummary) ? "Stable" : "Attention")</strong>
+            <span class="metric-note">@summary.NextStepSummary</span>
         </article>
     </section>
 
@@ -129,7 +129,7 @@
             <span class="pill">@($"{summary.Checklist.Count} item(s)")</span>
         </div>
 
-        <p class="muted-text">Use this checklist to decide whether the user roster is still owner-only, ready for shared administration, or still waiting on TOTP before the remote surface can be trusted.</p>
+        <p class="muted-text">Use this checklist to decide whether the roster is still owner-only, ready for shared administration, or due for a role review before wider remote use.</p>
 
         @if (summary.Checklist.Count == 0)
         {
@@ -167,10 +167,9 @@
                 <p class="eyebrow">Create User</p>
                 <h2>New Account</h2>
             </div>
-            <span class="pill">Owner and Admin require TOTP</span>
+            <span class="pill">Choose the smallest role that fits</span>
         </div>
 
-        <p class="muted-text">Owner and Admin accounts must configure TOTP before they can sign in to the web admin.</p>
         <p class="muted-text">Passwords stay local to this machine. If someone is locked out, an owner can assign a temporary password here and the user can change it after signing in.</p>
         <p class="muted-text">@summary.CreateRoleHeadline</p>
         <p class="muted-text">@summary.CreateRoleGuardrailHeadline</p>
@@ -207,7 +206,7 @@
                 <p class="eyebrow">Current Users</p>
                 <h2>Account Registry</h2>
             </div>
-            <span class="pill">@BuildPendingTwoFactorSummary()</span>
+            <span class="pill">@summary.ReviewHeadline</span>
         </div>
 
         <p class="muted-text">This view assigns one application role per account and keeps the important guardrails visible while you edit.</p>
@@ -248,7 +247,7 @@
                                 </td>
                                 <td>
                                     <div>@BuildRowSecuritySummary(row)</div>
-                                    <div class="table-subtext">@((row.TwoFactorEnabled ? "TOTP is enabled." : row.RequiresTwoFactor ? "Finish TOTP before remote sign-in." : "This account can stay low risk."))</div>
+                                    <div class="table-subtext">@BuildRowRiskDetail(row)</div>
                                 </td>
                                 <td>
                                     <input @bind="row.TemporaryPassword" type="password" placeholder="Temporary password" />
@@ -408,20 +407,11 @@
             user.UserId,
             user.UserName,
             role == default ? nameof(UserRole.Viewer) : role.ToString(),
-            user.TwoFactorEnabled,
-            user.Roles.Any(UserManagementService.RoleRequiresTwoFactor));
+            user.TwoFactorEnabled);
     }
 
     private string? CurrentUserId =>
         HttpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-
-    private string BuildPendingTwoFactorSummary()
-    {
-        var pending = _users.Count(user => user.RequiresTwoFactor && !user.TwoFactorEnabled);
-        return pending == 0
-            ? "Privileged 2FA ready"
-            : $"{pending} privileged user(s) need 2FA";
-    }
 
     private static string BuildRowRoleSummary(EditableUserRow row) =>
         row.RoleName switch
@@ -434,13 +424,24 @@
         };
 
     private static string BuildRowSecuritySummary(EditableUserRow row) =>
-        row.RequiresTwoFactor
-            ? row.TwoFactorEnabled
-                ? "Privileged account with TOTP enabled."
-                : "Privileged account; finish TOTP before web sign-in."
-            : row.TwoFactorEnabled
-                ? "Lower-risk account with optional TOTP."
-                : "Lower-risk account with no web-sign-in requirement.";
+        row.RoleName switch
+        {
+            nameof(UserRole.Owner) => "Highest-trust account with recovery responsibility.",
+            nameof(UserRole.Admin) => "Privileged account for shared administration.",
+            nameof(UserRole.Operator) => "Operational account with limited change scope.",
+            nameof(UserRole.Viewer) => "Read-only account with the smallest web surface.",
+            _ => "Review this role before wider remote use.",
+        };
+
+    private static string BuildRowRiskDetail(EditableUserRow row) =>
+        row.RoleName switch
+        {
+            nameof(UserRole.Owner) => "Keep at least one owner account current and recoverable.",
+            nameof(UserRole.Admin) => "Use admins sparingly when operators or viewers are enough.",
+            nameof(UserRole.Operator) => "Good fit for day-to-day server operations without full ownership.",
+            nameof(UserRole.Viewer) => "Best choice for audit-only or status-only access.",
+            _ => "Confirm this account really needs the selected permissions.",
+        };
 
     private sealed class CreateUserInput
     {
@@ -462,8 +463,7 @@
         string userId,
         string userName,
         string roleName,
-        bool twoFactorEnabled,
-        bool requiresTwoFactor)
+        bool twoFactorEnabled)
     {
         public string UserId { get; } = userId;
 
@@ -472,8 +472,6 @@
         public string RoleName { get; set; } = roleName;
 
         public bool TwoFactorEnabled { get; } = twoFactorEnabled;
-
-        public bool RequiresTwoFactor { get; } = requiresTwoFactor;
 
         public string TemporaryPassword { get; set; } = string.Empty;
     }

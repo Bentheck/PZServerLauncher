@@ -156,8 +156,8 @@
                         <span class="info-value">@_users.Count(user => user.Roles.Any(role => role is PZServerLauncher.Core.Runtime.UserRole.Owner or PZServerLauncher.Core.Runtime.UserRole.Admin))</span>
                     </div>
                     <div class="info-item">
-                        <span class="info-label">2FA protected owners/admins</span>
-                        <span class="info-value">@_users.Count(user => user.TwoFactorEnabled && user.Roles.Any(role => role is PZServerLauncher.Core.Runtime.UserRole.Owner or PZServerLauncher.Core.Runtime.UserRole.Admin))</span>
+                        <span class="info-label">Owner bootstrap</span>
+                        <span class="info-value">@(_settings.OwnerBootstrap.IsConfigured ? "Complete" : "Pending")</span>
                     </div>
                 </div>
             </section>
@@ -189,7 +189,7 @@
             </div>
 
             <ol>
-                <li>Configure an authenticator app for your owner account under <a href="/Account/Manage/TwoFactorAuthentication">2FA</a>.</li>
+                <li>Finish owner bootstrap from the desktop launcher if it is still pending.</li>
                 <li>Open <a href="/remote">Remote Access</a> and add your HTTPS certificate details.</li>
                 <li>Create additional operators or viewers under <a href="/users">Users</a> if you want shared administration.</li>
             </ol>

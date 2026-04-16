@@ -7,8 +7,11 @@ using Avalonia.Markup.Xaml;
 using Microsoft.Extensions.DependencyInjection;
 using PZServerLauncher.App.ViewModels;
 using PZServerLauncher.App.Services;
+using PZServerLauncher.Core.Runtime;
+using PZServerLauncher.Runtime;
 using PZServerLauncher.App.Views;
 using System.Threading.Tasks;
+using Avalonia.Threading;
 
 namespace PZServerLauncher.App;
 
@@ -26,10 +29,13 @@ public partial class App : Application
     {
         _serviceProvider = new ServiceCollection()
             .AddSingleton<DesktopLogService>()
-            .AddSingleton<LocalHostApiClient>()
-            .AddSingleton<RuntimeEventStream>()
+            .AddSingleton<ILauncherRuntime>(_ => new LauncherRuntime(LauncherStorageRootResolver.Resolve()))
+            .AddSingleton<DesktopShutdownService>()
+            .AddSingleton<ShutdownWarningDialogService>()
             .AddSingleton<DesktopShellService>()
             .AddSingleton<FolderPickerService>()
+            .AddSingleton<CreateProfileDialogService>()
+            .AddSingleton<ConsoleWorkspaceStateService>()
             .AddSingleton<MainWindowViewModel>()
             .AddSingleton<WorkspaceShellViewModel>()
             .BuildServiceProvider();
@@ -49,7 +55,28 @@ public partial class App : Application
             desktop.MainWindow = mainWindow;
             _serviceProvider.GetRequiredService<DesktopShellService>().Initialize(desktop, mainWindow);
             _serviceProvider.GetRequiredService<FolderPickerService>().Initialize(mainWindow);
+            _serviceProvider.GetRequiredService<CreateProfileDialogService>().Initialize(mainWindow);
             desktop.Exit += OnDesktopExit;
+
+            if (ScreenshotCaptureOptions.IsEnabled &&
+                mainWindow.DataContext is WorkspaceShellViewModel shell &&
+                ScreenshotCaptureOptions.OutputDirectory is { } outputDirectory)
+            {
+                mainWindow.Opened += async (_, _) =>
+                {
+                    try
+                    {
+                        _desktopLogService?.Info($"Screenshot capture starting in {outputDirectory}.");
+                        await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Loaded);
+                        await ScreenshotCaptureRunner.RunAsync(desktop, mainWindow, shell, outputDirectory);
+                    }
+                    catch (Exception ex)
+                    {
+                        _desktopLogService?.Error("Screenshot capture failed.", ex);
+                        desktop.Shutdown(-1);
+                    }
+                };
+            }
         }
 
         base.OnFrameworkInitializationCompleted();

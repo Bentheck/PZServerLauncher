@@ -65,29 +65,26 @@ public static class ProjectZomboidProfilePostureSummaryBuilder
             : "voice disabled";
         var networkSummary = $"Bind {bindIp} | VAC {(steamVac ? "on" : "off")} | whitelist {(autoWhitelist ? "auto-create" : "manual")} | safety {(safetyEnabled ? "enabled" : "off")} | names {nameplateSummary} | rear cull {(hidePlayersBehindYou ? "on" : "off")} | bump {(playerBumpPlayer ? "on" : "off")} | {voiceSummary}.";
 
-        var zombies = GetValue(sandboxValues, ".sandbox.zombies", "4");
-        var dayLength = GetValue(sandboxValues, ".sandbox.day-length", "3");
-        var helicopter = GetValue(sandboxValues, ".sandbox.helicopter", "2");
-        var lootRespawn = GetValue(sandboxValues, ".sandbox.loot-respawn", "2");
-        var zombieLoreSpeed = GetValue(sandboxValues, ".sandbox.zombie-lore-speed", "2");
-        var zombieLoreStrength = GetValue(sandboxValues, ".sandbox.zombie-lore-strength", "2");
-        var zombieLoreTransmission = GetValue(sandboxValues, ".sandbox.zombie-lore-transmission", "2");
-        var zombieLoreMortality = GetValue(sandboxValues, ".sandbox.zombie-lore-mortality", "5");
-        var zombieLoreReanimate = GetValue(sandboxValues, ".sandbox.zombie-lore-reanimate", "3");
-        var zombieLoreCognition = GetValue(sandboxValues, ".sandbox.zombie-lore-cognition", "2");
-        var zombieLoreMemory = GetValue(sandboxValues, ".sandbox.zombie-lore-memory", "2");
-        var zombieLoreDecomp = GetValue(sandboxValues, ".sandbox.zombie-lore-decomp", "1");
-        var zombieLoreSight = GetValue(sandboxValues, ".sandbox.zombie-lore-sight", "2");
-        var zombieLoreHearing = GetValue(sandboxValues, ".sandbox.zombie-lore-hearing", "2");
-        var zombieLoreSmell = GetValue(sandboxValues, ".sandbox.zombie-lore-smell", "2");
-        var zombieLoreTriggerHouseAlarm = ParseBool(sandboxValues, ".sandbox.zombie-lore-trigger-house-alarm");
-        var zombieLoreThumpNoChasing = ParseBool(sandboxValues, ".sandbox.zombie-lore-thump-no-chasing");
-        var zombieLoreThumpOnConstruction = ParseBool(sandboxValues, ".sandbox.zombie-lore-thump-on-construction", true);
-        var zombieLoreDragDown = ParseBool(sandboxValues, ".sandbox.zombie-lore-drag-down", true);
-        var zombieLoreFenceLunge = ParseBool(sandboxValues, ".sandbox.zombie-lore-fence-lunge", true);
+        var zombies = GetValue(sandboxValues, ".sandbox.zombies", "Normal");
+        var dayLength = GetValue(sandboxValues, ".sandbox.day-length", "1 Hour, 30 Minutes");
+        var helicopter = GetValue(sandboxValues, ".sandbox.helicopter", "Once");
+        var lootRespawn = GetFirstValue(sandboxValues, "0", ".sandbox.hours-for-loot-respawn", ".sandbox.loot-respawn");
+        var zombieLoreSpeed = GetValue(sandboxValues, ".sandbox.zombie-lore-speed", "Random");
+        var zombieLoreStrength = GetValue(sandboxValues, ".sandbox.zombie-lore-strength", "Normal");
+        var zombieLoreTransmission = GetValue(sandboxValues, ".sandbox.zombie-lore-transmission", "Blood and Saliva");
+        var zombieLoreMortality = GetValue(sandboxValues, ".sandbox.zombie-lore-mortality", "2-3 Days");
+        var zombieLoreReanimate = GetValue(sandboxValues, ".sandbox.zombie-lore-reanimate", "0-1 Minutes");
+        var zombieLoreCognition = GetValue(sandboxValues, ".sandbox.zombie-lore-cognition", "Basic Navigation");
+        var zombieLoreMemory = GetValue(sandboxValues, ".sandbox.zombie-lore-memory", "Normal");
+        var zombieLoreSight = GetValue(sandboxValues, ".sandbox.zombie-lore-sight", "Random between Poor and Normal");
+        var zombieLoreHearing = GetValue(sandboxValues, ".sandbox.zombie-lore-hearing", "Random between Poor and Normal");
+        var zombieLoreTriggerHouseAlarm = ParseFirstBool(sandboxValues, false, ".sandbox.zombie-house-alarm-triggering", ".sandbox.zombie-lore-trigger-house-alarm");
+        var zombieLoreThumpOnConstruction = ParseFirstBool(sandboxValues, true, ".sandbox.damage-construction", ".sandbox.zombie-lore-thump-on-construction");
+        var zombieLoreDragDown = ParseFirstBool(sandboxValues, true, ".sandbox.drag-down", ".sandbox.zombie-lore-drag-down");
+        var zombieLoreFenceLunge = ParseFirstBool(sandboxValues, true, ".sandbox.zombie-lunge", ".sandbox.zombie-lore-fence-lunge");
         var vehiclesEnabled = ParseBool(sandboxValues, ".sandbox.enable-vehicles", true);
         var fireSpread = ParseBool(sandboxValues, ".sandbox.fire-spread", true);
-        var corpseCleanupHours = GetValue(sandboxValues, ".sandbox.hours-for-corpse-removal", "216");
+        var corpseCleanupHours = GetValue(sandboxValues, ".sandbox.hours-for-corpse-removal", "216.0");
         var multiHit = ParseBool(sandboxValues, ".sandbox.multi-hit");
         var boneFracture = ParseBool(sandboxValues, ".sandbox.bone-fracture", true);
         var attackBlockMovements = ParseBool(sandboxValues, ".sandbox.attack-block-movements", true);
@@ -96,7 +93,7 @@ public static class ProjectZomboidProfilePostureSummaryBuilder
         var starterKit = ParseBool(sandboxValues, ".sandbox.starter-kit");
         var nutrition = ParseBool(sandboxValues, ".sandbox.nutrition");
         var worldSummary = $"Zombies {zombies} | day length {dayLength} | helicopter {helicopter} | loot respawn {lootRespawn} | vehicles {(vehiclesEnabled ? "on" : "off")} | fire spread {(fireSpread ? "on" : "off")} | corpse cleanup {corpseCleanupHours}h | multi-hit {(multiHit ? "on" : "off")} | fractures {(boneFracture ? "on" : "off")} | attack lock {(attackBlockMovements ? "on" : "off")} | easy vehicles {(vehicleEasyUse ? "on" : "off")} | crash damage {(playerDamageFromCrash ? "on" : "off")} | starter kit {(starterKit ? "on" : "off")} | nutrition {(nutrition ? "on" : "off")}.";
-        var sandboxTuningSummary = $"Zombie lore speed {zombieLoreSpeed} | strength {zombieLoreStrength} | transmission {zombieLoreTransmission} | mortality {zombieLoreMortality} | reanimate {zombieLoreReanimate} | cognition {zombieLoreCognition} | memory {zombieLoreMemory} | decomp {zombieLoreDecomp} | sight {zombieLoreSight} | hearing {zombieLoreHearing} | smell {zombieLoreSmell} | alarm {(zombieLoreTriggerHouseAlarm ? "on" : "off")} | thump {(zombieLoreThumpNoChasing ? "on" : "off")} | build thump {(zombieLoreThumpOnConstruction ? "on" : "off")} | drag {(zombieLoreDragDown ? "on" : "off")} | fence {(zombieLoreFenceLunge ? "on" : "off")}.";
+        var sandboxTuningSummary = $"Zombie lore speed {zombieLoreSpeed} | strength {zombieLoreStrength} | transmission {zombieLoreTransmission} | mortality {zombieLoreMortality} | reanimate {zombieLoreReanimate} | cognition {zombieLoreCognition} | memory {zombieLoreMemory} | sight {zombieLoreSight} | hearing {zombieLoreHearing} | alarm {(zombieLoreTriggerHouseAlarm ? "on" : "off")} | build thump {(zombieLoreThumpOnConstruction ? "on" : "off")} | drag {(zombieLoreDragDown ? "on" : "off")} | fence {(zombieLoreFenceLunge ? "on" : "off")}.";
 
         var welcomeMessage = GetValue(generalValues, ".server.welcome-message");
         var welcomeSummary = string.IsNullOrWhiteSpace(welcomeMessage)
@@ -137,9 +134,37 @@ public static class ProjectZomboidProfilePostureSummaryBuilder
         return key is null ? fallback : values[key] ?? fallback;
     }
 
+    private static string GetFirstValue(IReadOnlyDictionary<string, string?> values, string fallback, params string[] suffixes)
+    {
+        foreach (var suffix in suffixes)
+        {
+            var key = values.Keys.FirstOrDefault(candidate => candidate.EndsWith(suffix, StringComparison.Ordinal));
+            if (key is not null)
+            {
+                return values[key] ?? fallback;
+            }
+        }
+
+        return fallback;
+    }
+
     private static bool ParseBool(IReadOnlyDictionary<string, string?> values, string suffix, bool fallback = false)
     {
         var key = values.Keys.FirstOrDefault(candidate => candidate.EndsWith(suffix, StringComparison.Ordinal));
         return key is not null && bool.TryParse(values[key], out var parsed) ? parsed : fallback;
+    }
+
+    private static bool ParseFirstBool(IReadOnlyDictionary<string, string?> values, bool fallback, params string[] suffixes)
+    {
+        foreach (var suffix in suffixes)
+        {
+            var key = values.Keys.FirstOrDefault(candidate => candidate.EndsWith(suffix, StringComparison.Ordinal));
+            if (key is not null && bool.TryParse(values[key], out var parsed))
+            {
+                return parsed;
+            }
+        }
+
+        return fallback;
     }
 }

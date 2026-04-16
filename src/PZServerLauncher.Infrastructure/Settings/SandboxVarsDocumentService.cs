@@ -25,7 +25,7 @@ public sealed partial class SandboxVarsDocumentService : ISandboxVarsDocumentSer
         {
             if (parsed.Values.TryGetValue(keyPath, out var value))
             {
-                values[keyPath] = value;
+                values[keyPath] = NormalizeReadValue(value);
             }
         }
 
@@ -183,13 +183,58 @@ public sealed partial class SandboxVarsDocumentService : ISandboxVarsDocumentSer
 
     private static string FormatValue(string? value)
     {
-        if (bool.TryParse(value, out var boolValue))
+        var trimmed = value?.Trim();
+        if (bool.TryParse(trimmed, out var boolValue))
         {
             return boolValue ? "true" : "false";
         }
 
-        return string.IsNullOrWhiteSpace(value) ? "0" : value.Trim();
+        if (string.IsNullOrWhiteSpace(trimmed))
+        {
+            return "0";
+        }
+
+        if (LooksLikeNumericLiteral(trimmed) || LooksLikeQuotedString(trimmed))
+        {
+            return trimmed;
+        }
+
+        return $"\"{EscapeLuaString(trimmed)}\"";
     }
+
+    private static string? NormalizeReadValue(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return value;
+        }
+
+        var trimmed = value.Trim();
+        if (!LooksLikeQuotedString(trimmed))
+        {
+            return trimmed;
+        }
+
+        return UnescapeLuaString(trimmed[1..^1]);
+    }
+
+    private static bool LooksLikeQuotedString(string value) =>
+        value.Length >= 2 &&
+        value[0] == '"' &&
+        value[^1] == '"';
+
+    private static bool LooksLikeNumericLiteral(string value) =>
+        decimal.TryParse(value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out _);
+
+    private static string EscapeLuaString(string value) =>
+        value
+            .Replace("\\", "\\\\", StringComparison.Ordinal)
+            .Replace("\"", "\\\"", StringComparison.Ordinal);
+
+    private static string UnescapeLuaString(string value) =>
+        value
+            .Replace("\\\"", "\"", StringComparison.Ordinal)
+            .Replace("\\\\", "\\", StringComparison.Ordinal);
 
     private static string DetectLineEnding(string text) =>
         text.Contains("\r\n", StringComparison.Ordinal) ? "\r\n" : "\n";

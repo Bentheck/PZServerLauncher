@@ -1,20 +1,20 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using PZServerLauncher.App.Services;
 using PZServerLauncher.Contracts.Profiles;
 using PZServerLauncher.Contracts.Runtime;
+using PZServerLauncher.Runtime;
 
 namespace PZServerLauncher.App.ViewModels;
 
 public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBase
 {
-    private readonly LocalHostApiClient _hostApiClient;
+    private readonly ILauncherRuntime _runtime;
     private SettingsCatalogDto? _catalog;
     private string? _sourceSha256;
     private bool _isApplyingState;
 
-    public GeneralWorkspaceViewModel(MainWindowViewModel legacy, LocalHostApiClient hostApiClient)
+    public GeneralWorkspaceViewModel(MainWindowViewModel legacy, ILauncherRuntime runtime)
         : base(
             ProfileWorkspacePageIds.General,
             "General",
@@ -23,7 +23,7 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             legacy,
             ["Public identity", "World access", "Spawn and loot", "Respawn and cleanup", "Survival rules", "Safehouses", "Factions and trade", "Ports", "Runtime controls"])
     {
-        _hostApiClient = hostApiClient;
+        _runtime = runtime;
         SaveSettingsCommand = new AsyncRelayCommand(SaveSettingsAsync);
         ReloadCommand = new AsyncRelayCommand(ReloadAsync);
     }
@@ -228,7 +228,7 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
         var payload = new SettingsDraftDto(
             SelectedProfile.ProfileId,
-            SelectedProfile.Branch.Contains("42", StringComparison.Ordinal) ? PZServerLauncher.Core.Profiles.ProjectZomboidBranch.Unstable42 : PZServerLauncher.Core.Profiles.ProjectZomboidBranch.Stable41,
+            PZServerLauncher.Core.Profiles.ProjectZomboidBranch.Unstable42,
             _catalog.CatalogId,
             _catalog.CatalogVersion,
             ProfileWorkspacePageIds.General,
@@ -237,7 +237,7 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             true,
             DateTimeOffset.UtcNow);
 
-        await _hostApiClient.SaveSettingsDraftAsync(SelectedProfile.ProfileId, ProfileWorkspacePageIds.General, payload);
+        await _runtime.SaveSettingsDraftAsync(SelectedProfile.ProfileId, ProfileWorkspacePageIds.General, payload);
         MarkClean("Saved General draft.");
         LoadStatus = "Saved a General draft. Apply it to write the server files.";
         NotifyComputedState();
@@ -252,7 +252,7 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
         try
         {
-            await _hostApiClient.DeleteSettingsDraftAsync(SelectedProfile.ProfileId, ProfileWorkspacePageIds.General);
+            await _runtime.DeleteSettingsDraftAsync(SelectedProfile.ProfileId, ProfileWorkspacePageIds.General);
         }
         catch
         {
@@ -277,7 +277,7 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             false,
             null);
 
-        var result = await _hostApiClient.SaveSettingsPageAsync(SelectedProfile.ProfileId, ProfileWorkspacePageIds.General, payload);
+        var result = await _runtime.SaveSettingsPageAsync(SelectedProfile.ProfileId, ProfileWorkspacePageIds.General, payload);
         if (result is null)
         {
             LoadStatus = "General settings could not be saved.";
@@ -293,7 +293,7 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
         try
         {
-            await _hostApiClient.DeleteSettingsDraftAsync(SelectedProfile.ProfileId, ProfileWorkspacePageIds.General);
+            await _runtime.DeleteSettingsDraftAsync(SelectedProfile.ProfileId, ProfileWorkspacePageIds.General);
         }
         catch
         {
@@ -322,9 +322,9 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
         try
         {
-            _catalog = await _hostApiClient.GetSettingsCatalogAsync(profile.ProfileId);
-            var valueSet = await _hostApiClient.GetSettingsPageAsync(profile.ProfileId, ProfileWorkspacePageIds.General);
-            var draft = await _hostApiClient.GetSettingsDraftAsync(profile.ProfileId, ProfileWorkspacePageIds.General);
+            _catalog = await _runtime.GetSettingsCatalogAsync(profile.ProfileId);
+            var valueSet = await _runtime.GetSettingsPageAsync(profile.ProfileId, ProfileWorkspacePageIds.General);
+            var draft = await _runtime.GetSettingsDraftAsync(profile.ProfileId, ProfileWorkspacePageIds.General);
 
             CatalogSummary = _catalog is null
                 ? "No structured catalog available."
@@ -440,7 +440,7 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
     private IReadOnlyDictionary<string, string?> BuildValues()
     {
-        var prefix = SelectedProfile?.Branch.Contains("42", StringComparison.Ordinal) == true ? "b42" : "b41";
+        const string prefix = "b42";
         return new Dictionary<string, string?>(StringComparer.Ordinal)
         {
             [$"{prefix}.server.public-name"] = PublicName,

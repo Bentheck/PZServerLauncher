@@ -6,6 +6,65 @@ namespace PZServerLauncher.Host.Services;
 
 public sealed partial class WorkshopPresetScannerService
 {
+    public IReadOnlyList<string> ResolveWorkshopItemIds(
+        string? installDirectory,
+        WorkshopPreset preset,
+        IReadOnlyList<string>? fallbackWorkshopItemIds = null)
+    {
+        ArgumentNullException.ThrowIfNull(preset);
+
+        var enabledModIds = NormalizeList(preset.EnabledModIds);
+        var mapFolders = NormalizeList(preset.MapFolders);
+        var fallbackDiagnostics = new List<string>();
+        var normalizedFallbackWorkshopIds = NormalizeWorkshopIds(
+            fallbackWorkshopItemIds ?? preset.WorkshopItemIds,
+            fallbackDiagnostics);
+        var discoveredItems = DiscoverWorkshopItems(installDirectory);
+        if (discoveredItems.Count == 0)
+        {
+            return normalizedFallbackWorkshopIds;
+        }
+
+        var resolvedWorkshopItemIds = new List<string>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var modId in enabledModIds)
+        {
+            foreach (var item in discoveredItems.Where(candidate => candidate.ModIds.Contains(modId, StringComparer.OrdinalIgnoreCase)))
+            {
+                if (seen.Add(item.WorkshopId))
+                {
+                    resolvedWorkshopItemIds.Add(item.WorkshopId);
+                }
+            }
+        }
+
+        foreach (var mapFolder in mapFolders)
+        {
+            foreach (var item in discoveredItems.Where(candidate => candidate.MapFolders.Contains(mapFolder, StringComparer.OrdinalIgnoreCase)))
+            {
+                if (seen.Add(item.WorkshopId))
+                {
+                    resolvedWorkshopItemIds.Add(item.WorkshopId);
+                }
+            }
+        }
+
+        var discoveredWorkshopIds = discoveredItems
+            .Select(item => item.WorkshopId)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var workshopItemId in normalizedFallbackWorkshopIds.Where(id => !discoveredWorkshopIds.Contains(id)))
+        {
+            if (seen.Add(workshopItemId))
+            {
+                resolvedWorkshopItemIds.Add(workshopItemId);
+            }
+        }
+
+        return resolvedWorkshopItemIds;
+    }
+
     public WorkshopScanResultDto Scan(string? installDirectory, WorkshopPreset preset)
     {
         var diagnostics = new List<string>();
@@ -13,54 +72,20 @@ public sealed partial class WorkshopPresetScannerService
         var enabledModIds = NormalizeList(preset.EnabledModIds);
         var mapFolders = NormalizeList(preset.MapFolders);
 
-        var discoveredWorkshopItems = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var discoveredMods = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var discoveredMaps = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var discoveredItems = DiscoverWorkshopItems(installDirectory);
+        var discoveredWorkshopItems = discoveredItems
+            .Select(item => item.WorkshopId)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var discoveredMods = discoveredItems
+            .SelectMany(item => item.ModIds)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var discoveredMaps = discoveredItems
+            .SelectMany(item => item.MapFolders)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-        var workshopRoot = ResolveWorkshopRoot(installDirectory);
-        if (workshopRoot is null)
+        if (discoveredItems.Count == 0)
         {
             diagnostics.Add("No local workshop content directory was detected for this install path.");
-        }
-        else
-        {
-            foreach (var itemDirectory in Directory.GetDirectories(workshopRoot))
-            {
-                var workshopId = Path.GetFileName(itemDirectory);
-                if (string.IsNullOrWhiteSpace(workshopId))
-                {
-                    continue;
-                }
-
-                discoveredWorkshopItems.Add(workshopId);
-
-                foreach (var modInfoPath in Directory.GetFiles(itemDirectory, "mod.info", SearchOption.AllDirectories))
-                {
-                    foreach (var line in File.ReadLines(modInfoPath))
-                    {
-                        if (line.StartsWith("id=", StringComparison.OrdinalIgnoreCase))
-                        {
-                            discoveredMods.Add(line["id=".Length..].Trim());
-                        }
-                        else if (line.StartsWith("map=", StringComparison.OrdinalIgnoreCase))
-                        {
-                            foreach (var map in SplitCsv(line["map=".Length..]))
-                            {
-                                discoveredMaps.Add(map);
-                            }
-                        }
-                    }
-
-                    var mediaMapsDirectory = Path.Combine(Path.GetDirectoryName(modInfoPath)!, "media", "maps");
-                    if (Directory.Exists(mediaMapsDirectory))
-                    {
-                        foreach (var mapDirectory in Directory.GetDirectories(mediaMapsDirectory))
-                        {
-                            discoveredMaps.Add(Path.GetFileName(mapDirectory));
-                        }
-                    }
-                }
-            }
         }
 
         foreach (var workshopId in normalizedWorkshopIds)
@@ -155,6 +180,59 @@ public sealed partial class WorkshopPresetScannerService
     private static IEnumerable<string> SplitCsv(string value) =>
         value.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
 
+    private static IReadOnlyList<DiscoveredWorkshopItem> DiscoverWorkshopItems(string? installDirectory)
+    {
+        var workshopRoot = ResolveWorkshopRoot(installDirectory);
+        if (workshopRoot is null)
+        {
+            return [];
+        }
+
+        var discoveredItems = new List<DiscoveredWorkshopItem>();
+        foreach (var itemDirectory in Directory.GetDirectories(workshopRoot))
+        {
+            var workshopId = Path.GetFileName(itemDirectory);
+            if (string.IsNullOrWhiteSpace(workshopId))
+            {
+                continue;
+            }
+
+            var modIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var mapFolders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var modInfoPath in Directory.GetFiles(itemDirectory, "mod.info", SearchOption.AllDirectories))
+            {
+                foreach (var line in File.ReadLines(modInfoPath))
+                {
+                    if (line.StartsWith("id=", StringComparison.OrdinalIgnoreCase))
+                    {
+                        modIds.Add(line["id=".Length..].Trim());
+                    }
+                    else if (line.StartsWith("map=", StringComparison.OrdinalIgnoreCase))
+                    {
+                        foreach (var map in SplitCsv(line["map=".Length..]))
+                        {
+                            mapFolders.Add(map);
+                        }
+                    }
+                }
+
+                var mediaMapsDirectory = Path.Combine(Path.GetDirectoryName(modInfoPath)!, "media", "maps");
+                if (Directory.Exists(mediaMapsDirectory))
+                {
+                    foreach (var mapDirectory in Directory.GetDirectories(mediaMapsDirectory))
+                    {
+                        mapFolders.Add(Path.GetFileName(mapDirectory));
+                    }
+                }
+            }
+
+            discoveredItems.Add(new DiscoveredWorkshopItem(workshopId, modIds.ToArray(), mapFolders.ToArray()));
+        }
+
+        return discoveredItems;
+    }
+
     private static string? ResolveWorkshopRoot(string? installDirectory)
     {
         if (string.IsNullOrWhiteSpace(installDirectory) || !Directory.Exists(installDirectory))
@@ -178,3 +256,8 @@ public sealed partial class WorkshopPresetScannerService
     [GeneratedRegex(@"^\d+$", RegexOptions.Compiled)]
     private static partial Regex DigitsOnlyRegex();
 }
+
+internal sealed record DiscoveredWorkshopItem(
+    string WorkshopId,
+    IReadOnlyList<string> ModIds,
+    IReadOnlyList<string> MapFolders);

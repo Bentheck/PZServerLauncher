@@ -25,7 +25,7 @@ public sealed class ProjectZomboidHostOperatorSummaryBuilderTests
             settings,
             [
                 new ProjectZomboidHostManagedProfileSnapshot("Riverside", "Build 42", "Running", true, true, true, true, "16261 / 27015"),
-                new ProjectZomboidHostManagedProfileSnapshot("Muldraugh", "Build 41", "Stopped", false, true, false, true, "16262 / 27016"),
+                new ProjectZomboidHostManagedProfileSnapshot("Muldraugh", "Build 42", "Stopped", false, true, false, true, "16262 / 27016"),
             ]);
 
         Assert.Equal("Loopback 48233 | Windows startup enabled.", summary.LifecycleHeadline);

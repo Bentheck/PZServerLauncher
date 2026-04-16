@@ -10,9 +10,9 @@ public sealed class ProjectZomboidInstallPostureSummaryBuilderTests : IDisposabl
     private readonly string _tempRoot = Path.Combine(Path.GetTempPath(), "PZServerLauncher.Tests", Guid.NewGuid().ToString("N"));
 
     [Fact]
-    public void Build_ReportsStableDirectJavaReadinessWhenFootprintExists()
+    public void Build_ReportsDirectJavaReadinessWhenFootprintExists()
     {
-        var profile = CreateProfile("stable-ready", ProjectZomboidBranch.Stable41);
+        var profile = CreateProfile("ready");
         var planner = new ProjectZomboidServerPlanner();
         var paths = planner.ResolvePaths(profile);
 
@@ -32,7 +32,7 @@ public sealed class ProjectZomboidInstallPostureSummaryBuilderTests : IDisposabl
         File.WriteAllText(paths.IniFilePath, "Public=true");
         File.WriteAllText(paths.SandboxVarsFilePath, "SandboxVars = {\n    VERSION = 4,\n}");
 
-        var summary = ProjectZomboidInstallPostureSummaryBuilder.Build(profile, "Stopped", hasBackup: true, latestBackup: "stable-backup.zip");
+        var summary = ProjectZomboidInstallPostureSummaryBuilder.Build(profile, "Stopped", hasBackup: true, latestBackup: "ready-backup.zip");
 
         Assert.True(summary.InstallDetected);
         Assert.True(summary.CacheDetected);
@@ -42,25 +42,25 @@ public sealed class ProjectZomboidInstallPostureSummaryBuilderTests : IDisposabl
         Assert.True(summary.SandboxDetected);
         Assert.True(summary.WorldDetected);
         Assert.True(summary.UsesDirectJavaTemplate);
-        Assert.Contains("Build 41 Stable", summary.BranchChannelSummary);
-        Assert.Contains("app_update 380870 validate", summary.SteamCmdCommandSummary);
+        Assert.Contains("Build 42 Unstable", summary.BranchChannelSummary);
+        Assert.Contains("-beta unstable", summary.SteamCmdCommandSummary);
         Assert.Contains("@ShutdownOnFailedCommand 1", summary.SteamCmdScriptPreview);
         Assert.Contains("force_install_dir", summary.SteamCmdScriptPreview);
         Assert.Contains("-servername", summary.LaunchCommandPreview);
         Assert.Contains("launcher-managed memory", summary.LaunchReadinessSummary);
         Assert.Contains("core server config files are present", summary.CacheFootprintSummary);
-        Assert.Contains("Latest backup: stable-backup.zip", summary.BackupSafetySummary);
+        Assert.Contains("Latest backup: ready-backup.zip", summary.BackupSafetySummary);
         Assert.Contains("look ready for a clean update cycle", summary.PreflightSummary);
         Assert.Contains("launcher-managed Java template", summary.DeploymentPostureSummary);
-        Assert.Contains("Stable 41", summary.BranchIsolationSummary);
+        Assert.Contains("Build 42 server", summary.BranchIsolationSummary);
         Assert.Contains("Recommended sequence", summary.OperatorSequenceSummary);
         Assert.Contains(summary.PreflightChecks, check => check.Contains("Install root:", StringComparison.Ordinal));
     }
 
     [Fact]
-    public void Build_ReportsUnstableLaunchBlockedWhenLauncherTemplateCannotBeExtracted()
+    public void Build_ReportsLaunchBlockedWhenLauncherTemplateCannotBeExtracted()
     {
-        var profile = CreateProfile("unstable-fallback", ProjectZomboidBranch.Unstable42);
+        var profile = CreateProfile("fallback");
 
         Directory.CreateDirectory(profile.InstallDirectory);
         File.WriteAllText(
@@ -84,13 +84,13 @@ public sealed class ProjectZomboidInstallPostureSummaryBuilderTests : IDisposabl
         Assert.Contains("Launch blocked", summary.LaunchReadinessSummary, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("No backup archive exists yet", summary.BackupSafetySummary);
         Assert.Contains("launch is blocked", summary.DeploymentPostureSummary, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Unstable 42", summary.BranchIsolationSummary);
+        Assert.Contains("Build 42 server", summary.BranchIsolationSummary);
     }
 
     [Fact]
     public void Build_ReportsMissingInstallAndCacheBeforeBootstrap()
     {
-        var profile = CreateProfile("missing-footprint", ProjectZomboidBranch.Unstable42);
+        var profile = CreateProfile("missing-footprint");
 
         var summary = ProjectZomboidInstallPostureSummaryBuilder.Build(profile, "Stopped", hasBackup: false, latestBackup: "No backups");
 
@@ -111,9 +111,25 @@ public sealed class ProjectZomboidInstallPostureSummaryBuilderTests : IDisposabl
     }
 
     [Fact]
+    public void Build_DoesNotTreatEmptyManagedDirectoriesAsInstalledOrBootstrapped()
+    {
+        var profile = CreateProfile("empty-managed-folders");
+        Directory.CreateDirectory(profile.InstallDirectory);
+        Directory.CreateDirectory(profile.CacheDirectory);
+
+        var summary = ProjectZomboidInstallPostureSummaryBuilder.Build(profile, "Stopped", hasBackup: false, latestBackup: "No backups");
+
+        Assert.False(summary.InstallDetected);
+        Assert.False(summary.CacheDetected);
+        Assert.False(summary.LauncherDetected);
+        Assert.Contains("Install root is missing", summary.InstallFootprintSummary);
+        Assert.Contains("Cache root is missing", summary.CacheFootprintSummary);
+    }
+
+    [Fact]
     public void Build_ReportsMaintenanceWindowWhenServerIsRunning()
     {
-        var profile = CreateProfile("running-maintenance", ProjectZomboidBranch.Stable41);
+        var profile = CreateProfile("running-maintenance");
         var planner = new ProjectZomboidServerPlanner();
         var paths = planner.ResolvePaths(profile);
 
@@ -139,7 +155,7 @@ public sealed class ProjectZomboidInstallPostureSummaryBuilderTests : IDisposabl
     [Fact]
     public void Build_DoesNotTreatNestedLauncherAsConfiguredInstallRootLauncher()
     {
-        var profile = CreateProfile("nested-launcher", ProjectZomboidBranch.Stable41);
+        var profile = CreateProfile("nested-launcher");
         var nestedInstallDirectory = Path.Combine(profile.InstallDirectory, "Project Zomboid Dedicated Server");
 
         Directory.CreateDirectory(nestedInstallDirectory);
@@ -156,13 +172,13 @@ public sealed class ProjectZomboidInstallPostureSummaryBuilderTests : IDisposabl
         Assert.EndsWith(ProjectZomboidDefaults.StableBatchFileName, summary.ExpectedLauncherPath, StringComparison.OrdinalIgnoreCase);
     }
 
-    private ServerProfile CreateProfile(string id, ProjectZomboidBranch branch) =>
+    private ServerProfile CreateProfile(string id) =>
         ServerProfileFactory.CreateStarterProfile() with
         {
             ProfileId = id,
             DisplayName = id,
             ServerName = "servertest",
-            Branch = branch,
+            Branch = ProjectZomboidBranch.Unstable42,
             InstallDirectory = Path.Combine(_tempRoot, id, "install"),
             CacheDirectory = Path.Combine(_tempRoot, id, "cache"),
             PreferredMemoryInGigabytes = 10,

@@ -4,4 +4,7 @@ public sealed record SettingsSectionDto(
     string SectionId,
     string Title,
     string? Description,
-    IReadOnlyList<SettingsFieldDto> Fields);
+    IReadOnlyList<SettingsFieldDto> Fields,
+    string? CategoryId = null,
+    string? CategoryTitle = null,
+    int CategoryOrder = 0);

@@ -86,13 +86,13 @@ public sealed class ProjectZomboidProfilePostureSummaryBuilderTests
     {
         var sandboxValues = new Dictionary<string, string?>(StringComparer.Ordinal)
         {
-            ["b42.sandbox.zombies"] = "5",
-            ["b42.sandbox.day-length"] = "9",
-            ["b42.sandbox.helicopter"] = "4",
-            ["b42.sandbox.loot-respawn"] = "2",
+            ["b42.sandbox.zombies"] = "Normal",
+            ["b42.sandbox.day-length"] = "1 Hour, 30 Minutes",
+            ["b42.sandbox.helicopter"] = "Often",
+            ["b42.sandbox.hours-for-loot-respawn"] = "6",
             ["b42.sandbox.enable-vehicles"] = "true",
             ["b42.sandbox.fire-spread"] = "false",
-            ["b42.sandbox.hours-for-corpse-removal"] = "120",
+            ["b42.sandbox.hours-for-corpse-removal"] = "120.0",
             ["b42.sandbox.multi-hit"] = "true",
             ["b42.sandbox.bone-fracture"] = "false",
             ["b42.sandbox.attack-block-movements"] = "false",
@@ -108,7 +108,7 @@ public sealed class ProjectZomboidProfilePostureSummaryBuilderTests
             new Dictionary<string, string?>(StringComparer.Ordinal),
             sandboxValues);
 
-        Assert.Equal("Zombies 5 | day length 9 | helicopter 4 | loot respawn 2 | vehicles on | fire spread off | corpse cleanup 120h | multi-hit on | fractures off | attack lock off | easy vehicles on | crash damage off | starter kit on | nutrition off.", summary.WorldSummary);
+        Assert.Equal("Zombies Normal | day length 1 Hour, 30 Minutes | helicopter Often | loot respawn 6 | vehicles on | fire spread off | corpse cleanup 120.0h | multi-hit on | fractures off | attack lock off | easy vehicles on | crash damage off | starter kit on | nutrition off.", summary.WorldSummary);
     }
 
     [Fact]
@@ -116,22 +116,19 @@ public sealed class ProjectZomboidProfilePostureSummaryBuilderTests
     {
         var sandboxValues = new Dictionary<string, string?>(StringComparer.Ordinal)
         {
-            ["b42.sandbox.zombie-lore-speed"] = "1",
-            ["b42.sandbox.zombie-lore-strength"] = "4",
-            ["b42.sandbox.zombie-lore-transmission"] = "3",
-            ["b42.sandbox.zombie-lore-mortality"] = "6",
-            ["b42.sandbox.zombie-lore-reanimate"] = "2",
-            ["b42.sandbox.zombie-lore-cognition"] = "5",
-            ["b42.sandbox.zombie-lore-memory"] = "1",
-            ["b42.sandbox.zombie-lore-decomp"] = "4",
-            ["b42.sandbox.zombie-lore-sight"] = "4",
-            ["b42.sandbox.zombie-lore-hearing"] = "2",
-            ["b42.sandbox.zombie-lore-smell"] = "3",
-            ["b42.sandbox.zombie-lore-trigger-house-alarm"] = "true",
-            ["b42.sandbox.zombie-lore-thump-no-chasing"] = "false",
-            ["b42.sandbox.zombie-lore-thump-on-construction"] = "true",
-            ["b42.sandbox.zombie-lore-drag-down"] = "false",
-            ["b42.sandbox.zombie-lore-fence-lunge"] = "true",
+            ["b42.sandbox.zombie-lore-speed"] = "Sprinter",
+            ["b42.sandbox.zombie-lore-strength"] = "Tough",
+            ["b42.sandbox.zombie-lore-transmission"] = "Blood and Saliva",
+            ["b42.sandbox.zombie-lore-mortality"] = "Never",
+            ["b42.sandbox.zombie-lore-reanimate"] = "Instant",
+            ["b42.sandbox.zombie-lore-cognition"] = "Use Doors",
+            ["b42.sandbox.zombie-lore-memory"] = "Long",
+            ["b42.sandbox.zombie-lore-sight"] = "Eagle",
+            ["b42.sandbox.zombie-lore-hearing"] = "Pinpoint",
+            ["b42.sandbox.zombie-house-alarm-triggering"] = "true",
+            ["b42.sandbox.damage-construction"] = "true",
+            ["b42.sandbox.drag-down"] = "false",
+            ["b42.sandbox.zombie-lunge"] = "true",
         };
 
         var summary = ProjectZomboidProfilePostureSummaryBuilder.Build(
@@ -140,7 +137,7 @@ public sealed class ProjectZomboidProfilePostureSummaryBuilderTests
             new Dictionary<string, string?>(StringComparer.Ordinal),
             sandboxValues);
 
-        Assert.Equal("Zombie lore speed 1 | strength 4 | transmission 3 | mortality 6 | reanimate 2 | cognition 5 | memory 1 | decomp 4 | sight 4 | hearing 2 | smell 3 | alarm on | thump off | build thump on | drag off | fence on.", summary.SandboxTuningSummary);
+        Assert.Equal("Zombie lore speed Sprinter | strength Tough | transmission Blood and Saliva | mortality Never | reanimate Instant | cognition Use Doors | memory Long | sight Eagle | hearing Pinpoint | alarm on | build thump on | drag off | fence on.", summary.SandboxTuningSummary);
     }
 
     [Fact]

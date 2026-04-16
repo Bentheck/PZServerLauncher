@@ -147,18 +147,7 @@ public sealed class UserManagementService(UserManager<ApplicationUser> userManag
         {
             throw new InvalidOperationException("Create an owner account before enabling remote access.");
         }
-
-        if (!owners.Any(user => user.TwoFactorEnabled))
-        {
-            throw new InvalidOperationException("Enable two-factor authentication for an owner account before enabling remote access. Open the local host and finish setup at /Account/Manage/EnableAuthenticator.");
-        }
     }
-
-    public static bool RoleRequiresTwoFactor(UserRole role) =>
-        role is UserRole.Owner or UserRole.Admin;
-
-    public static bool RolesRequireTwoFactor(IEnumerable<UserRole> roles) =>
-        roles.Any(RoleRequiresTwoFactor);
 
     private async Task<IReadOnlyList<UserRole>> GetRolesAsync(ApplicationUser user)
     {

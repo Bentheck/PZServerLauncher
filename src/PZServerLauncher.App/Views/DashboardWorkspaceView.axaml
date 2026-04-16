@@ -11,114 +11,7 @@
              x:DataType="vm:DashboardWorkspaceViewModel">
     <ScrollViewer HorizontalScrollBarVisibility="Disabled">
         <StackPanel Spacing="18">
-            <Grid ColumnDefinitions="1.15*,.85*" ColumnSpacing="18">
-                <Border Classes="card" Padding="22">
-                    <StackPanel Spacing="14">
-                        <StackPanel Spacing="6">
-                            <TextBlock Classes="kicker" Text="Home" />
-                            <TextBlock Classes="panel-title" FontSize="30" Text="Workspaces" />
-                            <TextBlock Classes="body" Text="{Binding NextActionSummary}" TextWrapping="Wrap" />
-                        </StackPanel>
-
-                        <WrapPanel Orientation="Horizontal" ItemWidth="260" ItemHeight="112">
-                            <Button Width="250"
-                                    Margin="0,0,10,10"
-                                    Padding="0"
-                                    Background="Transparent"
-                                    BorderThickness="0"
-                                    Command="{Binding OpenProfilesWorkspaceCommand}">
-                                <Border Background="#FBF7F1"
-                                        BorderBrush="#DDD2C6"
-                                        BorderThickness="1"
-                                        CornerRadius="16"
-                                        Padding="16">
-                                    <StackPanel Spacing="6">
-                                        <TextBlock Classes="kicker" Text="Servers" />
-                                        <TextBlock Classes="panel-title" FontSize="20" Text="Open Server Workspaces" TextWrapping="Wrap" />
-                                        <TextBlock Classes="caption" Text="{Binding ServersWorkspaceSummary}" TextWrapping="Wrap" />
-                                    </StackPanel>
-                                </Border>
-                            </Button>
-
-                            <Button Width="250"
-                                    Margin="0,0,10,10"
-                                    Padding="0"
-                                    Background="Transparent"
-                                    BorderThickness="0"
-                                    Command="{Binding OpenConsolesWorkspaceCommand}">
-                                <Border Background="#FBF7F1"
-                                        BorderBrush="#DDD2C6"
-                                        BorderThickness="1"
-                                        CornerRadius="16"
-                                        Padding="16">
-                                    <StackPanel Spacing="6">
-                                        <TextBlock Classes="kicker" Text="Consoles" />
-                                        <TextBlock Classes="panel-title" FontSize="20" Text="Open The 4-Up Board" TextWrapping="Wrap" />
-                                        <TextBlock Classes="caption" Text="{Binding ConsolesWorkspaceSummary}" TextWrapping="Wrap" />
-                                    </StackPanel>
-                                </Border>
-                            </Button>
-
-                            <Button Width="250"
-                                    Margin="0,0,10,10"
-                                    Padding="0"
-                                    Background="Transparent"
-                                    BorderThickness="0"
-                                    Command="{Binding OpenHostWorkspaceCommand}">
-                                <Border Background="#FBF7F1"
-                                        BorderBrush="#DDD2C6"
-                                        BorderThickness="1"
-                                        CornerRadius="16"
-                                        Padding="16">
-                                    <StackPanel Spacing="6">
-                                        <TextBlock Classes="kicker" Text="App" />
-                                        <TextBlock Classes="panel-title" FontSize="20" Text="Host And Machine Controls" TextWrapping="Wrap" />
-                                        <TextBlock Classes="caption" Text="{Binding AppWorkspaceSummary}" TextWrapping="Wrap" />
-                                    </StackPanel>
-                                </Border>
-                            </Button>
-
-                            <Button Width="250"
-                                    Margin="0,0,10,10"
-                                    Padding="0"
-                                    Background="Transparent"
-                                    BorderThickness="0"
-                                    Command="{Binding OpenRemoteAccessWorkspaceCommand}">
-                                <Border Background="#FBF7F1"
-                                        BorderBrush="#DDD2C6"
-                                        BorderThickness="1"
-                                        CornerRadius="16"
-                                        Padding="16">
-                                    <StackPanel Spacing="6">
-                                        <TextBlock Classes="kicker" Text="Web Access" />
-                                        <TextBlock Classes="panel-title" FontSize="20" Text="Remote HTTPS Surface" TextWrapping="Wrap" />
-                                        <TextBlock Classes="caption" Text="{Binding WebAccessWorkspaceSummary}" TextWrapping="Wrap" />
-                                    </StackPanel>
-                                </Border>
-                            </Button>
-
-                            <Button Width="250"
-                                    Margin="0,0,10,10"
-                                    Padding="0"
-                                    Background="Transparent"
-                                    BorderThickness="0"
-                                    Command="{Binding OpenUsersWorkspaceCommand}">
-                                <Border Background="#FBF7F1"
-                                        BorderBrush="#DDD2C6"
-                                        BorderThickness="1"
-                                        CornerRadius="16"
-                                        Padding="16">
-                                    <StackPanel Spacing="6">
-                                        <TextBlock Classes="kicker" Text="Users" />
-                                        <TextBlock Classes="panel-title" FontSize="20" Text="Accounts And Owner Bootstrap" TextWrapping="Wrap" />
-                                        <TextBlock Classes="caption" Text="{Binding UsersWorkspaceSummary}" TextWrapping="Wrap" />
-                                    </StackPanel>
-                                </Border>
-                            </Button>
-                        </WrapPanel>
-                    </StackPanel>
-                </Border>
-
+            <Grid ColumnDefinitions="1.02*,.98*" ColumnSpacing="18">
                 <Border Classes="card" Padding="22">
                     <StackPanel Spacing="12">
                         <StackPanel Spacing="6">
@@ -157,9 +50,7 @@
                         <TextBlock Classes="caption" Text="{Binding StatusSummary}" TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
-            </Grid>
 
-            <Grid ColumnDefinitions="1.05*,.95*" ColumnSpacing="18">
                 <Border Classes="card" Padding="22">
                     <StackPanel Spacing="12">
                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
@@ -209,33 +100,33 @@
                         </Border>
                     </StackPanel>
                 </Border>
+            </Grid>
 
+            <Grid ColumnDefinitions="1.02*,.98*" ColumnSpacing="18">
                 <Border Classes="card" Padding="22">
                     <StackPanel Spacing="12">
-                        <TextBlock Classes="kicker" Text="Host Snapshot" />
+                        <TextBlock Classes="kicker" Text="App Snapshot" />
                         <TextBlock Classes="panel-title" FontSize="24" Text="{Binding HostStateSummary}" TextWrapping="Wrap" />
-                        <TextBlock Classes="body" Text="{Binding RemoteAccessSummary}" TextWrapping="Wrap" />
-                        <TextBlock Classes="body" Text="{Binding OwnerSummary}" TextWrapping="Wrap" />
+                        <TextBlock Classes="body" Text="{Binding AppWorkspaceSummary}" TextWrapping="Wrap" />
+                        <TextBlock Classes="body" Text="{Binding CloseBehaviorSummary}" TextWrapping="Wrap" />
 
                         <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
                             <Border Background="#F6EFE6" CornerRadius="14" Padding="14">
                                 <StackPanel Spacing="4">
-                                    <TextBlock Classes="kicker" Text="Console Access" />
+                                    <TextBlock Classes="kicker" Text="Consoles" />
                                     <TextBlock Classes="body" Text="{Binding ConsolesWorkspaceSummary}" TextWrapping="Wrap" />
                                 </StackPanel>
                             </Border>
                             <Border Grid.Column="1" Background="#F6EFE6" CornerRadius="14" Padding="14">
                                 <StackPanel Spacing="4">
-                                    <TextBlock Classes="kicker" Text="Users" />
-                                    <TextBlock Classes="body" Text="{Binding UsersWorkspaceSummary}" TextWrapping="Wrap" />
+                                    <TextBlock Classes="kicker" Text="Closing Behavior" />
+                                    <TextBlock Classes="body" Text="{Binding CloseBehaviorSummary}" TextWrapping="Wrap" />
                                 </StackPanel>
                             </Border>
                         </Grid>
                     </StackPanel>
                 </Border>
-            </Grid>
 
-            <Grid ColumnDefinitions="*,*" ColumnSpacing="18">
                 <Border Classes="card" Padding="22">
                     <StackPanel Spacing="10">
                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
@@ -284,37 +175,37 @@
                         </Border>
                     </StackPanel>
                 </Border>
-
-                <Border Classes="card" Padding="22">
-                    <StackPanel Spacing="10">
-                        <TextBlock Classes="kicker" Text="Recent Activity" />
-                        <TextBlock Classes="panel-title" FontSize="24" Text="{Binding RecentJobSummary}" TextWrapping="Wrap" />
-                        <TextBlock Classes="caption" Text="{Binding StatusSummary}" TextWrapping="Wrap" />
-
-                        <ItemsControl ItemsSource="{Binding Legacy.RecentJobs}" IsVisible="{Binding HasRecentJobs}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate x:DataType="vm:ShellItemViewModel">
-                                    <Border Background="#FBF7F1" CornerRadius="12" Padding="12" Margin="0,0,0,8">
-                                        <StackPanel Spacing="4">
-                                            <TextBlock Classes="kicker" Text="{Binding Title}" />
-                                            <TextBlock Classes="body" Text="{Binding Detail}" TextWrapping="Wrap" />
-                                        </StackPanel>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-
-                        <Border Background="#FBF7F1"
-                                CornerRadius="14"
-                                Padding="14"
-                                IsVisible="{Binding HasNoRecentJobs}">
-                            <TextBlock Classes="body"
-                                       Text="No recent host jobs are recorded yet. Start, stop, install, update, back up, or import a server and the latest work will show up here."
-                                       TextWrapping="Wrap" />
-                        </Border>
-                    </StackPanel>
-                </Border>
             </Grid>
+
+            <Border Classes="card" Padding="22">
+                <StackPanel Spacing="10">
+                    <TextBlock Classes="kicker" Text="Recent Activity" />
+                    <TextBlock Classes="panel-title" FontSize="24" Text="{Binding RecentJobSummary}" TextWrapping="Wrap" />
+                    <TextBlock Classes="caption" Text="{Binding StatusSummary}" TextWrapping="Wrap" />
+
+                    <ItemsControl ItemsSource="{Binding Legacy.RecentJobs}" IsVisible="{Binding HasRecentJobs}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:ShellItemViewModel">
+                                <Border Background="#FBF7F1" CornerRadius="12" Padding="12" Margin="0,0,0,8">
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Classes="kicker" Text="{Binding Title}" />
+                                        <TextBlock Classes="body" Text="{Binding Detail}" TextWrapping="Wrap" />
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <Border Background="#FBF7F1"
+                            CornerRadius="14"
+                            Padding="14"
+                            IsVisible="{Binding HasNoRecentJobs}">
+                        <TextBlock Classes="body"
+                                   Text="No recent host jobs are recorded yet. Start, stop, install, update, back up, or import a server and the latest work will show up here."
+                                   TextWrapping="Wrap" />
+                    </Border>
+                </StackPanel>
+            </Border>
         </StackPanel>
     </ScrollViewer>
 </UserControl>

@@ -16,40 +16,40 @@ public static class ProjectZomboidRemoteAccessRolloutSummaryBuilder
 {
     public static ProjectZomboidRemoteAccessRolloutSummary Build(
         RemoteAccessSettings settings,
-        int ownerAccountsWithTwoFactor,
+        bool ownerBootstrapConfigured,
         IReadOnlyList<string> selfTestMessages)
     {
         var endpointHost = string.IsNullOrWhiteSpace(settings.PublicHostname)
             ? settings.BindAddress
             : settings.PublicHostname;
-        var checklist = BuildChecklist(settings, ownerAccountsWithTwoFactor, selfTestMessages);
+        var checklist = BuildChecklist(settings, ownerBootstrapConfigured, selfTestMessages);
 
         return new ProjectZomboidRemoteAccessRolloutSummary(
             settings.IsEnabled ? "Remote HTTPS is staged for exposure." : "The host is still loopback-only.",
             settings.IsEnabled ? $"Planned endpoint: https://{endpointHost}:{settings.HttpsPort}" : "No remote endpoint is currently exposed.",
             string.IsNullOrWhiteSpace(settings.CertificatePath) ? "No PFX certificate path is selected yet." : $"Certificate path staged: {settings.CertificatePath}",
             settings.CreateFirewallRule ? "Firewall rule intent is enabled." : "Firewall changes are currently deferred.",
-            ownerAccountsWithTwoFactor == 0
-                ? "Owner 2FA is still missing, so remote exposure should stay off."
+            !ownerBootstrapConfigured
+                ? "Finish owner bootstrap before exposing the remote listener."
                 : settings.IsEnabled
-                    ? "Owner 2FA is ready; the remaining rollout concerns are certificate, bind address, and host restart."
-                    : "Owner 2FA is ready if you later choose to expose the web admin.",
-            BuildOperatorSummary(settings, ownerAccountsWithTwoFactor, checklist),
-            BuildNextStepSummary(settings, ownerAccountsWithTwoFactor, checklist),
+                    ? "Owner setup is complete; the remaining rollout concerns are certificate, bind address, and host restart."
+                    : "Owner setup is complete if you later choose to expose the web admin.",
+            BuildOperatorSummary(settings, ownerBootstrapConfigured, checklist),
+            BuildNextStepSummary(settings, ownerBootstrapConfigured, checklist),
             checklist);
     }
 
     public static ProjectZomboidRemoteAccessRolloutSummary Empty() =>
-        Build(new RemoteAccessSettings(), 0, Array.Empty<string>());
+        Build(new RemoteAccessSettings(), false, Array.Empty<string>());
 
     private static string BuildOperatorSummary(
         RemoteAccessSettings settings,
-        int ownerAccountsWithTwoFactor,
+        bool ownerBootstrapConfigured,
         IReadOnlyList<ProjectZomboidOperatorChecklistItem> checklist)
     {
-        if (ownerAccountsWithTwoFactor == 0)
+        if (!ownerBootstrapConfigured)
         {
-            return "Finish owner TOTP enrollment locally before you trust any remote web sign-in.";
+            return "Finish owner bootstrap locally before you trust any remote web sign-in.";
         }
 
         if (checklist.Any(item => item.IsBlocking))
@@ -69,12 +69,12 @@ public static class ProjectZomboidRemoteAccessRolloutSummaryBuilder
 
     private static string BuildNextStepSummary(
         RemoteAccessSettings settings,
-        int ownerAccountsWithTwoFactor,
+        bool ownerBootstrapConfigured,
         IReadOnlyList<ProjectZomboidOperatorChecklistItem> checklist)
     {
-        if (ownerAccountsWithTwoFactor == 0)
+        if (!ownerBootstrapConfigured)
         {
-            return "Open the local authenticator setup first, then come back here once an owner account has TOTP enabled.";
+            return "Create the owner account first, then come back here to stage remote access safely.";
         }
 
         if (checklist.Any(item => item.IsBlocking))
@@ -94,14 +94,14 @@ public static class ProjectZomboidRemoteAccessRolloutSummaryBuilder
 
     private static IReadOnlyList<ProjectZomboidOperatorChecklistItem> BuildChecklist(
         RemoteAccessSettings settings,
-        int ownerAccountsWithTwoFactor,
+        bool ownerBootstrapConfigured,
         IReadOnlyList<string> selfTestMessages)
     {
         var checklist = new List<ProjectZomboidOperatorChecklistItem>
         {
-            ownerAccountsWithTwoFactor == 0
-                ? new ProjectZomboidOperatorChecklistItem("Blocking", "Finish owner TOTP enrollment before you trust remote sign-in.", true, false)
-                : new ProjectZomboidOperatorChecklistItem("Healthy", "Owner TOTP readiness is in place for remote administration.", false, false),
+            !ownerBootstrapConfigured
+                ? new ProjectZomboidOperatorChecklistItem("Blocking", "Finish owner bootstrap before you trust remote sign-in.", true, false)
+                : new ProjectZomboidOperatorChecklistItem("Healthy", "Owner bootstrap is complete for remote administration.", false, false),
             string.IsNullOrWhiteSpace(settings.CertificatePath)
                 ? new ProjectZomboidOperatorChecklistItem("Blocking", "Choose a PFX certificate path so the host can validate HTTPS binding.", true, false)
                 : new ProjectZomboidOperatorChecklistItem("Healthy", "A certificate path is staged for host validation.", false, false),

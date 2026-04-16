@@ -27,6 +27,25 @@ public sealed class LauncherStorageRootResolverTests
     }
 
     [Fact]
+    public void Resolve_UsesInstallRootWhenDesktopAppIsInstalledDirectlyAtRoot()
+    {
+        var installRoot = Path.Combine(Path.GetTempPath(), "PZServerLauncher.Tests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(installRoot);
+        File.WriteAllText(Path.Combine(installRoot, "PZServerLauncher.App.exe"), string.Empty);
+
+        try
+        {
+            var resolved = LauncherStorageRootResolver.Resolve(installRoot);
+
+            Assert.Equal(Path.GetFullPath(installRoot), resolved);
+        }
+        finally
+        {
+            Directory.Delete(installRoot, recursive: true);
+        }
+    }
+
+    [Fact]
     public void Resolve_UsesSolutionRootWhenRunningFromProjectBuildOutput()
     {
         var solutionRoot = Path.Combine(Path.GetTempPath(), "PZServerLauncher.Tests", Guid.NewGuid().ToString("N"));

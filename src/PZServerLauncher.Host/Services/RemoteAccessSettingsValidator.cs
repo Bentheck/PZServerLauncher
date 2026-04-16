@@ -36,8 +36,8 @@ public static class RemoteAccessSettingsValidator
         }
 
         using var certificate = string.IsNullOrWhiteSpace(settings.CertificatePassword)
-            ? X509CertificateLoader.LoadPkcs12FromFile(settings.CertificatePath, password: null)
-            : X509CertificateLoader.LoadPkcs12FromFile(settings.CertificatePath, settings.CertificatePassword);
+            ? X509CertificateLoader.LoadPkcs12FromFile(settings.CertificatePath, password: null, X509KeyStorageFlags.EphemeralKeySet)
+            : X509CertificateLoader.LoadPkcs12FromFile(settings.CertificatePath, settings.CertificatePassword, X509KeyStorageFlags.EphemeralKeySet);
 
         if (!string.IsNullOrWhiteSpace(settings.PublicHostname))
         {

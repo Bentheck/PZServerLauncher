@@ -1,12 +1,15 @@
 @page "/profiles/{ProfileId}/mods-maps"
 @attribute [Authorize(Roles="Owner,Admin")]
 @using PZServerLauncher.Contracts.Profiles
+@using PZServerLauncher.Core.Profiles
 @inject ProfileStore ProfileStore
 @inject StructuredSettingsService StructuredSettingsService
 @inject SettingsDraftStore SettingsDraftStore
 @inject WorkshopPresetScannerService WorkshopPresetScannerService
 @inject NamedWorkshopPresetStore NamedWorkshopPresetStore
 @inject RuntimeStateStore RuntimeStateStore
+@inject WorkshopCatalogService WorkshopCatalogService
+@inject WorkshopBrowserSettingsStore WorkshopBrowserSettingsStore
 
 <PageTitle>Mods &amp; Maps</PageTitle>
 
@@ -84,13 +87,213 @@ else
                 <section class="card">
                     <div class="card-heading">
                         <div>
+                            <p class="eyebrow">Workshop Browser</p>
+                            <h2>Search Mods Visually</h2>
+                        </div>
+                        <span class="pill">@BrowserStateSummary</span>
+                    </div>
+
+                    <p class="muted-text">Search the local Workshop cache by mod or collection name, or use Steam search when a Steam Web API user key is configured. Manual Workshop IDs still work even without a key.</p>
+
+                    @if (_workshopBrowserSettings.HasSteamWebApiKeyConfigured)
+                    {
+                        <div class="status-banner status-banner--warm">
+                            <strong>Steam API Key</strong>
+                            <p>The Steam Web API user key is stored on the host. Remove it anytime to return to local cache and manual Workshop ID mode.</p>
+                            <div class="file-toolbar">
+                                <button class="nav-button secondary-button" @onclick="RemoveSteamWebApiKeyAsync" disabled="@_busy">Remove API Key</button>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="settings-banner settings-banner--warning">
+                            <strong>Steam API Key</strong>
+                            <p>Save a Steam Web API user key here to enable Steam Workshop search. Local cache search and manual Workshop ID lookup stay available even without it.</p>
+                            <div class="file-toolbar">
+                                <input type="password" @bind="_steamWebApiKey" @bind:event="oninput" placeholder="Paste Steam Web API user key" />
+                                <button class="nav-button secondary-button" @onclick="SaveSteamWebApiKeyAsync" disabled="@_busy">Save API Key</button>
+                            </div>
+                        </div>
+                    }
+
+                    <div class="file-toolbar">
+                        <input @bind="_searchQuery" placeholder="Search by mod or collection name, or paste a Workshop ID / URL" />
+                        <button class="nav-button secondary-button" @onclick="@(() => _searchFilter = WorkshopCatalogSearchFilter.All)" disabled="@(_busy || _searchFilter == WorkshopCatalogSearchFilter.All)">All</button>
+                        <button class="nav-button secondary-button" @onclick="@(() => _searchFilter = WorkshopCatalogSearchFilter.Mods)" disabled="@(_busy || _searchFilter == WorkshopCatalogSearchFilter.Mods)">Mods</button>
+                        <button class="nav-button secondary-button" @onclick="@(() => _searchFilter = WorkshopCatalogSearchFilter.Collections)" disabled="@(_busy || _searchFilter == WorkshopCatalogSearchFilter.Collections)">Collections</button>
+                        <button class="nav-button secondary-button" @onclick="@(() => _searchMode = WorkshopCatalogSearchMode.Local)" disabled="@(_busy || _searchMode == WorkshopCatalogSearchMode.Local)">Local</button>
+                        <button class="nav-button secondary-button" @onclick="@(() => _searchMode = WorkshopCatalogSearchMode.Steam)" disabled="@(_busy || _searchMode == WorkshopCatalogSearchMode.Steam)">Steam</button>
+                        <button class="nav-button secondary-button" @onclick="@(() => _searchMode = WorkshopCatalogSearchMode.Both)" disabled="@(_busy || _searchMode == WorkshopCatalogSearchMode.Both)">Both</button>
+                        <button class="nav-button" @onclick="SearchWorkshopCatalogAsync" disabled="@_busy">Search</button>
+                    </div>
+
+                    @if (!_workshopBrowserSettings.HasSteamWebApiKeyConfigured && _searchMode is WorkshopCatalogSearchMode.Steam or WorkshopCatalogSearchMode.Both)
+                    {
+                        <div class="settings-banner settings-banner--warning">
+                            <strong>Steam search needs a Steam Web API user key.</strong>
+                            <p>Without a key you can still search the local Workshop cache or paste a Workshop ID manually. To enable Steam search, get a key from <a href="https://steamcommunity.com/dev/apikey" target="_blank" rel="noreferrer">the Steam Web API key page</a>.</p>
+                            <p>1. Sign in with the Steam account that will own the key.</p>
+                            <p>2. Open the Steam Web API key page.</p>
+                            <p>3. Register a key for a domain name.</p>
+                            <p>4. Copy the generated key into the launcher.</p>
+                        </div>
+                    }
+                    @if (_workshopSearchResult is null)
+                    {
+                        <div class="empty-state">
+                            <p class="muted-text">Search the Workshop to browse mods with their image and description before adding them to the current queue.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        @if (_workshopSearchResult.Diagnostics.Count > 0)
+                        {
+                            <div class="status-banner status-banner--warm">
+                                <strong>Search diagnostics</strong>
+                                @foreach (var diagnostic in _workshopSearchResult.Diagnostics)
+                                {
+                                    <p>@diagnostic</p>
+                                }
+                            </div>
+                        }
+
+                        @if (_workshopSearchResult.Results.Count == 0)
+                        {
+                            <div class="empty-state">
+                                <p class="muted-text">No Workshop results matched this search yet.</p>
+                            </div>
+                        }
+                        else
+                        {
+                            <ul class="job-list">
+                                @foreach (var item in _workshopSearchResult.Results)
+                                {
+                                    <li class="job-list__item">
+                                        <div class="workspace-actions" style="align-items:flex-start;">
+                                            @if (!string.IsNullOrWhiteSpace(item.PreviewImageUrl))
+                                            {
+                                                <img src="@item.PreviewImageUrl"
+                                                     alt="@item.Title"
+                                                     style="width:120px;height:68px;object-fit:cover;border-radius:12px;border:1px solid rgba(0,0,0,.08);" />
+                                            }
+                                            <div style="flex:1;min-width:0;">
+                                                <div class="job-list__title">
+                                                    <strong style="color:#1f1a14;">@item.Title</strong>
+                                                    <span style="color:#6b5a4c;">@item.WorkshopId</span>
+                                                </div>
+                                                <div class="workspace-actions">
+                                                    @if (item.Kind is WorkshopCatalogItemKind.Collection)
+                                                    {
+                                                        <span class="pill pill--strong">Collection</span>
+                                                        <span class="pill">@item.CollectionItemCount child item(s)</span>
+                                                    }
+                                                    <span class="pill">@item.Source</span>
+                                                    <span class="pill">@(item.IsInstalledLocally ? "Installed locally" : "Not installed")</span>
+                                                    <span class="pill">@(item.IsQueued ? "Queued" : "Not queued")</span>
+                                                </div>
+                                                <p class="muted-text">@Truncate(item.Description, 220)</p>
+                                                <div class="workspace-actions">
+                                                    <button class="nav-button secondary-button" @onclick="() => OpenWorkshopPreviewAsync(item.WorkshopId)" disabled="@_busy">
+                                                        @(item.Kind is WorkshopCatalogItemKind.Collection ? "Preview Collection" : "Preview")
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                    }
+                </section>
+            </div>
+
+            @if (_isWorkshopPreviewModalOpen && _selectedWorkshopPreview is not null)
+            {
+                <div class="workspace-modal" @onclick="CloseWorkshopPreviewModal">
+                    <div class="workspace-modal__card" @onclick:stopPropagation="true">
+                        <div class="workspace-modal__header">
+                            <div>
+                                <p class="eyebrow">Workshop Preview</p>
+                                <h2>@_selectedWorkshopPreview.Item.Title</h2>
+                                <p class="muted-text">Workshop ID: @_selectedWorkshopPreview.Item.WorkshopId</p>
+                            </div>
+                            <button class="nav-button secondary-button" @onclick="CloseWorkshopPreviewModal">Close</button>
+                        </div>
+
+                        <div class="workspace-modal__body">
+                            @if (!string.IsNullOrWhiteSpace(_selectedWorkshopPreview.Item.PreviewImageUrl))
+                            {
+                                <img class="workspace-media-preview"
+                                     src="@_selectedWorkshopPreview.Item.PreviewImageUrl"
+                                     alt="@_selectedWorkshopPreview.Item.Title" />
+                            }
+
+                            <div class="workspace-actions">
+                                <span class="pill">@(_selectedWorkshopPreview.Item.Kind is WorkshopCatalogItemKind.Collection ? "Collection" : "Item")</span>
+                                <span class="pill">@_selectedWorkshopPreview.Item.Source</span>
+                                <span class="pill">@(_selectedWorkshopPreview.Item.IsInstalledLocally ? "Installed locally" : "Not installed")</span>
+                                <span class="pill">@(_selectedWorkshopPreview.Item.IsQueued ? "Queued" : "Not queued")</span>
+                                @if (_selectedWorkshopPreview.Item.Kind is WorkshopCatalogItemKind.Collection)
+                                {
+                                    <span class="pill">@_selectedWorkshopPreview.Item.CollectionItemCount child item(s)</span>
+                                }
+                            </div>
+
+                            <p class="muted-text">@_selectedWorkshopPreview.Item.Description</p>
+
+                            <div class="info-grid info-grid--compact">
+                                <div class="info-item">
+                                    <span class="info-label">Workshop IDs to add</span>
+                                    <span class="info-value">@FormatList(_selectedWorkshopPreview.WorkshopItemIdsToAdd)</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Mod IDs to add</span>
+                                    <span class="info-value">@FormatList(_selectedWorkshopPreview.ModIdsToAdd)</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Map folders to add</span>
+                                    <span class="info-value">@FormatList(_selectedWorkshopPreview.MapFoldersToAdd)</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Collection size</span>
+                                    <span class="info-value">@_selectedWorkshopPreview.Item.CollectionItemCount</span>
+                                </div>
+                            </div>
+
+                            @if (_selectedWorkshopPreview.CollectionChildren is { Count: > 0 })
+                            {
+                                <div class="workspace-modal__section">
+                                    <strong>Collection contents</strong>
+                                    @foreach (var child in _selectedWorkshopPreview.CollectionChildren)
+                                    {
+                                        <p>@child.Title (@child.WorkshopId) | @(child.IsInstalledLocally ? "Installed" : "Not installed") | @(child.IsQueued ? "Queued" : "Not queued")</p>
+                                    }
+                                </div>
+                            }
+                        </div>
+
+                        <div class="workspace-modal__actions">
+                            <button class="nav-button secondary-button" @onclick="CloseWorkshopPreviewModal">Close</button>
+                            <button class="nav-button" @onclick="ApplyWorkshopPreviewAsync" disabled="@(_busy || !PreviewHasChanges)">
+                                @(_selectedWorkshopPreview.Item.Kind is WorkshopCatalogItemKind.Collection ? "Add Collection To Editor" : "Add To Editor")
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <div class="cards cards--wide">
+                <section class="card">
+                    <div class="card-heading">
+                        <div>
                             <p class="eyebrow">Mods &amp; Maps</p>
                             <h2>Preset Editor</h2>
                         </div>
                         <span class="pill">@(_scanResult is null ? "No normalized scan" : "Normalized scan ready")</span>
                     </div>
 
-                    <p class="muted-text">Edit the ordered workshop item IDs, enabled mod IDs, and map folders directly. This page keeps the real Project Zomboid <code>WorkshopItems</code>, <code>Mods</code>, and <code>Map</code> INI keys in sync with the launcher preset while preserving the operator order you see here.</p>
+                    <p class="muted-text">Edit the ordered enabled mod IDs and map folders directly. This page keeps the real Project Zomboid <code>Mods</code> and <code>Map</code> keys operator-friendly while the launcher resolves <code>WorkshopItems</code> behind the scenes when it writes the live server preset.</p>
 
                     @if (_requiresAdvancedFilesFallback)
                     {
@@ -111,16 +314,8 @@ else
 
                     <div class="profile-section">
                         <div class="profile-section__header">
-                            <h3>Workshop Item IDs</h3>
-                            <p class="muted-text">One workshop URL or numeric ID per line. The scanner will normalize URLs to numeric IDs.</p>
-                        </div>
-                        <textarea class="raw-editor" rows="8" @bind="WorkshopItemIdsText" @bind:event="oninput" disabled="@_busy"></textarea>
-                    </div>
-
-                    <div class="profile-section">
-                        <div class="profile-section__header">
                             <h3>Enabled Mod IDs</h3>
-                            <p class="muted-text">One mod ID per line, in the order the server should load them.</p>
+                            <p class="muted-text">One mod ID per line, in the order the server should load them. Search by Workshop URL or ID above when you want the launcher to resolve the matching mod IDs for you.</p>
                         </div>
                         <textarea class="raw-editor" rows="8" @bind="EnabledModIdsText" @bind:event="oninput" disabled="@_busy"></textarea>
                     </div>
@@ -241,10 +436,6 @@ else
                     {
                         <div class="info-grid info-grid--compact">
                             <div class="info-item">
-                                <span class="info-label">Workshop items</span>
-                                <span class="info-value">@_scanResult.Preset.WorkshopItemIds.Count</span>
-                            </div>
-                            <div class="info-item">
                                 <span class="info-label">Enabled mods</span>
                                 <span class="info-value">@_scanResult.Preset.EnabledModIds.Count</span>
                             </div>
@@ -254,7 +445,7 @@ else
                             </div>
                         </div>
 
-                        <p class="muted-text">This normalized loadout is what you can push into the live preset with Apply Scan Result after the scanner has reconciled local workshop content.</p>
+                        <p class="muted-text">This normalized loadout is what you can push into the live preset with Apply Scan Result after the scanner has reconciled the selected mods and maps with local workshop content.</p>
                     }
                 </section>
 
@@ -315,6 +506,14 @@ else
     private string? _fallbackReason;
     private string _newPresetName = string.Empty;
     private bool _pageSupportsDrafts;
+    private SteamWorkshopBrowserSettingsDto _workshopBrowserSettings = new(false);
+    private WorkshopCatalogSearchResultDto? _workshopSearchResult;
+    private WorkshopCatalogPreviewDto? _selectedWorkshopPreview;
+    private bool _isWorkshopPreviewModalOpen;
+    private string _searchQuery = string.Empty;
+    private WorkshopCatalogSearchMode _searchMode = WorkshopCatalogSearchMode.Both;
+    private WorkshopCatalogSearchFilter _searchFilter = WorkshopCatalogSearchFilter.All;
+    private string _steamWebApiKey = string.Empty;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -332,6 +531,7 @@ else
         _runtimeStatus = RuntimeStateStore.GetOrDefault(ProfileId);
         _installDetected = Directory.Exists(_profile.InstallDirectory);
         _cacheDetected = Directory.Exists(_profile.CacheDirectory);
+        _workshopBrowserSettings = await WorkshopBrowserSettingsStore.GetAsync();
         _statusMessage = null;
         _catalog = StructuredSettingsService.GetCatalog(_profile);
         _page = _catalog.Pages.FirstOrDefault(page => string.Equals(page.PageId, ProfileWorkspacePageIds.ModsAndMaps, StringComparison.OrdinalIgnoreCase));
@@ -347,6 +547,10 @@ else
         _namedPresets = await NamedWorkshopPresetStore.ListAsync(ProfileId);
         _scanResult = null;
         _scanDiagnostics = [];
+        _workshopSearchResult = null;
+        _selectedWorkshopPreview = null;
+        _isWorkshopPreviewModalOpen = false;
+        _steamWebApiKey = string.Empty;
         if (string.IsNullOrWhiteSpace(_statusMessage))
         {
             _statusMessage = _requiresAdvancedFilesFallback
@@ -371,7 +575,7 @@ else
         _busy = true;
         try
         {
-            var preset = BuildPresetFromEditor();
+            var preset = BuildPresetForWorkshopOperations();
             _scanResult = WorkshopPresetScannerService.Scan(_profile.InstallDirectory, preset);
             _scanDiagnostics = _scanResult.Diagnostics;
             _statusMessage = _scanDiagnostics.Count == 0
@@ -400,7 +604,7 @@ else
         _busy = true;
         try
         {
-            var normalizedPreset = await StructuredSettingsService.SaveWorkshopPresetAsync(_profile, BuildPresetFromEditor());
+            var normalizedPreset = await StructuredSettingsService.SaveWorkshopPresetAsync(_profile, BuildPresetForSave());
             _scanResult = WorkshopPresetScannerService.Scan(_profile.InstallDirectory, normalizedPreset);
             _scanDiagnostics = _scanResult.Diagnostics;
 
@@ -473,7 +677,7 @@ else
         _busy = true;
         try
         {
-            var normalizedPreset = WorkshopPresetScannerService.Scan(_profile.InstallDirectory, BuildPresetFromEditor()).Preset;
+            var normalizedPreset = WorkshopPresetScannerService.Scan(_profile.InstallDirectory, BuildPresetForNamedPreset()).Preset;
             await NamedWorkshopPresetStore.UpsertAsync(ProfileId, _profile.Branch, _newPresetName, normalizedPreset);
             _namedPresets = await NamedWorkshopPresetStore.ListAsync(ProfileId);
             _newPresetName = string.Empty;
@@ -562,6 +766,7 @@ else
         LoadPreset(preset.Preset);
         _hasChanges = true;
         _statusMessage = $"Loaded named loadout '{preset.Name}' into the editor. Save Live Preset to push it live.";
+        RefreshWorkshopBrowserState();
     }
 
     private async Task DeleteNamedPresetAsync(NamedWorkshopPresetDto preset)
@@ -597,11 +802,28 @@ else
             _suppressChangeTracking = false;
         }
 
-        _presetHash = BuildPresetHash(BuildPresetFromEditor());
+        _presetHash = BuildPresetHash(BuildPresetForNamedPreset());
         _hasChanges = false;
+        RefreshWorkshopBrowserState();
     }
 
-    private PZServerLauncher.Core.Profiles.WorkshopPreset BuildPresetFromEditor() =>
+    private PZServerLauncher.Core.Profiles.WorkshopPreset BuildPresetForSave() =>
+        new()
+        {
+            WorkshopItemIds = ParseLines(WorkshopItemIdsText),
+            EnabledModIds = ParseLines(EnabledModIdsText),
+            MapFolders = ParseLines(MapFoldersText),
+        };
+
+    private PZServerLauncher.Core.Profiles.WorkshopPreset BuildPresetForNamedPreset() =>
+        new()
+        {
+            WorkshopItemIds = [],
+            EnabledModIds = ParseLines(EnabledModIdsText),
+            MapFolders = ParseLines(MapFoldersText),
+        };
+
+    private PZServerLauncher.Core.Profiles.WorkshopPreset BuildPresetForWorkshopOperations() =>
         new()
         {
             WorkshopItemIds = ParseLines(WorkshopItemIdsText),
@@ -629,18 +851,157 @@ else
     private static string BuildPresetHash(PZServerLauncher.Core.Profiles.WorkshopPreset preset)
     {
         var source = string.Join("|",
-            string.Join(",", preset.WorkshopItemIds),
             string.Join(",", preset.EnabledModIds),
             string.Join(",", preset.MapFolders));
         return Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(source)));
     }
 
     private static string BuildPresetCompositionSummary(PZServerLauncher.Core.Profiles.WorkshopPreset preset) =>
-        $"{preset.WorkshopItemIds.Count} workshop | {preset.EnabledModIds.Count} mods | {preset.MapFolders.Count} maps";
+        $"{preset.EnabledModIds.Count} mods | {preset.MapFolders.Count} maps";
+
+    private async Task SearchWorkshopCatalogAsync()
+    {
+        if (_profile is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            _workshopSearchResult = await WorkshopCatalogService.SearchAsync(
+                _profile,
+                BuildPresetForWorkshopOperations(),
+                new WorkshopCatalogSearchRequestDto(_searchQuery, _searchMode, 12, null, _searchFilter),
+                CancellationToken.None);
+            _selectedWorkshopPreview = null;
+            _isWorkshopPreviewModalOpen = false;
+            _statusMessage = _workshopSearchResult.Results.Count == 0
+                ? "No Workshop results matched the current search."
+                : $"Loaded {_workshopSearchResult.Results.Count} Workshop result(s).";
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task OpenWorkshopPreviewAsync(string workshopId)
+    {
+        if (_profile is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            _selectedWorkshopPreview = await WorkshopCatalogService.GetPreviewAsync(
+                _profile,
+                BuildPresetForWorkshopOperations(),
+                workshopId,
+                _searchMode,
+                CancellationToken.None);
+            _isWorkshopPreviewModalOpen = _selectedWorkshopPreview is not null;
+            _statusMessage = _selectedWorkshopPreview is null
+                ? $"Workshop item {workshopId} could not be resolved."
+                : _selectedWorkshopPreview.Item.Kind is WorkshopCatalogItemKind.Collection
+                    ? $"Opened collection preview for {_selectedWorkshopPreview.Item.Title}."
+                    : $"Loaded Workshop preview for {_selectedWorkshopPreview.Item.Title}.";
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task ApplyWorkshopPreviewAsync()
+    {
+        if (_selectedWorkshopPreview is null)
+        {
+            return;
+        }
+
+        var merged = WorkshopPresetMergeHelper.Append(
+            BuildPresetForWorkshopOperations(),
+            _selectedWorkshopPreview.WorkshopItemIdsToAdd,
+            _selectedWorkshopPreview.ModIdsToAdd,
+            _selectedWorkshopPreview.MapFoldersToAdd);
+
+        LoadPreset(merged);
+        _hasChanges = true;
+        _isWorkshopPreviewModalOpen = false;
+        _statusMessage = $"Added {_selectedWorkshopPreview.Item.Title} to the current editor queue. Save Live Preset when you are ready.";
+        await Task.CompletedTask;
+    }
+
+    private void CloseWorkshopPreviewModal()
+    {
+        _isWorkshopPreviewModalOpen = false;
+    }
+
+    private async Task SaveSteamWebApiKeyAsync()
+    {
+        _busy = true;
+        try
+        {
+            _workshopBrowserSettings = await WorkshopBrowserSettingsStore.SetSteamWebApiKeyAsync(_steamWebApiKey);
+            _steamWebApiKey = string.Empty;
+            _statusMessage = "Steam Web API key saved for Workshop search.";
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task RemoveSteamWebApiKeyAsync()
+    {
+        _busy = true;
+        try
+        {
+            _workshopBrowserSettings = await WorkshopBrowserSettingsStore.RemoveSteamWebApiKeyAsync();
+            _steamWebApiKey = string.Empty;
+            _statusMessage = "Steam Web API key removed. Workshop search is back to local/manual mode.";
+        }
+        catch (Exception ex)
+        {
+            _statusMessage = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
 
     private string DiagnosticsSummary => _scanDiagnostics.Count == 0
         ? "No diagnostics"
         : $"{_scanDiagnostics.Count} findings";
+
+    private string BrowserStateSummary => _workshopSearchResult is null
+        ? "Search idle"
+        : $"{_workshopSearchResult.Results.Count} result(s)";
+
+    private string PreviewStateSummary => _selectedWorkshopPreview is null
+        ? "No selection"
+        : _selectedWorkshopPreview.Item.Title;
+
+    private bool PreviewHasChanges => _selectedWorkshopPreview is not null &&
+        (_selectedWorkshopPreview.WorkshopItemIdsToAdd.Count > 0 ||
+         _selectedWorkshopPreview.ModIdsToAdd.Count > 0 ||
+         _selectedWorkshopPreview.MapFoldersToAdd.Count > 0);
 
     private string RecoveryStateSummary => _requiresAdvancedFilesFallback
         ? "Raw fallback"
@@ -714,8 +1075,9 @@ else
         }
 
         _hasChanges = true;
-        _presetHash = BuildPresetHash(BuildPresetFromEditor());
+        _presetHash = BuildPresetHash(BuildPresetForNamedPreset());
         _statusMessage = "Workshop preset changed locally.";
+        RefreshWorkshopBrowserState();
     }
 
     private async Task LoadDraftIfAvailableAsync()
@@ -742,10 +1104,9 @@ else
 
     private Dictionary<string, string?> BuildDraftValues()
     {
-        var branchPrefix = _profile?.Branch == ProjectZomboidBranch.Unstable42 ? "b42" : "b41";
+        const string branchPrefix = "b42";
         return new Dictionary<string, string?>(StringComparer.Ordinal)
         {
-            [$"{branchPrefix}.mods.workshop-items"] = WorkshopItemIdsText,
             [$"{branchPrefix}.mods.enabled-mods"] = EnabledModIdsText,
             [$"{branchPrefix}.mods.map-folders"] = MapFoldersText,
         };
@@ -756,7 +1117,6 @@ else
         _suppressChangeTracking = true;
         try
         {
-            WorkshopItemIdsText = ResolveDraftValue(draftValues, ".mods.workshop-items");
             EnabledModIdsText = ResolveDraftValue(draftValues, ".mods.enabled-mods");
             MapFoldersText = ResolveDraftValue(draftValues, ".mods.map-folders");
         }
@@ -765,8 +1125,9 @@ else
             _suppressChangeTracking = false;
         }
 
-        _presetHash = BuildPresetHash(BuildPresetFromEditor());
+        _presetHash = BuildPresetHash(BuildPresetForNamedPreset());
         _hasChanges = true;
+        RefreshWorkshopBrowserState();
     }
 
     private static string ResolveDraftValue(IReadOnlyDictionary<string, string?> draftValues, string suffix)
@@ -779,4 +1140,74 @@ else
 
         return value ?? string.Empty;
     }
+
+    private void RefreshWorkshopBrowserState()
+    {
+        var preset = BuildPresetForWorkshopOperations();
+
+        if (_workshopSearchResult is not null)
+        {
+            _workshopSearchResult = _workshopSearchResult with
+            {
+                Results = _workshopSearchResult.Results
+                    .Select(item => item with
+                    {
+                        IsQueued = IsWorkshopCatalogItemQueued(preset, item),
+                    })
+                    .ToArray(),
+            };
+        }
+
+        if (_selectedWorkshopPreview is not null)
+        {
+            _selectedWorkshopPreview = RebuildPreviewForPreset(_selectedWorkshopPreview, preset);
+        }
+    }
+
+    private static WorkshopCatalogPreviewDto RebuildPreviewForPreset(WorkshopCatalogPreviewDto preview, WorkshopPreset preset)
+    {
+        var item = preview.Item;
+        var collectionChildWorkshopIds = item.CollectionChildWorkshopIds?
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray()
+            ?? [];
+        var workshopItemsToAdd = item.Kind is WorkshopCatalogItemKind.Collection
+            ? collectionChildWorkshopIds
+                .Where(id => !preset.WorkshopItemIds.Any(value => string.Equals(value, id, StringComparison.OrdinalIgnoreCase)))
+                .ToArray()
+            : preset.WorkshopItemIds.Any(value => string.Equals(value, item.WorkshopId, StringComparison.OrdinalIgnoreCase))
+                ? Array.Empty<string>()
+                : [item.WorkshopId];
+        var modIdsToAdd = item.ModIds
+            .Where(value => !preset.EnabledModIds.Any(existing => string.Equals(existing, value, StringComparison.OrdinalIgnoreCase)))
+            .ToArray();
+        var mapFoldersToAdd = item.MapFolders
+            .Where(value => !preset.MapFolders.Any(existing => string.Equals(existing, value, StringComparison.OrdinalIgnoreCase)))
+            .ToArray();
+        var collectionChildren = item.CollectionChildWorkshopIds is { Count: > 0 } && preview.CollectionChildren is { Count: > 0 }
+            ? preview.CollectionChildren
+                .Select(child => child with
+                {
+                    IsQueued = preset.WorkshopItemIds.Any(value => string.Equals(value, child.WorkshopId, StringComparison.OrdinalIgnoreCase)),
+                })
+                .ToArray()
+            : preview.CollectionChildren;
+
+        return new WorkshopCatalogPreviewDto(item, workshopItemsToAdd, modIdsToAdd, mapFoldersToAdd, collectionChildren);
+    }
+
+    private static bool IsWorkshopCatalogItemQueued(WorkshopPreset preset, WorkshopCatalogItemDto item) =>
+        item.Kind is WorkshopCatalogItemKind.Collection
+            ? item.CollectionChildWorkshopIds is { Count: > 0 } children &&
+              children.All(id => preset.WorkshopItemIds.Any(value => string.Equals(value, id, StringComparison.OrdinalIgnoreCase)))
+            : WorkshopPresetMergeHelper.IsQueued(preset, item.WorkshopId, item.ModIds, item.MapFolders);
+
+    private static string FormatList(IReadOnlyList<string> values) =>
+        values.Count == 0 ? "None" : string.Join(", ", values);
+
+    private static string Truncate(string value, int maxLength) =>
+        string.IsNullOrWhiteSpace(value) || value.Length <= maxLength
+            ? value
+            : $"{value[..maxLength].TrimEnd()}...";
 }

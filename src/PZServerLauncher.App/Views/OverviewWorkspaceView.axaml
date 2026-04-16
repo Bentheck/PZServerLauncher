@@ -8,178 +8,61 @@
              d:DesignHeight="900"
              x:Class="PZServerLauncher.App.Views.OverviewWorkspaceView"
              x:DataType="vm:OverviewWorkspaceViewModel">
-    <Grid RowDefinitions="Auto,Auto,*" RowSpacing="18">
-        <Grid ColumnDefinitions="1.42*,340" ColumnSpacing="18">
-            <Border Classes="card" Padding="26">
-                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18">
+    <Grid RowDefinitions="Auto,*" RowSpacing="18">
+        <Border Classes="card" Padding="26">
+            <Grid ColumnDefinitions="*,280" ColumnSpacing="18">
+                <StackPanel Spacing="8">
+                    <TextBlock Classes="kicker" Text="Server Operations Board" />
+                    <TextBlock Classes="panel-title" FontSize="30" Text="{Binding ProfileDisplayName}" />
+                    <TextBlock Classes="body"
+                               FontSize="16"
+                               Foreground="#45382E"
+                               Text="{Binding OperatorGuidance}"
+                               TextWrapping="Wrap" />
+                    <TextBlock Classes="caption"
+                               Text="{Binding InstallPostureSummary}"
+                               TextWrapping="Wrap" />
+
+                    <WrapPanel Margin="0,8,0,0" Orientation="Horizontal" ItemHeight="30">
+                        <Border Background="#2A2927" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                            <TextBlock Foreground="#F7F0E7" FontSize="11" Text="{Binding Branch}" />
+                        </Border>
+                        <Border Background="#EAD6BF" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                            <TextBlock Foreground="#5A4330" FontSize="11" Text="{Binding RuntimeState}" />
+                        </Border>
+                        <Border Background="#EAD6BF" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                            <TextBlock Foreground="#5A4330" FontSize="11" Text="{Binding Ports}" />
+                        </Border>
+                    </WrapPanel>
+                </StackPanel>
+
+                <Border Grid.Column="1" Classes="metric-card" Padding="18">
                     <StackPanel Spacing="8">
-                        <TextBlock Classes="kicker" Text="Server Operations Board" />
-                        <TextBlock Classes="panel-title" FontSize="30" Text="{Binding ProfileDisplayName}" />
-                        <TextBlock Classes="body"
-                                   FontSize="16"
-                                   Foreground="#45382E"
-                                   Text="{Binding OperatorGuidance}"
-                                   TextWrapping="Wrap" />
-                        <TextBlock Classes="caption"
-                                   Text="{Binding InstallPostureSummary}"
-                                   TextWrapping="Wrap" />
-
-                        <WrapPanel Margin="0,8,0,0" Orientation="Horizontal" ItemHeight="30">
-                            <Border Background="#2A2927" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
-                                <TextBlock Foreground="#F7F0E7" FontSize="11" Text="{Binding Branch}" />
-                            </Border>
-                            <Border Background="#EAD6BF" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
-                                <TextBlock Foreground="#5A4330" FontSize="11" Text="{Binding RuntimeState}" />
-                            </Border>
-                            <Border Background="#EAD6BF" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
-                                <TextBlock Foreground="#5A4330" FontSize="11" Text="{Binding Ports}" />
-                            </Border>
-                        </WrapPanel>
+                        <TextBlock Classes="kicker" Text="Snapshot" />
+                        <TextBlock Classes="panel-title" FontSize="22" Text="{Binding RuntimeState}" TextWrapping="Wrap" />
+                        <TextBlock Classes="caption" Text="{Binding LivePlayerSummary}" TextWrapping="Wrap" />
+                        <TextBlock Classes="caption" Text="{Binding LatestBackup}" TextWrapping="Wrap" />
                     </StackPanel>
+                </Border>
+            </Grid>
+        </Border>
 
-                    <Border Grid.Column="1" Classes="metric-card" Padding="16" Width="220">
+        <Grid Grid.Row="1" ColumnDefinitions="1.02*,.98*" ColumnSpacing="18">
+            <Border Classes="card" Padding="22">
+                <StackPanel Spacing="12">
+                    <TextBlock Classes="kicker" Text="Status Snapshot" />
+                    <TextBlock Classes="body" Text="{Binding InstallHealth}" TextWrapping="Wrap" />
+                    <TextBlock Classes="caption" Text="{Binding BackupHealth}" TextWrapping="Wrap" />
+                    <TextBlock Classes="caption" Text="{Binding LatestLogLine}" TextWrapping="Wrap" />
+
+                    <Border Background="#F5E8DA" CornerRadius="14" Padding="14">
                         <StackPanel Spacing="6">
-                            <TextBlock Classes="kicker" Text="Latest Backup" />
-                            <TextBlock Classes="body"
-                                       FontWeight="SemiBold"
-                                       Text="{Binding LatestBackup}"
-                                       TextWrapping="Wrap" />
+                            <TextBlock Classes="caption" Foreground="#5E4735" Text="{Binding OperatorActionSummary}" TextWrapping="Wrap" />
+                            <TextBlock Classes="caption" Foreground="#5E4735" Text="{Binding NetworkRecoveryHeadline}" TextWrapping="Wrap" />
                         </StackPanel>
                     </Border>
-                </Grid>
-            </Border>
-
-            <Border Grid.Column="1" Classes="surface-dark" Padding="18">
-                <StackPanel Spacing="10">
-                    <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Live Watch" />
-                    <TextBlock FontSize="22"
-                               FontWeight="SemiBold"
-                               Foreground="#F7F0E7"
-                               Text="{Binding RuntimeState}" />
-                    <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding LivePlayerSummary}" TextWrapping="Wrap" />
-                    <TextBlock Classes="caption" Foreground="#CCB9A8" Text="{Binding PlayerActivitySummary}" TextWrapping="Wrap" />
                 </StackPanel>
             </Border>
-        </Grid>
-
-        <Grid Grid.Row="1" ColumnDefinitions="*,*,*,*,*" ColumnSpacing="14">
-            <Border Classes="metric-card" Padding="16">
-                <StackPanel Spacing="6">
-                    <TextBlock Classes="kicker" Text="Runtime" />
-                    <TextBlock Classes="panel-title" FontSize="22" Text="{Binding RuntimeState}" />
-                    <TextBlock Classes="caption" Text="{Binding Ports}" />
-                </StackPanel>
-            </Border>
-            <Border Grid.Column="1" Classes="metric-card" Padding="16">
-                <StackPanel Spacing="6">
-                    <TextBlock Classes="kicker" Text="Install Health" />
-                    <TextBlock Classes="panel-title" FontSize="22" Text="{Binding InstallHealth}" TextWrapping="Wrap" />
-                </StackPanel>
-            </Border>
-            <Border Grid.Column="2" Classes="metric-card" Padding="16">
-                <StackPanel Spacing="6">
-                    <TextBlock Classes="kicker" Text="Recovery" />
-                    <TextBlock Classes="panel-title" FontSize="22" Text="{Binding BackupHealth}" TextWrapping="Wrap" />
-                </StackPanel>
-            </Border>
-            <Border Grid.Column="3" Classes="metric-card" Padding="16">
-                <StackPanel Spacing="6">
-                    <TextBlock Classes="kicker" Text="Community" />
-                    <TextBlock Classes="panel-title" FontSize="22" Text="{Binding CommunitySummary}" TextWrapping="Wrap" />
-                </StackPanel>
-            </Border>
-            <Border Grid.Column="4" Classes="metric-card" Padding="16">
-                <StackPanel Spacing="6">
-                    <TextBlock Classes="kicker" Text="World" />
-                    <TextBlock Classes="panel-title" FontSize="22" Text="{Binding WorldSnapshotSummary}" TextWrapping="Wrap" />
-                </StackPanel>
-            </Border>
-        </Grid>
-
-        <Grid Grid.Row="2" ColumnDefinitions="1.24*,.86*" ColumnSpacing="18">
-            <StackPanel Spacing="18">
-                <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
-                    <Border Classes="surface-dark" Padding="20">
-                        <StackPanel Spacing="10">
-                            <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Server Posture" />
-                            <TextBlock FontSize="24"
-                                       FontWeight="SemiBold"
-                                       Foreground="#F7F0E7"
-                                       Text="{Binding ServerRulesSummary}"
-                                       TextWrapping="Wrap" />
-                            <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding WelcomeMessageSummary}" TextWrapping="Wrap" />
-                            <TextBlock Classes="caption" Foreground="#CCB9A8" Text="{Binding MemorySummary}" TextWrapping="Wrap" />
-                        </StackPanel>
-                    </Border>
-
-                    <Border Grid.Column="1" Classes="surface-dark" Padding="20">
-                        <StackPanel Spacing="10">
-                            <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Network Watch" />
-                            <TextBlock FontSize="24"
-                                       FontWeight="SemiBold"
-                                       Foreground="#F7F0E7"
-                                       Text="{Binding NetworkAccessHeadline}"
-                                       TextWrapping="Wrap" />
-                            <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding NetworkTrustHeadline}" TextWrapping="Wrap" />
-                            <TextBlock Classes="caption" Foreground="#CCB9A8" Text="{Binding VoicePostureHeadline}" TextWrapping="Wrap" />
-                        </StackPanel>
-                    </Border>
-                </Grid>
-
-                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="16">
-                    <Border Classes="card" Padding="18">
-                        <StackPanel Spacing="8">
-                            <TextBlock Classes="kicker" Text="Sandbox Tuning" />
-                            <TextBlock Classes="panel-title" FontSize="22" Text="{Binding SandboxTuningSummary}" TextWrapping="Wrap" />
-                            <TextBlock Classes="caption" Text="{Binding WorkshopSummary}" TextWrapping="Wrap" />
-                        </StackPanel>
-                    </Border>
-
-                    <Border Grid.Column="1" Classes="card" Padding="18">
-                        <StackPanel Spacing="8">
-                            <TextBlock Classes="kicker" Text="Players &amp; Ops" />
-                            <TextBlock Classes="panel-title" FontSize="22" Text="{Binding LivePlayerSummary}" TextWrapping="Wrap" />
-                            <TextBlock Classes="caption" Text="{Binding LivePlayerRosterSummary}" TextWrapping="Wrap" />
-                            <TextBlock Classes="caption" Text="{Binding OperatorActionSummary}" TextWrapping="Wrap" />
-                        </StackPanel>
-                    </Border>
-
-                    <Border Grid.Column="2" Classes="card" Padding="18">
-                        <StackPanel Spacing="8">
-                            <TextBlock Classes="kicker" Text="Recovery Posture" />
-                            <TextBlock Classes="panel-title" FontSize="22" Text="{Binding BackupHealth}" TextWrapping="Wrap" />
-                            <TextBlock Classes="caption" Text="{Binding CacheHealth}" TextWrapping="Wrap" />
-                            <TextBlock Classes="caption" Text="{Binding NamedPresetSummary}" TextWrapping="Wrap" />
-                        </StackPanel>
-                    </Border>
-                </Grid>
-
-                <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
-                    <Border Classes="card" Padding="18">
-                        <StackPanel Spacing="8">
-                            <TextBlock Classes="kicker" Text="Operator Checklist" />
-                            <ItemsControl ItemsSource="{Binding NetworkChecklist}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Border Background="#F5E8DA" CornerRadius="12" Padding="10" Margin="0,0,0,8">
-                                            <TextBlock Classes="caption" Text="{Binding .}" TextWrapping="Wrap" />
-                                        </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </StackPanel>
-                    </Border>
-
-                    <Border Grid.Column="1" Classes="card" Padding="18">
-                        <StackPanel Spacing="8">
-                            <TextBlock Classes="kicker" Text="Latest Log" />
-                            <TextBlock Classes="body" Text="{Binding LatestLogLine}" TextWrapping="Wrap" />
-                            <TextBlock Classes="caption" Text="{Binding NetworkOperatorSummary}" TextWrapping="Wrap" />
-                            <TextBlock Classes="caption" Text="{Binding NetworkRecoveryHeadline}" TextWrapping="Wrap" />
-                        </StackPanel>
-                    </Border>
-                </Grid>
-            </StackPanel>
 
             <Border Grid.Column="1" Classes="surface-dark" Padding="18">
                 <StackPanel Spacing="14">
@@ -192,20 +75,21 @@
                     <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding NetworkPostureSummary}" TextWrapping="Wrap" />
 
                     <WrapPanel Orientation="Horizontal" ItemWidth="138" ItemHeight="36">
-                        <Button Classes="action-secondary" Command="{Binding InstallCommand}" Content="Install" />
-                        <Button Classes="action-secondary" Command="{Binding UpdateCommand}" Content="Update" />
+                        <Button Classes="action-secondary" Command="{Binding InstallCommand}" Content="Install" IsEnabled="{Binding CanQueueInstall}" />
+                        <Button Classes="action-secondary" Command="{Binding UpdateCommand}" Content="Update" IsEnabled="{Binding CanQueueUpdate}" />
                         <Button Classes="action-primary" Command="{Binding StartCommand}" Content="Start" />
                         <Button Classes="action-danger" Command="{Binding StopCommand}" Content="Stop" />
                         <Button Classes="action-secondary" Command="{Binding RestartCommand}" Content="Restart" />
                         <Button Classes="action-secondary" Command="{Binding BackupCommand}" Content="Backup" />
                         <Button Classes="action-secondary" Command="{Binding RestoreCommand}" Content="Restore Latest" IsEnabled="{Binding CanRestore}" />
                     </WrapPanel>
+                    <TextBlock Classes="caption" Foreground="#CCBBA8" Text="{Binding MaintenanceQueueSummary}" TextWrapping="Wrap" />
 
                     <Border Background="#2B221C" CornerRadius="16" Padding="14">
                         <StackPanel Spacing="6">
                             <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Current Signals" />
-                            <TextBlock Classes="body" Foreground="#F0E7DC" Text="{Binding InstallHealth}" TextWrapping="Wrap" />
-                            <TextBlock Classes="caption" Foreground="#CCBBA8" Text="{Binding BackupHealth}" TextWrapping="Wrap" />
+                            <TextBlock Classes="body" Foreground="#F0E7DC" Text="{Binding LivePlayerRosterSummary}" TextWrapping="Wrap" />
+                            <TextBlock Classes="caption" Foreground="#CCBBA8" Text="{Binding PlayerActivitySummary}" TextWrapping="Wrap" />
                             <TextBlock Classes="caption" Foreground="#CCBBA8" Text="{Binding CommunitySummary}" TextWrapping="Wrap" />
                         </StackPanel>
                     </Border>

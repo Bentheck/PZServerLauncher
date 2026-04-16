@@ -9,17 +9,16 @@ namespace PZServerLauncher.App.ViewModels;
 
 public sealed class HostWorkspaceViewModel : WorkspacePageViewModelBase
 {
-    public HostWorkspaceViewModel(MainWindowViewModel legacy, Action openUsersWorkspace)
+    public HostWorkspaceViewModel(MainWindowViewModel legacy)
         : base(
-            "Host",
-            "Local host lifecycle controls, startup behavior, and high-level runtime status.",
+            "App & Runtime",
+            "Integrated runtime lifecycle controls, startup behavior, and desktop shutdown choices.",
             "Host settings are in sync.",
-            ["Start with Windows", "Stop host", "Stop all + host", "Exit desktop"])
+            ["Start with Windows", "Stop runtime", "Stop servers + runtime", "Close app"])
     {
         Legacy = legacy;
         Legacy.PropertyChanged += OnLegacyPropertyChanged;
         Legacy.Profiles.CollectionChanged += OnProfilesCollectionChanged;
-        OpenUsersWorkspaceCommand = new RelayCommand(openUsersWorkspace);
         foreach (var profile in Legacy.Profiles)
         {
             profile.PropertyChanged += OnProfilePropertyChanged;
@@ -27,8 +26,6 @@ public sealed class HostWorkspaceViewModel : WorkspacePageViewModelBase
     }
 
     public MainWindowViewModel Legacy { get; }
-
-    public IRelayCommand OpenUsersWorkspaceCommand { get; }
 
     public string HostStatusSummary => Legacy.HostSummary;
 
@@ -64,9 +61,9 @@ public sealed class HostWorkspaceViewModel : WorkspacePageViewModelBase
 
     public string HostRuntimeCoverageSummary => CurrentSummary.RuntimeHeadline;
 
-    public string HostExposureSummary => CurrentSummary.ExposureHeadline;
+    public string HostExposureSummary => "Browser admin is disabled in this desktop-integrated build. This launcher window is the only management surface.";
 
-    public string HostSecuritySummary => CurrentSummary.SecurityHeadline;
+    public string HostSecuritySummary => "Minimize keeps the launcher on the taskbar without stopping the integrated runtime or interrupting live supervision.";
 
     public string HostRecoverySummary => CurrentSummary.RecoveryHeadline;
 
@@ -74,17 +71,15 @@ public sealed class HostWorkspaceViewModel : WorkspacePageViewModelBase
 
     public string HostAutomationSummary => CurrentSummary.AutomationHeadline;
 
-    public string HostShutdownSummary => "Stop Host ends only the orchestration process. Stop All + Host shuts down managed servers first, then closes the host.";
+    public string HostShutdownSummary => "Stop Runtime ends launcher supervision only. Stop Servers + Runtime shuts down managed servers first, then stops the integrated runtime.";
 
     public string HostOperatorSummary => CurrentSummary.OperatorSummary;
 
-    public string HostActionSummary => "Use Save to persist startup behavior, keep remote access loopback-only until HTTPS is validated, and stop the host explicitly when you want orchestration to end.";
+    public string HostActionSummary => "Save startup behavior here, leave the launcher running while you want supervision active, and use the close warning when you are ready to end the session.";
 
     public string HostRiskSummary => CurrentSummary.RiskHeadline;
 
     public string HostNextStepSummary => CurrentSummary.NextStepSummary;
-
-    public bool ShowOwnerSetupAction => Legacy.OwnerBootstrapRequired;
 
     public IReadOnlyList<ProjectZomboidOperatorChecklistItem> HostChecklist => CurrentSummary.Checklist;
 
@@ -114,12 +109,7 @@ public sealed class HostWorkspaceViewModel : WorkspacePageViewModelBase
         if (string.IsNullOrEmpty(e.PropertyName) ||
             e.PropertyName == nameof(MainWindowViewModel.HostSummary) ||
             e.PropertyName == nameof(MainWindowViewModel.StatusMessage) ||
-            e.PropertyName == nameof(MainWindowViewModel.HostStartWithWindows) ||
-            e.PropertyName == nameof(MainWindowViewModel.RemoteAccessEnabled) ||
-            e.PropertyName == nameof(MainWindowViewModel.RemoteBindAddress) ||
-            e.PropertyName == nameof(MainWindowViewModel.RemoteHttpsPort) ||
-            e.PropertyName == nameof(MainWindowViewModel.OwnerSummary) ||
-            e.PropertyName == nameof(MainWindowViewModel.OwnerBootstrapRequired))
+            e.PropertyName == nameof(MainWindowViewModel.HostStartWithWindows))
         {
             RefreshSummaryProperties();
         }
@@ -174,7 +164,6 @@ public sealed class HostWorkspaceViewModel : WorkspacePageViewModelBase
         OnPropertyChanged(nameof(HostActionSummary));
         OnPropertyChanged(nameof(HostRiskSummary));
         OnPropertyChanged(nameof(HostNextStepSummary));
-        OnPropertyChanged(nameof(ShowOwnerSetupAction));
         OnPropertyChanged(nameof(HostChecklist));
         OnPropertyChanged(nameof(ManagedProfiles));
         OnPropertyChanged(nameof(HasManagedProfiles));
@@ -187,14 +176,14 @@ public sealed class HostWorkspaceViewModel : WorkspacePageViewModelBase
             StartHostWithWindows = Legacy.HostStartWithWindows,
             RemoteAccess = new RemoteAccessSettings
             {
-                IsEnabled = Legacy.RemoteAccessEnabled,
-                BindAddress = Legacy.RemoteBindAddress,
-                HttpsPort = int.TryParse(Legacy.RemoteHttpsPort, out var parsedPort) ? parsedPort : 8443,
+                IsEnabled = false,
+                BindAddress = "127.0.0.1",
+                HttpsPort = 0,
             },
             OwnerBootstrap = new OwnerBootstrapState(
-                !Legacy.OwnerBootstrapRequired,
+                true,
                 OwnerUserId: null,
-                OwnerUserName: Legacy.OwnerBootstrapRequired ? null : "Owner",
+                OwnerUserName: null,
                 ConfiguredAtUtc: null),
         };
 

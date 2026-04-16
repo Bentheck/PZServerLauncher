@@ -1,0 +1,91 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:PZServerLauncher.App.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        x:Class="PZServerLauncher.App.Views.ShutdownWarningDialog"
+        x:DataType="vm:ShutdownWarningDialogViewModel"
+        Width="700"
+        Height="580"
+        MinWidth="680"
+        MinHeight="560"
+        CanResize="False"
+        ShowInTaskbar="False"
+        WindowDecorations="BorderOnly"
+        WindowStartupLocation="CenterOwner"
+        Title="Close PZ Server Launcher">
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                  VerticalScrollBarVisibility="Auto">
+        <Border Classes="card" Margin="18" Padding="20">
+            <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="16">
+                <StackPanel Spacing="6">
+                    <TextBlock Classes="kicker" Text="Close Warning" />
+                    <TextBlock Classes="panel-title"
+                               FontSize="28"
+                               Text="{Binding DialogTitle}"
+                               TextWrapping="Wrap" />
+                    <TextBlock Classes="body"
+                               Text="{Binding DialogSummary}"
+                               TextWrapping="Wrap" />
+                </StackPanel>
+
+                <Border Grid.Row="1"
+                        Background="#FFF4E9"
+                        BorderBrush="#E2C39E"
+                        BorderThickness="1"
+                        CornerRadius="14"
+                        Padding="14">
+                    <TextBlock Classes="body"
+                               Foreground="#5B4635"
+                               Text="{Binding DialogGuidance}"
+                               TextWrapping="Wrap" />
+                </Border>
+
+                <Border Grid.Row="2"
+                        Background="#EEF4EF"
+                        BorderBrush="#BFD3C3"
+                        BorderThickness="1"
+                        CornerRadius="14"
+                        Padding="14">
+                    <TextBlock Classes="body"
+                               Foreground="#395346"
+                               Text="{Binding TrayGuidance}"
+                               TextWrapping="Wrap" />
+                </Border>
+
+                <Border Grid.Row="3"
+                        Background="#2B221C"
+                        CornerRadius="14"
+                        Padding="14">
+                    <TextBlock Classes="caption"
+                               Foreground="#E6D5C3"
+                               Text="{Binding ImpactList}"
+                               TextWrapping="Wrap" />
+                </Border>
+
+                <Grid Grid.Row="4"
+                      ColumnDefinitions="*,Auto"
+                      ColumnSpacing="12">
+                    <Border Background="Transparent" />
+                    <WrapPanel Grid.Column="1"
+                               Orientation="Horizontal"
+                               HorizontalAlignment="Right"
+                               ItemHeight="38">
+                        <Button Classes="action-secondary"
+                                Margin="0,0,10,0"
+                                Click="KeepRunningButton_OnClick"
+                                Content="Cancel" />
+                        <Button Classes="action-primary"
+                                Margin="0,0,10,0"
+                                Click="SendToTrayButton_OnClick"
+                                Content="Send To Tray" />
+                        <Button Classes="action-danger"
+                                Click="CloseEverythingButton_OnClick"
+                                Content="Close Everything" />
+                    </WrapPanel>
+                </Grid>
+            </Grid>
+        </Border>
+    </ScrollViewer>
+</Window>

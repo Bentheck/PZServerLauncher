@@ -143,13 +143,16 @@
                         </Grid>
 
                         <Border Grid.Row="1" Background="#171310" CornerRadius="16" Padding="14">
-                            <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="780">
+                            <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                                          VerticalScrollBarVisibility="Auto"
+                                          MaxHeight="780">
                                 <ItemsControl ItemsSource="{Binding LogLines}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
                                             <TextBlock Classes="body"
                                                        FontFamily="Cascadia Code,Consolas,monospace"
                                                        Foreground="#E9DED2"
+                                                       TextAlignment="Left"
                                                        Text="{Binding .}"
                                                        TextWrapping="Wrap"
                                                        Margin="0,0,0,6" />

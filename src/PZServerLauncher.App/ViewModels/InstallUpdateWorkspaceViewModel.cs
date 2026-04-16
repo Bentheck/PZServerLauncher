@@ -3,17 +3,19 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PZServerLauncher.App.Services;
 using PZServerLauncher.Core.Runtime;
+using PZServerLauncher.Core.Profiles;
+using PZServerLauncher.Runtime;
 
 namespace PZServerLauncher.App.ViewModels;
 
 public sealed partial class InstallUpdateWorkspaceViewModel : ProfileWorkspacePageViewModelBase
 {
-    private readonly LocalHostApiClient _hostApiClient;
+    private readonly ILauncherRuntime _launcherRuntime;
     private readonly FolderPickerService _folderPickerService;
 
     public InstallUpdateWorkspaceViewModel(
         MainWindowViewModel legacy,
-        LocalHostApiClient hostApiClient,
+        ILauncherRuntime launcherRuntime,
         FolderPickerService folderPickerService)
         : base(
             "install-update",
@@ -23,7 +25,7 @@ public sealed partial class InstallUpdateWorkspaceViewModel : ProfileWorkspacePa
             legacy,
             ["Install path", "Update actions", "Runtime controls", "Recent jobs"])
     {
-        _hostApiClient = hostApiClient;
+        _launcherRuntime = launcherRuntime;
         _folderPickerService = folderPickerService;
         Legacy.RecentOperationJobs.CollectionChanged += OnRecentOperationJobsChanged;
         InstallCommand = new AsyncRelayCommand(() => ExecuteProfileCommandAsync(Legacy.InstallCommand));
@@ -37,6 +39,11 @@ public sealed partial class InstallUpdateWorkspaceViewModel : ProfileWorkspacePa
         ResetPathOverridesCommand = new RelayCommand(ResetPathOverrides);
         BrowseInstallDirectoryCommand = new AsyncRelayCommand(BrowseInstallDirectoryAsync);
         BrowseCacheDirectoryCommand = new AsyncRelayCommand(BrowseCacheDirectoryAsync);
+        ArmUninstallServerCommand = new RelayCommand(ArmUninstallServer);
+        ArmDeleteProfileCommand = new RelayCommand(ArmDeleteProfile);
+        CancelRetirementCommand = new RelayCommand(CancelRetirement);
+        UninstallServerCommand = new AsyncRelayCommand(UninstallServerAsync);
+        DeleteProfileCommand = new AsyncRelayCommand(DeleteProfileAsync);
     }
 
     public IAsyncRelayCommand InstallCommand { get; }
@@ -61,6 +68,16 @@ public sealed partial class InstallUpdateWorkspaceViewModel : ProfileWorkspacePa
 
     public IAsyncRelayCommand BrowseCacheDirectoryCommand { get; }
 
+    public IRelayCommand ArmUninstallServerCommand { get; }
+
+    public IRelayCommand ArmDeleteProfileCommand { get; }
+
+    public IRelayCommand CancelRetirementCommand { get; }
+
+    public IAsyncRelayCommand UninstallServerCommand { get; }
+
+    public IAsyncRelayCommand DeleteProfileCommand { get; }
+
     public override string PageSummary => SelectedProfile is null
         ? "Select a server to choose folders, install it, and control its runtime."
         : $"Install, update, and start {SelectedProfile.DisplayName} from one simple page.";
@@ -83,7 +100,7 @@ public sealed partial class InstallUpdateWorkspaceViewModel : ProfileWorkspacePa
         ? "Select a profile before editing install and cache locations."
         : HasPathOverridesDirty
             ? "Folder changes are pending. Save them before you install or update this server."
-            : "Choose where the server files go and where this profile keeps its Zomboid config, saves, and cache.";
+            : "Managed installs and profile data live under the launcher's install folder by default. Override the paths here only when this server needs a custom layout.";
 
     public IReadOnlyList<OperationJob> RecentProfileJobs => SelectedProfile is null
         ? []
@@ -99,6 +116,70 @@ public sealed partial class InstallUpdateWorkspaceViewModel : ProfileWorkspacePa
     public string LastJobSummary => !HasRecentProfileJobs
         ? "No recent install or update jobs recorded for this profile."
         : $"{RecentProfileJobs[0].Kind} - {RecentProfileJobs[0].Status} | {RecentProfileJobs[0].Detail ?? RecentProfileJobs[0].Summary}";
+
+    public bool HasActiveLifecycleJob => SelectedProfile is not null &&
+        Legacy.RecentOperationJobs.Any(job =>
+            string.Equals(job.ProfileId, SelectedProfile.ProfileId, StringComparison.OrdinalIgnoreCase) &&
+            job.Kind is OperationJobKind.Install or OperationJobKind.Update &&
+            job.Status is OperationJobStatus.Queued or OperationJobStatus.Running);
+
+    public bool CanQueueInstall => SelectedProfile is not null && !HasActiveLifecycleJob;
+
+    public bool CanQueueUpdate => SelectedProfile is not null && !HasActiveLifecycleJob;
+
+    public bool HasActiveProfileJob => SelectedProfile is not null &&
+        Legacy.RecentOperationJobs.Any(job =>
+            string.Equals(job.ProfileId, SelectedProfile.ProfileId, StringComparison.OrdinalIgnoreCase) &&
+            job.Status is OperationJobStatus.Queued or OperationJobStatus.Running);
+
+    public bool IsRuntimeBusyForRetirement =>
+        string.Equals(SelectedProfile?.RuntimeState, ServerRuntimeState.Running.ToString(), StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(SelectedProfile?.RuntimeState, ServerRuntimeState.Starting.ToString(), StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(SelectedProfile?.RuntimeState, ServerRuntimeState.Stopping.ToString(), StringComparison.OrdinalIgnoreCase);
+
+    public bool IsManagedInstallDirectory => SelectedProfile is not null &&
+        ServerProfileFactory.IsManagedInstallDirectory(SelectedProfile.InstallDirectory);
+
+    public bool CanArmUninstallServer => SelectedProfile is not null &&
+        !IsRetirementBusy &&
+        !HasActiveProfileJob &&
+        !IsRuntimeBusyForRetirement &&
+        IsManagedInstallDirectory;
+
+    public bool CanArmDeleteProfile => SelectedProfile is not null &&
+        !IsRetirementBusy &&
+        !HasActiveProfileJob &&
+        !IsRuntimeBusyForRetirement;
+
+    public bool ShowUninstallServerArmButton => SelectedProfile is not null && !ShowUninstallServerConfirmation;
+
+    public bool ShowDeleteProfileArmButton => SelectedProfile is not null && !ShowDeleteProfileConfirmation;
+
+    public string RetirementGuardrailSummary => SelectedProfile is null
+        ? "Select a profile before uninstalling server files or deleting it."
+        : IsRetirementBusy
+            ? "A destructive action is already in progress for this profile."
+            : IsRuntimeBusyForRetirement
+                ? "Stop the server before uninstalling it or deleting the profile."
+                : HasActiveProfileJob
+                    ? "Wait for the active queued or running job to finish before changing install ownership or deleting this profile."
+                    : "Uninstall removes only the launcher-managed install files. Delete Profile also removes launcher-managed cache, backups, runtime temp files, and per-profile logs.";
+
+    public string UninstallServerSummary => SelectedProfile is null
+        ? "Select a profile to manage its install footprint."
+        : !IsManagedInstallDirectory
+            ? "This profile is using a custom or imported install directory, so the launcher will not delete those binaries automatically."
+            : SelectedProfile.IsInstallDetected
+                ? $"Uninstall removes the dedicated-server files from {SelectedProfile.InstallDirectory}, but keeps this profile, its backups, and its cache so you can reinstall later."
+                : "No install is currently detected, but you can still clear the managed install path if you want to reset it.";
+
+    public string DeleteProfileSummary => SelectedProfile is null
+        ? "Select a profile to remove it."
+        : "Delete Profile removes the server from the launcher and cleans up launcher-managed install/cache folders, backups, runtime temp files, and per-profile logs. External install or cache folders are left alone.";
+
+    public string MaintenanceQueueSummary => !HasActiveLifecycleJob
+        ? "Install and update run one at a time per server. First-time SteamCMD bootstrap can take a few minutes before the launcher script appears."
+        : "Install or update is already running for this server. Let the active maintenance job finish before queueing another one.";
 
     public string JobHistorySummary => SelectedProfile is null
         ? "Select a profile to see install and update history."
@@ -317,10 +398,20 @@ public sealed partial class InstallUpdateWorkspaceViewModel : ProfileWorkspacePa
     [ObservableProperty]
     private string editableCacheDirectory = string.Empty;
 
+    [ObservableProperty]
+    private bool isRetirementBusy;
+
+    [ObservableProperty]
+    private bool showUninstallServerConfirmation;
+
+    [ObservableProperty]
+    private bool showDeleteProfileConfirmation;
+
     protected override void OnSelectedProfileChangedCore(ProfileCardViewModel? profile)
     {
         EditableInstallDirectory = profile?.InstallDirectory ?? string.Empty;
         EditableCacheDirectory = profile?.CacheDirectory ?? string.Empty;
+        CancelRetirement();
         Notify();
     }
 
@@ -341,6 +432,12 @@ public sealed partial class InstallUpdateWorkspaceViewModel : ProfileWorkspacePa
         OnPropertyChanged(nameof(HasPathOverridesDirty));
         OnPropertyChanged(nameof(PathOverrideSummary));
     }
+
+    partial void OnIsRetirementBusyChanged(bool value) => NotifyRetirementState();
+
+    partial void OnShowUninstallServerConfirmationChanged(bool value) => NotifyRetirementState();
+
+    partial void OnShowDeleteProfileConfirmationChanged(bool value) => NotifyRetirementState();
 
     private async Task ExecuteProfileCommandAsync(IAsyncRelayCommand<ProfileCardViewModel> command)
     {
@@ -376,7 +473,7 @@ public sealed partial class InstallUpdateWorkspaceViewModel : ProfileWorkspacePa
 
         try
         {
-            await _hostApiClient.UpdateProfilePathsAsync(SelectedProfile.ProfileId, installDirectory, cacheDirectory, CancellationToken.None);
+            await _launcherRuntime.UpdateProfilePathsAsync(SelectedProfile.ProfileId, installDirectory, cacheDirectory, CancellationToken.None);
             await Legacy.RefreshCommand.ExecuteAsync(null);
             Legacy.StatusMessage = $"Updated install and cache paths for {SelectedProfile.DisplayName}.";
         }
@@ -410,6 +507,86 @@ public sealed partial class InstallUpdateWorkspaceViewModel : ProfileWorkspacePa
         }
     }
 
+    private void ArmUninstallServer()
+    {
+        if (!CanArmUninstallServer)
+        {
+            return;
+        }
+
+        ShowDeleteProfileConfirmation = false;
+        ShowUninstallServerConfirmation = true;
+    }
+
+    private void ArmDeleteProfile()
+    {
+        if (!CanArmDeleteProfile)
+        {
+            return;
+        }
+
+        ShowUninstallServerConfirmation = false;
+        ShowDeleteProfileConfirmation = true;
+    }
+
+    private void CancelRetirement()
+    {
+        ShowUninstallServerConfirmation = false;
+        ShowDeleteProfileConfirmation = false;
+    }
+
+    private async Task UninstallServerAsync()
+    {
+        if (SelectedProfile is null)
+        {
+            return;
+        }
+
+        var profile = SelectedProfile;
+        IsRetirementBusy = true;
+        try
+        {
+            var result = await _launcherRuntime.UninstallServerAsync(profile.ProfileId, CancellationToken.None);
+            CancelRetirement();
+            await Legacy.RefreshCommand.ExecuteAsync(null);
+            Legacy.StatusMessage = result?.Message ?? $"Uninstalled the managed server files for {profile.DisplayName}.";
+        }
+        catch (Exception ex)
+        {
+            Legacy.StatusMessage = ex.Message;
+        }
+        finally
+        {
+            IsRetirementBusy = false;
+        }
+    }
+
+    private async Task DeleteProfileAsync()
+    {
+        if (SelectedProfile is null)
+        {
+            return;
+        }
+
+        var profile = SelectedProfile;
+        IsRetirementBusy = true;
+        try
+        {
+            await _launcherRuntime.DeleteProfileAsync(profile.ProfileId, CancellationToken.None);
+            CancelRetirement();
+            await Legacy.RefreshCommand.ExecuteAsync(null);
+            Legacy.StatusMessage = $"Deleted profile {profile.DisplayName}. Launcher-managed files, backups, logs, and runtime artifacts were cleaned up. External install or cache folders were left alone.";
+        }
+        catch (Exception ex)
+        {
+            Legacy.StatusMessage = ex.Message;
+        }
+        finally
+        {
+            IsRetirementBusy = false;
+        }
+    }
+
     private void Notify()
     {
         OnPropertyChanged(nameof(PageSummary));
@@ -423,6 +600,11 @@ public sealed partial class InstallUpdateWorkspaceViewModel : ProfileWorkspacePa
         OnPropertyChanged(nameof(RecentProfileJobs));
         OnPropertyChanged(nameof(HasRecentProfileJobs));
         OnPropertyChanged(nameof(LastJobSummary));
+        OnPropertyChanged(nameof(HasActiveLifecycleJob));
+        OnPropertyChanged(nameof(CanQueueInstall));
+        OnPropertyChanged(nameof(CanQueueUpdate));
+        OnPropertyChanged(nameof(HasActiveProfileJob));
+        OnPropertyChanged(nameof(MaintenanceQueueSummary));
         OnPropertyChanged(nameof(JobHistorySummary));
         OnPropertyChanged(nameof(BranchChannelSummary));
         OnPropertyChanged(nameof(BranchInstallStatus));
@@ -473,6 +655,7 @@ public sealed partial class InstallUpdateWorkspaceViewModel : ProfileWorkspacePa
         OnPropertyChanged(nameof(LastUpdateJobSummary));
         OnPropertyChanged(nameof(InstallJobHistorySummary));
         OnPropertyChanged(nameof(UpdateJobHistorySummary));
+        NotifyRetirementState();
     }
 
     private void OnRecentOperationJobsChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -480,6 +663,11 @@ public sealed partial class InstallUpdateWorkspaceViewModel : ProfileWorkspacePa
         OnPropertyChanged(nameof(RecentProfileJobs));
         OnPropertyChanged(nameof(HasRecentProfileJobs));
         OnPropertyChanged(nameof(LastJobSummary));
+        OnPropertyChanged(nameof(HasActiveLifecycleJob));
+        OnPropertyChanged(nameof(CanQueueInstall));
+        OnPropertyChanged(nameof(CanQueueUpdate));
+        OnPropertyChanged(nameof(HasActiveProfileJob));
+        OnPropertyChanged(nameof(MaintenanceQueueSummary));
         OnPropertyChanged(nameof(JobHistorySummary));
         OnPropertyChanged(nameof(RecentInstallJobs));
         OnPropertyChanged(nameof(RecentUpdateJobs));
@@ -487,6 +675,20 @@ public sealed partial class InstallUpdateWorkspaceViewModel : ProfileWorkspacePa
         OnPropertyChanged(nameof(LastUpdateJobSummary));
         OnPropertyChanged(nameof(InstallJobHistorySummary));
         OnPropertyChanged(nameof(UpdateJobHistorySummary));
+        NotifyRetirementState();
+    }
+
+    private void NotifyRetirementState()
+    {
+        OnPropertyChanged(nameof(IsRuntimeBusyForRetirement));
+        OnPropertyChanged(nameof(IsManagedInstallDirectory));
+        OnPropertyChanged(nameof(CanArmUninstallServer));
+        OnPropertyChanged(nameof(CanArmDeleteProfile));
+        OnPropertyChanged(nameof(ShowUninstallServerArmButton));
+        OnPropertyChanged(nameof(ShowDeleteProfileArmButton));
+        OnPropertyChanged(nameof(RetirementGuardrailSummary));
+        OnPropertyChanged(nameof(UninstallServerSummary));
+        OnPropertyChanged(nameof(DeleteProfileSummary));
     }
 }
 

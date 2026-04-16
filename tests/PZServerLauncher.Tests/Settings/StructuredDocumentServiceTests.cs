@@ -71,6 +71,52 @@ public sealed class StructuredDocumentServiceTests
     }
 
     [Fact]
+    public void IniDocumentService_InsertsWorkshopItemsImmediatelyAfterMods()
+    {
+        const string source = """
+            # Mods block
+            Mods=QuickRestart
+            Map=Muldraugh, KY
+            """;
+
+        var updated = _iniService.ApplyValues(source, new Dictionary<string, string?>
+        {
+            ["Mods"] = "QuickRestart",
+            ["WorkshopItems"] = "3699503439",
+            ["Map"] = "Muldraugh, KY",
+        });
+
+        var modsIndex = updated.IndexOf("Mods=QuickRestart", StringComparison.Ordinal);
+        var workshopIndex = updated.IndexOf("WorkshopItems=3699503439", StringComparison.Ordinal);
+        var mapIndex = updated.IndexOf("Map=Muldraugh, KY", StringComparison.Ordinal);
+
+        Assert.True(modsIndex >= 0);
+        Assert.True(workshopIndex > modsIndex);
+        Assert.True(mapIndex > workshopIndex);
+        Assert.Contains("List Workshop Mod IDs for the server to download.", updated);
+    }
+
+    [Fact]
+    public void IniDocumentService_BuildsModsBlockWithWorkshopItemsBetweenModsAndMap()
+    {
+        var updated = _iniService.ApplyValues(string.Empty, new Dictionary<string, string?>
+        {
+            ["Mods"] = "QuickRestart",
+            ["WorkshopItems"] = "3699503439",
+            ["Map"] = "Muldraugh, KY",
+        });
+
+        var modsIndex = updated.IndexOf("Mods=QuickRestart", StringComparison.Ordinal);
+        var workshopIndex = updated.IndexOf("WorkshopItems=3699503439", StringComparison.Ordinal);
+        var mapIndex = updated.IndexOf("Map=Muldraugh, KY", StringComparison.Ordinal);
+
+        Assert.True(modsIndex >= 0);
+        Assert.True(workshopIndex > modsIndex);
+        Assert.True(mapIndex > workshopIndex);
+        Assert.Contains("List Workshop Mod IDs for the server to download.", updated);
+    }
+
+    [Fact]
     public void SandboxVarsDocumentService_PreservesTextAndFlagsMissingSandboxVars()
     {
         var document = _sandboxService.Parse("""
@@ -154,5 +200,31 @@ public sealed class StructuredDocumentServiceTests
         Assert.Contains("ZombieLore = {", updated);
         Assert.Contains("Speed = 2,", updated);
         Assert.Contains("Strength = 3,", updated);
+    }
+
+    [Fact]
+    public void SandboxVarsDocumentService_ReadsAndWritesQuotedStringValues()
+    {
+        const string source = """
+            SandboxVars = {
+                VERSION = 4,
+                DayLength = "1 Hour, 30 Minutes",
+                CorpseMaggotSpawn = "In and Around Bodies",
+            }
+            """;
+
+        var values = _sandboxService.ReadValues(source, ["DayLength", "CorpseMaggotSpawn"]);
+
+        Assert.Equal("1 Hour, 30 Minutes", values["DayLength"]);
+        Assert.Equal("In and Around Bodies", values["CorpseMaggotSpawn"]);
+
+        var updated = _sandboxService.ApplyValues(source, new Dictionary<string, string?>
+        {
+            ["DayLength"] = "Real-Time",
+            ["CorpseMaggotSpawn"] = "None",
+        });
+
+        Assert.Contains("DayLength = \"Real-Time\",", updated);
+        Assert.Contains("CorpseMaggotSpawn = \"None\",", updated);
     }
 }

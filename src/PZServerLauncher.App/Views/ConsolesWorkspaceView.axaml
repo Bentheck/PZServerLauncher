@@ -34,7 +34,8 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="vm:ConsolesWorkspaceViewModel+ConsoleTileViewModel">
-                                <Button Margin="0,0,8,8"
+                                <Button Classes="chrome-free"
+                                        Margin="0,0,8,8"
                                         Padding="0"
                                         Background="Transparent"
                                         BorderThickness="0"
@@ -63,7 +64,9 @@
                     </ItemsControl>
                 </StackPanel>
 
-                <ScrollViewer Grid.Row="2" HorizontalScrollBarVisibility="Disabled">
+                <ScrollViewer Grid.Row="2"
+                              HorizontalScrollBarVisibility="Disabled"
+                              VerticalScrollBarVisibility="Auto">
                     <StackPanel Spacing="10">
                         <TextBlock Classes="kicker" Text="Servers" />
                         <ItemsControl ItemsSource="{Binding ProfilePickerItems}" IsVisible="{Binding HasProfiles}">
@@ -116,7 +119,7 @@
                     <Button Grid.Column="1"
                             Classes="action-secondary"
                             Command="{Binding RefreshSelectedSlotCommand}"
-                            Content="Reload Slot" />
+                            Content="Reload Now" />
                 </Grid>
             </Grid>
         </Border>
@@ -128,6 +131,7 @@
                         <TextBlock Classes="kicker" Text="Live Console Board" />
                         <TextBlock Classes="panel-title" FontSize="28" Text="Watch the active servers without drilling through profile pages" TextWrapping="Wrap" />
                         <TextBlock Classes="body" Text="{Binding RunningServersSummary}" TextWrapping="Wrap" />
+                        <TextBlock Classes="caption" Text="{Binding AutoRefreshSummary}" TextWrapping="Wrap" />
                     </StackPanel>
 
                     <StackPanel Grid.Column="1" Spacing="8" HorizontalAlignment="Right">
@@ -141,121 +145,126 @@
                 </Grid>
             </Border>
 
-            <ItemsControl Grid.Row="1" ItemsSource="{Binding ConsoleSlots}">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <UniformGrid Columns="2" Rows="2" />
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="vm:ConsolesWorkspaceViewModel+ConsoleTileViewModel">
-                        <Border Margin="0,0,14,14"
-                                Background="#243238"
-                                BorderBrush="{Binding TileBorderBrush}"
-                                BorderThickness="2"
-                                CornerRadius="20"
-                                Padding="16">
-                            <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
-                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
-                                    <StackPanel Spacing="5">
-                                        <TextBlock Classes="kicker" Foreground="#E5A26B" Text="{Binding SlotLabel}" />
-                                        <TextBlock FontSize="22"
-                                                   FontWeight="SemiBold"
-                                                   Foreground="#F7F0E7"
-                                                   Text="{Binding ProfileDisplayName}"
-                                                   TextWrapping="Wrap" />
-                                        <TextBlock Classes="caption"
-                                                   Foreground="#CCB9A8"
-                                                   Text="{Binding Branch}"
-                                                   TextWrapping="Wrap" />
-                                        <TextBlock Classes="body"
-                                                   Foreground="#D3C8BA"
-                                                   Text="{Binding StatusSummary}"
-                                                   TextWrapping="Wrap" />
-                                        <TextBlock Classes="caption"
-                                                   Foreground="#CCB9A8"
-                                                   Text="{Binding ActivitySummary}"
-                                                   TextWrapping="Wrap" />
-                                    </StackPanel>
+            <ScrollViewer Grid.Row="1"
+                          HorizontalScrollBarVisibility="Disabled"
+                          VerticalScrollBarVisibility="Auto">
+                <ItemsControl ItemsSource="{Binding ConsoleSlots}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <UniformGrid Columns="2" Rows="2" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:ConsolesWorkspaceViewModel+ConsoleTileViewModel">
+                            <Border Margin="0,0,14,14"
+                                    Background="#243238"
+                                    BorderBrush="{Binding TileBorderBrush}"
+                                    BorderThickness="2"
+                                    CornerRadius="20"
+                                    Padding="16">
+                                <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="12">
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                        <StackPanel Spacing="5">
+                                            <TextBlock Classes="kicker" Foreground="#E5A26B" Text="{Binding SlotLabel}" />
+                                            <TextBlock FontSize="22"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="#F7F0E7"
+                                                       Text="{Binding ProfileDisplayName}"
+                                                       TextWrapping="Wrap" />
+                                            <TextBlock Classes="caption"
+                                                       Foreground="#CCB9A8"
+                                                       Text="{Binding Branch}"
+                                                       TextWrapping="Wrap" />
+                                            <TextBlock Classes="body"
+                                                       Foreground="#D3C8BA"
+                                                       Text="{Binding StatusSummary}"
+                                                       TextWrapping="Wrap" />
+                                            <TextBlock Classes="caption"
+                                                       Foreground="#CCB9A8"
+                                                       Text="{Binding ActivitySummary}"
+                                                       TextWrapping="Wrap" />
+                                        </StackPanel>
 
-                                    <StackPanel Grid.Column="1" Spacing="8" HorizontalAlignment="Right">
-                                        <Button Classes="action-secondary"
-                                                Command="{Binding #ConsolesRoot.DataContext.SelectSlotCommand}"
-                                                CommandParameter="{Binding .}"
-                                                Content="Target Slot" />
-                                        <Button Classes="action-secondary"
-                                                Command="{Binding ReloadCommand}"
-                                                Content="Reload"
-                                                IsEnabled="{Binding HasPinnedProfile}" />
-                                    </StackPanel>
-                                </Grid>
-
-                                <Border Grid.Row="1"
-                                        Background="#171310"
-                                        BorderBrush="#3F565F"
-                                        BorderThickness="1"
-                                        CornerRadius="16"
-                                        Padding="0">
-                                    <TextBox Classes="console-stream"
-                                             Text="{Binding LogText}"
-                                             CaretIndex="{Binding ConsoleCaretIndex}"
-                                             MinHeight="300" />
-                                </Border>
-
-                                <Grid Grid.Row="2" RowDefinitions="Auto,Auto,Auto" RowSpacing="10">
-                                    <WrapPanel Orientation="Horizontal" ItemHeight="34">
-                                        <Button Classes="action-primary"
-                                                Command="{Binding PrimaryRuntimeCommand}"
-                                                Content="Start"
-                                                IsVisible="{Binding ShowStartAction}" />
-                                        <Button Classes="action-danger"
-                                                Command="{Binding PrimaryRuntimeCommand}"
-                                                Content="Stop"
-                                                IsVisible="{Binding ShowStopAction}" />
-                                        <Button Classes="action-secondary"
-                                                Command="{Binding RestartRuntimeCommand}"
-                                                Content="Restart"
-                                                IsEnabled="{Binding HasPinnedProfile}"
-                                                Margin="8,0,0,0" />
-                                        <Button Classes="action-secondary"
-                                                Command="{Binding RequestPlayersCommand}"
-                                                Content="Players"
-                                                IsEnabled="{Binding CanSendCommands}"
-                                                Margin="8,0,0,0" />
-                                        <Button Classes="action-secondary"
-                                                Command="{Binding SaveWorldCommand}"
-                                                Content="Save World"
-                                                IsEnabled="{Binding CanSendCommands}"
-                                                Margin="8,0,0,0" />
-                                    </WrapPanel>
-
-                                    <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                                        <TextBox Text="{Binding RawConsoleCommand}"
-                                                 IsEnabled="{Binding CanSendCommands}"
-                                                 PlaceholderText="save / players / custom console command" />
-                                        <Button Grid.Column="1"
-                                                Classes="action-secondary"
-                                                Command="{Binding SendRawCommand}"
-                                                Content="Send"
-                                                IsEnabled="{Binding CanSendCommands}" />
+                                        <StackPanel Grid.Column="1" Spacing="8" HorizontalAlignment="Right">
+                                            <Button Classes="action-secondary"
+                                                    Command="{Binding #ConsolesRoot.DataContext.SelectSlotCommand}"
+                                                    CommandParameter="{Binding .}"
+                                                    Content="Target Slot" />
+                                            <Button Classes="action-secondary"
+                                                    Command="{Binding ReloadCommand}"
+                                                    Content="Reload Now"
+                                                    IsEnabled="{Binding HasPinnedProfile}" />
+                                        </StackPanel>
                                     </Grid>
 
-                                    <Grid Grid.Row="2" ColumnDefinitions="Auto,*" ColumnSpacing="10">
-                                        <CheckBox Content="Follow Tail"
-                                                  IsChecked="{Binding FollowTail}"
-                                                  Foreground="#F7F0E7" />
-                                        <TextBlock Grid.Column="1"
-                                                   Classes="caption"
-                                                   Foreground="#CCB9A8"
-                                                   Text="{Binding LoadStatus}"
-                                                   TextWrapping="Wrap" />
+                                    <Border Grid.Row="1"
+                                            Height="220"
+                                            Background="#171310"
+                                            BorderBrush="#3F565F"
+                                            BorderThickness="1"
+                                            CornerRadius="16"
+                                            Padding="0"
+                                            ClipToBounds="True">
+                                        <TextBox Classes="console-stream"
+                                                 Text="{Binding LogText}"
+                                                 CaretIndex="{Binding ConsoleCaretIndex}" />
+                                    </Border>
+
+                                    <Grid Grid.Row="2" RowDefinitions="Auto,Auto,Auto" RowSpacing="10">
+                                        <WrapPanel Orientation="Horizontal" ItemHeight="34">
+                                            <Button Classes="action-primary"
+                                                    Command="{Binding PrimaryRuntimeCommand}"
+                                                    Content="Start"
+                                                    IsVisible="{Binding ShowStartAction}" />
+                                            <Button Classes="action-danger"
+                                                    Command="{Binding PrimaryRuntimeCommand}"
+                                                    Content="Stop"
+                                                    IsVisible="{Binding ShowStopAction}" />
+                                            <Button Classes="action-secondary"
+                                                    Command="{Binding RestartRuntimeCommand}"
+                                                    Content="Restart"
+                                                    IsEnabled="{Binding HasPinnedProfile}"
+                                                    Margin="8,0,0,0" />
+                                            <Button Classes="action-secondary"
+                                                    Command="{Binding RequestPlayersCommand}"
+                                                    Content="Players"
+                                                    IsEnabled="{Binding CanSendCommands}"
+                                                    Margin="8,0,0,0" />
+                                            <Button Classes="action-secondary"
+                                                    Command="{Binding SaveWorldCommand}"
+                                                    Content="Save World"
+                                                    IsEnabled="{Binding CanSendCommands}"
+                                                    Margin="8,0,0,0" />
+                                        </WrapPanel>
+
+                                        <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                            <TextBox Text="{Binding RawConsoleCommand}"
+                                                     IsEnabled="{Binding CanSendCommands}"
+                                                     PlaceholderText="save / players / custom console command" />
+                                            <Button Grid.Column="1"
+                                                    Classes="action-secondary"
+                                                    Command="{Binding SendRawCommand}"
+                                                    Content="Send"
+                                                    IsEnabled="{Binding CanSendCommands}" />
+                                        </Grid>
+
+                                        <Grid Grid.Row="2" ColumnDefinitions="Auto,*" ColumnSpacing="10">
+                                            <CheckBox Content="Follow Tail"
+                                                      IsChecked="{Binding FollowTail}"
+                                                      Foreground="#F7F0E7" />
+                                            <TextBlock Grid.Column="1"
+                                                       Classes="caption"
+                                                       Foreground="#CCB9A8"
+                                                       Text="{Binding LoadStatus}"
+                                                       TextWrapping="Wrap" />
+                                        </Grid>
                                     </Grid>
                                 </Grid>
-                            </Grid>
-                        </Border>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
         </Grid>
     </Grid>
 </UserControl>

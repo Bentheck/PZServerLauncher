@@ -42,7 +42,8 @@ public sealed class LocalServerImportServiceTests : IDisposable
             new WorkshopPresetScannerService(),
             cacheRoot,
             installDirectory,
-            ProjectZomboidBranch.Unstable42);
+            ProjectZomboidBranch.Unstable42,
+            _tempRoot);
 
         var candidates = await service.DiscoverAsync();
         var candidate = Assert.Single(candidates);
@@ -85,7 +86,8 @@ public sealed class LocalServerImportServiceTests : IDisposable
             new WorkshopPresetScannerService(),
             cacheRoot,
             null,
-            ProjectZomboidBranch.Unstable42);
+            ProjectZomboidBranch.Unstable42,
+            _tempRoot);
 
         var candidates = await service.DiscoverAsync();
         var candidate = Assert.Single(candidates);
@@ -115,7 +117,8 @@ public sealed class LocalServerImportServiceTests : IDisposable
             new WorkshopPresetScannerService(),
             cacheRoot,
             null,
-            ProjectZomboidBranch.Stable41);
+            ProjectZomboidBranch.Unstable42,
+            _tempRoot);
 
         var candidates = await service.DiscoverAsync();
         var candidate = Assert.Single(candidates);
@@ -144,7 +147,8 @@ public sealed class LocalServerImportServiceTests : IDisposable
             new WorkshopPresetScannerService(),
             cacheRoot,
             null,
-            ProjectZomboidBranch.Unstable42);
+            ProjectZomboidBranch.Unstable42,
+            _tempRoot);
 
         var candidate = Assert.Single(await service.DiscoverAsync());
         var imported = await service.ImportAsync(candidate.CandidateId);
@@ -152,6 +156,9 @@ public sealed class LocalServerImportServiceTests : IDisposable
         Assert.Equal(19000, imported.DefaultPort);
         Assert.Equal(19001, imported.UdpPort);
         Assert.Equal(29015, imported.RconPort);
+        Assert.Equal(
+            Path.Combine(_tempRoot, ServerProfileFactory.ManagedServersFolderName, ServerProfileFactory.InstallFolderName, "servertest"),
+            imported.InstallDirectory);
     }
 
     public void Dispose()

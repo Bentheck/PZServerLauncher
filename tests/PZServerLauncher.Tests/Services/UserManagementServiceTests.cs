@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,7 +22,8 @@ public sealed class UserManagementServiceTests : IDisposable
         Directory.CreateDirectory(_tempRoot);
 
         var services = new ServiceCollection();
-        services.AddDataProtection();
+        services.AddDataProtection()
+            .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(_tempRoot, "keys")));
         services.AddLogging();
         services.AddDbContext<ApplicationDbContext>(options =>
             options.UseSqlite($"Data Source={_databasePath};Cache=Shared"));
@@ -74,22 +76,18 @@ public sealed class UserManagementServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task EnsureRemoteAccessReadyAsync_RequiresOwnerWithTwoFactor()
+    public async Task EnsureRemoteAccessReadyAsync_RequiresAnOwner()
     {
         await using var scope = _serviceProvider.CreateAsyncScope();
         var service = scope.ServiceProvider.GetRequiredService<UserManagementService>();
-        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
-        var owner = await service.CreateAsync(new CreateUserRequestDto(
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => service.EnsureRemoteAccessReadyAsync());
+        Assert.Contains("owner", ex.Message, StringComparison.OrdinalIgnoreCase);
+
+        await service.CreateAsync(new CreateUserRequestDto(
             "owner1",
             "StrongPassword!123",
             [UserRole.Owner]));
-
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => service.EnsureRemoteAccessReadyAsync());
-        Assert.Contains("two-factor", ex.Message, StringComparison.OrdinalIgnoreCase);
-
-        var persisted = await userManager.FindByIdAsync(owner.UserId);
-        await userManager.SetTwoFactorEnabledAsync(persisted!, true);
 
         await service.EnsureRemoteAccessReadyAsync();
     }

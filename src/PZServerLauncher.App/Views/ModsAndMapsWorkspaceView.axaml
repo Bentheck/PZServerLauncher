@@ -10,8 +10,9 @@
              x:Class="PZServerLauncher.App.Views.ModsAndMapsWorkspaceView"
              x:Name="ModsRoot"
              x:DataType="vm:ModsAndMapsWorkspaceViewModel">
-    <ScrollViewer>
-        <Grid RowDefinitions="Auto,Auto,*" RowSpacing="18">
+    <Grid>
+        <ScrollViewer>
+            <Grid RowDefinitions="Auto,Auto,*" RowSpacing="18">
             <Grid ColumnDefinitions="1.4*,340" ColumnSpacing="18">
                 <Border Classes="card" Padding="26">
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18">
@@ -95,42 +96,143 @@
 
                     <Border Classes="card" Padding="18">
                         <StackPanel Spacing="12">
+                            <TextBlock Classes="panel-title" FontSize="22" Text="Workshop browser" />
+                            <TextBlock Classes="body" Text="{Binding WorkshopBrowserSummary}" TextWrapping="Wrap" />
+                            <Border Background="#FFF7EC" CornerRadius="12" Padding="12">
+                                <StackPanel Spacing="6">
+                                    <TextBlock Classes="kicker" Text="Collection Import" />
+                                    <TextBlock Classes="caption"
+                                               Text="{Binding WorkshopCollectionImportSummary}"
+                                               TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Border>
+                            <Grid ColumnDefinitions="*,180,180,Auto" ColumnSpacing="8">
+                                <TextBox Text="{Binding SearchQuery}" PlaceholderText="Search mod / collection name, or paste a Workshop item / collection URL / ID" />
+                                <ComboBox Grid.Column="1" ItemsSource="{Binding AvailableSearchModes}" SelectedItem="{Binding SearchMode}" />
+                                <ComboBox Grid.Column="2" ItemsSource="{Binding AvailableSearchFilters}" SelectedItem="{Binding SearchFilter}" />
+                                <Button Grid.Column="3"
+                                        Classes="action-primary"
+                                        MinWidth="104"
+                                        Content="Search"
+                                        Command="{Binding SearchWorkshopCatalogCommand}" />
+                            </Grid>
+
+                            <TextBlock Classes="caption" Text="{Binding WorkshopBrowserModeSummary}" />
+
+                            <Border Background="#FFF7EC" CornerRadius="12" Padding="12" IsVisible="{Binding ShowSteamApiKeyHelper}">
+                                <StackPanel Spacing="8">
+                                    <TextBlock Classes="kicker" Text="Steam Search Helper" />
+                                    <TextBlock Classes="caption" Text="Steam search needs a Steam Web API user key. You can still search the local cache or paste a Workshop ID manually without it." TextWrapping="Wrap" />
+                                    <TextBlock Classes="caption" Text="1. Sign in on steamcommunity.com" TextWrapping="Wrap" />
+                                    <TextBlock Classes="caption" Text="2. Open steamcommunity.com/dev/apikey" TextWrapping="Wrap" />
+                                    <TextBlock Classes="caption" Text="3. Register a key for a domain name" TextWrapping="Wrap" />
+                                    <TextBlock Classes="caption" Text="4. Paste the generated key here" TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Border>
+
+                            <ItemsControl ItemsSource="{Binding WorkshopSearchDiagnostics}" IsVisible="{Binding HasWorkshopSearchDiagnostics}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Classes="caption" Text="{Binding .}" TextWrapping="Wrap" Margin="0,0,0,4" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <ItemsControl ItemsSource="{Binding WorkshopSearchResults}" IsVisible="{Binding HasWorkshopSearchResults}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:ModsAndMapsWorkspaceViewModel+WorkshopCatalogItemViewModel">
+                                        <Border Background="#F6EFE6" CornerRadius="14" Padding="12" Margin="0,0,0,10">
+                                            <Grid ColumnDefinitions="96,*,Auto" ColumnSpacing="12">
+                                                <Border Width="96" Height="58" Background="#E9DDCF" CornerRadius="10">
+                                                    <Image Source="{Binding PreviewImage}" Stretch="UniformToFill" IsVisible="{Binding HasPreviewImage}" />
+                                                </Border>
+                                                <StackPanel Grid.Column="1" Spacing="4">
+                                                    <TextBlock FontWeight="SemiBold" Foreground="#1F1A14" Text="{Binding Title}" TextWrapping="Wrap" />
+                                                    <TextBlock Classes="caption" Text="{Binding WorkshopId}" />
+                                                    <WrapPanel Orientation="Horizontal">
+                                                        <Border Background="#D8C1A4" CornerRadius="999" Padding="8,3" Margin="0,0,6,6" IsVisible="{Binding IsCollection}">
+                                                            <TextBlock Classes="kicker" Foreground="#5A3922" Text="{Binding KindLabel}" />
+                                                        </Border>
+                                                        <Border Background="#EAD6BF" CornerRadius="999" Padding="8,3" Margin="0,0,6,6" IsVisible="{Binding IsCollection}">
+                                                            <TextBlock Classes="kicker" Text="{Binding CollectionItemCount, StringFormat='Child items: {0}'}" />
+                                                        </Border>
+                                                        <Border Background="#EAD6BF" CornerRadius="999" Padding="8,3" Margin="0,0,6,6">
+                                                            <TextBlock Classes="kicker" Text="{Binding SourceLabel}" />
+                                                        </Border>
+                                                        <Border Background="#EAD6BF" CornerRadius="999" Padding="8,3" Margin="0,0,6,6">
+                                                            <TextBlock Classes="kicker" Text="{Binding IsInstalledLocally, StringFormat='Installed locally: {0}'}" />
+                                                        </Border>
+                                                        <Border Background="#EAD6BF" CornerRadius="999" Padding="8,3" Margin="0,0,6,6">
+                                                            <TextBlock Classes="kicker" Text="{Binding IsQueued, StringFormat='Queued: {0}'}" />
+                                                        </Border>
+                                                    </WrapPanel>
+                                                    <TextBlock Classes="caption" Text="{Binding Description}" MaxLines="3" TextWrapping="Wrap" />
+                                                </StackPanel>
+                                                <Button Grid.Column="2"
+                                                        Classes="action-secondary"
+                                                        MinWidth="104"
+                                                        Content="{Binding PreviewLabel}"
+                                                        Command="{Binding #ModsRoot.DataContext.PreviewWorkshopItemCommand}"
+                                                        CommandParameter="{Binding .}" />
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <TextBlock Classes="caption" IsVisible="{Binding HasNoWorkshopSearchResults}" Text="No Workshop results yet. Search by mod or collection name, or paste a Workshop item / collection ID or URL to resolve it." TextWrapping="Wrap" />
+
+                            <Border Background="#FFF7EC" CornerRadius="12" Padding="12">
+                                <StackPanel Spacing="8">
+                                    <TextBlock Classes="kicker" Text="Steam API Key" />
+                                    <TextBlock Classes="caption"
+                                               Text="Save a Steam Web API user key here to enable Steam Workshop search. Local cache search and manual Workshop ID lookup stay available even without it."
+                                               IsVisible="{Binding ShowSteamApiKeyEditor}"
+                                               TextWrapping="Wrap" />
+                                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8"
+                                          IsVisible="{Binding ShowSteamApiKeyEditor}">
+                                        <TextBox Text="{Binding SteamWebApiKey, UpdateSourceTrigger=PropertyChanged}"
+                                                 PasswordChar="*"
+                                                 PlaceholderText="Paste Steam Web API user key" />
+                                        <Button Grid.Column="1"
+                                                Classes="action-primary"
+                                                MinWidth="132"
+                                                Content="Save API Key"
+                                                Command="{Binding SaveSteamWebApiKeyCommand}" />
+                                        <Button Grid.Column="2"
+                                                Classes="action-danger"
+                                                MinWidth="116"
+                                                Content="Remove Key"
+                                                Command="{Binding RemoveSteamWebApiKeyCommand}"
+                                                IsVisible="{Binding HasSteamWebApiKeyConfigured}" />
+                                    </Grid>
+                                    <Button Classes="action-danger"
+                                            HorizontalAlignment="Left"
+                                            MinWidth="132"
+                                            Content="Remove API Key"
+                                            Command="{Binding RemoveSteamWebApiKeyCommand}"
+                                            IsVisible="{Binding ShowSteamApiKeyRemoveOnly}" />
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Classes="card" Padding="18">
+                        <StackPanel Spacing="12">
                             <TextBlock Classes="panel-title" FontSize="22" Text="Ordered preset manager" />
-                            <TextBlock Classes="body" Text="Shape the live workshop, mod, and map order here. The queue editor is the operational surface for keeping the active server loadout clean." TextWrapping="Wrap" />
+                            <TextBlock Classes="body" Text="Shape the live enabled-mod and map order here. Workshop items are resolved behind the scenes from the server mods you keep in this stack." TextWrapping="Wrap" />
 
-                            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="12">
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
                                 <Border Background="#FBF7F1" CornerRadius="14" Padding="14">
-                                    <StackPanel Spacing="10">
-                                        <TextBlock Classes="kicker" Text="Workshop Intake" />
-                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                                            <TextBox Text="{Binding NewWorkshopEntry}" PlaceholderText="Paste a workshop URL or numeric ID" />
-                                            <Button Grid.Column="1" Command="{Binding AddWorkshopEntryCommand}" Content="Add" IsEnabled="{Binding CanAddWorkshopEntry}" />
-                                        </Grid>
-                                        <ItemsControl ItemsSource="{Binding WorkshopEntries}" IsVisible="{Binding HasWorkshopEntries}">
-                                            <ItemsControl.ItemTemplate>
-                                                <DataTemplate x:DataType="vm:ModsAndMapsWorkspaceViewModel+PresetEntryViewModel">
-                                                    <Border Background="#F6EFE6" CornerRadius="12" Padding="10" Margin="0,0,0,8">
-                                                        <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="8">
-                                                            <Border Background="#E9DDCF" CornerRadius="999" Padding="8,4"><TextBlock Classes="kicker" Text="{Binding OrderLabel}" /></Border>
-                                                            <TextBlock Grid.Column="1" Classes="body" Text="{Binding Value}" TextWrapping="Wrap" VerticalAlignment="Center" />
-                                                            <Button Grid.Column="2" Command="{Binding #ModsRoot.DataContext.MoveEntryUpCommand}" CommandParameter="{Binding .}" Content="Up" />
-                                                            <Button Grid.Column="3" Command="{Binding #ModsRoot.DataContext.MoveEntryDownCommand}" CommandParameter="{Binding .}" Content="Down" />
-                                                            <Button Grid.Column="4" Command="{Binding #ModsRoot.DataContext.RemoveEntryCommand}" CommandParameter="{Binding .}" Content="Remove" />
-                                                        </Grid>
-                                                    </Border>
-                                                </DataTemplate>
-                                            </ItemsControl.ItemTemplate>
-                                        </ItemsControl>
-                                        <TextBlock Classes="caption" IsVisible="{Binding HasNoWorkshopEntries}" Text="No workshop entries yet." />
-                                    </StackPanel>
-                                </Border>
-
-                                <Border Grid.Column="1" Background="#FBF7F1" CornerRadius="14" Padding="14">
                                     <StackPanel Spacing="10">
                                         <TextBlock Classes="kicker" Text="Enabled Mods" />
                                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                                             <TextBox Text="{Binding NewEnabledModEntry}" PlaceholderText="Paste a mod ID" />
-                                            <Button Grid.Column="1" Command="{Binding AddEnabledModEntryCommand}" Content="Add" IsEnabled="{Binding CanAddEnabledModEntry}" />
+                                            <Button Grid.Column="1"
+                                                    Classes="action-secondary"
+                                                    Command="{Binding AddEnabledModEntryCommand}"
+                                                    Content="Add"
+                                                    IsEnabled="{Binding CanAddEnabledModEntry}" />
                                         </Grid>
                                         <ItemsControl ItemsSource="{Binding EnabledModEntries}" IsVisible="{Binding HasEnabledModEntries}">
                                             <ItemsControl.ItemTemplate>
@@ -139,9 +241,9 @@
                                                         <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="8">
                                                             <Border Background="#E9DDCF" CornerRadius="999" Padding="8,4"><TextBlock Classes="kicker" Text="{Binding OrderLabel}" /></Border>
                                                             <TextBlock Grid.Column="1" Classes="body" Text="{Binding Value}" TextWrapping="Wrap" VerticalAlignment="Center" />
-                                                            <Button Grid.Column="2" Command="{Binding #ModsRoot.DataContext.MoveEntryUpCommand}" CommandParameter="{Binding .}" Content="Up" />
-                                                            <Button Grid.Column="3" Command="{Binding #ModsRoot.DataContext.MoveEntryDownCommand}" CommandParameter="{Binding .}" Content="Down" />
-                                                            <Button Grid.Column="4" Command="{Binding #ModsRoot.DataContext.RemoveEntryCommand}" CommandParameter="{Binding .}" Content="Remove" />
+                                                            <Button Grid.Column="2" Classes="action-secondary" Command="{Binding #ModsRoot.DataContext.MoveEntryUpCommand}" CommandParameter="{Binding .}" Content="Up" />
+                                                            <Button Grid.Column="3" Classes="action-secondary" Command="{Binding #ModsRoot.DataContext.MoveEntryDownCommand}" CommandParameter="{Binding .}" Content="Down" />
+                                                            <Button Grid.Column="4" Classes="action-danger" Command="{Binding #ModsRoot.DataContext.RemoveEntryCommand}" CommandParameter="{Binding .}" Content="Remove" />
                                                         </Grid>
                                                     </Border>
                                                 </DataTemplate>
@@ -151,12 +253,16 @@
                                     </StackPanel>
                                 </Border>
 
-                                <Border Grid.Column="2" Background="#FBF7F1" CornerRadius="14" Padding="14">
+                                <Border Grid.Column="1" Background="#FBF7F1" CornerRadius="14" Padding="14">
                                     <StackPanel Spacing="10">
                                         <TextBlock Classes="kicker" Text="Map Chain" />
                                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                                             <TextBox Text="{Binding NewMapEntry}" PlaceholderText="Paste a map folder" />
-                                            <Button Grid.Column="1" Command="{Binding AddMapEntryCommand}" Content="Add" IsEnabled="{Binding CanAddMapEntry}" />
+                                            <Button Grid.Column="1"
+                                                    Classes="action-secondary"
+                                                    Command="{Binding AddMapEntryCommand}"
+                                                    Content="Add"
+                                                    IsEnabled="{Binding CanAddMapEntry}" />
                                         </Grid>
                                         <ItemsControl ItemsSource="{Binding MapEntries}" IsVisible="{Binding HasMapEntries}">
                                             <ItemsControl.ItemTemplate>
@@ -165,9 +271,9 @@
                                                         <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="8">
                                                             <Border Background="#E9DDCF" CornerRadius="999" Padding="8,4"><TextBlock Classes="kicker" Text="{Binding OrderLabel}" /></Border>
                                                             <TextBlock Grid.Column="1" Classes="body" Text="{Binding Value}" TextWrapping="Wrap" VerticalAlignment="Center" />
-                                                            <Button Grid.Column="2" Command="{Binding #ModsRoot.DataContext.MoveEntryUpCommand}" CommandParameter="{Binding .}" Content="Up" />
-                                                            <Button Grid.Column="3" Command="{Binding #ModsRoot.DataContext.MoveEntryDownCommand}" CommandParameter="{Binding .}" Content="Down" />
-                                                            <Button Grid.Column="4" Command="{Binding #ModsRoot.DataContext.RemoveEntryCommand}" CommandParameter="{Binding .}" Content="Remove" />
+                                                            <Button Grid.Column="2" Classes="action-secondary" Command="{Binding #ModsRoot.DataContext.MoveEntryUpCommand}" CommandParameter="{Binding .}" Content="Up" />
+                                                            <Button Grid.Column="3" Classes="action-secondary" Command="{Binding #ModsRoot.DataContext.MoveEntryDownCommand}" CommandParameter="{Binding .}" Content="Down" />
+                                                            <Button Grid.Column="4" Classes="action-danger" Command="{Binding #ModsRoot.DataContext.RemoveEntryCommand}" CommandParameter="{Binding .}" Content="Remove" />
                                                         </Grid>
                                                     </Border>
                                                 </DataTemplate>
@@ -183,16 +289,11 @@
                     <Border Classes="card" Padding="18">
                         <StackPanel Spacing="12">
                             <TextBlock Classes="kicker" Text="Bulk Paste &amp; Export" />
-                            <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
-                                <StackPanel Spacing="8">
-                                    <TextBlock Classes="kicker" Text="Workshop Item IDs Or URLs" />
-                                    <TextBox MinHeight="180" AcceptsReturn="True" Text="{Binding WorkshopItemIdsText}" VerticalContentAlignment="Top" TextWrapping="NoWrap" />
-                                </StackPanel>
-                                <StackPanel Grid.Column="1" Spacing="8">
-                                    <TextBlock Classes="kicker" Text="Enabled Mod IDs" />
-                                    <TextBox MinHeight="180" AcceptsReturn="True" Text="{Binding EnabledModIdsText}" VerticalContentAlignment="Top" TextWrapping="NoWrap" />
-                                </StackPanel>
-                            </Grid>
+                            <StackPanel Spacing="8">
+                                <TextBlock Classes="kicker" Text="Enabled Mod IDs" />
+                                <TextBlock Classes="caption" Text="Paste only mod IDs here. The launcher resolves Workshop items from the installed server content when it writes the live preset." TextWrapping="Wrap" />
+                                <TextBox MinHeight="180" AcceptsReturn="True" Text="{Binding EnabledModIdsText}" VerticalContentAlignment="Top" TextWrapping="NoWrap" />
+                            </StackPanel>
                             <StackPanel Spacing="8">
                                 <TextBlock Classes="kicker" Text="Map Folders" />
                                 <TextBox MinHeight="120" AcceptsReturn="True" Text="{Binding MapFoldersText}" VerticalContentAlignment="Top" TextWrapping="NoWrap" />
@@ -203,6 +304,28 @@
 
                 <Border Grid.Column="1" Classes="surface-dark" Padding="18">
                     <StackPanel Spacing="14">
+                        <Border Background="#F0E2D0" CornerRadius="16" Padding="14">
+                            <StackPanel Spacing="8">
+                                <TextBlock Classes="kicker" Text="Preview Modal" />
+                                <TextBlock Classes="body"
+                                           FontWeight="SemiBold"
+                                           Text="{Binding SelectedWorkshopPreview.Title}"
+                                           IsVisible="{Binding HasSelectedWorkshopPreview}"
+                                           TextWrapping="Wrap" />
+                                <TextBlock Classes="caption"
+                                           Text="Preview opens in a modal now so the image, collection contents, and queue impact all fit without crowding the workspace."
+                                           TextWrapping="Wrap" />
+                                <TextBlock Classes="caption"
+                                           IsVisible="{Binding HasSelectedWorkshopPreview}"
+                                           Text="{Binding SelectedWorkshopPreview.WorkshopId, StringFormat='Last previewed: {0}'}"
+                                           TextWrapping="Wrap" />
+                                <TextBlock Classes="caption"
+                                           IsVisible="{Binding SelectedWorkshopPreview.Item.IsCollection}"
+                                           Text="{Binding SelectedWorkshopPreview.Item.CollectionItemCount, StringFormat='Child items: {0}'}"
+                                           TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Border>
+
                         <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Command Tower" />
                         <TextBlock FontSize="24" FontWeight="SemiBold" Foreground="#F7F0E7" Text="{Binding ValidationHeadline}" TextWrapping="Wrap" />
                         <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding QueueIntegritySummary}" TextWrapping="Wrap" />
@@ -211,10 +334,10 @@
                             <StackPanel Spacing="8">
                                 <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Actions" />
                                 <WrapPanel Orientation="Horizontal" ItemWidth="152" ItemHeight="36">
-                                    <Button Command="{Binding SaveSettingsCommand}" Content="Apply Settings" />
-                                    <Button Command="{Binding SaveDraftCommand}" Content="Save Draft" />
-                                    <Button Command="{Binding DiscardDraftCommand}" Content="Discard Draft" />
-                                    <Button Command="{Binding ScanCommand}" Content="Run Scan" IsEnabled="{Binding CanScan}" />
+                                    <Button Classes="action-primary" Command="{Binding SaveSettingsCommand}" Content="Apply Settings" />
+                                    <Button Classes="action-secondary" Command="{Binding SaveDraftCommand}" Content="Save Draft" />
+                                    <Button Classes="action-secondary" Command="{Binding DiscardDraftCommand}" Content="Discard Draft" />
+                                    <Button Classes="action-secondary" Command="{Binding ScanCommand}" Content="Run Scan" IsEnabled="{Binding CanScan}" />
                                 </WrapPanel>
                             </StackPanel>
                         </Border>
@@ -225,7 +348,11 @@
                                 <TextBlock Classes="body" Foreground="#F0E7DC" Text="{Binding SavedPresetSummary}" TextWrapping="Wrap" />
                                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                                     <TextBox Text="{Binding NewPresetName}" PlaceholderText="Preset name" />
-                                    <Button Grid.Column="1" Command="{Binding SaveNamedPresetCommand}" Content="Capture" IsEnabled="{Binding CanSaveNamedPreset}" />
+                                    <Button Grid.Column="1"
+                                            Classes="action-primary"
+                                            Command="{Binding SaveNamedPresetCommand}"
+                                            Content="Capture"
+                                            IsEnabled="{Binding CanSaveNamedPreset}" />
                                 </Grid>
                                 <ItemsControl ItemsSource="{Binding SavedPresets}" IsVisible="{Binding HasSavedPresets}">
                                     <ItemsControl.ItemTemplate>
@@ -236,8 +363,8 @@
                                                     <TextBlock Classes="caption" Foreground="#5C4838" Text="{Binding CompositionSummary}" TextWrapping="Wrap" />
                                                     <TextBlock Classes="caption" Foreground="#5C4838" Text="{Binding UpdatedLabel}" />
                                                     <WrapPanel Orientation="Horizontal" ItemWidth="116" ItemHeight="34">
-                                                        <Button Command="{Binding #ModsRoot.DataContext.LoadNamedPresetCommand}" CommandParameter="{Binding .}" Content="Load" />
-                                                        <Button Command="{Binding #ModsRoot.DataContext.DeleteNamedPresetCommand}" CommandParameter="{Binding .}" Content="Delete" />
+                                                        <Button Classes="action-secondary" Command="{Binding #ModsRoot.DataContext.LoadNamedPresetCommand}" CommandParameter="{Binding .}" Content="Load" />
+                                                        <Button Classes="action-danger" Command="{Binding #ModsRoot.DataContext.DeleteNamedPresetCommand}" CommandParameter="{Binding .}" Content="Delete" />
                                                     </WrapPanel>
                                                 </StackPanel>
                                             </Border>
@@ -277,6 +404,125 @@
                     </StackPanel>
                 </Border>
             </Grid>
-        </Grid>
-    </ScrollViewer>
+            </Grid>
+        </ScrollViewer>
+
+        <Border Background="#AA16110C"
+                IsVisible="{Binding IsWorkshopPreviewModalOpen}">
+            <Border Classes="card"
+                    MaxWidth="860"
+                    MaxHeight="760"
+                    Margin="24"
+                    Padding="22"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center">
+                <Grid RowDefinitions="Auto,*,Auto" RowSpacing="16">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                        <StackPanel Spacing="6">
+                            <TextBlock Classes="kicker" Text="Workshop Preview" />
+                            <TextBlock Classes="panel-title"
+                                       FontSize="26"
+                                       Text="{Binding SelectedWorkshopPreview.Title}"
+                                       TextWrapping="Wrap" />
+                            <TextBlock Classes="caption"
+                                       Text="{Binding SelectedWorkshopPreview.WorkshopId, StringFormat='Workshop ID: {0}'}"
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
+                        <Button Grid.Column="1"
+                                Classes="action-secondary"
+                                MinWidth="100"
+                                Content="Close"
+                                Command="{Binding CloseWorkshopPreviewCommand}" />
+                    </Grid>
+
+                    <ScrollViewer Grid.Row="1"
+                                  HorizontalScrollBarVisibility="Disabled"
+                                  VerticalScrollBarVisibility="Auto">
+                        <StackPanel Spacing="14">
+                            <Image Source="{Binding SelectedWorkshopPreview.PreviewImage}"
+                                   Height="260"
+                                   Stretch="UniformToFill"
+                                   IsVisible="{Binding SelectedWorkshopPreview.HasPreviewImage}" />
+
+                            <WrapPanel Orientation="Horizontal" ItemHeight="30">
+                                <Border Background="#EAD6BF" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                    <TextBlock Classes="kicker" Text="{Binding SelectedWorkshopPreview.Item.KindLabel}" />
+                                </Border>
+                                <Border Background="#EAD6BF" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                    <TextBlock Classes="kicker" Text="{Binding SelectedWorkshopPreview.SourceLabel}" />
+                                </Border>
+                                <Border Background="#EAD6BF" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                    <TextBlock Classes="kicker" Text="{Binding SelectedWorkshopPreview.Item.IsInstalledLocally, StringFormat='Installed locally: {0}'}" />
+                                </Border>
+                                <Border Background="#EAD6BF" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                    <TextBlock Classes="kicker" Text="{Binding SelectedWorkshopPreview.Item.IsQueued, StringFormat='Queued: {0}'}" />
+                                </Border>
+                                <Border Background="#EAD6BF"
+                                        CornerRadius="999"
+                                        Padding="10,5"
+                                        Margin="0,0,8,8"
+                                        IsVisible="{Binding SelectedWorkshopPreview.Item.IsCollection}">
+                                    <TextBlock Classes="kicker" Text="{Binding SelectedWorkshopPreview.Item.CollectionItemCount, StringFormat='Child items: {0}'}" />
+                                </Border>
+                            </WrapPanel>
+
+                            <TextBlock Classes="body"
+                                       Text="{Binding SelectedWorkshopPreview.Description}"
+                                       TextWrapping="Wrap" />
+
+                            <Border Background="#FFF7EC" CornerRadius="14" Padding="14">
+                                <StackPanel Spacing="6">
+                                    <TextBlock Classes="kicker" Text="Queue Impact" />
+                                    <TextBlock Classes="caption"
+                                               Text="{Binding SelectedWorkshopPreview.WorkshopItemIdsToAdd.Count, StringFormat='Workshop IDs to add: {0}'}"
+                                               TextWrapping="Wrap" />
+                                    <TextBlock Classes="caption"
+                                               Text="{Binding SelectedWorkshopPreview.ModIdsToAdd.Count, StringFormat='Mod IDs to add: {0}'}"
+                                               TextWrapping="Wrap" />
+                                    <TextBlock Classes="caption"
+                                               Text="{Binding SelectedWorkshopPreview.MapFoldersToAdd.Count, StringFormat='Map folders to add: {0}'}"
+                                               TextWrapping="Wrap" />
+                                </StackPanel>
+                            </Border>
+
+                            <Border Background="#FFF7EC" CornerRadius="14" Padding="14" IsVisible="{Binding SelectedWorkshopPreview.HasCollectionChildren}">
+                                <StackPanel Spacing="10">
+                                    <TextBlock Classes="kicker" Text="Collection Contents" />
+                                    <ItemsControl ItemsSource="{Binding SelectedWorkshopPreview.CollectionChildren}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="settings:WorkshopCatalogPreviewChildDto">
+                                                <Border Background="#FFFDF8" CornerRadius="10" Padding="10" Margin="0,0,0,8">
+                                                    <StackPanel Spacing="2">
+                                                        <TextBlock FontWeight="SemiBold" Foreground="#1F1A14" Text="{Binding Title}" TextWrapping="Wrap" />
+                                                        <TextBlock Classes="caption" Text="{Binding WorkshopId}" TextWrapping="Wrap" />
+                                                        <TextBlock Classes="caption" Text="{Binding IsInstalledLocally, StringFormat='Installed locally: {0}'}" TextWrapping="Wrap" />
+                                                        <TextBlock Classes="caption" Text="{Binding IsQueued, StringFormat='Queued: {0}'}" TextWrapping="Wrap" />
+                                                    </StackPanel>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <Grid Grid.Row="2" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
+                        <Border Background="Transparent" />
+                        <Button Grid.Column="1"
+                                Classes="action-secondary"
+                                MinWidth="104"
+                                Content="Close"
+                                Command="{Binding CloseWorkshopPreviewCommand}" />
+                        <Button Grid.Column="2"
+                                Classes="action-primary"
+                                MinWidth="156"
+                                Content="{Binding SelectedWorkshopApplyLabel}"
+                                Command="{Binding ApplyWorkshopPreviewCommand}"
+                                IsEnabled="{Binding CanApplyWorkshopPreview}" />
+                    </Grid>
+                </Grid>
+            </Border>
+        </Border>
+    </Grid>
 </UserControl>

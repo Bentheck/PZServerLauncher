@@ -1,0 +1,48 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.DataProtection" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="Microsoft.Extensions.Http" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PZServerLauncher.Contracts\PZServerLauncher.Contracts.csproj" />
+    <ProjectReference Include="..\PZServerLauncher.Core\PZServerLauncher.Core.csproj" />
+    <ProjectReference Include="..\PZServerLauncher.Infrastructure\PZServerLauncher.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\PZServerLauncher.Host\ContractsMappingExtensions.cs" Link="Host\ContractsMappingExtensions.cs" />
+    <Compile Include="..\PZServerLauncher.Host\Data\**\*.cs" Link="Host\Data\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\PZServerLauncher.Host\Infrastructure\**\*.cs" Link="Host\Infrastructure\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\PZServerLauncher.Host\Services\*.cs"
+             Exclude="..\PZServerLauncher.Host\Services\SignalRRuntimeEventPublisher.cs"
+             Link="Host\Services\%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Assets\ProjectZomboid\SandboxPresets\**\*.lua">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <TargetPath>sandbox-presets\%(RecursiveDir)%(Filename)%(Extension)</TargetPath>
+    </Content>
+  </ItemGroup>
+</Project>

@@ -93,7 +93,16 @@ public sealed class StructuredSettingsService(
             }
         }
 
-        var normalizedPreset = workshopPresetScannerService.Scan(profile.InstallDirectory, preset).Preset;
+        var resolvedWorkshopItemIds = workshopPresetScannerService.ResolveWorkshopItemIds(
+            profile.InstallDirectory,
+            preset,
+            preset.WorkshopItemIds.Count > 0 ? preset.WorkshopItemIds : profile.WorkshopPreset.WorkshopItemIds);
+        var normalizedPreset = workshopPresetScannerService.Scan(
+            profile.InstallDirectory,
+            preset with
+            {
+                WorkshopItemIds = resolvedWorkshopItemIds,
+            }).Preset;
         var iniValues = new Dictionary<string, string?>(StringComparer.Ordinal)
         {
             ["WorkshopItems"] = JoinIniList(normalizedPreset.WorkshopItemIds),
@@ -244,7 +253,9 @@ public sealed class StructuredSettingsService(
                         .SelectMany(section => section.Fields)
                         .ToDictionary(
                             field => field.Target.KeyPath,
-                            field => values.TryGetValue(field.FieldId, out var value) ? value : field.DefaultValue,
+                            field => SandboxValueNormalizer.ToPersistedValue(
+                                field,
+                                values.TryGetValue(field.FieldId, out var value) ? value : field.DefaultValue),
                             StringComparer.Ordinal);
 
                     var updatedContent = sandboxVarsDocumentService.ApplyValues(raw.Content, sandboxValues);
@@ -433,7 +444,7 @@ public sealed class StructuredSettingsService(
         foreach (var field in definition.Sections.SelectMany(section => section.Fields))
         {
             values[field.FieldId] = sourceValues.TryGetValue(field.Target.KeyPath, out var value) && !string.IsNullOrWhiteSpace(value)
-                ? value
+                ? SandboxValueNormalizer.ToEditorValue(field, value)
                 : field.DefaultValue;
         }
 
@@ -607,92 +618,19 @@ public sealed class StructuredSettingsService(
             null);
     }
 
-    private static SettingsValidationResultDto ValidateSandbox(
+    private SettingsValidationResultDto ValidateSandbox(
         ServerProfile profile,
         string pageId,
         IReadOnlyDictionary<string, string?> values)
     {
-        var branchPrefix = GetBranchPrefix(profile.Branch);
         var fieldErrors = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
+        var catalog = catalogResolver.Resolve(profile.Branch);
+        var definition = ResolvePageDefinition(catalog, pageId);
 
-        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.zombies", 1, 5, "Zombie spawn rate must be between 1 and 5.", fieldErrors);
-        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.distribution", 1, 2, "Zombie distribution must be 1 or 2.", fieldErrors);
-        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.day-length", 1, 9, "Day length must be between 1 and 9.", fieldErrors);
-        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.start-year", 1, 100, "Start year must be between 1 and 100.", fieldErrors);
-        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.start-month", 1, 12, "Start month must be between 1 and 12.", fieldErrors);
-        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.start-day", 1, 31, "Start day must be between 1 and 31.", fieldErrors);
-        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.start-time", 1, 9, "Start time must be between 1 and 9.", fieldErrors);
-        ValidateMinimumDecimal(values, $"{branchPrefix}.sandbox.population-multiplier", 0m, "Population multiplier must be zero or greater.", fieldErrors);
-        ValidateMinimumDecimal(values, $"{branchPrefix}.sandbox.population-start-multiplier", 0m, "Start population must be zero or greater.", fieldErrors);
-        ValidateMinimumDecimal(values, $"{branchPrefix}.sandbox.population-peak-multiplier", 0m, "Peak population must be zero or greater.", fieldErrors);
-        ValidateMinimumInteger(values, $"{branchPrefix}.sandbox.population-peak-day", 0, "Peak day must be zero or greater.", fieldErrors);
-        ValidateMinimumDecimal(values, $"{branchPrefix}.sandbox.respawn-hours", 0m, "Respawn hours must be zero or greater.", fieldErrors);
-        ValidateMinimumDecimal(values, $"{branchPrefix}.sandbox.respawn-unseen-hours", 0m, "Respawn unseen hours must be zero or greater.", fieldErrors);
-        ValidateMinimumDecimal(values, $"{branchPrefix}.sandbox.respawn-multiplier", 0m, "Respawn multiplier must be zero or greater.", fieldErrors);
-        ValidateMinimumDecimal(values, $"{branchPrefix}.sandbox.redistribute-hours", 0m, "Redistribute hours must be zero or greater.", fieldErrors);
-        ValidateMinimumInteger(values, $"{branchPrefix}.sandbox.follow-sound-distance", 0, "Follow sound distance must be zero or greater.", fieldErrors);
-        ValidateMinimumInteger(values, $"{branchPrefix}.sandbox.rally-group-size", 0, "Rally group size must be zero or greater.", fieldErrors);
-        ValidateMinimumInteger(values, $"{branchPrefix}.sandbox.rally-travel-distance", 0, "Rally travel distance must be zero or greater.", fieldErrors);
-        ValidateMinimumInteger(values, $"{branchPrefix}.sandbox.rally-group-separation", 0, "Rally group separation must be zero or greater.", fieldErrors);
-        ValidateMinimumInteger(values, $"{branchPrefix}.sandbox.rally-group-radius", 0, "Rally group radius must be zero or greater.", fieldErrors);
-        ValidateMinimumInteger(values, $"{branchPrefix}.sandbox.water-shut-modifier", -1, "Water shutoff day must be -1 or greater.", fieldErrors);
-        ValidateMinimumInteger(values, $"{branchPrefix}.sandbox.electricity-shut-modifier", -1, "Electricity shutoff day must be -1 or greater.", fieldErrors);
-        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.erosion-speed", 1, 5, "Erosion speed must be between 1 and 5.", fieldErrors);
-        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.loot-respawn", 1, 5, "Loot respawn must be between 1 and 5.", fieldErrors);
-        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.food-loot", 1, 5, "Food loot must be between 1 and 5.", fieldErrors);
-        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.weapon-loot", 1, 5, "Weapon loot must be between 1 and 5.", fieldErrors);
-        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.other-loot", 1, 5, "Other loot must be between 1 and 5.", fieldErrors);
-        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.temperature", 1, 5, "Temperature must be between 1 and 5.", fieldErrors);
-        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.rain", 1, 5, "Rain must be between 1 and 5.", fieldErrors);
-        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.alarm", 1, 6, "House alarm frequency must be between 1 and 6.", fieldErrors);
-        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.locked-houses", 1, 6, "Locked houses must be between 1 and 6.", fieldErrors);
-        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.farming", 1, 5, "Farming speed must be between 1 and 5.", fieldErrors);
-        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.stats-decrease", 1, 5, "Stats decrease must be between 1 and 5.", fieldErrors);
-        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.nature-abundance", 1, 5, "Nature abundance must be between 1 and 5.", fieldErrors);
-        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.food-rot-speed", 1, 5, "Food rot speed must be between 1 and 5.", fieldErrors);
-        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.fridge-factor", 1, 5, "Fridge factor must be between 1 and 5.", fieldErrors);
-        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.plant-resilience", 1, 5, "Plant resilience must be between 1 and 5.", fieldErrors);
-        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.plant-abundance", 1, 5, "Plant abundance must be between 1 and 5.", fieldErrors);
-        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.end-regen", 1, 5, "Endurance regeneration must be between 1 and 5.", fieldErrors);
-        ValidateMinimumInteger(values, $"{branchPrefix}.sandbox.helicopter", 1, "Helicopter event frequency must be 1 or greater.", fieldErrors);
-        ValidateMinimumInteger(values, $"{branchPrefix}.sandbox.meta-event", 1, "Meta event frequency must be 1 or greater.", fieldErrors);
-        ValidateMinimumInteger(values, $"{branchPrefix}.sandbox.sleeping-event", 1, "Sleeping event frequency must be 1 or greater.", fieldErrors);
-        ValidateMinimumInteger(values, $"{branchPrefix}.sandbox.generator-spawning", 1, "Generator spawn rate must be 1 or greater.", fieldErrors);
-        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.zombie-lore-speed", 1, 4, "Zombie speed must be between 1 and 4.", fieldErrors);
-        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.zombie-lore-strength", 1, 4, "Zombie strength must be between 1 and 4.", fieldErrors);
-        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.zombie-lore-toughness", 1, 4, "Zombie toughness must be between 1 and 4.", fieldErrors);
-        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.zombie-lore-transmission", 1, 4, "Transmission must be between 1 and 4.", fieldErrors);
-        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.zombie-lore-mortality", 1, 7, "Mortality must be between 1 and 7.", fieldErrors);
-        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.zombie-lore-reanimate", 1, 5, "Reanimate time must be between 1 and 5.", fieldErrors);
-        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.zombie-lore-cognition", 1, 4, "Cognition must be between 1 and 4.", fieldErrors);
-        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.zombie-lore-memory", 1, 4, "Memory must be between 1 and 4.", fieldErrors);
-        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.zombie-lore-decomp", 1, 4, "Decomp must be between 1 and 4.", fieldErrors);
-        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.zombie-lore-sight", 1, 4, "Sight must be between 1 and 4.", fieldErrors);
-        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.zombie-lore-hearing", 1, 4, "Hearing must be between 1 and 4.", fieldErrors);
-        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.zombie-lore-smell", 1, 3, "Smell must be between 1 and 3.", fieldErrors);
-        ValidateBoolean(values, $"{branchPrefix}.sandbox.zombie-lore-trigger-house-alarm", "Trigger house alarm must be true or false.", fieldErrors);
-        ValidateBoolean(values, $"{branchPrefix}.sandbox.zombie-lore-thump-no-chasing", "Thump without chasing must be true or false.", fieldErrors);
-        ValidateBoolean(values, $"{branchPrefix}.sandbox.zombie-lore-thump-on-construction", "Thump on construction must be true or false.", fieldErrors);
-        ValidateBoolean(values, $"{branchPrefix}.sandbox.zombie-lore-drag-down", "Drag down must be true or false.", fieldErrors);
-        ValidateBoolean(values, $"{branchPrefix}.sandbox.zombie-lore-fence-lunge", "Fence lunge must be true or false.", fieldErrors);
-        ValidateRangedInteger(values, $"{branchPrefix}.sandbox.character-free-points", -100, 100, "Character free points must stay between -100 and 100.", fieldErrors);
-        ValidateMinimumInteger(values, $"{branchPrefix}.sandbox.construction-bonus-points", 0, "Construction bonus points must be zero or greater.", fieldErrors);
-        ValidateBoolean(values, $"{branchPrefix}.sandbox.multi-hit", "Multi-hit must be true or false.", fieldErrors);
-        ValidateBoolean(values, $"{branchPrefix}.sandbox.allow-exterior-generator", "Allow exterior generator must be true or false.", fieldErrors);
-        ValidateBoolean(values, $"{branchPrefix}.sandbox.bone-fracture", "Bone fracture must be true or false.", fieldErrors);
-        ValidateBoolean(values, $"{branchPrefix}.sandbox.attack-block-movements", "Attack blocks movement must be true or false.", fieldErrors);
-        ValidateBoolean(values, $"{branchPrefix}.sandbox.all-clothes-unlocked", "All clothes unlocked must be true or false.", fieldErrors);
-        ValidateBoolean(values, $"{branchPrefix}.sandbox.vehicle-easy-use", "Vehicle easy use must be true or false.", fieldErrors);
-        ValidateBoolean(values, $"{branchPrefix}.sandbox.player-damage-from-crash", "Player damage from crash must be true or false.", fieldErrors);
-        ValidateBoolean(values, $"{branchPrefix}.sandbox.fire-spread", "Fire spread must be true or false.", fieldErrors);
-        ValidateMinimumInteger(values, $"{branchPrefix}.sandbox.hours-for-corpse-removal", -1, "Hours for corpse removal must be -1 or greater.", fieldErrors);
-        ValidateMinimumInteger(values, $"{branchPrefix}.sandbox.decaying-corpse-health-impact", 1, "Corpse health impact must be 1 or greater.", fieldErrors);
-        ValidateMinimumInteger(values, $"{branchPrefix}.sandbox.blood-level", 1, "Blood level must be 1 or greater.", fieldErrors);
-        ValidateMinimumInteger(values, $"{branchPrefix}.sandbox.clothing-degradation", 1, "Clothing degradation must be 1 or greater.", fieldErrors);
-        ValidateBoolean(values, $"{branchPrefix}.sandbox.starter-kit", "Starter kit must be true or false.", fieldErrors);
-        ValidateBoolean(values, $"{branchPrefix}.sandbox.nutrition", "Nutrition must be true or false.", fieldErrors);
-        ValidateBoolean(values, $"{branchPrefix}.sandbox.enable-snow-on-ground", "Snow on ground must be true or false.", fieldErrors);
-        ValidateBoolean(values, $"{branchPrefix}.sandbox.enable-vehicles", "Vehicles enabled must be true or false.", fieldErrors);
+        if (definition is not null)
+        {
+            ValidateStructuredSandboxFields(definition, values, fieldErrors);
+        }
 
         return new SettingsValidationResultDto(
             pageId,
@@ -810,15 +748,21 @@ public sealed class StructuredSettingsService(
             BuildPageDescription(definition.PageId),
             supportsStructuredEditing,
             supportsDrafts,
-            definition.Sections.Select(MapSection).ToArray());
+            definition.Sections.Select(MapSection).ToArray(),
+            definition.BuiltInPresets is { Count: > 0 }
+                ? definition.BuiltInPresets.Select(MapBuiltInPreset).ToArray()
+                : null);
     }
 
     private static SettingsSectionDto MapSection(StructuredSectionDefinition definition) =>
         new(
             definition.SectionId,
             definition.DisplayName,
-            null,
-            definition.Fields.Select(MapField).ToArray());
+            definition.Description,
+            definition.Fields.Select(MapField).ToArray(),
+            definition.CategoryId,
+            definition.CategoryTitle,
+            definition.CategoryOrder);
 
     private static SettingsFieldDto MapField(StructuredFieldDefinition definition) =>
         new(
@@ -832,7 +776,16 @@ public sealed class StructuredSettingsService(
             definition.HelpText,
             definition.RestartRequired,
             false,
-            []);
+            definition.Options?.Select(MapFieldOption).ToArray() ?? []);
+
+    private static SettingsBuiltInPresetDto MapBuiltInPreset(BuiltInSettingsPresetDefinition definition) =>
+        new(
+            definition.PresetId,
+            definition.Label,
+            new Dictionary<string, string?>(definition.Values, StringComparer.Ordinal));
+
+    private static SettingsFieldOptionDto MapFieldOption(StructuredFieldOptionDefinition definition) =>
+        new(definition.Value, definition.Label, definition.Description);
 
     private static StructuredPageDefinition? ResolvePageDefinition(StructuredSettingsCatalog catalog, string pageId) =>
         catalog.Pages.FirstOrDefault(definition => string.Equals(MapPageId(definition.PageId), pageId, StringComparison.Ordinal));
@@ -930,12 +883,7 @@ public sealed class StructuredSettingsService(
         };
 
     private static string GetBranchPrefix(ProjectZomboidBranch branch) =>
-        branch switch
-        {
-            ProjectZomboidBranch.Stable41 => "b41",
-            ProjectZomboidBranch.Unstable42 => "b42",
-            _ => "pz",
-        };
+        ProjectZomboidBranchSupport.CurrentFieldPrefix;
 
     private static void ValidateRequiredString(
         IReadOnlyDictionary<string, string?> values,
@@ -954,7 +902,12 @@ public sealed class StructuredSettingsService(
         string fieldId,
         IDictionary<string, IReadOnlyList<string>> fieldErrors)
     {
-        if (!values.TryGetValue(fieldId, out var value) || !int.TryParse(value, out var port) || port is < 1 or > 65535)
+        if (!values.TryGetValue(fieldId, out var value) || string.IsNullOrWhiteSpace(value))
+        {
+            return;
+        }
+
+        if (!int.TryParse(value, out var port) || port is < 1 or > 65535)
         {
             fieldErrors[fieldId] = ["Port must be a whole number between 1 and 65535."];
         }
@@ -966,7 +919,12 @@ public sealed class StructuredSettingsService(
         string error,
         IDictionary<string, IReadOnlyList<string>> fieldErrors)
     {
-        if (!values.TryGetValue(fieldId, out var value) || !int.TryParse(value, out var parsed) || parsed <= 0)
+        if (!values.TryGetValue(fieldId, out var value) || string.IsNullOrWhiteSpace(value))
+        {
+            return;
+        }
+
+        if (!int.TryParse(value, out var parsed) || parsed <= 0)
         {
             fieldErrors[fieldId] = [error];
         }
@@ -980,7 +938,12 @@ public sealed class StructuredSettingsService(
         string error,
         IDictionary<string, IReadOnlyList<string>> fieldErrors)
     {
-        if (!values.TryGetValue(fieldId, out var value) || !int.TryParse(value, out var parsed) || parsed < minimum || parsed > maximum)
+        if (!values.TryGetValue(fieldId, out var value) || string.IsNullOrWhiteSpace(value))
+        {
+            return;
+        }
+
+        if (!int.TryParse(value, out var parsed) || parsed < minimum || parsed > maximum)
         {
             fieldErrors[fieldId] = [error];
         }
@@ -993,7 +956,12 @@ public sealed class StructuredSettingsService(
         string error,
         IDictionary<string, IReadOnlyList<string>> fieldErrors)
     {
-        if (!values.TryGetValue(fieldId, out var value) || !int.TryParse(value, out var parsed) || parsed < minimum)
+        if (!values.TryGetValue(fieldId, out var value) || string.IsNullOrWhiteSpace(value))
+        {
+            return;
+        }
+
+        if (!int.TryParse(value, out var parsed) || parsed < minimum)
         {
             fieldErrors[fieldId] = [error];
         }
@@ -1006,9 +974,12 @@ public sealed class StructuredSettingsService(
         string error,
         IDictionary<string, IReadOnlyList<string>> fieldErrors)
     {
-        if (!values.TryGetValue(fieldId, out var value) ||
-            !decimal.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed) ||
-            parsed < minimum)
+        if (!values.TryGetValue(fieldId, out var value) || string.IsNullOrWhiteSpace(value))
+        {
+            return;
+        }
+
+        if (!decimal.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed) || parsed < minimum)
         {
             fieldErrors[fieldId] = [error];
         }
@@ -1020,7 +991,12 @@ public sealed class StructuredSettingsService(
         string error,
         IDictionary<string, IReadOnlyList<string>> fieldErrors)
     {
-        if (!values.TryGetValue(fieldId, out var value) || !bool.TryParse(value, out _))
+        if (!values.TryGetValue(fieldId, out var value) || string.IsNullOrWhiteSpace(value))
+        {
+            return;
+        }
+
+        if (!bool.TryParse(value, out _))
         {
             fieldErrors[fieldId] = [error];
         }
@@ -1090,6 +1066,38 @@ public sealed class StructuredSettingsService(
         values.TryGetValue(key, out var value) && bool.TryParse(value, out var parsed)
             ? parsed
             : throw new InvalidOperationException($"Invalid boolean setting '{key}'.");
+
+    private static void ValidateStructuredSandboxFields(
+        StructuredPageDefinition definition,
+        IReadOnlyDictionary<string, string?> values,
+        IDictionary<string, IReadOnlyList<string>> fieldErrors)
+    {
+        foreach (var field in definition.Sections.SelectMany(section => section.Fields))
+        {
+            if (fieldErrors.ContainsKey(field.FieldId) ||
+                !values.TryGetValue(field.FieldId, out var value) ||
+                string.IsNullOrWhiteSpace(value))
+            {
+                continue;
+            }
+
+            switch (field.ValueKind)
+            {
+                case StructuredValueKind.Boolean when !bool.TryParse(value, out _):
+                    fieldErrors[field.FieldId] = [$"{field.DisplayName} must be true or false."];
+                    break;
+                case StructuredValueKind.Integer when !int.TryParse(value, out _):
+                    fieldErrors[field.FieldId] = [$"{field.DisplayName} must be a whole number."];
+                    break;
+                case StructuredValueKind.Choice when field.Options is { Count: > 0 } &&
+                                                    field.Options.All(option =>
+                                                        !SandboxValueNormalizer.ChoiceValueMatches(option.Value, value) &&
+                                                        !string.Equals(option.Label, value, StringComparison.Ordinal)):
+                    fieldErrors[field.FieldId] = [$"{field.DisplayName} must use one of the supported options."];
+                    break;
+            }
+        }
+    }
 
     private static string? NormalizeOptional(IReadOnlyDictionary<string, string?> values, string key) =>
         values.TryGetValue(key, out var value) && !string.IsNullOrWhiteSpace(value)

@@ -7,17 +7,24 @@ using CommunityToolkit.Mvvm.Input;
 using PZServerLauncher.App.Services;
 using PZServerLauncher.Contracts.Runtime;
 using PZServerLauncher.Core.Runtime;
+using PZServerLauncher.Runtime;
 
 namespace PZServerLauncher.App.ViewModels;
 
 public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
 {
+    private static readonly TimeSpan LiveRefreshInterval = TimeSpan.FromSeconds(3);
+
+    private readonly ConsoleWorkspaceStateService _workspaceStateService;
     private bool _hasInitializedSlots;
+    private readonly DispatcherTimer _liveRefreshTimer;
+    private bool _isLiveRefreshRunning;
+    private int _liveRefreshCycle;
 
     public ConsolesWorkspaceViewModel(
         MainWindowViewModel legacy,
-        LocalHostApiClient hostApiClient,
-        RuntimeEventStream runtimeEventStream)
+        ILauncherRuntime runtime,
+        ConsoleWorkspaceStateService? workspaceStateService = null)
         : base(
             "Consoles",
             "Pin up to four live server consoles, swap them from the roster, and keep the active runtime output one workspace click away.",
@@ -25,6 +32,7 @@ public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
             ["Pinned 4-up board", "Running servers first", "Fast log access", "Compact live ops"])
     {
         Legacy = legacy;
+        _workspaceStateService = workspaceStateService ?? new ConsoleWorkspaceStateService();
 
         if (Legacy.Profiles is INotifyCollectionChanged profiles)
         {
@@ -35,10 +43,10 @@ public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
 
         ConsoleSlots =
         [
-            new ConsoleTileViewModel(1, legacy, hostApiClient, runtimeEventStream),
-            new ConsoleTileViewModel(2, legacy, hostApiClient, runtimeEventStream),
-            new ConsoleTileViewModel(3, legacy, hostApiClient, runtimeEventStream),
-            new ConsoleTileViewModel(4, legacy, hostApiClient, runtimeEventStream),
+            new ConsoleTileViewModel(1, legacy, runtime),
+            new ConsoleTileViewModel(2, legacy, runtime),
+            new ConsoleTileViewModel(3, legacy, runtime),
+            new ConsoleTileViewModel(4, legacy, runtime),
         ];
 
         SelectedSlot = ConsoleSlots[0];
@@ -49,6 +57,13 @@ public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
         ClearSelectedSlotCommand = new RelayCommand(ClearSelectedSlot);
         RefreshSelectedSlotCommand = new AsyncRelayCommand(RefreshSelectedSlotAsync);
 
+        _liveRefreshTimer = new DispatcherTimer
+        {
+            Interval = LiveRefreshInterval,
+        };
+        _liveRefreshTimer.Tick += OnLiveRefreshTimerTick;
+
+        RestorePersistedState();
         SeedEmptySlots();
         RefreshComputedState();
     }
@@ -58,7 +73,7 @@ public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
     public ObservableCollection<ConsoleTileViewModel> ConsoleSlots { get; }
 
     public override string PageSummary => HasProfiles
-        ? $"Pin up to four consoles from {Legacy.Profiles.Count} managed server(s) and keep running servers at the front of the picker."
+        ? $"Pin up to four consoles from {Legacy.Profiles.Count} managed server(s) and keep running servers at the front while the board auto-refreshes."
         : "Add or import a server first, then pin its console here for faster live operations.";
 
     public bool HasProfiles => Legacy.Profiles.Count > 0;
@@ -88,6 +103,8 @@ public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
         ? "No console slots are pinned yet."
         : $"{VisibleConsoleCount} of 4 console slot{(VisibleConsoleCount == 1 ? string.Empty : "s")} in use.";
 
+    public string AutoRefreshSummary => $"Live sync runs about every {LiveRefreshInterval.TotalSeconds:0} seconds, with runtime events filling in between polls.";
+
     public string PickerSummary => HasProfiles
         ? "Choose the target slot, then pin any server from the roster. Running servers stay at the top of the list."
         : "Create or import a server to populate the console roster.";
@@ -109,21 +126,36 @@ public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
 
     public override async Task RefreshPageAsync()
     {
+        ResumeLiveRefresh();
         RebindSlots(clearMissingProfiles: true);
         SeedEmptySlots();
 
-        foreach (var slot in ConsoleSlots.Where(slot => slot.HasPinnedProfile))
-        {
-            await slot.RefreshAsync();
-        }
+        await RefreshPinnedSlotsAsync(includeLogs: true, updateStatusMessage: true);
 
         RefreshComputedState();
+    }
+
+    public void ResumeLiveRefresh()
+    {
+        if (!_liveRefreshTimer.IsEnabled)
+        {
+            _liveRefreshTimer.Start();
+        }
+    }
+
+    public void SuspendLiveRefresh()
+    {
+        if (_liveRefreshTimer.IsEnabled)
+        {
+            _liveRefreshTimer.Stop();
+        }
     }
 
     partial void OnSelectedSlotChanged(ConsoleTileViewModel value)
     {
         UpdateSelectedSlotState();
         OnPropertyChanged(nameof(SelectionSummary));
+        PersistState();
     }
 
     private void SelectSlot(ConsoleTileViewModel? slot)
@@ -153,12 +185,14 @@ public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
         }
 
         SelectedSlot.SetPinnedProfile(item.Profile);
+        PersistState();
         RefreshComputedState();
     }
 
     private void ClearSelectedSlot()
     {
         SelectedSlot.ClearPinnedProfile();
+        PersistState();
         SeedEmptySlots();
         RefreshComputedState();
     }
@@ -167,6 +201,27 @@ public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
     {
         await SelectedSlot.RefreshAsync();
         RefreshComputedState();
+    }
+
+    private async void OnLiveRefreshTimerTick(object? sender, EventArgs e)
+    {
+        if (_isLiveRefreshRunning || VisibleConsoleCount == 0)
+        {
+            return;
+        }
+
+        _isLiveRefreshRunning = true;
+
+        try
+        {
+            _liveRefreshCycle++;
+            var includeLogs = _liveRefreshCycle % 2 == 0;
+            await RefreshPinnedSlotsAsync(includeLogs, updateStatusMessage: false);
+        }
+        finally
+        {
+            _isLiveRefreshRunning = false;
+        }
     }
 
     private void OnProfilesChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -213,9 +268,15 @@ public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
     private void RebindSlots(bool clearMissingProfiles)
     {
         var lookup = Legacy.Profiles.ToDictionary(profile => profile.ProfileId, StringComparer.OrdinalIgnoreCase);
+        var changed = false;
         foreach (var slot in ConsoleSlots)
         {
-            slot.Rebind(lookup, clearMissingProfiles);
+            changed |= slot.Rebind(lookup, clearMissingProfiles);
+        }
+
+        if (changed)
+        {
+            PersistState();
         }
     }
 
@@ -226,6 +287,7 @@ public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
             return;
         }
 
+        var assignedAny = false;
         foreach (var slot in ConsoleSlots.Where(slot => !slot.HasPinnedProfile))
         {
             var candidate = ProfilePickerItems.FirstOrDefault(item => item.AssignedSlotNumber is null);
@@ -235,9 +297,14 @@ public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
             }
 
             slot.SetPinnedProfile(candidate.Profile);
+            assignedAny = true;
         }
 
         _hasInitializedSlots = ConsoleSlots.Any(slot => slot.HasPinnedProfile);
+        if (assignedAny)
+        {
+            PersistState();
+        }
     }
 
     private void UpdateSelectedSlotState()
@@ -246,6 +313,17 @@ public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
         {
             slot.IsSelectionTarget = ReferenceEquals(slot, SelectedSlot);
         }
+    }
+
+    private async Task RefreshPinnedSlotsAsync(bool includeLogs, bool updateStatusMessage)
+    {
+        var pinnedSlots = ConsoleSlots.Where(slot => slot.HasPinnedProfile).ToArray();
+        if (pinnedSlots.Length == 0)
+        {
+            return;
+        }
+
+        await Task.WhenAll(pinnedSlots.Select(slot => slot.RefreshAsync(includeLogs, updateStatusMessage)));
     }
 
     private void RefreshComputedState()
@@ -258,8 +336,45 @@ public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
         OnPropertyChanged(nameof(ProfilePickerItems));
         OnPropertyChanged(nameof(RunningServersSummary));
         OnPropertyChanged(nameof(VisibleConsoleSummary));
+        OnPropertyChanged(nameof(AutoRefreshSummary));
         OnPropertyChanged(nameof(PickerSummary));
         OnPropertyChanged(nameof(SelectionSummary));
+    }
+
+    private void RestorePersistedState()
+    {
+        var state = _workspaceStateService.Load();
+        if (state is null)
+        {
+            return;
+        }
+
+        foreach (var slot in ConsoleSlots)
+        {
+            var profileId = state.GetProfileId(slot.SlotNumber);
+            if (string.IsNullOrWhiteSpace(profileId))
+            {
+                continue;
+            }
+
+            var profile = Legacy.Profiles.FirstOrDefault(candidate => string.Equals(candidate.ProfileId, profileId, StringComparison.OrdinalIgnoreCase));
+            slot.RestorePinnedProfile(profileId, profile);
+        }
+
+        var selectedSlot = ConsoleSlots.FirstOrDefault(slot => slot.SlotNumber == state.SelectedSlotNumber);
+        if (selectedSlot is not null)
+        {
+            SelectedSlot = selectedSlot;
+        }
+
+        _hasInitializedSlots = ConsoleSlots.Any(slot => slot.HasPinnedProfile);
+    }
+
+    private void PersistState()
+    {
+        _workspaceStateService.Save(new ConsoleWorkspaceState(
+            SelectedSlot.SlotNumber,
+            ConsoleSlots.Select(slot => new ConsoleSlotState(slot.SlotNumber, slot.AssignedProfileId)).ToArray()));
     }
 
     private static bool IsRunning(ProfileCardViewModel profile) =>
@@ -285,7 +400,7 @@ public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
     public sealed partial class ConsoleTileViewModel : ViewModelBase
     {
         private readonly MainWindowViewModel _legacy;
-        private readonly LocalHostApiClient _hostApiClient;
+        private readonly ILauncherRuntime _runtime;
         private ServerRuntimeStatus? _runtimeStatus;
         private ProfileLiveOperationsSnapshot? _liveOperations;
         private ProfileCardViewModel? _profile;
@@ -294,18 +409,17 @@ public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
         public ConsoleTileViewModel(
             int slotNumber,
             MainWindowViewModel legacy,
-            LocalHostApiClient hostApiClient,
-            RuntimeEventStream runtimeEventStream)
+            ILauncherRuntime runtime)
         {
             SlotNumber = slotNumber;
             SlotLabel = $"Slot {slotNumber}";
             _legacy = legacy;
-            _hostApiClient = hostApiClient;
-            runtimeEventStream.LogLineReceived += OnLogLineReceivedAsync;
-            runtimeEventStream.StatusChanged += OnStatusChangedAsync;
-            runtimeEventStream.LiveOperationsChanged += OnLiveOperationsChangedAsync;
+            _runtime = runtime;
+            _runtime.LogLineReceived += OnLogLineReceivedAsync;
+            _runtime.StatusChanged += OnStatusChangedAsync;
+            _runtime.LiveOperationsChanged += OnLiveOperationsChangedAsync;
 
-            ReloadCommand = new AsyncRelayCommand(RefreshAsync);
+            ReloadCommand = new AsyncRelayCommand(() => RefreshAsync(includeLogs: true, updateStatusMessage: true));
             PrimaryRuntimeCommand = new AsyncRelayCommand(ExecutePrimaryRuntimeActionAsync);
             RestartRuntimeCommand = new AsyncRelayCommand(ExecuteRestartAsync);
             RequestPlayersCommand = new AsyncRelayCommand(() => SendQuickCommandAsync("players", "Requested the live player list."));
@@ -421,7 +535,33 @@ public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
                 return;
             }
 
-            _ = LoadAsync(profile);
+            _ = RefreshAsync(includeLogs: true, updateStatusMessage: true);
+            NotifyComputedState();
+        }
+
+        public void RestorePinnedProfile(string profileId, ProfileCardViewModel? profile)
+        {
+            if (string.IsNullOrWhiteSpace(profileId))
+            {
+                ClearPinnedProfile();
+                return;
+            }
+
+            _assignedProfileId = profileId;
+            _profile = profile;
+
+            if (profile is null)
+            {
+                LogLines.Clear();
+                _runtimeStatus = null;
+                _liveOperations = null;
+                LatestRuntimeState = "Unknown";
+                LoadStatus = "Pinned server will reconnect when the roster loads.";
+                NotifyComputedState();
+                return;
+            }
+
+            _ = RefreshAsync(includeLogs: true, updateStatusMessage: true);
             NotifyComputedState();
         }
 
@@ -432,11 +572,11 @@ public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
             Reset();
         }
 
-        public void Rebind(IReadOnlyDictionary<string, ProfileCardViewModel> profiles, bool clearMissingProfiles)
+        public bool Rebind(IReadOnlyDictionary<string, ProfileCardViewModel> profiles, bool clearMissingProfiles)
         {
             if (string.IsNullOrWhiteSpace(_assignedProfileId))
             {
-                return;
+                return false;
             }
 
             if (profiles.TryGetValue(_assignedProfileId, out var profile))
@@ -444,23 +584,40 @@ public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
                 if (!ReferenceEquals(_profile, profile))
                 {
                     _profile = profile;
-                    _ = LoadAsync(profile);
+                    _ = RefreshAsync(includeLogs: true, updateStatusMessage: true);
+                    NotifyComputedState();
+                    return true;
                 }
 
                 NotifyComputedState();
-                return;
+                return false;
             }
 
             if (clearMissingProfiles)
             {
                 ClearPinnedProfile();
+                return true;
             }
+
+            if (_profile is not null)
+            {
+                _profile = null;
+                LogLines.Clear();
+                _runtimeStatus = null;
+                _liveOperations = null;
+                LatestRuntimeState = "Unknown";
+                LoadStatus = "Pinned server will reconnect when the roster loads.";
+                NotifyComputedState();
+                return true;
+            }
+
+            return false;
         }
 
         public bool Matches(string profileId) =>
             string.Equals(_assignedProfileId, profileId, StringComparison.Ordinal);
 
-        public async Task RefreshAsync()
+        public async Task RefreshAsync(bool includeLogs = true, bool updateStatusMessage = true)
         {
             if (_profile is null)
             {
@@ -472,7 +629,15 @@ public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
                 return;
             }
 
-            await LoadAsync(_profile);
+            try
+            {
+                await LoadAsync(_profile, includeLogs, updateStatusMessage);
+            }
+            catch (Exception ex)
+            {
+                LoadStatus = ex.Message;
+                NotifyComputedState();
+            }
         }
 
         private async Task ExecutePrimaryRuntimeActionAsync()
@@ -493,7 +658,7 @@ public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
                 LoadStatus = $"Start requested for {_profile.DisplayName}.";
             }
 
-            await RefreshAsync();
+            await RefreshAsync(includeLogs: true, updateStatusMessage: true);
         }
 
         private async Task ExecuteRestartAsync()
@@ -505,7 +670,7 @@ public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
 
             await _legacy.RestartCommand.ExecuteAsync(_profile);
             LoadStatus = $"Restart requested for {_profile.DisplayName}.";
-            await RefreshAsync();
+            await RefreshAsync(includeLogs: true, updateStatusMessage: true);
         }
 
         private async Task SendRawCommandAsync()
@@ -528,7 +693,7 @@ public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
 
             try
             {
-                var response = await _hostApiClient.SendConsoleCommandAsync(_profile.ProfileId, command);
+                var response = await _runtime.SendConsoleCommandAsync(_profile.ProfileId, command);
                 ApplyLiveOperations(response);
                 LoadStatus = statusMessage;
                 NotifyComputedState();
@@ -540,29 +705,46 @@ public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
             }
         }
 
-        private async Task LoadAsync(ProfileCardViewModel profile)
+        private async Task LoadAsync(ProfileCardViewModel profile, bool includeLogs, bool updateStatusMessage)
         {
-            LoadStatus = $"Loading {profile.DisplayName}...";
-            var statusTask = _hostApiClient.GetStatusAsync(profile.ProfileId);
-            var logsTask = _hostApiClient.GetRecentLogsAsync(profile.ProfileId);
-            var operationsTask = _hostApiClient.GetLiveOperationsAsync(profile.ProfileId);
-            await Task.WhenAll(statusTask, logsTask, operationsTask);
+            if (updateStatusMessage)
+            {
+                LoadStatus = $"Loading {profile.DisplayName}...";
+            }
+
+            var statusTask = _runtime.GetStatusAsync(profile.ProfileId);
+            var operationsTask = _runtime.GetLiveOperationsAsync(profile.ProfileId);
+            Task<List<string>?>? logsTask = includeLogs
+                ? _runtime.GetRecentLogsAsync(profile.ProfileId)
+                : null;
+
+            if (logsTask is null)
+            {
+                await Task.WhenAll(statusTask, operationsTask);
+            }
+            else
+            {
+                await Task.WhenAll(statusTask, logsTask, operationsTask);
+            }
 
             _runtimeStatus = statusTask.Result
                 ?? new ServerRuntimeStatus(profile.ProfileId, ServerRuntimeState.Stopped, null, null, null, null, profile.LatestLogLine);
             LatestRuntimeState = _runtimeStatus.State.ToString();
 
-            LogLines.Clear();
-            foreach (var line in logsTask.Result ?? [])
+            if (logsTask is not null)
             {
-                LogLines.Add(line);
+                ApplyLogBuffer(logsTask.Result ?? []);
             }
 
             ApplyLiveOperations(operationsTask.Result);
 
-            LoadStatus = LogLines.Count == 0
-                ? $"No buffered lines yet for {profile.DisplayName}."
-                : $"Loaded {LogLines.Count} recent line(s) for {profile.DisplayName}.";
+            if (updateStatusMessage)
+            {
+                LoadStatus = LogLines.Count == 0
+                    ? $"No buffered lines yet for {profile.DisplayName}."
+                    : $"Loaded {LogLines.Count} recent line(s) for {profile.DisplayName}.";
+            }
+
             NotifyComputedState();
         }
 
@@ -630,6 +812,20 @@ public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
         private void ApplyLiveOperations(ProfileLiveOperationsSnapshot? snapshot)
         {
             _liveOperations = snapshot;
+        }
+
+        private void ApplyLogBuffer(IEnumerable<string> lines)
+        {
+            LogLines.Clear();
+            foreach (var line in lines)
+            {
+                LogLines.Add(line);
+            }
+
+            while (LogLines.Count > 250)
+            {
+                LogLines.RemoveAt(0);
+            }
         }
 
         private void Reset()

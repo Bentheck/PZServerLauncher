@@ -118,7 +118,7 @@ public static class ProjectZomboidHostOperatorSummaryBuilder
 
         if (settings.RemoteAccess.IsEnabled && !settings.OwnerBootstrap.IsConfigured)
         {
-            return "Remote exposure is staged before owner bootstrap is complete. Finish owner setup and 2FA before you rely on the web surface.";
+            return "Remote exposure is staged before owner bootstrap is complete. Finish owner setup before you rely on the web surface.";
         }
 
         if (!settings.StartHostWithWindows && startupCount > 0)
@@ -220,7 +220,7 @@ public static class ProjectZomboidHostOperatorSummaryBuilder
 
         if (settings.RemoteAccess.IsEnabled && !settings.OwnerBootstrap.IsConfigured)
         {
-            checklist.Add(new ProjectZomboidOperatorChecklistItem("Blocking", "Finish owner bootstrap and 2FA before relying on the staged remote listener.", true, false));
+            checklist.Add(new ProjectZomboidOperatorChecklistItem("Blocking", "Finish owner bootstrap before relying on the staged remote listener.", true, false));
         }
         else if (settings.RemoteAccess.IsEnabled)
         {

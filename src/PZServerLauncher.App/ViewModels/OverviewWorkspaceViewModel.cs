@@ -1,16 +1,15 @@
 using CommunityToolkit.Mvvm.Input;
-using PZServerLauncher.App.Services;
 using PZServerLauncher.Contracts.Profiles;
 using PZServerLauncher.Contracts.Runtime;
 using PZServerLauncher.Core.Runtime;
 using PZServerLauncher.Core.Settings;
+using PZServerLauncher.Runtime;
 
 namespace PZServerLauncher.App.ViewModels;
 
 public sealed class OverviewWorkspaceViewModel : ProfileWorkspacePageViewModelBase
 {
-    private readonly LocalHostApiClient _hostApiClient;
-    private readonly RuntimeEventStream _runtimeEventStream;
+    private readonly ILauncherRuntime _runtime;
     private int _loadVersion;
     private string _communitySummary = "Select a profile to load community posture.";
     private string _serverRulesSummary = "No server rules loaded.";
@@ -22,7 +21,7 @@ public sealed class OverviewWorkspaceViewModel : ProfileWorkspacePageViewModelBa
     private ProfileLiveOperationsSnapshot? _liveOperations;
     private ProjectZomboidNetworkAndAdminPostureSummary _networkAdminPosture = ProjectZomboidNetworkAndAdminPostureSummaryBuilder.Empty();
 
-    public OverviewWorkspaceViewModel(MainWindowViewModel legacy, LocalHostApiClient hostApiClient, RuntimeEventStream runtimeEventStream)
+    public OverviewWorkspaceViewModel(MainWindowViewModel legacy, ILauncherRuntime runtime)
         : base(
             "overview",
             "Overview",
@@ -31,8 +30,7 @@ public sealed class OverviewWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             legacy,
             ["Runtime state", "Latest log", "Backup summary", "Quick actions"])
     {
-        _hostApiClient = hostApiClient;
-        _runtimeEventStream = runtimeEventStream;
+        _runtime = runtime;
         InstallCommand = new AsyncRelayCommand(() => ExecuteProfileCommandAsync(Legacy.InstallCommand));
         UpdateCommand = new AsyncRelayCommand(() => ExecuteProfileCommandAsync(Legacy.UpdateCommand));
         StartCommand = new AsyncRelayCommand(() => ExecuteProfileCommandAsync(Legacy.StartCommand));
@@ -40,7 +38,14 @@ public sealed class OverviewWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         RestartCommand = new AsyncRelayCommand(() => ExecuteProfileCommandAsync(Legacy.RestartCommand));
         BackupCommand = new AsyncRelayCommand(() => ExecuteProfileCommandAsync(Legacy.BackupCommand));
         RestoreCommand = new AsyncRelayCommand(() => ExecuteProfileCommandAsync(Legacy.RestoreCommand));
-        _runtimeEventStream.LiveOperationsChanged += OnLiveOperationsChangedAsync;
+        _runtime.LiveOperationsChanged += OnLiveOperationsChangedAsync;
+        Legacy.RecentOperationJobs.CollectionChanged += (_, _) =>
+        {
+            OnPropertyChanged(nameof(HasActiveLifecycleJob));
+            OnPropertyChanged(nameof(CanQueueInstall));
+            OnPropertyChanged(nameof(CanQueueUpdate));
+            OnPropertyChanged(nameof(MaintenanceQueueSummary));
+        };
     }
 
     public IAsyncRelayCommand InstallCommand { get; }
@@ -78,6 +83,20 @@ public sealed class OverviewWorkspaceViewModel : ProfileWorkspacePageViewModelBa
     public string LatestBackup => SelectedProfile?.LastBackup ?? "No backups yet.";
 
     public bool CanRestore => SelectedProfile?.HasBackup == true;
+
+    public bool HasActiveLifecycleJob => SelectedProfile is not null &&
+        Legacy.RecentOperationJobs.Any(job =>
+            string.Equals(job.ProfileId, SelectedProfile.ProfileId, StringComparison.OrdinalIgnoreCase) &&
+            job.Kind is OperationJobKind.Install or OperationJobKind.Update &&
+            job.Status is OperationJobStatus.Queued or OperationJobStatus.Running);
+
+    public bool CanQueueInstall => SelectedProfile is not null && !HasActiveLifecycleJob;
+
+    public bool CanQueueUpdate => SelectedProfile is not null && !HasActiveLifecycleJob;
+
+    public string MaintenanceQueueSummary => !HasActiveLifecycleJob
+        ? "Install and update are single-file maintenance actions. Let the current job finish before sending another one."
+        : "Install or update is already running for this server. SteamCMD can take a few minutes on first bootstrap, so wait for the active job to finish.";
 
     public string InstallHealth => SelectedProfile is null
         ? "Install path unavailable."
@@ -230,11 +249,11 @@ public sealed class OverviewWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
         try
         {
-            var generalTask = _hostApiClient.GetSettingsPageAsync(profile.ProfileId, ProfileWorkspacePageIds.General);
-            var networkTask = _hostApiClient.GetSettingsPageAsync(profile.ProfileId, ProfileWorkspacePageIds.NetworkAndAdmin);
-            var sandboxTask = _hostApiClient.GetSettingsPageAsync(profile.ProfileId, ProfileWorkspacePageIds.Sandbox);
-            var namedPresetsTask = _hostApiClient.GetNamedWorkshopPresetsAsync(profile.ProfileId);
-            var liveOperationsTask = _hostApiClient.GetLiveOperationsAsync(profile.ProfileId);
+            var generalTask = _runtime.GetSettingsPageAsync(profile.ProfileId, ProfileWorkspacePageIds.General);
+            var networkTask = _runtime.GetSettingsPageAsync(profile.ProfileId, ProfileWorkspacePageIds.NetworkAndAdmin);
+            var sandboxTask = _runtime.GetSettingsPageAsync(profile.ProfileId, ProfileWorkspacePageIds.Sandbox);
+            var namedPresetsTask = _runtime.GetNamedWorkshopPresetsAsync(profile.ProfileId);
+            var liveOperationsTask = _runtime.GetLiveOperationsAsync(profile.ProfileId);
             await Task.WhenAll(generalTask, networkTask, sandboxTask, namedPresetsTask, liveOperationsTask);
 
             if (loadVersion != _loadVersion || SelectedProfile?.ProfileId != profile.ProfileId)
@@ -348,6 +367,10 @@ public sealed class OverviewWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         OnPropertyChanged(nameof(LatestLogLine));
         OnPropertyChanged(nameof(LatestBackup));
         OnPropertyChanged(nameof(CanRestore));
+        OnPropertyChanged(nameof(HasActiveLifecycleJob));
+        OnPropertyChanged(nameof(CanQueueInstall));
+        OnPropertyChanged(nameof(CanQueueUpdate));
+        OnPropertyChanged(nameof(MaintenanceQueueSummary));
         OnPropertyChanged(nameof(InstallHealth));
         OnPropertyChanged(nameof(CacheHealth));
         OnPropertyChanged(nameof(BackupHealth));

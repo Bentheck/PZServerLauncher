@@ -105,6 +105,15 @@ public sealed class RuntimeStateStore(
         return GetLiveOperations(profileId);
     }
 
+    public void ClearProfile(string profileId)
+    {
+        _statuses.TryRemove(profileId, out _);
+        _logs.TryRemove(profileId, out _);
+        _connectedPlayers.TryRemove(profileId, out _);
+        _playerSignals.TryRemove(profileId, out _);
+        _operatorActions.TryRemove(profileId, out _);
+    }
+
     private void ApplyPlayerSignal(string profileId, PlayerActivitySignal signal)
     {
         var roster = _connectedPlayers.GetOrAdd(profileId, _ => new ConcurrentDictionary<string, ConnectedPlayerSession>(StringComparer.OrdinalIgnoreCase));

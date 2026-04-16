@@ -21,7 +21,7 @@ public sealed class ProjectZomboidRemoteAccessRolloutSummaryBuilderTests
 
         var summary = ProjectZomboidRemoteAccessRolloutSummaryBuilder.Build(
             settings,
-            ownerAccountsWithTwoFactor: 1,
+            ownerBootstrapConfigured: true,
             ["Certificate validation passed.", "Manual router forwarding is still required."]);
 
         Assert.Equal("Remote HTTPS is staged for exposure.", summary.ModeHeadline);
@@ -32,14 +32,14 @@ public sealed class ProjectZomboidRemoteAccessRolloutSummaryBuilderTests
     }
 
     [Fact]
-    public void Build_BlocksWhenOwnerTwoFactorIsMissing()
+    public void Build_BlocksWhenOwnerBootstrapIsMissing()
     {
         var summary = ProjectZomboidRemoteAccessRolloutSummaryBuilder.Build(
             new RemoteAccessSettings(),
-            ownerAccountsWithTwoFactor: 0,
+            ownerBootstrapConfigured: false,
             Array.Empty<string>());
 
-        Assert.Contains("2FA", summary.ReadinessHeadline, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains(summary.Checklist, item => item.IsBlocking && item.Message.Contains("TOTP", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains("bootstrap", summary.ReadinessHeadline, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains(summary.Checklist, item => item.IsBlocking && item.Message.Contains("owner bootstrap", StringComparison.OrdinalIgnoreCase));
     }
 }

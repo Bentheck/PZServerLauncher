@@ -45,56 +45,97 @@ else
                     <div class="hero-copy">
                         <p class="eyebrow">Recovery Center</p>
                         <h1>@_profile.DisplayName</h1>
-                        <p class="muted-text">Manual recovery points, pre-update safety nets, and scheduled snapshots converge here so you can recover confidently before risky admin work. The page now favors restore-risk triage first and archive browsing second.</p>
+                        <p class="muted-text">Create manual snapshots, tune retention, and restore the right archive without digging through repeated recovery status.</p>
                     </div>
                     <div class="hero-pills">
                         <span class="pill">@_profile.Branch</span>
                         <span class="pill">@RecoveryPostureLabel</span>
                         <span class="pill">@BackupCountSummary</span>
-                        <span class="pill">@(_backupSummary?.ArchiveMixSummary ?? "Archive mix unavailable")</span>
                         <span class="pill pill--strong">@(_backupSummary?.LatestArchiveSummary ?? "Latest archive unavailable")</span>
                     </div>
                 </div>
             </section>
 
-            <div class="cards cards--four">
+            <div class="cards cards--wide">
                 <section class="card">
-                    <h2>Coverage</h2>
-                    <p class="muted-text">@(_recoverySummary?.CoverageHeadline ?? "Recovery coverage is unavailable.")</p>
-                </section>
-                <section class="card">
-                    <h2>Latest Known-Good</h2>
-                    <p class="muted-text">@(_recoverySummary?.LatestKnownGoodHeadline ?? "Latest known-good is unavailable.")</p>
-                </section>
-                <section class="card">
-                    <h2>Restore Risk</h2>
-                    <p class="muted-text">@(_recoverySummary?.RestoreRiskHeadline ?? "Restore risk is unavailable.")</p>
-                </section>
-                <section class="card">
-                    <h2>Retention</h2>
-                    <p class="muted-text">@(_recoverySummary?.RetentionHeadline ?? "Retention posture is unavailable.")</p>
-                </section>
-            </div>
-
-            <div class="cards cards--four">
-                <section class="card">
-                    <p class="muted-text">@(_backupSummary?.CoverageSummary ?? "Recovery coverage is unavailable.")</p>
-                </section>
-                <section class="card">
+                    <h2>Recovery Policy</h2>
                     <p class="muted-text">@(_backupSummary?.RetentionSummary ?? "Retention posture is unavailable.")</p>
+                    <div class="field-grid">
+                        <div class="field-card">
+                            <span class="field-label">Manual Backups</span>
+                            <span>@(_profile.BackupPolicy.KeepManualBackupsForever ? "Kept forever" : "Subject to retention policy")</span>
+                        </div>
+                        <div class="field-card">
+                            <span class="field-label">Pre-Update</span>
+                            <span>@(_profile.BackupPolicy.PreUpdateBackupEnabled ? $"Enabled, keep last {_profile.BackupPolicy.PreUpdateBackupRetentionCount}" : "Disabled")</span>
+                        </div>
+                        <div class="field-card">
+                            <span class="field-label">Scheduled</span>
+                            <span>@(_profile.BackupPolicy.ScheduledBackupsEnabled ? $"{ScheduledBackupPlanner.DescribeCadence(_profile.BackupPolicy)}, keep last {_profile.BackupPolicy.ScheduledBackupRetentionCount}" : "Disabled")</span>
+                        </div>
+                        <div class="field-card">
+                            <span class="field-label">Latest Backup</span>
+                            <span>@(_backupSummary?.LatestArchiveSummary ?? "Latest archive unavailable")</span>
+                        </div>
+                    </div>
+
+                        <div class="profile-section">
+                            <div class="admin-grid">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" @bind="_scheduledBackupsEnabled" disabled="@_busy" />
+                                    Enable scheduled backups
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" @bind="_preUpdateBackupEnabled" disabled="@_busy" />
+                                    Create pre-update safety archives
+                                </label>
+                                <div>
+                                    <span>Scheduled start time</span>
+                                    <input placeholder="03:00" @bind="_scheduledStartLocalTime" disabled="@_busy" />
+                                </div>
+                                <div>
+                                    <span>Repeat every (hours)</span>
+                                    <input type="number" min="1" max="168" @bind="_scheduledIntervalHours" disabled="@_busy" />
+                                </div>
+                                <div>
+                                    <span>Scheduled retention count</span>
+                                    <input type="number" min="1" @bind="_scheduledRetentionCount" disabled="@_busy" />
+                                </div>
+                                <div>
+                                    <span>Pre-update retention count</span>
+                                    <input type="number" min="1" @bind="_preUpdateRetentionCount" disabled="@_busy" />
+                                </div>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" @bind="_keepManualBackupsForever" disabled="@_busy" />
+                                    Keep manual backups forever
+                                </label>
+                            </div>
+                        <div class="workspace-actions">
+                            <button class="nav-button" @onclick="SavePolicyAsync" disabled="@_busy">Save Policy</button>
+                            <button class="nav-button secondary-button" @onclick="ReloadAsync" disabled="@_busy">Reload</button>
+                        </div>
+                        <p class="muted-text">@PolicyEditorSummary</p>
+                        <p class="muted-text">@ScheduledCadenceSummary</p>
+                    </div>
                 </section>
+
                 <section class="card">
-                    <p class="muted-text">@(_recoverySummary?.SelectionSummary ?? "Selected archive summary is unavailable.")</p>
-                </section>
-                <section class="card">
-                    <p class="muted-text">@(_backupSummary?.ContinuitySummary ?? "Recovery continuity is unavailable.")</p>
+                    <h2>Restore Guidance</h2>
+                    <p class="muted-text">@(_recoverySummary?.RestoreRiskHeadline ?? "Restore risk is unavailable.")</p>
+                    <label class="checkbox-label">
+                        <input type="checkbox" @bind="_restartAfterRestore" @bind:after="RefreshBackupSummary" disabled="@_busy" />
+                        Restart server after restore
+                    </label>
+                    <p class="muted-text">@BuildRestoreModeSummary()</p>
+                    <p class="muted-text">@BuildRestoreSafetyCopy()</p>
+                    <p class="muted-text">@(_recoverySummary?.OperatorSummary ?? "Recovery guidance is unavailable.")</p>
                 </section>
             </div>
 
-            <div class="cards">
+            <div class="cards cards--wide">
                 <section class="card">
                     <h2>Backup History</h2>
-                    <p class="muted-text">Select an archive to restore, or create a new manual backup from this page. Restore will stop the server if needed and can restart it afterward. Latest known-good is highlighted so you can choose the safest recovery point quickly.</p>
+                    <p class="muted-text">Pick the archive you want to inspect or restore. The latest known-good archive stays highlighted so you can find the safest rollback point quickly.</p>
 
                     <div class="profile-section">
                         <div class="admin-grid">
@@ -148,108 +189,18 @@ else
                 </section>
 
                 <section class="card">
-                    <h2>Policy Summary</h2>
-                    <div class="field-grid">
-                        <div class="field-card">
-                            <span class="field-label">Manual Backups</span>
-                            <span>@(_profile.BackupPolicy.KeepManualBackupsForever ? "Kept forever" : "Subject to retention policy")</span>
-                        </div>
-                        <div class="field-card">
-                            <span class="field-label">Pre-Update</span>
-                            <span>@(_profile.BackupPolicy.PreUpdateBackupEnabled ? $"Enabled, keep last {_profile.BackupPolicy.PreUpdateBackupRetentionCount}" : "Disabled")</span>
-                        </div>
-                        <div class="field-card">
-                            <span class="field-label">Scheduled</span>
-                            <span>@(_profile.BackupPolicy.ScheduledBackupsEnabled ? $"Enabled, keep last {_profile.BackupPolicy.ScheduledBackupRetentionCount}" : "Disabled")</span>
-                        </div>
-                        <div class="field-card">
-                            <span class="field-label">Latest Backup</span>
-                            <span>@(_backupSummary?.LatestArchiveSummary ?? "Latest archive unavailable")</span>
-                        </div>
-                    </div>
-
-                    <div class="profile-section">
-                        <h3>Retention Notes</h3>
-                        <p class="muted-text">Manual archives are never auto-deleted. Pre-update archives are created before host updates, and scheduled archives only rotate when scheduled backups are enabled in the profile policy. If the latest known-good is older than you expect, make a manual archive before continuing with risky work.</p>
-                    </div>
-
-                    <div class="profile-section">
-                        <h3>Manage Policy</h3>
-                        <div class="admin-grid">
-                            <label class="checkbox-label">
-                                <input type="checkbox" @bind="_scheduledBackupsEnabled" disabled="@_busy" />
-                                Enable scheduled backups
-                            </label>
-                            <label class="checkbox-label">
-                                <input type="checkbox" @bind="_preUpdateBackupEnabled" disabled="@_busy" />
-                                Create pre-update safety archives
-                            </label>
-                            <div>
-                                <span>Scheduled retention count</span>
-                                <input @bind="_scheduledRetentionCount" disabled="@_busy" />
-                            </div>
-                            <div>
-                                <span>Pre-update retention count</span>
-                                <input @bind="_preUpdateRetentionCount" disabled="@_busy" />
-                            </div>
-                            <label class="checkbox-label">
-                                <input type="checkbox" @bind="_keepManualBackupsForever" disabled="@_busy" />
-                                Keep manual backups forever
-                            </label>
-                        </div>
-                        <div class="action-row">
-                            <button class="nav-button" @onclick="SavePolicyAsync" disabled="@_busy">Save Policy</button>
-                        </div>
-                        <p class="muted-text">@PolicyEditorSummary</p>
-                    </div>
-                </section>
-
-                <section class="card">
-                    <h2>Runtime Summary</h2>
-                    <div class="field-grid">
-                        <div class="field-card">
-                            <span class="field-label">Runtime State</span>
-                            <span>@(_runtimeStatus?.State.ToString() ?? "Unknown")</span>
-                        </div>
-                        <div class="field-card">
-                            <span class="field-label">Install</span>
-                            <span>@(_installDetected ? "Detected" : "Missing")</span>
-                        </div>
-                        <div class="field-card">
-                            <span class="field-label">Cache</span>
-                            <span>@(_cacheDetected ? "Detected" : "Missing")</span>
-                        </div>
-                        <div class="field-card">
-                            <span class="field-label">Backup Count</span>
-                            <span>@_backups.Count</span>
-                        </div>
-                    </div>
-
-                    <div class="profile-section">
-                        <h3>Restore Options</h3>
-                        <label class="checkbox-label">
-                            <input type="checkbox" @bind="_restartAfterRestore" @bind:after="RefreshBackupSummary" disabled="@_busy" />
-                            Restart server after restore
-                        </label>
-                        <p class="muted-text">@(_recoverySummary?.OperatorSummary ?? "Recovery guidance is unavailable.")</p>
-                        <p class="muted-text">@BuildRestoreModeSummary()</p>
-                        <p class="muted-text">@BuildRestoreSafetyCopy()</p>
-                        <p class="muted-text">@RestoreRiskSummary</p>
-                    </div>
+                    <h2>Recovery Briefing</h2>
+                    <p class="muted-text">@(_recoverySummary?.SelectionSummary ?? "No recovery selection summary is available.")</p>
+                    <p class="muted-text">@(_backupSummary?.ContinuitySummary ?? "Recovery continuity is unavailable.")</p>
+                    <p class="muted-text">@LatestKnownGoodCallout</p>
+                    <ul class="check-list">
+                        @foreach (var item in _recoverySummary?.Checklist ?? Array.Empty<string>())
+                        {
+                            <li>@item</li>
+                        }
+                    </ul>
                 </section>
             </div>
-
-            <section class="card">
-                <h2>Recovery Briefing</h2>
-                <p class="muted-text">@(_recoverySummary?.OperatorSummary ?? "Recovery guidance is unavailable.")</p>
-                <p class="muted-text">@(_recoverySummary?.SelectionSummary ?? "No recovery selection summary is available.")</p>
-                <ul>
-                    @foreach (var item in _recoverySummary?.Checklist ?? Array.Empty<string>())
-                    {
-                        <li>@item</li>
-                    }
-                </ul>
-            </section>
 
             <p class="muted-text">@_statusMessage</p>
         </ChildContent>
@@ -273,6 +224,8 @@ else
     private bool _restartAfterRestore = true;
     private bool _scheduledBackupsEnabled;
     private string _scheduledRetentionCount = "10";
+    private string _scheduledIntervalHours = BackupPolicy.DefaultScheduledBackupIntervalHours.ToString(CultureInfo.InvariantCulture);
+    private string _scheduledStartLocalTime = BackupPolicy.DefaultScheduledBackupStartLocalTime;
     private bool _preUpdateBackupEnabled = true;
     private string _preUpdateRetentionCount = "5";
     private bool _keepManualBackupsForever = true;
@@ -293,32 +246,18 @@ else
         : _restartAfterRestore
             ? "Restore-ready"
             : "Restore-safe";
-    private string CoverageCallout => _backups.Count == 0
-        ? "This profile still has no archives. Create a manual backup before update or cleanup work."
-        : _backupSummary?.CoverageSummary ?? "Recovery coverage is unavailable.";
     private string LatestKnownGoodCallout => _latestBackup is null
         ? "No latest known-good archive exists yet."
         : string.Equals(_selectedBackup, _latestBackup, StringComparison.Ordinal)
             ? $"The selected archive is the latest known-good restore point: {_selectedBackupEntry?.Title ?? _latestBackup}."
             : $"Latest known-good archive: {_backupEntries.FirstOrDefault(entry => string.Equals(entry.FileName, _latestBackup, StringComparison.Ordinal))?.Title ?? _latestBackup}.";
-    private string RestoreRiskSummary => _backups.Count == 0
-        ? "Restore risk is high because there is no archive to fall back to."
-        : !_installDetected || !_cacheDetected
-            ? "Restore risk is elevated because the install or cache footprint is incomplete."
-            : _runtimeStatus?.State.ToString() is "Running"
-                ? "Restore will stop a running server first, then unpack the archive and optionally restart it."
-                : "Restore risk is moderate. The server is offline, so the archive can be unpacked and inspected without immediate runtime pressure.";
-    private string OperatorGuidanceSummary => _backups.Count == 0
-        ? "Create the first manual snapshot now, then revisit this page before any update or cleanup work."
-        : _restartAfterRestore
-            ? "Use Restore Selected for a precise rollback, or Restore Latest when you want the safest recent snapshot with an automatic restart."
-            : "Use Restore Selected to inspect a rollback point offline, or create a manual snapshot before making larger changes.";
     private string SelectedBackupTriage => _selectedBackupEntry is null
         ? "No archive triage is available."
         : $"{_selectedBackupEntry.KindLabel} archive | {(_selectedBackupEntry.IsLatest ? "latest known-good" : "not latest")} | {_selectedBackupEntry.TimestampLabel}";
     private string PolicyEditorSummary => _profile is null
         ? "Select a profile to manage retention policy."
         : $"Scheduled backups {(_scheduledBackupsEnabled ? "enabled" : "disabled")} | pre-update safety {(_preUpdateBackupEnabled ? "enabled" : "disabled")} | manual backups {(_keepManualBackupsForever ? "kept forever" : "subject to retention")}.";
+    private string ScheduledCadenceSummary => BuildScheduledCadenceSummary();
 
     protected override async Task OnParametersSetAsync()
     {
@@ -388,6 +327,12 @@ else
             return;
         }
 
+        if (!TryParseScheduledCadence(out var normalizedStartTime, out var intervalHours, out var cadenceValidationMessage))
+        {
+            _statusMessage = cadenceValidationMessage;
+            return;
+        }
+
         if (!int.TryParse(_preUpdateRetentionCount, NumberStyles.Integer, CultureInfo.InvariantCulture, out var preUpdateRetention) ||
             preUpdateRetention < 1)
         {
@@ -404,6 +349,8 @@ else
                 {
                     ScheduledBackupsEnabled = _scheduledBackupsEnabled,
                     ScheduledBackupRetentionCount = scheduledRetention,
+                    ScheduledBackupIntervalHours = intervalHours,
+                    ScheduledBackupStartLocalTime = normalizedStartTime,
                     PreUpdateBackupEnabled = _preUpdateBackupEnabled,
                     PreUpdateBackupRetentionCount = preUpdateRetention,
                     KeepManualBackupsForever = _keepManualBackupsForever,
@@ -526,6 +473,8 @@ else
     {
         _scheduledBackupsEnabled = policy.ScheduledBackupsEnabled;
         _scheduledRetentionCount = policy.ScheduledBackupRetentionCount.ToString(CultureInfo.InvariantCulture);
+        _scheduledIntervalHours = policy.ScheduledBackupIntervalHours.ToString(CultureInfo.InvariantCulture);
+        _scheduledStartLocalTime = policy.ScheduledBackupStartLocalTime;
         _preUpdateBackupEnabled = policy.PreUpdateBackupEnabled;
         _preUpdateRetentionCount = policy.PreUpdateBackupRetentionCount.ToString(CultureInfo.InvariantCulture);
         _keepManualBackupsForever = policy.KeepManualBackupsForever;
@@ -543,6 +492,60 @@ else
         _restartAfterRestore
             ? "Restore mode: stop the server, unpack the archive, and request a restart."
             : "Restore mode: stop the server, unpack the archive, and leave it offline for inspection.";
+
+    private bool TryParseScheduledCadence(out string normalizedStartTime, out int intervalHours, out string validationMessage)
+    {
+        normalizedStartTime = BackupPolicy.DefaultScheduledBackupStartLocalTime;
+        intervalHours = BackupPolicy.DefaultScheduledBackupIntervalHours;
+        validationMessage = string.Empty;
+
+        if (!ScheduledBackupPlanner.TryParseStartLocalTime(_scheduledStartLocalTime, out var startTime))
+        {
+            validationMessage = "Scheduled backup start time must use 24-hour time like 03:00.";
+            return false;
+        }
+
+        if (!int.TryParse(_scheduledIntervalHours, NumberStyles.Integer, CultureInfo.InvariantCulture, out intervalHours) ||
+            !ScheduledBackupPlanner.IsValidIntervalHours(intervalHours))
+        {
+            validationMessage = "Scheduled backup interval must be a whole number between 1 and 168 hours.";
+            return false;
+        }
+
+        normalizedStartTime = startTime.ToString("HH:mm", CultureInfo.InvariantCulture);
+        return true;
+    }
+
+    private string BuildScheduledCadenceSummary()
+    {
+        if (_profile is null)
+        {
+            return "Select a profile to set scheduled backup timing.";
+        }
+
+        if (!_scheduledBackupsEnabled)
+        {
+            return "Scheduled backups are off. Turn them on to capture recurring restore points automatically.";
+        }
+
+        if (!TryParseScheduledCadence(out var normalizedStartTime, out var intervalHours, out _))
+        {
+            return "Set a 24-hour start time like 03:00 and an interval between 1 and 168 hours.";
+        }
+
+        var previewPolicy = _profile.BackupPolicy with
+        {
+            ScheduledBackupsEnabled = true,
+            ScheduledBackupIntervalHours = intervalHours,
+            ScheduledBackupStartLocalTime = normalizedStartTime,
+        };
+
+        var cadence = ScheduledBackupPlanner.DescribeCadence(previewPolicy);
+        var nextRunUtc = ScheduledBackupPlanner.GetNextScheduledRunUtc(previewPolicy, DateTimeOffset.UtcNow);
+        return nextRunUtc is null
+            ? $"{char.ToUpperInvariant(cadence[0])}{cadence[1..]}."
+            : $"{char.ToUpperInvariant(cadence[0])}{cadence[1..]}. Next scheduled archive: {nextRunUtc.Value.ToLocalTime():MMM d, yyyy 'at' h:mm tt}.";
+    }
 
     private string OverviewHref => $"/profiles/{Uri.EscapeDataString(ProfileId)}/overview";
 

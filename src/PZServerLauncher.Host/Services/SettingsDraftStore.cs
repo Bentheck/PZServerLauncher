@@ -90,7 +90,7 @@ public sealed class SettingsDraftStore(ApplicationDbContext dbContext)
     private static SettingsDraftDto ToDto(SettingsDraftEntity entity) =>
         new(
             entity.ProfileId,
-            (ProjectZomboidBranch)entity.Branch,
+            ProjectZomboidBranchSupport.FromPersistedValue(entity.Branch),
             entity.CatalogId,
             entity.CatalogVersion,
             entity.PageId,

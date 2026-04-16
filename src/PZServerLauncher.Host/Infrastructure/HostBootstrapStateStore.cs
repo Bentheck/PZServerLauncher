@@ -22,7 +22,7 @@ public sealed class HostBootstrapStateStore
     public HostBootstrapStateStore(AppPaths appPaths)
     {
         _appPaths = appPaths;
-        var dataProtectionProvider = DataProtectionProvider.Create(_appPaths.StateDirectory);
+        var dataProtectionProvider = DataProtectionProvider.Create(new DirectoryInfo(_appPaths.StateDirectory));
         _protector = dataProtectionProvider.CreateProtector("PZServerLauncher.HostBootstrapState");
     }
 

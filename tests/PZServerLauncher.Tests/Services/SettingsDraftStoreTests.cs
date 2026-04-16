@@ -24,14 +24,14 @@ public sealed class SettingsDraftStoreTests : IDisposable
         var store = new SettingsDraftStore(dbContext);
         var draft = new SettingsDraftDto(
             "profile-a",
-            ProjectZomboidBranch.Stable41,
-            "pz.settings.b41",
-            1,
+            ProjectZomboidBranch.Unstable42,
+            "pz.settings.b42",
+            2,
             "general",
             new Dictionary<string, string?>
             {
-                ["b41.server.name"] = "servertest",
-                ["b41.server.port"] = "16261",
+                ["b42.server.name"] = "servertest",
+                ["b42.server.port"] = "16261",
             },
             "ABC123",
             true,
@@ -39,16 +39,16 @@ public sealed class SettingsDraftStoreTests : IDisposable
 
         await store.UpsertAsync(draft);
 
-        var loaded = await store.GetAsync("profile-a", ProjectZomboidBranch.Stable41, "pz.settings.b41", 1, "general");
+        var loaded = await store.GetAsync("profile-a", ProjectZomboidBranch.Unstable42, "pz.settings.b42", 2, "general");
 
         Assert.NotNull(loaded);
-        Assert.Equal("servertest", loaded!.Values["b41.server.name"]);
+        Assert.Equal("servertest", loaded!.Values["b42.server.name"]);
         Assert.True(loaded.IsDirty);
 
-        var deleted = await store.DeleteAsync("profile-a", ProjectZomboidBranch.Stable41, "pz.settings.b41", 1, "general");
+        var deleted = await store.DeleteAsync("profile-a", ProjectZomboidBranch.Unstable42, "pz.settings.b42", 2, "general");
 
         Assert.True(deleted);
-        Assert.Null(await store.GetAsync("profile-a", ProjectZomboidBranch.Stable41, "pz.settings.b41", 1, "general"));
+        Assert.Null(await store.GetAsync("profile-a", ProjectZomboidBranch.Unstable42, "pz.settings.b42", 2, "general"));
     }
 
     public void Dispose()

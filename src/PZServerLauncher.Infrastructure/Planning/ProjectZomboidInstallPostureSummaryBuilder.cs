@@ -19,10 +19,14 @@ public static class ProjectZomboidInstallPostureSummaryBuilder
             ? launcherProbe.LauncherPath
             : Path.Combine(profile.InstallDirectory, expectedLauncherFileName);
 
-        var installDetected = Directory.Exists(profile.InstallDirectory) || Directory.Exists(Path.Combine(profile.InstallDirectory, "server"));
-        var cacheDetected = Directory.Exists(profile.CacheDirectory);
+        var installRootExists = Directory.Exists(profile.InstallDirectory);
+        var installRootHasContent = installRootExists && Directory.EnumerateFileSystemEntries(profile.InstallDirectory).Any();
         var launcherDetected = launcherProbe.Found;
         var configDirectoryDetected = Directory.Exists(paths.ServerConfigDirectory);
+        var cacheRootExists = Directory.Exists(profile.CacheDirectory);
+        var cacheRootHasContent = cacheRootExists && Directory.EnumerateFileSystemEntries(profile.CacheDirectory).Any();
+        var installDetected = launcherDetected || installRootHasContent;
+        var cacheDetected = configDirectoryDetected || cacheRootHasContent;
         var iniDetected = File.Exists(paths.IniFilePath);
         var sandboxDetected = File.Exists(paths.SandboxVarsFilePath);
         var worldDetected = Directory.Exists(paths.WorldDirectory);
@@ -36,19 +40,9 @@ public static class ProjectZomboidInstallPostureSummaryBuilder
             ? launchPlan.Notes
             : planner.FormatLaunchCommand(launchPlan);
 
-        var branchChannelSummary = profile.Branch switch
-        {
-            ProjectZomboidBranch.Stable41 => $"Build 41 Stable | Steam app {ProjectZomboidDefaults.DedicatedServerAppId} standard channel",
-            ProjectZomboidBranch.Unstable42 => $"Build 42 Unstable | Steam app {ProjectZomboidDefaults.DedicatedServerAppId} beta unstable",
-            _ => $"Branch {profile.Branch} | Steam app {ProjectZomboidDefaults.DedicatedServerAppId}",
-        };
+        var branchChannelSummary = $"Build 42 Unstable | Steam app {ProjectZomboidDefaults.DedicatedServerAppId} beta unstable";
 
-        var steamCmdCommandSummary = profile.Branch switch
-        {
-            ProjectZomboidBranch.Stable41 => $"SteamCMD: app_update {ProjectZomboidDefaults.DedicatedServerAppId} validate",
-            ProjectZomboidBranch.Unstable42 => $"SteamCMD: app_update {ProjectZomboidDefaults.DedicatedServerAppId} -beta unstable validate",
-            _ => $"SteamCMD app {ProjectZomboidDefaults.DedicatedServerAppId}",
-        };
+        var steamCmdCommandSummary = $"SteamCMD: app_update {ProjectZomboidDefaults.DedicatedServerAppId} -beta unstable validate";
 
         var installFootprintSummary = !installDetected
             ? "Install root is missing. Queue Install to lay down the dedicated-server footprint."
@@ -102,12 +96,7 @@ public static class ProjectZomboidInstallPostureSummaryBuilder
                 ? $"Maintenance window ready: the server is idle and the latest backup is {latestBackup}."
                 : "Maintenance window ready: the server is idle, but capture a manual backup if you want a human-reviewed recovery point before update.";
 
-        var branchIsolationSummary = profile.Branch switch
-        {
-            ProjectZomboidBranch.Stable41 => "Stable 41 should keep its own install root and cache root so it does not trample unstable 42 config, saves, or Java launch assumptions.",
-            ProjectZomboidBranch.Unstable42 => "Unstable 42 should stay isolated from stable 41 so beta binaries, cache content, and structured settings do not bleed across branches.",
-            _ => "Each Project Zomboid branch should keep isolated install and cache roots to avoid mixed binaries and config drift.",
-        };
+        var branchIsolationSummary = "Keep each Build 42 server on its own install root and cache root so binaries, saves, and structured settings never bleed across profiles.";
 
         var operatorSequenceSummary = !installDetected
             ? "Recommended sequence: 1. Install this branch. 2. Start once to initialize cache/config. 3. Review General and Sandbox. 4. Capture a manual backup. 5. Start the live server."

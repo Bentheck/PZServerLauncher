@@ -1,6 +1,8 @@
 using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text.Json;
+using System.Text.RegularExpressions;
+using System.Globalization;
 using PZServerLauncher.Core.Profiles;
 using PZServerLauncher.Core.Runtime;
 using PZServerLauncher.Host.Infrastructure;
@@ -14,6 +16,10 @@ public sealed class ServerBackupService(
     ProjectZomboidServerPlanner planner,
     AuditStore auditStore)
 {
+    private static readonly Regex BackupFilePattern = new(
+        "-(manual|preupdate|scheduled)-(\\d{8}-\\d{6})\\.zip$",
+        RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
+
     private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web)
     {
         WriteIndented = true,
@@ -116,6 +122,11 @@ public sealed class ServerBackupService(
             .OrderByDescending(x => x)
             .ToList();
     }
+
+    public DateTimeOffset? GetLatestScheduledBackupTimestampUtc(string profileId) =>
+        ListBackups(profileId)
+            .Select(TryParseScheduledBackupTimestampUtc)
+            .FirstOrDefault(timestamp => timestamp is not null);
 
     private static void AddDirectoryIfExists(
         ZipArchive archive,
@@ -254,6 +265,25 @@ public sealed class ServerBackupService(
     {
         using var stream = File.OpenRead(filePath);
         return ComputeStreamSha256(stream);
+    }
+
+    private static DateTimeOffset? TryParseScheduledBackupTimestampUtc(string backupFileName)
+    {
+        var match = BackupFilePattern.Match(backupFileName);
+        if (!match.Success ||
+            !string.Equals(match.Groups[1].Value, "scheduled", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        return DateTimeOffset.TryParseExact(
+            match.Groups[2].Value,
+            "yyyyMMdd-HHmmss",
+            CultureInfo.InvariantCulture,
+            DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+            out var timestampUtc)
+            ? timestampUtc
+            : null;
     }
 
     private static string ComputeContentSha256(string content) =>

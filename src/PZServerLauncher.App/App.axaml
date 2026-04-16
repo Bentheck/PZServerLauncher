@@ -7,6 +7,36 @@
         <local:ViewLocator />
     </Application.DataTemplates>
 
+    <Application.Resources>
+        <ControlTheme x:Key="{x:Type Button}" TargetType="Button">
+            <Setter Property="Background" Value="#F6F1E8" />
+            <Setter Property="Foreground" Value="#223035" />
+            <Setter Property="BorderBrush" Value="#CCBFAD" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Padding" Value="14,9" />
+            <Setter Property="MinHeight" Value="38" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border x:Name="PART_Border"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="{TemplateBinding CornerRadius}"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter x:Name="PART_ContentPresenter"
+                                          Content="{TemplateBinding Content}"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}"
+                                          HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                          VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </ControlTheme>
+    </Application.Resources>
+
     <Application.Styles>
         <FluentTheme />
         <Style Selector="Window">
@@ -141,16 +171,72 @@
             <Setter Property="Foreground" Value="#E9DED2" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="TextAlignment" Value="Left" />
             <Setter Property="IsReadOnly" Value="True" />
             <Setter Property="AcceptsReturn" Value="True" />
             <Setter Property="Padding" Value="14" />
+            <Setter Property="VerticalContentAlignment" Value="Top" />
+            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
+            <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto" />
         </Style>
         <Style Selector="CheckBox">
             <Setter Property="Foreground" Value="#243238" />
             <Setter Property="FontSize" Value="13" />
+            <Setter Property="Background" Value="#FFFDFC" />
+            <Setter Property="BorderBrush" Value="#6F7E82" />
+            <Setter Property="BorderThickness" Value="1" />
         </Style>
         <Style Selector="CheckBox /template/ ContentPresenter">
             <Setter Property="Foreground" Value="#243238" />
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="CheckBox /template/ Border">
+            <Setter Property="Background" Value="#FFFDFC" />
+            <Setter Property="BorderBrush" Value="#6F7E82" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+        <Style Selector="CheckBox:pointerover /template/ Border">
+            <Setter Property="Background" Value="#F5F8F6" />
+            <Setter Property="BorderBrush" Value="#355B4C" />
+        </Style>
+        <Style Selector="CheckBox:pointerover /template/ ContentPresenter">
+            <Setter Property="Foreground" Value="#243238" />
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="CheckBox:checked /template/ Border">
+            <Setter Property="Background" Value="#C9DED2" />
+            <Setter Property="BorderBrush" Value="#5E8674" />
+        </Style>
+        <Style Selector="CheckBox:checked /template/ ContentPresenter">
+            <Setter Property="Foreground" Value="#203036" />
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="CheckBox:checked:pointerover /template/ Border">
+            <Setter Property="Background" Value="#BDD5C8" />
+            <Setter Property="BorderBrush" Value="#4B725F" />
+        </Style>
+        <Style Selector="CheckBox:checked:pointerover /template/ ContentPresenter">
+            <Setter Property="Foreground" Value="#1A272C" />
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="CheckBox:checked /template/ Path">
+            <Setter Property="Fill" Value="#2E5546" />
+            <Setter Property="Stroke" Value="#2E5546" />
+        </Style>
+        <Style Selector="CheckBox:pressed /template/ Border">
+            <Setter Property="Background" Value="#E7EEE9" />
+            <Setter Property="BorderBrush" Value="#4B6A5B" />
+        </Style>
+        <Style Selector="CheckBox:pressed /template/ ContentPresenter">
+            <Setter Property="Foreground" Value="#243238" />
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="CheckBox:checked:pressed /template/ Border">
+            <Setter Property="Background" Value="#B2CCBD" />
+            <Setter Property="BorderBrush" Value="#436857" />
+        </Style>
+        <Style Selector="CheckBox:checked:pressed /template/ ContentPresenter">
+            <Setter Property="Foreground" Value="#172126" />
             <Setter Property="Opacity" Value="1" />
         </Style>
         <Style Selector="CheckBox:disabled">
@@ -161,11 +247,137 @@
             <Setter Property="Foreground" Value="#6A7276" />
             <Setter Property="Opacity" Value="1" />
         </Style>
-        <Style Selector="Button.action-primary">
-            <Setter Property="Background" Value="#355B4C" />
-            <Setter Property="Foreground" Value="#F7F8F6" />
-            <Setter Property="BorderBrush" Value="#355B4C" />
+        <Style Selector="CheckBox:disabled /template/ Border">
+            <Setter Property="Background" Value="#EEE7DD" />
+            <Setter Property="BorderBrush" Value="#B8B0A5" />
+        </Style>
+        <Style Selector="RadioButton">
+            <Setter Property="Foreground" Value="#243238" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Background" Value="#FFFDFC" />
+            <Setter Property="BorderBrush" Value="#6F7E82" />
             <Setter Property="BorderThickness" Value="1" />
+        </Style>
+        <Style Selector="RadioButton /template/ ContentPresenter">
+            <Setter Property="Foreground" Value="#243238" />
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="RadioButton /template/ Border">
+            <Setter Property="Background" Value="#FFFDFC" />
+            <Setter Property="BorderBrush" Value="#6F7E82" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+        <Style Selector="RadioButton:pointerover /template/ Border">
+            <Setter Property="BorderBrush" Value="#355B4C" />
+        </Style>
+        <Style Selector="RadioButton:checked /template/ Border">
+            <Setter Property="BorderBrush" Value="#355B4C" />
+        </Style>
+        <Style Selector="RadioButton:disabled">
+            <Setter Property="Foreground" Value="#6A7276" />
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="RadioButton:disabled /template/ ContentPresenter">
+            <Setter Property="Foreground" Value="#6A7276" />
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="RadioButton:disabled /template/ Border">
+            <Setter Property="Background" Value="#EEE7DD" />
+            <Setter Property="BorderBrush" Value="#B8B0A5" />
+        </Style>
+        <Style Selector="ToggleSwitch">
+            <Setter Property="Foreground" Value="#243238" />
+            <Setter Property="FontSize" Value="13" />
+        </Style>
+        <Style Selector="ToggleSwitch /template/ ContentPresenter">
+            <Setter Property="Foreground" Value="#243238" />
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="ToggleSwitch:disabled">
+            <Setter Property="Foreground" Value="#6A7276" />
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="ToggleSwitch:disabled /template/ ContentPresenter">
+            <Setter Property="Foreground" Value="#6A7276" />
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="Button">
+            <Setter Property="Background" Value="#F6F1E8" />
+            <Setter Property="Foreground" Value="#223035" />
+            <Setter Property="BorderBrush" Value="#CCBFAD" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Padding" Value="14,9" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="MinHeight" Value="38" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Button.chrome-free">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="#223035" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="0" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="MinHeight" Value="0" />
+        </Style>
+        <Style Selector="Button.chrome-free:pointerover">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="Button.chrome-free:pressed">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="Button /template/ ContentPresenter">
+            <Setter Property="Foreground" Value="#223035" />
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="Button.chrome-free /template/ ContentPresenter">
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="Button:pointerover">
+            <Setter Property="Background" Value="#E7DBC9" />
+            <Setter Property="Foreground" Value="#1C292D" />
+            <Setter Property="BorderBrush" Value="#9B876E" />
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="Button:pointerover /template/ ContentPresenter">
+            <Setter Property="Foreground" Value="#1C292D" />
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="Button:pressed">
+            <Setter Property="Background" Value="#D9C9B4" />
+            <Setter Property="Foreground" Value="#172126" />
+            <Setter Property="BorderBrush" Value="#84715C" />
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="Button:pressed /template/ ContentPresenter">
+            <Setter Property="Foreground" Value="#172126" />
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="Button:disabled">
+            <Setter Property="Background" Value="#E8E2D8" />
+            <Setter Property="Foreground" Value="#5A6367" />
+            <Setter Property="BorderBrush" Value="#C9BEB0" />
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="Button:disabled /template/ ContentPresenter">
+            <Setter Property="Foreground" Value="#5A6367" />
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="Button.action-primary">
+            <Setter Property="Background" Value="#3C6756" />
+            <Setter Property="Foreground" Value="#F7F8F6" />
+            <Setter Property="BorderBrush" Value="#3C6756" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="6" />
             <Setter Property="Padding" Value="14,9" />
             <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="FontSize" Value="13" />
@@ -174,10 +386,11 @@
             <Setter Property="VerticalContentAlignment" Value="Center" />
         </Style>
         <Style Selector="Button.action-secondary">
-            <Setter Property="Background" Value="#F4F0E8" />
+            <Setter Property="Background" Value="#F6F0E4" />
             <Setter Property="Foreground" Value="#2F3A3E" />
-            <Setter Property="BorderBrush" Value="#CFC5B7" />
+            <Setter Property="BorderBrush" Value="#C8BAA6" />
             <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="6" />
             <Setter Property="Padding" Value="14,9" />
             <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="FontSize" Value="13" />
@@ -186,16 +399,89 @@
             <Setter Property="VerticalContentAlignment" Value="Center" />
         </Style>
         <Style Selector="Button.action-danger">
-            <Setter Property="Background" Value="#B55E46" />
+            <Setter Property="Background" Value="#BA6249" />
             <Setter Property="Foreground" Value="#FFF6F1" />
-            <Setter Property="BorderBrush" Value="#B55E46" />
+            <Setter Property="BorderBrush" Value="#BA6249" />
             <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="6" />
             <Setter Property="Padding" Value="14,9" />
             <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="FontSize" Value="13" />
             <Setter Property="MinHeight" Value="38" />
             <Setter Property="HorizontalContentAlignment" Value="Center" />
             <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Button.action-primary /template/ ContentPresenter">
+            <Setter Property="Foreground" Value="#F7F8F6" />
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="Button.action-secondary /template/ ContentPresenter">
+            <Setter Property="Foreground" Value="#2F3A3E" />
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="Button.action-danger /template/ ContentPresenter">
+            <Setter Property="Foreground" Value="#FFF6F1" />
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="Button.action-primary:pointerover">
+            <Setter Property="Background" Value="#4E7E6B" />
+            <Setter Property="Foreground" Value="#F7F8F6" />
+            <Setter Property="BorderBrush" Value="#2D4F40" />
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="Button.action-secondary:pointerover">
+            <Setter Property="Background" Value="#E8DAC6" />
+            <Setter Property="Foreground" Value="#2F3A3E" />
+            <Setter Property="BorderBrush" Value="#9C886F" />
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="Button.action-danger:pointerover">
+            <Setter Property="Background" Value="#CB7157" />
+            <Setter Property="Foreground" Value="#FFF6F1" />
+            <Setter Property="BorderBrush" Value="#8A4030" />
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="Button.action-primary:pointerover /template/ ContentPresenter">
+            <Setter Property="Foreground" Value="#F7F8F6" />
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="Button.action-secondary:pointerover /template/ ContentPresenter">
+            <Setter Property="Foreground" Value="#2F3A3E" />
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="Button.action-danger:pointerover /template/ ContentPresenter">
+            <Setter Property="Foreground" Value="#FFF6F1" />
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="Button.action-primary:pressed">
+            <Setter Property="Background" Value="#315444" />
+            <Setter Property="Foreground" Value="#F7F8F6" />
+            <Setter Property="BorderBrush" Value="#20382D" />
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="Button.action-secondary:pressed">
+            <Setter Property="Background" Value="#D9C8B3" />
+            <Setter Property="Foreground" Value="#2F3A3E" />
+            <Setter Property="BorderBrush" Value="#86715B" />
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="Button.action-danger:pressed">
+            <Setter Property="Background" Value="#A14D38" />
+            <Setter Property="Foreground" Value="#FFF6F1" />
+            <Setter Property="BorderBrush" Value="#773424" />
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="Button.action-primary:pressed /template/ ContentPresenter">
+            <Setter Property="Foreground" Value="#F7F8F6" />
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="Button.action-secondary:pressed /template/ ContentPresenter">
+            <Setter Property="Foreground" Value="#2F3A3E" />
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="Button.action-danger:pressed /template/ ContentPresenter">
+            <Setter Property="Foreground" Value="#FFF6F1" />
+            <Setter Property="Opacity" Value="1" />
         </Style>
         <Style Selector="Button.action-primary:disabled">
             <Setter Property="Background" Value="#93A99F" />
@@ -213,6 +499,18 @@
             <Setter Property="Background" Value="#C99E92" />
             <Setter Property="Foreground" Value="#FFF7F4" />
             <Setter Property="BorderBrush" Value="#C99E92" />
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="Button.action-primary:disabled /template/ ContentPresenter">
+            <Setter Property="Foreground" Value="#F4F6F3" />
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="Button.action-secondary:disabled /template/ ContentPresenter">
+            <Setter Property="Foreground" Value="#5A6367" />
+            <Setter Property="Opacity" Value="1" />
+        </Style>
+        <Style Selector="Button.action-danger:disabled /template/ ContentPresenter">
+            <Setter Property="Foreground" Value="#FFF7F4" />
             <Setter Property="Opacity" Value="1" />
         </Style>
     </Application.Styles>

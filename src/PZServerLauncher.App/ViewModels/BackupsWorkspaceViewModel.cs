@@ -9,6 +9,7 @@ using PZServerLauncher.Contracts.Runtime;
 using PZServerLauncher.Core.Planning;
 using PZServerLauncher.Core.Profiles;
 using PZServerLauncher.Infrastructure.Planning;
+using PZServerLauncher.Runtime;
 
 namespace PZServerLauncher.App.ViewModels;
 
@@ -34,10 +35,10 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         false,
         false);
 
-    private readonly LocalHostApiClient _hostApiClient;
+    private readonly ILauncherRuntime _launcherRuntime;
     private bool _isApplyingPolicy;
 
-    public BackupsWorkspaceViewModel(MainWindowViewModel legacy, LocalHostApiClient hostApiClient)
+    public BackupsWorkspaceViewModel(MainWindowViewModel legacy, ILauncherRuntime launcherRuntime)
         : base(
             ProfileWorkspacePageIds.Backups,
             "Backups",
@@ -46,7 +47,7 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             legacy,
             ["Backup list", "Manual backup", "Restore with restart"])
     {
-        _hostApiClient = hostApiClient;
+        _launcherRuntime = launcherRuntime;
         CreateBackupCommand = new AsyncRelayCommand(CreateBackupAsync);
         RestoreSelectedCommand = new AsyncRelayCommand(RestoreSelectedAsync);
         SavePolicyCommand = new AsyncRelayCommand(SavePolicyAsync);
@@ -66,8 +67,8 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         : $"{SelectedProfile.DisplayName} Recovery Center";
 
     public string RecoveryHeroCopy => SelectedProfile is null
-        ? "Select a profile to review archive history, retention policy, and restore behavior."
-        : $"Latest archive, retention posture, and restore behavior for {SelectedProfile.DisplayName}.";
+        ? "Select a profile to review backups and update the recovery policy."
+        : $"Create backups, set the backup cadence, tune retention, and restore archives for {SelectedProfile.DisplayName}.";
 
     public ObservableCollection<string> Backups { get; } = [];
 
@@ -152,8 +153,12 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
     public string PolicyEditorSummary => SelectedProfile is null
         ? "Select a profile to manage scheduled retention and pre-update safety."
         : IsPolicyDirty
-            ? "Recovery policy has unsaved changes."
+            ? "Recovery policy has unsaved changes. Save when the schedule and retention counts look right."
             : "Recovery policy is in sync with the selected profile.";
+
+    public string ScheduledCadenceSummary => SelectedProfile is null
+        ? "Select a profile to set scheduled backup timing."
+        : BuildScheduledCadenceSummary();
 
     public string PolicyValidationSummary => string.IsNullOrWhiteSpace(PolicyValidationMessage)
         ? "Policy values look valid."
@@ -203,6 +208,12 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
     private string scheduledBackupRetentionCount = "10";
 
     [ObservableProperty]
+    private string scheduledBackupIntervalHours = BackupPolicy.DefaultScheduledBackupIntervalHours.ToString(CultureInfo.InvariantCulture);
+
+    [ObservableProperty]
+    private string scheduledBackupStartLocalTime = BackupPolicy.DefaultScheduledBackupStartLocalTime;
+
+    [ObservableProperty]
     private bool preUpdateBackupEnabled = true;
 
     [ObservableProperty]
@@ -245,7 +256,7 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
         await RunBusyAsync(async () =>
         {
-            var result = await _hostApiClient.BackupAsync(SelectedProfile.ProfileId);
+            var result = await _launcherRuntime.BackupAsync(SelectedProfile.ProfileId);
             LoadStatus = result?.Message ?? "Manual backup requested.";
             await LoadAsync(SelectedProfile);
             await Legacy.RefreshCommand.ExecuteAsync(null);
@@ -262,7 +273,7 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
         await RunBusyAsync(async () =>
         {
-            var result = await _hostApiClient.RestoreAsync(SelectedProfile.ProfileId, SelectedBackup, RestartAfterRestore);
+            var result = await _launcherRuntime.RestoreAsync(SelectedProfile.ProfileId, SelectedBackup, RestartAfterRestore);
             LoadStatus = result?.Message ?? $"Restore requested for {SelectedBackup}.";
             await LoadAsync(SelectedProfile);
             await Legacy.RefreshCommand.ExecuteAsync(null);
@@ -285,7 +296,7 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
         await RunBusyAsync(async () =>
         {
-            var backups = await _hostApiClient.GetBackupsAsync(profile.ProfileId) ?? [];
+            var backups = await _launcherRuntime.GetBackupsAsync(profile.ProfileId) ?? [];
 
             Backups.Clear();
             BackupEntries.Clear();
@@ -368,6 +379,10 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
     partial void OnScheduledBackupRetentionCountChanged(string value) => NotifyPolicyEdited();
 
+    partial void OnScheduledBackupIntervalHoursChanged(string value) => NotifyPolicyEdited();
+
+    partial void OnScheduledBackupStartLocalTimeChanged(string value) => NotifyPolicyEdited();
+
     partial void OnPreUpdateBackupEnabledChanged(bool value) => NotifyPolicyEdited();
 
     partial void OnPreUpdateBackupRetentionCountChanged(string value) => NotifyPolicyEdited();
@@ -402,6 +417,7 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         OnPropertyChanged(nameof(PolicySummary));
         OnPropertyChanged(nameof(PolicyEditorSummary));
         OnPropertyChanged(nameof(PolicyValidationSummary));
+        OnPropertyChanged(nameof(ScheduledCadenceSummary));
         OnPropertyChanged(nameof(CanSavePolicy));
         OnPropertyChanged(nameof(RestoreModeSummary));
         OnPropertyChanged(nameof(OperatorNextStep));
@@ -425,7 +441,7 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
         await RunBusyAsync(async () =>
         {
-            var updated = await _hostApiClient.UpdateBackupPolicyAsync(SelectedProfile.ProfileId, policy);
+            var updated = await _launcherRuntime.UpdateBackupPolicyAsync(SelectedProfile.ProfileId, policy);
             if (updated is null)
             {
                 throw new InvalidOperationException("The host did not return an updated backup policy.");
@@ -445,6 +461,8 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             _isApplyingPolicy = true;
             ScheduledBackupsEnabled = policy.ScheduledBackupsEnabled;
             ScheduledBackupRetentionCount = policy.ScheduledBackupRetentionCount.ToString(CultureInfo.InvariantCulture);
+            ScheduledBackupIntervalHours = policy.ScheduledBackupIntervalHours.ToString(CultureInfo.InvariantCulture);
+            ScheduledBackupStartLocalTime = policy.ScheduledBackupStartLocalTime;
             PreUpdateBackupEnabled = policy.PreUpdateBackupEnabled;
             PreUpdateBackupRetentionCount = policy.PreUpdateBackupRetentionCount.ToString(CultureInfo.InvariantCulture);
             KeepManualBackupsForever = policy.KeepManualBackupsForever;
@@ -481,6 +499,13 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             return false;
         }
 
+        if (!TryParseScheduledCadence(out var normalizedStartTime, out var intervalHours, out var cadenceValidationMessage))
+        {
+            policy = BackupPolicy.Default;
+            PolicyValidationMessage = cadenceValidationMessage;
+            return false;
+        }
+
         if (!int.TryParse(PreUpdateBackupRetentionCount, NumberStyles.Integer, CultureInfo.InvariantCulture, out var preUpdateRetention) ||
             preUpdateRetention < 1)
         {
@@ -493,6 +518,8 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         {
             ScheduledBackupsEnabled = ScheduledBackupsEnabled,
             ScheduledBackupRetentionCount = scheduledRetention,
+            ScheduledBackupIntervalHours = intervalHours,
+            ScheduledBackupStartLocalTime = normalizedStartTime,
             PreUpdateBackupEnabled = PreUpdateBackupEnabled,
             PreUpdateBackupRetentionCount = preUpdateRetention,
             KeepManualBackupsForever = KeepManualBackupsForever,
@@ -567,6 +594,55 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             Branch = profile.BranchValue,
             BackupPolicy = profile.BackupPolicy,
         };
+
+    private bool TryParseScheduledCadence(out string normalizedStartTime, out int intervalHours, out string validationMessage)
+    {
+        normalizedStartTime = BackupPolicy.DefaultScheduledBackupStartLocalTime;
+        intervalHours = BackupPolicy.DefaultScheduledBackupIntervalHours;
+        validationMessage = string.Empty;
+
+        if (!ScheduledBackupPlanner.TryParseStartLocalTime(ScheduledBackupStartLocalTime, out var startTime))
+        {
+            validationMessage = "Scheduled backup start time must use 24-hour time like 03:00.";
+            return false;
+        }
+
+        if (!int.TryParse(ScheduledBackupIntervalHours, NumberStyles.Integer, CultureInfo.InvariantCulture, out intervalHours) ||
+            !ScheduledBackupPlanner.IsValidIntervalHours(intervalHours))
+        {
+            validationMessage = "Scheduled backup interval must be a whole number between 1 and 168 hours.";
+            return false;
+        }
+
+        normalizedStartTime = startTime.ToString("HH:mm", CultureInfo.InvariantCulture);
+        return true;
+    }
+
+    private string BuildScheduledCadenceSummary()
+    {
+        if (!ScheduledBackupsEnabled)
+        {
+            return "Scheduled backups are off. Turn them on to capture recurring restore points automatically.";
+        }
+
+        if (!TryParseScheduledCadence(out var normalizedStartTime, out var intervalHours, out _))
+        {
+            return "Set a 24-hour start time like 03:00 and an interval between 1 and 168 hours.";
+        }
+
+        var previewPolicy = (SelectedProfile?.BackupPolicy ?? BackupPolicy.Default) with
+        {
+            ScheduledBackupsEnabled = true,
+            ScheduledBackupIntervalHours = intervalHours,
+            ScheduledBackupStartLocalTime = normalizedStartTime,
+        };
+
+        var cadence = ScheduledBackupPlanner.DescribeCadence(previewPolicy);
+        var nextRunUtc = ScheduledBackupPlanner.GetNextScheduledRunUtc(previewPolicy, DateTimeOffset.UtcNow);
+        return nextRunUtc is null
+            ? $"{char.ToUpperInvariant(cadence[0])}{cadence[1..]}."
+            : $"{char.ToUpperInvariant(cadence[0])}{cadence[1..]}. Next scheduled archive: {nextRunUtc.Value.ToLocalTime():MMM d, yyyy 'at' h:mm tt}.";
+    }
 
     public sealed record BackupArchiveRowViewModel(
         string ArchiveFileName,

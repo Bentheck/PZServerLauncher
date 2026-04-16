@@ -6,4 +6,5 @@ public sealed record SettingsPageDto(
     string? Description,
     bool SupportsStructuredEditing,
     bool SupportsDrafts,
-    IReadOnlyList<SettingsSectionDto> Sections);
+    IReadOnlyList<SettingsSectionDto> Sections,
+    IReadOnlyList<SettingsBuiltInPresetDto>? BuiltInPresets = null);

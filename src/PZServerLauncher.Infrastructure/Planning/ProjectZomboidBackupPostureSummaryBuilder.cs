@@ -135,7 +135,7 @@ public static class ProjectZomboidBackupPostureSummaryBuilder
             ? $"pre-update safety is set to keep the last {policy.PreUpdateBackupRetentionCount}"
             : "pre-update safety is disabled";
         var scheduledSummary = policy.ScheduledBackupsEnabled
-            ? $"scheduled snapshots are set to keep the last {policy.ScheduledBackupRetentionCount}"
+            ? $"{ScheduledBackupPlanner.DescribeCadence(policy)} and keep the last {policy.ScheduledBackupRetentionCount}"
             : "scheduled snapshots are disabled";
         return $"Retention posture: {manualSummary}, {preUpdateSummary}, and {scheduledSummary}.";
     }

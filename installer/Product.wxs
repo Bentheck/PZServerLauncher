@@ -9,31 +9,41 @@
     Scope="perMachine"
     InstallerVersion="500">
 
+    <Property Id="INSTALLFOLDER">
+      <RegistrySearch Id="RememberedInstallRootSearch"
+                      Root="HKLM"
+                      Key="Software\Bentheck\PZServerLauncher"
+                      Name="InstallRoot"
+                      Type="raw" />
+    </Property>
+    <Property Id="INSTALLDESKTOPSHORTCUT">
+      <RegistrySearch Id="RememberedDesktopShortcutSearch"
+                      Root="HKLM"
+                      Key="Software\Bentheck\PZServerLauncher"
+                      Name="DesktopShortcutInstalled"
+                      Type="raw" />
+    </Property>
     <SummaryInformation Manufacturer="Bentheck" />
     <MediaTemplate EmbedCab="yes" />
-    <MajorUpgrade DowngradeErrorMessage="A newer version of PZServerLauncher is already installed." />
+    <MajorUpgrade
+      AllowSameVersionUpgrades="yes"
+      DowngradeErrorMessage="A newer version of PZServerLauncher is already installed." />
+    <WixVariable Id="WixUILicenseRtf" Value="LicenseDisclaimer.rtf" />
     <Icon Id="AppIcon" SourceFile="..\src\PZServerLauncher.App\Assets\avalonia-logo.ico" />
     <Property Id="ARPPRODUCTICON" Value="AppIcon" />
-    <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="INSTALLFOLDER" />
+    <ui:WixUI Id="PZInstallDir" InstallDirectory="INSTALLFOLDER" />
     <util:CloseApplication
       Id="CloseDesktopApp"
       Target="PZServerLauncher.App.exe"
       Description="PZ Server Launcher desktop app"
+      Property="APP_WAS_RUNNING"
       CloseMessage="yes"
       ElevatedCloseMessage="yes"
       PromptToContinue="yes" />
-    <util:CloseApplication
-      Id="CloseHost"
-      Target="PZServerLauncher.Host.exe"
-      Description="PZ Server Launcher host"
-      Property="HOST_WAS_RUNNING"
-      CloseMessage="yes"
-      ElevatedCloseMessage="yes"
-      PromptToContinue="yes" />
-    <SetProperty Id="HOST_RESTART_PATH"
-                 Before="RestartHostAfterInstall"
+    <SetProperty Id="APP_RESTART_PATH"
+                 Before="RestartAppAfterInstall"
                  Sequence="execute"
-                 Value="[HOSTFOLDER]PZServerLauncher.Host.exe" />
+                 Value="[INSTALLFOLDER]PZServerLauncher.App.exe" />
     <SetProperty Id="PZSERVERLAUNCHERDATAROOT"
                  Before="CostInitialize"
                  Sequence="execute"
@@ -62,21 +72,18 @@
                  Before="CostInitialize"
                  Sequence="execute"
                  Value="[LocalAppDataFolder]PZServerLauncher" />
-    <CustomAction Id="RestartHostAfterInstall"
-                  Property="HOST_RESTART_PATH"
+    <CustomAction Id="RestartAppAfterInstall"
+                  Property="APP_RESTART_PATH"
                   ExeCommand=""
                   Return="asyncNoWait" />
     <InstallExecuteSequence>
-      <Custom Action="RestartHostAfterInstall"
+      <Custom Action="RestartAppAfterInstall"
               After="InstallFinalize"
-              Condition="HOST_WAS_RUNNING AND NOT REMOVE~=&quot;ALL&quot;" />
+              Condition="APP_WAS_RUNNING AND NOT REMOVE~=&quot;ALL&quot;" />
     </InstallExecuteSequence>
 
     <StandardDirectory Id="ProgramFiles64Folder">
-      <Directory Id="INSTALLFOLDER" Name="PZServerLauncher">
-        <Directory Id="APPFOLDER" Name="App" />
-        <Directory Id="HOSTFOLDER" Name="Host" />
-      </Directory>
+      <Directory Id="INSTALLFOLDER" Name="PZServerLauncher" />
     </StandardDirectory>
 
     <StandardDirectory Id="ProgramMenuFolder">
@@ -85,10 +92,147 @@
 
     <Feature Id="MainFeature" Title="PZServerLauncher" Level="1">
       <ComponentGroupRef Id="DesktopAppFiles" />
-      <ComponentGroupRef Id="HostFiles" />
+      <ComponentRef Id="DesktopShortcutComponent" />
+      <ComponentRef Id="InstallFolderShortcutsComponent" />
       <ComponentRef Id="StartMenuShortcutComponent" />
     </Feature>
   </Package>
+
+  <Fragment>
+    <UI Id="PZInstallDir_X64">
+      <Publish Dialog="LicenseAgreementDlg" Control="Print" Event="DoAction" Value="WixUIPrintEula_X64" />
+      <Publish Dialog="BrowseDlg" Control="OK" Event="DoAction" Value="WixUIValidatePath_X64" Order="3" Condition="NOT WIXUI_DONTVALIDATEPATH" />
+      <Publish Dialog="PZInstallDirDlg" Control="Next" Event="DoAction" Value="WixUIValidatePath_X64" Order="2" Condition="NOT WIXUI_DONTVALIDATEPATH" />
+    </UI>
+
+    <UIRef Id="PZInstallDir" />
+  </Fragment>
+
+  <Fragment>
+    <UI Id="file PZInstallDir">
+      <TextStyle Id="WixUI_Font_Normal" FaceName="Tahoma" Size="8" />
+      <TextStyle Id="WixUI_Font_Bigger" FaceName="Tahoma" Size="12" />
+      <TextStyle Id="WixUI_Font_Title" FaceName="Tahoma" Size="9" Bold="yes" />
+
+      <Property Id="DefaultUIFont" Value="WixUI_Font_Normal" />
+
+      <DialogRef Id="BrowseDlg" />
+      <DialogRef Id="DiskCostDlg" />
+      <DialogRef Id="ErrorDlg" />
+      <DialogRef Id="FatalError" />
+      <DialogRef Id="FilesInUse" />
+      <DialogRef Id="MsiRMFilesInUse" />
+      <DialogRef Id="PrepareDlg" />
+      <DialogRef Id="ProgressDlg" />
+      <DialogRef Id="ResumeDlg" />
+      <DialogRef Id="UserExit" />
+      <Publish Dialog="BrowseDlg" Control="OK" Event="SpawnDialog" Value="InvalidDirDlg" Order="4" Condition="NOT WIXUI_DONTVALIDATEPATH AND WIXUI_INSTALLDIR_VALID&lt;&gt;&quot;1&quot;" />
+
+      <Publish Dialog="ExitDialog" Control="Finish" Event="EndDialog" Value="Return" Order="999" />
+
+      <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="LicenseAgreementDlg" Condition="NOT Installed" />
+      <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg" Condition="Installed AND PATCH" />
+
+      <Publish Dialog="LicenseAgreementDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg" />
+      <Publish Dialog="LicenseAgreementDlg" Control="Next" Event="NewDialog" Value="PZInstallDirDlg" Condition="LicenseAccepted = &quot;1&quot;" />
+
+      <Publish Dialog="PZInstallDirDlg" Control="Back" Event="NewDialog" Value="LicenseAgreementDlg" Condition="NOT Installed" />
+      <Publish Dialog="PZInstallDirDlg" Control="Back" Event="NewDialog" Value="MaintenanceTypeDlg" Condition="Installed AND NOT PATCH" />
+      <Publish Dialog="PZInstallDirDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg" Condition="Installed AND PATCH" />
+      <Publish Dialog="PZInstallDirDlg" Control="Next" Event="SetTargetPath" Value="[WIXUI_INSTALLDIR]" Order="1" />
+      <Publish Dialog="PZInstallDirDlg" Control="Next" Event="SpawnDialog" Value="InvalidDirDlg" Order="3" Condition="NOT WIXUI_DONTVALIDATEPATH AND WIXUI_INSTALLDIR_VALID&lt;&gt;&quot;1&quot;" />
+      <Publish Dialog="PZInstallDirDlg" Control="Next" Event="NewDialog" Value="VerifyReadyDlg" Order="4" Condition="WIXUI_DONTVALIDATEPATH OR WIXUI_INSTALLDIR_VALID=&quot;1&quot;" />
+      <Publish Dialog="PZInstallDirDlg" Control="ChangeFolder" Property="_BrowseProperty" Value="[WIXUI_INSTALLDIR]" Order="1" />
+      <Publish Dialog="PZInstallDirDlg" Control="ChangeFolder" Event="SpawnDialog" Value="BrowseDlg" Order="2" />
+      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="PZInstallDirDlg" Order="1" Condition="NOT Installed" />
+      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="MaintenanceTypeDlg" Order="2" Condition="Installed AND NOT PATCH" />
+      <Publish Dialog="VerifyReadyDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg" Order="2" Condition="Installed AND PATCH" />
+
+      <Publish Dialog="MaintenanceWelcomeDlg" Control="Next" Event="NewDialog" Value="MaintenanceTypeDlg" />
+
+      <Publish Dialog="MaintenanceTypeDlg" Control="ChangeButton" Event="NewDialog" Value="PZInstallDirDlg" />
+      <Publish Dialog="MaintenanceTypeDlg" Control="RepairButton" Event="NewDialog" Value="PZInstallDirDlg" />
+      <Publish Dialog="MaintenanceTypeDlg" Control="RemoveButton" Event="NewDialog" Value="VerifyReadyDlg" />
+      <Publish Dialog="MaintenanceTypeDlg" Control="Back" Event="NewDialog" Value="MaintenanceWelcomeDlg" />
+
+      <Property Id="ARPNOMODIFY" Value="1" />
+    </UI>
+
+    <UIRef Id="WixUI_Common" />
+  </Fragment>
+
+  <Fragment>
+    <UI>
+      <Dialog Id="PZInstallDirDlg" Width="370" Height="270" Title="!(loc.InstallDirDlg_Title)">
+        <Control Id="Next" Type="PushButton" X="236" Y="243" Width="56" Height="17" Default="yes" Text="!(loc.WixUINext)" />
+        <Control Id="Back" Type="PushButton" X="180" Y="243" Width="56" Height="17" Text="!(loc.WixUIBack)" />
+        <Control Id="Cancel" Type="PushButton" X="304" Y="243" Width="56" Height="17" Cancel="yes" Text="!(loc.WixUICancel)">
+          <Publish Event="SpawnDialog" Value="CancelDlg" />
+        </Control>
+
+        <Control Id="Description" Type="Text" X="25" Y="23" Width="280" Height="15" Transparent="yes" NoPrefix="yes" Text="!(loc.InstallDirDlgDescription)" />
+        <Control Id="Title" Type="Text" X="15" Y="6" Width="200" Height="15" Transparent="yes" NoPrefix="yes" Text="!(loc.InstallDirDlgTitle)" />
+        <Control Id="BannerBitmap" Type="Bitmap" X="0" Y="0" Width="370" Height="44" TabSkip="no" Text="!(loc.InstallDirDlgBannerBitmap)" />
+        <Control Id="BannerLine" Type="Line" X="0" Y="44" Width="370" Height="0" />
+        <Control Id="BottomLine" Type="Line" X="0" Y="234" Width="370" Height="0" />
+
+        <Control Id="FolderLabel" Type="Text" X="20" Y="60" Width="290" Height="30" NoPrefix="yes" Text="!(loc.InstallDirDlgFolderLabel)" />
+        <Control Id="Folder" Type="PathEdit" X="20" Y="100" Width="320" Height="18" Property="WIXUI_INSTALLDIR" Indirect="yes" />
+        <Control Id="ChangeFolder" Type="PushButton" X="20" Y="120" Width="56" Height="17" Text="!(loc.InstallDirDlgChange)" />
+        <Control Id="DesktopShortcutCheckBox"
+                 Type="CheckBox"
+                 X="20"
+                 Y="152"
+                 Width="320"
+                 Height="18"
+                 Property="INSTALLDESKTOPSHORTCUT"
+                 CheckBoxValue="1"
+                 Text="Create a desktop shortcut for PZ Server Launcher"
+                 HideCondition="Installed AND WixUI_InstallMode = &quot;Remove&quot;" />
+      </Dialog>
+    </UI>
+  </Fragment>
+
+  <Fragment>
+    <StandardDirectory Id="DesktopFolder">
+      <Component Id="DesktopShortcutComponent" Guid="*" Condition="INSTALLDESKTOPSHORTCUT = &quot;1&quot;">
+        <Shortcut
+          Id="DesktopLauncherShortcut"
+          Name="PZ Server Launcher"
+          Description="Launch the Project Zomboid server installer, configurator, and launcher."
+          Target="[INSTALLFOLDER]PZServerLauncher.App.exe"
+          WorkingDirectory="INSTALLFOLDER"
+          Icon="AppIcon" />
+        <RegistryValue Root="HKLM"
+                       Key="Software\Bentheck\PZServerLauncher"
+                       Name="DesktopShortcutInstalled"
+                       Type="integer"
+                       Value="1"
+                       KeyPath="yes" />
+      </Component>
+    </StandardDirectory>
+  </Fragment>
+
+  <Fragment>
+    <DirectoryRef Id="INSTALLFOLDER">
+      <Component Id="InstallFolderShortcutsComponent" Guid="*">
+        <Shortcut
+          Id="InstallFolderUninstallShortcut"
+          Name="Uninstall PZ Server Launcher"
+          Description="Remove PZ Server Launcher from this machine."
+          Target="[System64Folder]msiexec.exe"
+          Arguments="/x [ProductCode]"
+          WorkingDirectory="INSTALLFOLDER"
+          Icon="AppIcon" />
+        <RegistryValue Root="HKLM"
+                       Key="Software\Bentheck\PZServerLauncher"
+                       Name="InstallFolderShortcuts"
+                       Type="integer"
+                       Value="1"
+                       KeyPath="yes" />
+      </Component>
+    </DirectoryRef>
+  </Fragment>
 
   <Fragment>
     <DirectoryRef Id="ProgramMenuDir">
@@ -97,8 +241,8 @@
           Id="DesktopAppShortcut"
           Name="PZ Server Launcher"
           Description="Launch the Project Zomboid server installer, configurator, and launcher."
-          Target="[APPFOLDER]PZServerLauncher.App.exe"
-          WorkingDirectory="APPFOLDER" />
+          Target="[INSTALLFOLDER]PZServerLauncher.App.exe"
+          WorkingDirectory="INSTALLFOLDER" />
         <util:RemoveFolderEx
           Property="PZSERVERLAUNCHERDATAROOT"
           On="uninstall"
@@ -128,7 +272,8 @@
           On="uninstall"
           Condition="REMOVE=&quot;ALL&quot; AND NOT UPGRADINGPRODUCTCODE" />
         <RemoveFolder Id="RemoveProgramMenuDir" On="uninstall" />
-        <RegistryValue Root="HKCU" Key="Software\Bentheck\PZServerLauncher" Name="Installed" Type="integer" Value="1" KeyPath="yes" />
+        <RegistryValue Root="HKLM" Key="Software\Bentheck\PZServerLauncher" Name="InstallRoot" Type="string" Value="[INSTALLFOLDER]" KeyPath="yes" />
+        <RegistryValue Root="HKLM" Key="Software\Bentheck\PZServerLauncher" Name="Installed" Type="integer" Value="1" />
       </Component>
     </DirectoryRef>
   </Fragment>

@@ -15,6 +15,91 @@ public sealed class StructuredSettingsServiceTests : IDisposable
     private readonly string _tempRoot = Path.Combine(Path.GetTempPath(), "PZServerLauncher.Tests", Guid.NewGuid().ToString("N"));
 
     [Fact]
+    public async Task GetCatalog_B42SandboxIncludesCategoriesOptionsAndDefaults()
+    {
+        Directory.CreateDirectory(_tempRoot);
+        var profile = ServerProfileFactory.CreateStarterProfile() with
+        {
+            ProfileId = "profile-b42-catalog",
+            DisplayName = "Profile B42",
+            ServerName = "profile-b42",
+            InstallDirectory = Path.Combine(_tempRoot, "install-b42"),
+            CacheDirectory = Path.Combine(_tempRoot, "cache-b42"),
+            Branch = ProjectZomboidBranch.Unstable42,
+        };
+
+        var planner = new ProjectZomboidServerPlanner();
+        await using var dbContext = TestDatabaseFactory.Create(Path.Combine(_tempRoot, "catalog-b42.db"));
+        var profileStore = new ProfileStore(dbContext);
+        await profileStore.UpsertAsync(profile);
+
+        var service = CreateService(profileStore, planner);
+        var catalog = service.GetCatalog(profile);
+        var sandboxPage = catalog.Pages.Single(page => page.PageId == ProfileWorkspacePageIds.Sandbox);
+
+        Assert.Equal("pz.settings.b42", catalog.CatalogId);
+        Assert.Equal(4, catalog.CatalogVersion);
+
+        var dayLength = sandboxPage.Sections.SelectMany(section => section.Fields).Single(field => field.FieldId == "b42.sandbox.day-length");
+        Assert.Equal(SettingsFieldControlKind.Select, dayLength.Control);
+        Assert.Contains(dayLength.Options, option => option.Value == "4" && option.Label == "1 Hour, 30 Minutes");
+        Assert.Equal("1 Hour, 30 Minutes", dayLength.DefaultValue);
+
+        var zombieSection = sandboxPage.Sections.First(section => section.SectionId == "b42.sandbox.zombie.basics");
+        Assert.Equal("Zombie", zombieSection.CategoryTitle);
+        Assert.Equal(2, zombieSection.CategoryOrder);
+
+    }
+
+    [Fact]
+    public async Task Validate_B42Sandbox_UsesCatalogDrivenChoiceBooleanAndIntegerRules()
+    {
+        Directory.CreateDirectory(_tempRoot);
+        var profile = ServerProfileFactory.CreateStarterProfile() with
+        {
+            ProfileId = "profile-b42-validate",
+            DisplayName = "Profile B42 Validate",
+            ServerName = "profile-b42-validate",
+            InstallDirectory = Path.Combine(_tempRoot, "install-b42-validate"),
+            CacheDirectory = Path.Combine(_tempRoot, "cache-b42-validate"),
+            Branch = ProjectZomboidBranch.Unstable42,
+        };
+
+        var planner = new ProjectZomboidServerPlanner();
+        var paths = planner.ResolvePaths(profile);
+        Directory.CreateDirectory(Path.GetDirectoryName(paths.SandboxVarsFilePath)!);
+        File.WriteAllText(paths.SandboxVarsFilePath, """
+            SandboxVars = {
+                VERSION = 4,
+                DayLength = "1 Hour, 30 Minutes",
+                StartDay = 9,
+                AllowWorldMap = true,
+            }
+            """);
+
+        await using var dbContext = TestDatabaseFactory.Create(Path.Combine(_tempRoot, "validate-b42.db"));
+        var profileStore = new ProfileStore(dbContext);
+        await profileStore.UpsertAsync(profile);
+
+        var service = CreateService(profileStore, planner);
+        var values = new Dictionary<string, string?>(
+            service.GetPage(profile, ProfileWorkspacePageIds.Sandbox).Values,
+            StringComparer.Ordinal)
+        {
+            ["b42.sandbox.day-length"] = "Invalid",
+            ["b42.sandbox.start-day"] = "nine",
+            ["b42.sandbox.allow-world-map"] = "yes",
+        };
+
+        var validation = service.Validate(profile, ProfileWorkspacePageIds.Sandbox, values);
+
+        Assert.False(validation.IsValid);
+        Assert.Contains("Day Length (in real time) must use one of the supported options.", validation.FieldErrors["b42.sandbox.day-length"]);
+        Assert.Contains("Start Day must be a whole number.", validation.FieldErrors["b42.sandbox.start-day"]);
+        Assert.Contains("Allow World Map must be true or false.", validation.FieldErrors["b42.sandbox.allow-world-map"]);
+    }
+
+    [Fact]
     public async Task GetPage_UsesIniBackedFieldsForGeneralAndNetwork_WhileKeepingLauncherFieldsProfileBacked()
     {
         Directory.CreateDirectory(_tempRoot);
@@ -223,6 +308,60 @@ public sealed class StructuredSettingsServiceTests : IDisposable
         Assert.Equal(string.Empty, networkValues.Values[$"{branchPrefix}.network.admin-password"]);
         Assert.False(generalValues.RequiresAdvancedFilesFallback);
         Assert.False(networkValues.RequiresAdvancedFilesFallback);
+    }
+
+    [Fact]
+    public async Task SaveAsync_GeneralWithoutExistingIni_CreatesInitialIniFromDefaultsAndOverrides()
+    {
+        Directory.CreateDirectory(_tempRoot);
+        var profile = ServerProfileFactory.CreateStarterProfile() with
+        {
+            ProfileId = "profile-general-bootstrap",
+            DisplayName = "Profile General Bootstrap",
+            ServerName = "profile-general-bootstrap",
+            InstallDirectory = Path.Combine(_tempRoot, "install-general-bootstrap"),
+            CacheDirectory = Path.Combine(_tempRoot, "cache-general-bootstrap"),
+            DefaultPort = 17261,
+            UdpPort = 17262,
+            RconPort = 28015,
+            PreferredMemoryInGigabytes = 10,
+        };
+
+        var planner = new ProjectZomboidServerPlanner();
+        var paths = planner.ResolvePaths(profile);
+        await using var dbContext = TestDatabaseFactory.Create(Path.Combine(_tempRoot, "general-bootstrap.db"));
+        var profileStore = new ProfileStore(dbContext);
+        await profileStore.UpsertAsync(profile);
+
+        var service = CreateService(profileStore, planner);
+        var generalValues = new Dictionary<string, string?>(
+            service.GetPage(profile, ProfileWorkspacePageIds.General).Values,
+            StringComparer.Ordinal)
+        {
+            ["b42.server.public-name"] = "Bootstrap Nights",
+            ["b42.server.max-players"] = "24",
+            ["b42.server.port"] = "17261",
+            ["b42.server.udp-port"] = "17262",
+            ["b42.server.rcon-port"] = "28015",
+            ["b42.runtime.memory"] = "10",
+        };
+
+        var saveResult = await service.SaveAsync(profile, ProfileWorkspacePageIds.General, generalValues);
+        var updatedProfile = await profileStore.GetAsync(profile.ProfileId);
+
+        Assert.True(saveResult.Validation.IsValid);
+        Assert.True(File.Exists(paths.IniFilePath));
+
+        var iniText = File.ReadAllText(paths.IniFilePath);
+        Assert.Contains("PublicName=Bootstrap Nights", iniText);
+        Assert.Contains("MaxPlayers=24", iniText);
+        Assert.Contains("DefaultPort=17261", iniText);
+        Assert.Contains("RCONPort=28015", iniText);
+        Assert.NotNull(updatedProfile);
+        Assert.Equal(17261, updatedProfile!.DefaultPort);
+        Assert.Equal(17262, updatedProfile.UdpPort);
+        Assert.Equal(28015, updatedProfile.RconPort);
+        Assert.Equal(10, updatedProfile.PreferredMemoryInGigabytes);
     }
 
     [Fact]
@@ -516,12 +655,20 @@ public sealed class StructuredSettingsServiceTests : IDisposable
     public async Task ModsAndMaps_PageReadsAndWritesIniBackedPresetValues()
     {
         Directory.CreateDirectory(_tempRoot);
+        var installDirectory = Path.Combine(_tempRoot, "install");
+        var firstItemDirectory = Path.Combine(installDirectory, "steamapps", "workshop", "content", "108600", "1234567890", "mods", "ExampleMod");
+        Directory.CreateDirectory(Path.Combine(firstItemDirectory, "media", "maps", "RavenCreek"));
+        File.WriteAllText(Path.Combine(firstItemDirectory, "mod.info"), "id=ExampleMod\nmap=RavenCreek");
+        var secondItemDirectory = Path.Combine(installDirectory, "steamapps", "workshop", "content", "108600", "2345678901", "mods", "AnotherMod");
+        Directory.CreateDirectory(Path.Combine(secondItemDirectory, "media", "maps", "Muldraugh, KY"));
+        File.WriteAllText(Path.Combine(secondItemDirectory, "mod.info"), "id=AnotherMod\nmap=Muldraugh, KY");
+
         var profile = ServerProfileFactory.CreateStarterProfile() with
         {
             ProfileId = "profile-c",
             DisplayName = "Profile C",
             ServerName = "profile-server",
-            InstallDirectory = Path.Combine(_tempRoot, "install"),
+            InstallDirectory = installDirectory,
             CacheDirectory = Path.Combine(_tempRoot, "cache"),
             WorkshopPreset = new WorkshopPreset
             {
@@ -555,7 +702,6 @@ public sealed class StructuredSettingsServiceTests : IDisposable
 
         var saveResult = await service.SaveAsync(profile, ProfileWorkspacePageIds.ModsAndMaps, new Dictionary<string, string?>
         {
-            ["b42.mods.workshop-items"] = "https://steamcommunity.com/sharedfiles/filedetails/?id=1234567890\n2345678901",
             ["b42.mods.enabled-mods"] = "ExampleMod\nAnotherMod",
             ["b42.mods.map-folders"] = "Muldraugh, KY\nRavenCreek",
         });
@@ -778,52 +924,40 @@ public sealed class StructuredSettingsServiceTests : IDisposable
         File.WriteAllText(paths.SandboxVarsFilePath, """
             SandboxVars = {
                 VERSION = 4,
-                Zombies = 4,
-                Distribution = 1,
-                DayLength = 3,
-                StartYear = 1,
-                StartMonth = 4,
-                StartDay = 1,
+                DayLength = 4,
+                StartMonth = 7,
+                StartDay = 9,
                 StartTime = 2,
-                WaterShutModifier = 500,
-                ElecShutModifier = 480,
-                ErosionSpeed = 5,
-                LootRespawn = 2,
-                FoodLoot = 4,
-                WeaponLoot = 2,
-                OtherLoot = 3,
-                Temperature = 3,
-                Rain = 3,
-                Alarm = 6,
+                WaterShutModifier = 14,
+                ElecShutModifier = 14,
+                Alarm = 4,
                 LockedHouses = 6,
-                Farming = 1,
-                StatsDecrease = 4,
+                FireSpread = true,
+                AllowExteriorGenerator = true,
+                FoodRotSpeed = 3,
+                FridgeFactor = 3,
+                ErosionSpeed = 4,
+                FarmingSpeedNew = 1.0,
+                StatsDecrease = 3,
                 NatureAbundance = 3,
-                FoodRotSpeed = 5,
-                FridgeFactor = 5,
                 PlantResilience = 3,
-                PlantAbundance = 3,
+                FarmingAmountNew = 1.0,
                 EndRegen = 3,
                 Helicopter = 2,
-                MetaEvent = 1,
+                MetaEvent = 2,
                 SleepingEvent = 1,
-                GeneratorSpawning = 3,
                 CharacterFreePoints = 0,
                 ConstructionBonusPoints = 3,
-                MultiHit = false,
-                AllowExteriorGenerator = false,
+                MultiHitZombies = false,
                 BoneFracture = true,
                 AttackBlockMovements = true,
                 AllClothesUnlocked = false,
                 VehicleEasyUse = false,
                 PlayerDamageFromCrash = true,
-                FireSpread = true,
-                HoursForCorpseRemoval = 216,
-                DecayingCorpseHealthImpact = 2,
+                HoursForCorpseRemoval = 216.0,
+                DecayingCorpseHealthImpact = 3,
                 BloodLevel = 3,
                 ClothingDegradation = 3,
-                StarterKit = false,
-                Nutrition = false,
                 EnableSnowOnGround = true,
                 EnableVehicles = true,
             }
@@ -837,65 +971,62 @@ public sealed class StructuredSettingsServiceTests : IDisposable
 
         var valueSet = service.GetPage(profile, ProfileWorkspacePageIds.Sandbox);
 
-        Assert.Equal("5", valueSet.Values["b42.sandbox.erosion-speed"]);
-        Assert.Equal("2", valueSet.Values["b42.sandbox.loot-respawn"]);
-        Assert.Equal("6", valueSet.Values["b42.sandbox.alarm"]);
-        Assert.Equal("1", valueSet.Values["b42.sandbox.farming"]);
-        Assert.Equal("5", valueSet.Values["b42.sandbox.food-rot-speed"]);
-        Assert.Equal("3", valueSet.Values["b42.sandbox.end-regen"]);
-        Assert.Equal("2", valueSet.Values["b42.sandbox.helicopter"]);
-        Assert.Equal("1", valueSet.Values["b42.sandbox.meta-event"]);
-        Assert.Equal("1", valueSet.Values["b42.sandbox.sleeping-event"]);
-        Assert.Equal("3", valueSet.Values["b42.sandbox.generator-spawning"]);
+        Assert.Equal("Slow (200 Days)", valueSet.Values["b42.sandbox.erosion-speed"]);
+        Assert.Equal("Sometimes", valueSet.Values["b42.sandbox.alarm"]);
+        Assert.Equal("Very Often", valueSet.Values["b42.sandbox.locked-houses"]);
+        Assert.Equal("1.0", valueSet.Values["b42.sandbox.farming"]);
+        Assert.Equal("Normal", valueSet.Values["b42.sandbox.food-spoilage"]);
+        Assert.Equal("Normal", valueSet.Values["b42.sandbox.end-regen"]);
+        Assert.Equal("Once", valueSet.Values["b42.sandbox.helicopter"]);
+        Assert.Equal("Sometimes", valueSet.Values["b42.sandbox.meta-event"]);
+        Assert.Equal("Never", valueSet.Values["b42.sandbox.sleeping-event"]);
         Assert.Equal("0", valueSet.Values["b42.sandbox.character-free-points"]);
-        Assert.Equal("3", valueSet.Values["b42.sandbox.construction-bonus-points"]);
+        Assert.Equal("Normal", valueSet.Values["b42.sandbox.player-built-construction-strength"]);
         Assert.Equal("false", valueSet.Values["b42.sandbox.multi-hit"]);
-        Assert.Equal("false", valueSet.Values["b42.sandbox.allow-exterior-generator"]);
+        Assert.Equal("true", valueSet.Values["b42.sandbox.allow-exterior-generator"]);
         Assert.Equal("true", valueSet.Values["b42.sandbox.bone-fracture"]);
         Assert.Equal("true", valueSet.Values["b42.sandbox.attack-block-movements"]);
         Assert.Equal("false", valueSet.Values["b42.sandbox.all-clothes-unlocked"]);
         Assert.Equal("false", valueSet.Values["b42.sandbox.vehicle-easy-use"]);
         Assert.Equal("true", valueSet.Values["b42.sandbox.player-damage-from-crash"]);
         Assert.Equal("true", valueSet.Values["b42.sandbox.fire-spread"]);
-        Assert.Equal("216", valueSet.Values["b42.sandbox.hours-for-corpse-removal"]);
-        Assert.Equal("2", valueSet.Values["b42.sandbox.decaying-corpse-health-impact"]);
-        Assert.Equal("3", valueSet.Values["b42.sandbox.blood-level"]);
-        Assert.Equal("3", valueSet.Values["b42.sandbox.clothing-degradation"]);
+        Assert.Equal("216.0", valueSet.Values["b42.sandbox.hours-for-corpse-removal"]);
+        Assert.Equal("Normal", valueSet.Values["b42.sandbox.decaying-corpse-health-impact"]);
+        Assert.Equal("Normal", valueSet.Values["b42.sandbox.blood-level"]);
+        Assert.Equal("Normal", valueSet.Values["b42.sandbox.clothing-degradation"]);
         Assert.Equal("true", valueSet.Values["b42.sandbox.enable-snow-on-ground"]);
         Assert.Equal("true", valueSet.Values["b42.sandbox.enable-vehicles"]);
 
         var saveResult = await service.SaveAsync(profile, ProfileWorkspacePageIds.Sandbox, new Dictionary<string, string?>(valueSet.Values, StringComparer.Ordinal)
         {
-            ["b42.sandbox.erosion-speed"] = "2",
-            ["b42.sandbox.loot-respawn"] = "4",
-            ["b42.sandbox.alarm"] = "3",
-            ["b42.sandbox.locked-houses"] = "4",
-            ["b42.sandbox.farming"] = "4",
-            ["b42.sandbox.stats-decrease"] = "2",
-            ["b42.sandbox.nature-abundance"] = "5",
-            ["b42.sandbox.food-rot-speed"] = "2",
-            ["b42.sandbox.fridge-factor"] = "4",
-            ["b42.sandbox.plant-resilience"] = "4",
-            ["b42.sandbox.plant-abundance"] = "5",
-            ["b42.sandbox.end-regen"] = "2",
-            ["b42.sandbox.helicopter"] = "4",
-            ["b42.sandbox.meta-event"] = "2",
-            ["b42.sandbox.sleeping-event"] = "3",
-            ["b42.sandbox.generator-spawning"] = "5",
+            ["b42.sandbox.erosion-speed"] = "Normal (100 Days)",
+            ["b42.sandbox.alarm"] = "Very Often",
+            ["b42.sandbox.locked-houses"] = "Often",
+            ["b42.sandbox.farming"] = "2.5",
+            ["b42.sandbox.stats-decrease"] = "Slow",
+            ["b42.sandbox.nature-abundance"] = "Abundant",
+            ["b42.sandbox.food-spoilage"] = "Slow",
+            ["b42.sandbox.refrigeration-effectiveness"] = "Very High",
+            ["b42.sandbox.plant-resilience"] = "High",
+            ["b42.sandbox.plant-abundance"] = "1.5",
+            ["b42.sandbox.end-regen"] = "Fast",
+            ["b42.sandbox.helicopter"] = "Often",
+            ["b42.sandbox.meta-event"] = "Often",
+            ["b42.sandbox.sleeping-event"] = "Sometimes",
             ["b42.sandbox.character-free-points"] = "6",
-            ["b42.sandbox.construction-bonus-points"] = "4",
+            ["b42.sandbox.player-built-construction-strength"] = "High",
             ["b42.sandbox.multi-hit"] = "true",
-            ["b42.sandbox.allow-exterior-generator"] = "true",
+            ["b42.sandbox.allow-exterior-generator"] = "false",
             ["b42.sandbox.bone-fracture"] = "false",
             ["b42.sandbox.attack-block-movements"] = "false",
             ["b42.sandbox.all-clothes-unlocked"] = "true",
             ["b42.sandbox.vehicle-easy-use"] = "true",
             ["b42.sandbox.player-damage-from-crash"] = "false",
             ["b42.sandbox.fire-spread"] = "false",
-            ["b42.sandbox.hours-for-corpse-removal"] = "120",
-            ["b42.sandbox.decaying-corpse-health-impact"] = "4",
-            ["b42.sandbox.blood-level"] = "2",
-            ["b42.sandbox.clothing-degradation"] = "2",
+            ["b42.sandbox.hours-for-corpse-removal"] = "120.0",
+            ["b42.sandbox.decaying-corpse-health-impact"] = "High",
+            ["b42.sandbox.blood-level"] = "Low",
+            ["b42.sandbox.clothing-degradation"] = "Fast",
             ["b42.sandbox.enable-snow-on-ground"] = "false",
             ["b42.sandbox.enable-vehicles"] = "true",
         });
@@ -903,36 +1034,34 @@ public sealed class StructuredSettingsServiceTests : IDisposable
         var sandboxText = File.ReadAllText(paths.SandboxVarsFilePath);
 
         Assert.True(saveResult.Validation.IsValid);
-        Assert.Contains("ErosionSpeed = 2", sandboxText);
-        Assert.Contains("LootRespawn = 4", sandboxText);
-        Assert.Contains("Alarm = 3", sandboxText);
-        Assert.Contains("LockedHouses = 4", sandboxText);
-        Assert.Contains("Farming = 4", sandboxText);
-        Assert.Contains("StatsDecrease = 2", sandboxText);
-        Assert.Contains("NatureAbundance = 5", sandboxText);
-        Assert.Contains("FoodRotSpeed = 2", sandboxText);
-        Assert.Contains("FridgeFactor = 4", sandboxText);
-        Assert.Contains("PlantResilience = 4", sandboxText);
-        Assert.Contains("PlantAbundance = 5", sandboxText);
+        Assert.Contains("ErosionSpeed = 3", sandboxText);
+        Assert.Contains("Alarm = 6", sandboxText);
+        Assert.Contains("LockedHouses = 5", sandboxText);
+        Assert.Contains("FarmingSpeedNew = 2.5", sandboxText);
+        Assert.Contains("StatsDecrease = 4", sandboxText);
+        Assert.Contains("NatureAbundance = 4", sandboxText);
+        Assert.Contains("FoodRotSpeed = 4", sandboxText);
+        Assert.Contains("FridgeFactor = 5", sandboxText);
+        Assert.Contains("PlantResilience = 2", sandboxText);
+        Assert.Contains("FarmingAmountNew = 1.5", sandboxText);
         Assert.Contains("EndRegen = 2", sandboxText);
         Assert.Contains("Helicopter = 4", sandboxText);
-        Assert.Contains("MetaEvent = 2", sandboxText);
-        Assert.Contains("SleepingEvent = 3", sandboxText);
-        Assert.Contains("GeneratorSpawning = 5", sandboxText);
+        Assert.Contains("MetaEvent = 3", sandboxText);
+        Assert.Contains("SleepingEvent = 2", sandboxText);
         Assert.Contains("CharacterFreePoints = 6", sandboxText);
         Assert.Contains("ConstructionBonusPoints = 4", sandboxText);
-        Assert.Contains("MultiHit = true", sandboxText);
-        Assert.Contains("AllowExteriorGenerator = true", sandboxText);
+        Assert.Contains("MultiHitZombies = true", sandboxText);
+        Assert.Contains("AllowExteriorGenerator = false", sandboxText);
         Assert.Contains("BoneFracture = false", sandboxText);
         Assert.Contains("AttackBlockMovements = false", sandboxText);
         Assert.Contains("AllClothesUnlocked = true", sandboxText);
         Assert.Contains("VehicleEasyUse = true", sandboxText);
         Assert.Contains("PlayerDamageFromCrash = false", sandboxText);
         Assert.Contains("FireSpread = false", sandboxText);
-        Assert.Contains("HoursForCorpseRemoval = 120", sandboxText);
+        Assert.Contains("HoursForCorpseRemoval = 120.0", sandboxText);
         Assert.Contains("DecayingCorpseHealthImpact = 4", sandboxText);
         Assert.Contains("BloodLevel = 2", sandboxText);
-        Assert.Contains("ClothingDegradation = 2", sandboxText);
+        Assert.Contains("ClothingDegradation = 4", sandboxText);
         Assert.Contains("EnableSnowOnGround = false", sandboxText);
         Assert.Contains("EnableVehicles = true", sandboxText);
     }
@@ -956,16 +1085,28 @@ public sealed class StructuredSettingsServiceTests : IDisposable
         File.WriteAllText(paths.SandboxVarsFilePath, """
             SandboxVars = {
                 VERSION = 4,
-                Zombies = 4,
                 ZombieLore = {
-                    Speed = 3,
-                    Decomp = 1,
-                    Smell = 2,
-                    TriggerHouseAlarm = false,
+                    Speed = 4,
+                    Strength = 2,
+                    Toughness = 4,
+                    Transmission = 1,
+                    Mortality = 5,
+                    Reanimate = 3,
+                    Cognition = 3,
+                    DoorOpeningPercentage = 0,
+                    CrawlUnderVehicle = 5,
+                    Memory = 2,
+                    Sight = 5,
+                    Hearing = 5,
+                    SpottedLogic = true,
                     ThumpNoChasing = false,
                     ThumpOnConstruction = true,
+                    ActiveOnly = 1,
+                    TriggerHouseAlarm = true,
                     ZombiesDragDown = true,
+                    ZombiesCrawlersDragDown = false,
                     ZombiesFenceLunge = true,
+                    DisableFakeDead = 1,
                 }
             }
             """);
@@ -978,59 +1119,74 @@ public sealed class StructuredSettingsServiceTests : IDisposable
 
         var valueSet = service.GetPage(profile, ProfileWorkspacePageIds.Sandbox);
 
-        Assert.Equal("3", valueSet.Values["b42.sandbox.zombie-lore-speed"]);
-        Assert.Equal("2", valueSet.Values["b42.sandbox.zombie-lore-strength"]);
-        Assert.Equal("3", valueSet.Values["b42.sandbox.zombie-lore-cognition"]);
-        Assert.Equal("1", valueSet.Values["b42.sandbox.zombie-lore-decomp"]);
-        Assert.Equal("2", valueSet.Values["b42.sandbox.zombie-lore-smell"]);
-        Assert.Equal("false", valueSet.Values["b42.sandbox.zombie-lore-trigger-house-alarm"]);
-        Assert.Equal("false", valueSet.Values["b42.sandbox.zombie-lore-thump-no-chasing"]);
-        Assert.Equal("true", valueSet.Values["b42.sandbox.zombie-lore-thump-on-construction"]);
-        Assert.Equal("true", valueSet.Values["b42.sandbox.zombie-lore-drag-down"]);
-        Assert.Equal("true", valueSet.Values["b42.sandbox.zombie-lore-fence-lunge"]);
+        Assert.Equal("Random", valueSet.Values["b42.sandbox.zombie-lore-speed"]);
+        Assert.Equal("Normal", valueSet.Values["b42.sandbox.zombie-lore-strength"]);
+        Assert.Equal("Basic Navigation", valueSet.Values["b42.sandbox.zombie-lore-cognition"]);
+        Assert.Equal("0", valueSet.Values["b42.sandbox.random-door-opening-amount"]);
+        Assert.Equal("Often", valueSet.Values["b42.sandbox.crawl-under-vehicle"]);
+        Assert.Equal("Normal", valueSet.Values["b42.sandbox.zombie-lore-memory"]);
+        Assert.Equal("Random between Normal and Poor", valueSet.Values["b42.sandbox.zombie-lore-sight"]);
+        Assert.Equal("Random between Normal and Poor", valueSet.Values["b42.sandbox.zombie-lore-hearing"]);
+        Assert.Equal("true", valueSet.Values["b42.sandbox.new-stealth-system"]);
+        Assert.Equal("false", valueSet.Values["b42.sandbox.environmental-attacks"]);
+        Assert.Equal("true", valueSet.Values["b42.sandbox.damage-construction"]);
+        Assert.Equal("Both", valueSet.Values["b42.sandbox.day-night-zombie-speed-effect"]);
+        Assert.Equal("true", valueSet.Values["b42.sandbox.zombie-house-alarm-triggering"]);
+        Assert.Equal("true", valueSet.Values["b42.sandbox.drag-down"]);
+        Assert.Equal("false", valueSet.Values["b42.sandbox.crawlers-drag-down"]);
+        Assert.Equal("true", valueSet.Values["b42.sandbox.zombie-lunge"]);
+        Assert.Equal("World Zombies", valueSet.Values["b42.sandbox.fake-dead-zombie-reanimation"]);
 
         var saveResult = await service.SaveAsync(profile, ProfileWorkspacePageIds.Sandbox, new Dictionary<string, string?>(valueSet.Values, StringComparer.Ordinal)
         {
-            ["b42.sandbox.zombie-lore-speed"] = "2",
-            ["b42.sandbox.zombie-lore-strength"] = "4",
-            ["b42.sandbox.zombie-lore-toughness"] = "3",
-            ["b42.sandbox.zombie-lore-transmission"] = "2",
-            ["b42.sandbox.zombie-lore-mortality"] = "6",
-            ["b42.sandbox.zombie-lore-reanimate"] = "1",
-            ["b42.sandbox.zombie-lore-cognition"] = "2",
-            ["b42.sandbox.zombie-lore-memory"] = "3",
-            ["b42.sandbox.zombie-lore-decomp"] = "4",
-            ["b42.sandbox.zombie-lore-sight"] = "4",
-            ["b42.sandbox.zombie-lore-hearing"] = "2",
-            ["b42.sandbox.zombie-lore-smell"] = "3",
-            ["b42.sandbox.zombie-lore-trigger-house-alarm"] = "true",
-            ["b42.sandbox.zombie-lore-thump-no-chasing"] = "true",
-            ["b42.sandbox.zombie-lore-thump-on-construction"] = "false",
-            ["b42.sandbox.zombie-lore-drag-down"] = "false",
-            ["b42.sandbox.zombie-lore-fence-lunge"] = "false",
+            ["b42.sandbox.zombie-lore-speed"] = "Sprinters",
+            ["b42.sandbox.zombie-lore-strength"] = "Superhuman",
+            ["b42.sandbox.zombie-lore-toughness"] = "Fragile",
+            ["b42.sandbox.zombie-lore-transmission"] = "None",
+            ["b42.sandbox.zombie-lore-mortality"] = "Never",
+            ["b42.sandbox.zombie-lore-reanimate"] = "Instant",
+            ["b42.sandbox.zombie-lore-cognition"] = "Navigate and Use Doors",
+            ["b42.sandbox.random-door-opening-amount"] = "25",
+            ["b42.sandbox.crawl-under-vehicle"] = "Extremely Rare",
+            ["b42.sandbox.zombie-lore-memory"] = "Long",
+            ["b42.sandbox.zombie-lore-sight"] = "Eagle",
+            ["b42.sandbox.zombie-lore-hearing"] = "Pinpoint",
+            ["b42.sandbox.new-stealth-system"] = "false",
+            ["b42.sandbox.environmental-attacks"] = "true",
+            ["b42.sandbox.damage-construction"] = "false",
+            ["b42.sandbox.day-night-zombie-speed-effect"] = "Night",
+            ["b42.sandbox.zombie-house-alarm-triggering"] = "false",
+            ["b42.sandbox.drag-down"] = "false",
+            ["b42.sandbox.crawlers-drag-down"] = "true",
+            ["b42.sandbox.zombie-lunge"] = "false",
+            ["b42.sandbox.fake-dead-zombie-reanimation"] = "World and Combat Zombies",
         });
 
         var sandboxText = File.ReadAllText(paths.SandboxVarsFilePath);
 
         Assert.True(saveResult.Validation.IsValid);
         Assert.Contains("ZombieLore = {", sandboxText);
-        Assert.Contains("Speed = 2", sandboxText);
-        Assert.Contains("Strength = 4", sandboxText);
+        Assert.Contains("Speed = 1", sandboxText);
+        Assert.Contains("Strength = 1", sandboxText);
         Assert.Contains("Toughness = 3", sandboxText);
-        Assert.Contains("Transmission = 2", sandboxText);
-        Assert.Contains("Mortality = 6", sandboxText);
+        Assert.Contains("Transmission = 4", sandboxText);
+        Assert.Contains("Mortality = 7", sandboxText);
         Assert.Contains("Reanimate = 1", sandboxText);
-        Assert.Contains("Cognition = 2", sandboxText);
-        Assert.Contains("Memory = 3", sandboxText);
-        Assert.Contains("Decomp = 4", sandboxText);
-        Assert.Contains("Sight = 4", sandboxText);
-        Assert.Contains("Hearing = 2", sandboxText);
-        Assert.Contains("Smell = 3", sandboxText);
-        Assert.Contains("TriggerHouseAlarm = true", sandboxText);
+        Assert.Contains("Cognition = 1", sandboxText);
+        Assert.Contains("DoorOpeningPercentage = 25", sandboxText);
+        Assert.Contains("CrawlUnderVehicle = 2", sandboxText);
+        Assert.Contains("Memory = 1", sandboxText);
+        Assert.Contains("Sight = 1", sandboxText);
+        Assert.Contains("Hearing = 1", sandboxText);
+        Assert.Contains("SpottedLogic = false", sandboxText);
         Assert.Contains("ThumpNoChasing = true", sandboxText);
         Assert.Contains("ThumpOnConstruction = false", sandboxText);
+        Assert.Contains("ActiveOnly = 2", sandboxText);
+        Assert.Contains("TriggerHouseAlarm = false", sandboxText);
         Assert.Contains("ZombiesDragDown = false", sandboxText);
+        Assert.Contains("ZombiesCrawlersDragDown = true", sandboxText);
         Assert.Contains("ZombiesFenceLunge = false", sandboxText);
+        Assert.Contains("DisableFakeDead = 2", sandboxText);
     }
 
     [Fact]
@@ -1052,9 +1208,20 @@ public sealed class StructuredSettingsServiceTests : IDisposable
         File.WriteAllText(paths.SandboxVarsFilePath, """
             SandboxVars = {
                 VERSION = 4,
-                Zombies = 4,
                 ZombieConfig = {
-                    PopulationMultiplier = 1.0,
+                    PopulationMultiplier = 0.65,
+                    PopulationStartMultiplier = 1.0,
+                    PopulationPeakMultiplier = 1.5,
+                    PopulationPeakDay = 28,
+                    RespawnHours = 0.0,
+                    RespawnUnseenHours = 0.0,
+                    RespawnMultiplier = 0.0,
+                    RedistributeHours = 12.0,
+                    FollowSoundDistance = 100,
+                    RallyGroupSize = 20,
+                    RallyTravelDistance = 20,
+                    RallyGroupSeparation = 15,
+                    RallyGroupRadius = 3,
                 }
             }
             """);
@@ -1066,15 +1233,15 @@ public sealed class StructuredSettingsServiceTests : IDisposable
         var service = CreateService(profileStore, planner);
         var valueSet = service.GetPage(profile, ProfileWorkspacePageIds.Sandbox);
 
-        Assert.Equal("1.0", valueSet.Values["b42.sandbox.population-multiplier"]);
-        Assert.Equal("1.0", valueSet.Values["b42.sandbox.population-start-multiplier"]);
+        Assert.Equal("Normal", valueSet.Values["b42.sandbox.population-multiplier"]);
+        Assert.Equal("Normal", valueSet.Values["b42.sandbox.population-start-multiplier"]);
         Assert.Equal("28", valueSet.Values["b42.sandbox.population-peak-day"]);
 
         var saveResult = await service.SaveAsync(profile, ProfileWorkspacePageIds.Sandbox, new Dictionary<string, string?>(valueSet.Values, StringComparer.Ordinal)
         {
-            ["b42.sandbox.population-multiplier"] = "1.8",
-            ["b42.sandbox.population-start-multiplier"] = "0.6",
-            ["b42.sandbox.population-peak-multiplier"] = "2.5",
+            ["b42.sandbox.population-multiplier"] = "High",
+            ["b42.sandbox.population-start-multiplier"] = "Low",
+            ["b42.sandbox.population-peak-multiplier"] = "Insane",
             ["b42.sandbox.population-peak-day"] = "45",
             ["b42.sandbox.respawn-hours"] = "96.0",
             ["b42.sandbox.respawn-unseen-hours"] = "18.0",
@@ -1091,9 +1258,9 @@ public sealed class StructuredSettingsServiceTests : IDisposable
 
         Assert.True(saveResult.Validation.IsValid);
         Assert.Contains("ZombieConfig = {", sandboxText);
-        Assert.Contains("PopulationMultiplier = 1.8", sandboxText);
-        Assert.Contains("PopulationStartMultiplier = 0.6", sandboxText);
-        Assert.Contains("PopulationPeakMultiplier = 2.5", sandboxText);
+        Assert.Contains("PopulationMultiplier = 1.2", sandboxText);
+        Assert.Contains("PopulationStartMultiplier = 0.5", sandboxText);
+        Assert.Contains("PopulationPeakMultiplier = 3.0", sandboxText);
         Assert.Contains("PopulationPeakDay = 45", sandboxText);
         Assert.Contains("RespawnHours = 96.0", sandboxText);
         Assert.Contains("RespawnUnseenHours = 18.0", sandboxText);
@@ -1161,19 +1328,16 @@ public sealed class StructuredSettingsServiceTests : IDisposable
             """
             SandboxVars = {
                 VERSION = 4,
-                Zombies = 4,
-                Distribution = 1,
-                DayLength = 3,
-                StartYear = 1,
-                StartMonth = 4,
-                StartDay = 1,
+                DayLength = 4,
+                StartMonth = 7,
+                StartDay = 9,
                 StartTime = 2,
-                WaterShutModifier = 500,
-                ElecShutModifier = 480,
-                ErosionSpeed = 5,
-                LootRespawn = 2,
+                WaterShutModifier = 14,
+                ElecShutModifier = 14,
+                ErosionSpeed = 4,
+                HoursForLootRespawn = 0,
                 Helicopter = 2,
-                MultiHit = false,
+                MultiHitZombies = false,
             }
             """);
 
@@ -1270,9 +1434,9 @@ public sealed class StructuredSettingsServiceTests : IDisposable
             var sandboxValues = new Dictionary<string, string?>(
                 structuredSettings.GetPage(importedProfile, ProfileWorkspacePageIds.Sandbox).Values,
                 StringComparer.Ordinal);
-            sandboxValues["b42.sandbox.erosion-speed"] = "2";
-            sandboxValues["b42.sandbox.loot-respawn"] = "4";
-            sandboxValues["b42.sandbox.helicopter"] = "4";
+            sandboxValues["b42.sandbox.erosion-speed"] = "Normal (100 Days)";
+            sandboxValues["b42.sandbox.hours-for-loot-respawn"] = "6";
+            sandboxValues["b42.sandbox.helicopter"] = "Often";
             sandboxValues["b42.sandbox.multi-hit"] = "true";
 
             var sandboxSave = await structuredSettings.SaveAsync(importedProfile, ProfileWorkspacePageIds.Sandbox, sandboxValues);
@@ -1303,10 +1467,10 @@ public sealed class StructuredSettingsServiceTests : IDisposable
             Assert.Contains("VoiceMinDistance=12", iniText);
             Assert.Contains("VoiceMaxDistance=30", iniText);
 
-            Assert.Contains("ErosionSpeed = 2", sandboxText);
-            Assert.Contains("LootRespawn = 4", sandboxText);
+            Assert.Contains("ErosionSpeed = 3", sandboxText);
+            Assert.Contains("HoursForLootRespawn = 6", sandboxText);
             Assert.Contains("Helicopter = 4", sandboxText);
-            Assert.Contains("MultiHit = true", sandboxText);
+            Assert.Contains("MultiHitZombies = true", sandboxText);
 
             Assert.Equal("warden", importedProfile.AdminUsername);
             Assert.Equal("fresh-secret", importedProfile.AdminPassword);

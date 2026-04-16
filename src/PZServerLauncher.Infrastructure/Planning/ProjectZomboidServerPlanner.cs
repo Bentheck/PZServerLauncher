@@ -100,12 +100,7 @@ public sealed class ProjectZomboidServerPlanner : IProjectZomboidServerPlanner
         string.Join(Environment.NewLine, plan.ScriptLines);
 
     private static string GetAppUpdateCommand(ProjectZomboidBranch branch) =>
-        branch switch
-        {
-            ProjectZomboidBranch.Stable41 => $"app_update {ProjectZomboidDefaults.DedicatedServerAppId} validate",
-            ProjectZomboidBranch.Unstable42 => $"app_update {ProjectZomboidDefaults.DedicatedServerAppId} -beta unstable validate",
-            _ => throw new ArgumentOutOfRangeException(nameof(branch), branch, "Unsupported Project Zomboid branch."),
-        };
+        $"app_update {ProjectZomboidDefaults.DedicatedServerAppId} -beta unstable validate";
 
     private static string QuoteForSteamCmd(string value) =>
         value.Contains(' ', StringComparison.Ordinal) ? $"\"{value}\"" : value;

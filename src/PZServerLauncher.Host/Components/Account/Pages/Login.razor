@@ -125,40 +125,22 @@
                 return;
             }
 
-            result = await SignInManager.PasswordSignInAsync(passwordUser.UserName!, Input.Password, Input.RememberMe, lockoutOnFailure: true);
+            var passwordCheck = await SignInManager.CheckPasswordSignInAsync(passwordUser, Input.Password, lockoutOnFailure: true);
+            if (!passwordCheck.Succeeded)
+            {
+                result = passwordCheck;
+            }
+            else
+            {
+                await SignInManager.SignInAsync(passwordUser, Input.RememberMe);
+                result = SignInResult.Success;
+            }
         }
 
         if (result.Succeeded)
         {
-            var signedInUser = passwordUser;
-            if (signedInUser is null && !string.IsNullOrWhiteSpace(Input.UserName))
-            {
-                signedInUser = await UserManager.FindByNameAsync(Input.UserName);
-            }
-
-            if (signedInUser is not null)
-            {
-                var roles = await UserManager.GetRolesAsync(signedInUser);
-                var requiresTwoFactor = roles.Any(role =>
-                    Enum.TryParse<PZServerLauncher.Core.Runtime.UserRole>(role, out var parsed) &&
-                    PZServerLauncher.Host.Services.UserManagementService.RoleRequiresTwoFactor(parsed));
-
-                if (requiresTwoFactor && !signedInUser.TwoFactorEnabled)
-                {
-                    await SignInManager.SignOutAsync();
-                    errorMessage = "Error: This account requires an authenticator app before web sign-in. Open the local host and complete setup at /Account/Manage/EnableAuthenticator.";
-                    return;
-                }
-            }
-
             Logger.LogInformation("User logged in.");
             RedirectManager.RedirectTo(ReturnUrl);
-        }
-        else if (result.RequiresTwoFactor)
-        {
-            RedirectManager.RedirectTo(
-                "Account/LoginWith2fa",
-                new() { ["returnUrl"] = ReturnUrl, ["rememberMe"] = Input.RememberMe });
         }
         else if (result.IsLockedOut)
         {

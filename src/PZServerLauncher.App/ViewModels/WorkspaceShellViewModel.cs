@@ -4,34 +4,26 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PZServerLauncher.App.Services;
 using PZServerLauncher.Contracts.Runtime;
+using PZServerLauncher.Runtime;
 
 namespace PZServerLauncher.App.ViewModels;
 
 public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHeader
 {
     private readonly DesktopShellService _desktopShellService;
-    private readonly LocalHostApiClient _hostApiClient;
+    private readonly ILauncherRuntime _runtime;
     private readonly SemaphoreSlim _refreshGate = new(1, 1);
-
-    public WorkspaceShellViewModel()
-        : this(
-            new MainWindowViewModel(),
-            new LocalHostApiClient(),
-            new RuntimeEventStream(new LocalHostApiClient()),
-            new DesktopShellService(new DesktopLogService()),
-            new FolderPickerService())
-    {
-    }
+    private const string SupportUrl = "https://buymeacoffee.com/bentheck";
 
     public WorkspaceShellViewModel(
         MainWindowViewModel legacy,
-        LocalHostApiClient hostApiClient,
-        RuntimeEventStream runtimeEventStream,
+        ILauncherRuntime runtime,
         DesktopShellService desktopShellService,
-        FolderPickerService folderPickerService)
+        FolderPickerService folderPickerService,
+        ConsoleWorkspaceStateService consoleWorkspaceStateService)
     {
         Legacy = legacy;
-        _hostApiClient = hostApiClient;
+        _runtime = runtime;
         _desktopShellService = desktopShellService;
         Legacy.Profiles.CollectionChanged += OnLegacyCollectionChanged;
         Legacy.RecentJobs.CollectionChanged += OnLegacyCollectionChanged;
@@ -41,16 +33,10 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
             legacy,
             () => SelectGlobalPageByKey(WorkspacePageIds.Profiles),
             () => SelectGlobalPageByKey(WorkspacePageIds.Consoles),
-            () => SelectGlobalPageByKey(WorkspacePageIds.Host),
-            () => SelectGlobalPageByKey(WorkspacePageIds.RemoteAccess),
-            () => SelectGlobalPageByKey(WorkspacePageIds.Users));
-        Host = new HostWorkspaceViewModel(
-            legacy,
-            () => SelectGlobalPageByKey(WorkspacePageIds.Users));
-        Consoles = new ConsolesWorkspaceViewModel(legacy, hostApiClient, runtimeEventStream);
-        RemoteAccess = new RemoteAccessWorkspaceViewModel(legacy);
-        Users = new UsersWorkspaceViewModel(legacy, hostApiClient);
-        Profiles = new ProfilesWorkspaceViewModel(legacy, hostApiClient, runtimeEventStream, folderPickerService);
+            () => SelectGlobalPageByKey(WorkspacePageIds.Host));
+        Host = new HostWorkspaceViewModel(legacy);
+        Consoles = new ConsolesWorkspaceViewModel(legacy, runtime, consoleWorkspaceStateService);
+        Profiles = new ProfilesWorkspaceViewModel(legacy, runtime, folderPickerService);
 
         _pages = new Dictionary<string, ViewModelBase>(StringComparer.Ordinal)
         {
@@ -58,8 +44,6 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
             [WorkspacePageIds.Profiles] = Profiles,
             [WorkspacePageIds.Consoles] = Consoles,
             [WorkspacePageIds.Host] = Host,
-            [WorkspacePageIds.RemoteAccess] = RemoteAccess,
-            [WorkspacePageIds.Users] = Users,
         };
 
         GlobalNavigation =
@@ -68,8 +52,6 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
             new WorkspaceNavigationItemViewModel(WorkspacePageIds.Profiles, "Servers", Profiles.PageSummary),
             new WorkspaceNavigationItemViewModel(WorkspacePageIds.Consoles, "Consoles", Consoles.PageSummary),
             new WorkspaceNavigationItemViewModel(WorkspacePageIds.Host, "App", Host.PageSummary),
-            new WorkspaceNavigationItemViewModel(WorkspacePageIds.RemoteAccess, "Web Access", RemoteAccess.PageSummary),
-            new WorkspaceNavigationItemViewModel(WorkspacePageIds.Users, "Users", Users.PageSummary),
         ];
 
         CurrentPage = Dashboard;
@@ -82,6 +64,7 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
         ConfirmNavigationDiscardCommand = new AsyncRelayCommand(ConfirmNavigationDiscardAsync);
         CancelNavigationCommand = new RelayCommand(CancelNavigation);
         ExitDesktopCommand = new RelayCommand(() => _desktopShellService.ExitDesktop());
+        OpenSupportCommand = new RelayCommand(() => _desktopShellService.OpenExternalUrl(SupportUrl));
         RefreshLegacyCommand = new AsyncRelayCommand(RefreshWorkspaceAsync);
 
         _ = InitializeAsync();
@@ -104,9 +87,7 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
         ProfilesWorkspaceViewModel => "Choose a server, then walk through install, settings, mods, backups, and logs without leaving the same area.",
         ConsolesWorkspaceViewModel => "Pin the live servers you care about, keep up to four consoles open at once, and swap them from the roster without drilling through profile pages.",
         DashboardWorkspaceViewModel => "Start here to create a new server, import an existing one, or jump back into the last thing you were doing.",
-        HostWorkspaceViewModel => "App settings live here so startup, background host behavior, and machine-wide controls stay in one place.",
-        RemoteAccessWorkspaceViewModel => "Web access is optional. Turn it on only when you want to use this machine from a browser.",
-        UsersWorkspaceViewModel => "Manage the owner account and any browser users here when web access is enabled.",
+        HostWorkspaceViewModel => "App settings live here so startup behavior, integrated runtime controls, and shutdown choices stay in one place.",
         _ => CurrentPageSummary,
     };
 
@@ -118,7 +99,7 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
         ? "No recent activity"
         : $"{Legacy.RecentJobs.Count} recent task{(Legacy.RecentJobs.Count == 1 ? string.Empty : "s")}";
 
-    public string RemotePostureSummary => Legacy.RemoteSummary;
+    public string RuntimePostureSummary => Legacy.HostSummary;
 
     public ObservableCollection<WorkspaceNavigationItemViewModel> GlobalNavigation { get; }
 
@@ -129,10 +110,6 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
     public ConsolesWorkspaceViewModel Consoles { get; }
 
     public HostWorkspaceViewModel Host { get; }
-
-    public RemoteAccessWorkspaceViewModel RemoteAccess { get; }
-
-    public UsersWorkspaceViewModel Users { get; }
 
     [ObservableProperty]
     private ViewModelBase currentPage = null!;
@@ -165,6 +142,8 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
     public IRelayCommand CancelNavigationCommand { get; }
 
     public IRelayCommand ExitDesktopCommand { get; }
+
+    public IRelayCommand OpenSupportCommand { get; }
 
     public IAsyncRelayCommand RefreshLegacyCommand { get; }
 
@@ -219,11 +198,11 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
         await Legacy.RefreshCommand.ExecuteAsync(null);
         OnPropertyChanged(nameof(ProfileCountSummary));
         OnPropertyChanged(nameof(RecentActivitySummary));
-        OnPropertyChanged(nameof(RemotePostureSummary));
+        OnPropertyChanged(nameof(RuntimePostureSummary));
 
         try
         {
-            var bootstrap = await _hostApiClient.GetWorkspaceBootstrapAsync();
+            var bootstrap = await _runtime.GetWorkspaceBootstrapAsync();
             if (bootstrap is not null)
             {
                 ApplyBootstrap(bootstrap);
@@ -312,6 +291,12 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
 
     private async Task NavigateToAsync(ViewModelBase next, string key)
     {
+        if (!ReferenceEquals(CurrentPage, next) &&
+            CurrentPage is ConsolesWorkspaceViewModel currentConsoles)
+        {
+            currentConsoles.SuspendLiveRefresh();
+        }
+
         if (!ReferenceEquals(CurrentPage, next))
         {
             CurrentPage = next;

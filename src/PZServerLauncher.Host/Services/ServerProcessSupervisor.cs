@@ -1,8 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
-using Microsoft.AspNetCore.SignalR;
 using PZServerLauncher.Core.Runtime;
-using PZServerLauncher.Host.Hubs;
 using PZServerLauncher.Host.Infrastructure;
 using PZServerLauncher.Infrastructure.Planning;
 
@@ -12,7 +10,7 @@ public sealed class ServerProcessSupervisor(
     AppPaths appPaths,
     ProjectZomboidServerPlanner planner,
     RuntimeStateStore runtimeStateStore,
-    IHubContext<RuntimeHub> hubContext,
+    IRuntimeEventPublisher runtimeEventPublisher,
     IServiceScopeFactory scopeFactory,
     ILogger<ServerProcessSupervisor> logger)
 {
@@ -36,8 +34,8 @@ public sealed class ServerProcessSupervisor(
             null,
             null,
             null));
-        await hubContext.Clients.All.SendAsync("statusChanged", runtimeStateStore.GetOrDefault(profile.ProfileId), cancellationToken);
-        await hubContext.Clients.All.SendAsync("liveOperationsChanged", liveOperations, cancellationToken);
+        await runtimeEventPublisher.PublishStatusChangedAsync(runtimeStateStore.GetOrDefault(profile.ProfileId), cancellationToken);
+        await runtimeEventPublisher.PublishLiveOperationsChangedAsync(liveOperations, cancellationToken);
 
         var runtimeDir = Path.Combine(appPaths.RuntimeProfileDirectory(profile.ProfileId), "launch");
         Directory.CreateDirectory(runtimeDir);
@@ -46,7 +44,7 @@ public sealed class ServerProcessSupervisor(
         if (!string.IsNullOrWhiteSpace(launchPlan.Notes))
         {
             runtimeStateStore.AppendLog(profile.ProfileId, launchPlan.Notes);
-            await hubContext.Clients.All.SendAsync("logLine", profile.ProfileId, launchPlan.Notes, cancellationToken);
+            await runtimeEventPublisher.PublishLogLineAsync(profile.ProfileId, launchPlan.Notes, cancellationToken);
         }
 
         if (launchPlan.IsLaunchBlocked)
@@ -60,7 +58,7 @@ public sealed class ServerProcessSupervisor(
                 LatestLogLine = launchPlan.Notes,
             };
             runtimeStateStore.Update(blockedStatus);
-            await hubContext.Clients.All.SendAsync("statusChanged", blockedStatus, cancellationToken);
+            await runtimeEventPublisher.PublishStatusChangedAsync(blockedStatus, cancellationToken);
             throw new InvalidOperationException(launchPlan.Notes);
         }
 
@@ -109,7 +107,7 @@ public sealed class ServerProcessSupervisor(
             null,
             runtimeStateStore.GetOrDefault(profile.ProfileId).LatestLogLine));
 
-        await hubContext.Clients.All.SendAsync("statusChanged", runtimeStateStore.GetOrDefault(profile.ProfileId), cancellationToken);
+        await runtimeEventPublisher.PublishStatusChangedAsync(runtimeStateStore.GetOrDefault(profile.ProfileId), cancellationToken);
     }
 
     public async Task<ProfileLiveOperationsSnapshot> SendBroadcastAsync(string profileId, string message, CancellationToken cancellationToken)
@@ -174,8 +172,8 @@ public sealed class ServerProcessSupervisor(
         }
 
         var liveOperations = runtimeStateStore.RecordOperatorAction(profileId, kind, normalizedCommand, summary);
-        await hubContext.Clients.All.SendAsync("statusChanged", runtimeStateStore.GetOrDefault(profileId), cancellationToken);
-        await hubContext.Clients.All.SendAsync("liveOperationsChanged", liveOperations, cancellationToken);
+        await runtimeEventPublisher.PublishStatusChangedAsync(runtimeStateStore.GetOrDefault(profileId), cancellationToken);
+        await runtimeEventPublisher.PublishLiveOperationsChangedAsync(liveOperations, cancellationToken);
         return liveOperations;
     }
 
@@ -198,7 +196,7 @@ public sealed class ServerProcessSupervisor(
             State = ServerRuntimeState.Stopping,
             ProcessId = process.Id,
         });
-        await hubContext.Clients.All.SendAsync("statusChanged", runtimeStateStore.GetOrDefault(profileId), cancellationToken);
+        await runtimeEventPublisher.PublishStatusChangedAsync(runtimeStateStore.GetOrDefault(profileId), cancellationToken);
 
         if (!process.HasExited)
         {
@@ -220,8 +218,8 @@ public sealed class ServerProcessSupervisor(
             StoppedAtUtc = DateTimeOffset.UtcNow,
             LastExitReason = "Stopped by launcher.",
         });
-        await hubContext.Clients.All.SendAsync("statusChanged", runtimeStateStore.GetOrDefault(profileId), cancellationToken);
-        await hubContext.Clients.All.SendAsync("liveOperationsChanged", liveOperations, cancellationToken);
+        await runtimeEventPublisher.PublishStatusChangedAsync(runtimeStateStore.GetOrDefault(profileId), cancellationToken);
+        await runtimeEventPublisher.PublishLiveOperationsChangedAsync(liveOperations, cancellationToken);
     }
 
     public bool IsRunning(string profileId) =>
@@ -235,11 +233,11 @@ public sealed class ServerProcessSupervisor(
         }
 
         var liveOperations = runtimeStateStore.AppendLog(profileId, line);
-        await hubContext.Clients.All.SendAsync("logLine", profileId, line);
+        await runtimeEventPublisher.PublishLogLineAsync(profileId, line);
         if (liveOperations is not null)
         {
-            await hubContext.Clients.All.SendAsync("statusChanged", runtimeStateStore.GetOrDefault(profileId));
-            await hubContext.Clients.All.SendAsync("liveOperationsChanged", liveOperations);
+            await runtimeEventPublisher.PublishStatusChangedAsync(runtimeStateStore.GetOrDefault(profileId));
+            await runtimeEventPublisher.PublishLiveOperationsChangedAsync(liveOperations);
         }
     }
 
@@ -262,8 +260,8 @@ public sealed class ServerProcessSupervisor(
             LastExitReason = stopRequested ? "Stopped by launcher." : $"Process exited with code {process?.ExitCode}.",
         };
         runtimeStateStore.Update(state);
-        await hubContext.Clients.All.SendAsync("statusChanged", state);
-        await hubContext.Clients.All.SendAsync("liveOperationsChanged", liveOperations);
+        await runtimeEventPublisher.PublishStatusChangedAsync(state);
+        await runtimeEventPublisher.PublishLiveOperationsChangedAsync(liveOperations);
 
         if (!stopRequested && autoRestartOnCrash)
         {
@@ -279,7 +277,7 @@ public sealed class ServerProcessSupervisor(
             State = ServerRuntimeState.Starting,
             LastExitReason = "Auto-restarting after crash.",
         });
-        await hubContext.Clients.All.SendAsync("statusChanged", runtimeStateStore.GetOrDefault(profileId));
+        await runtimeEventPublisher.PublishStatusChangedAsync(runtimeStateStore.GetOrDefault(profileId));
 
         await Task.Delay(TimeSpan.FromSeconds(2));
 
@@ -293,7 +291,7 @@ public sealed class ServerProcessSupervisor(
                 State = ServerRuntimeState.Crashed,
                 LastExitReason = "Auto-restart failed because the profile no longer exists.",
             });
-            await hubContext.Clients.All.SendAsync("statusChanged", runtimeStateStore.GetOrDefault(profileId));
+            await runtimeEventPublisher.PublishStatusChangedAsync(runtimeStateStore.GetOrDefault(profileId));
             return;
         }
 
@@ -310,7 +308,7 @@ public sealed class ServerProcessSupervisor(
                 State = ServerRuntimeState.Crashed,
                 LastExitReason = $"Auto-restart failed: {ex.Message}",
             });
-            await hubContext.Clients.All.SendAsync("statusChanged", runtimeStateStore.GetOrDefault(profileId));
+            await runtimeEventPublisher.PublishStatusChangedAsync(runtimeStateStore.GetOrDefault(profileId));
         }
     }
 }

@@ -31,6 +31,32 @@ public sealed class WorkshopPresetScannerServiceTests : IDisposable
         Assert.Contains(result.Diagnostics, message => message.Contains("MissingMap", StringComparison.OrdinalIgnoreCase));
     }
 
+    [Fact]
+    public void ResolveWorkshopItemIds_UsesEnabledModAndMapOrderAndKeepsUnknownFallbacks()
+    {
+        var installDirectory = Path.Combine(_tempRoot, "resolve");
+        var firstItemDirectory = Path.Combine(installDirectory, "steamapps", "workshop", "content", "108600", "1234567890", "mods", "ExampleMod");
+        Directory.CreateDirectory(Path.Combine(firstItemDirectory, "media", "maps", "RavenCreek"));
+        File.WriteAllText(Path.Combine(firstItemDirectory, "mod.info"), "id=ExampleMod\nmap=RavenCreek");
+
+        var secondItemDirectory = Path.Combine(installDirectory, "steamapps", "workshop", "content", "108600", "2345678901", "mods", "AnotherMod");
+        Directory.CreateDirectory(secondItemDirectory);
+        File.WriteAllText(Path.Combine(secondItemDirectory, "mod.info"), "id=AnotherMod");
+
+        var service = new WorkshopPresetScannerService();
+
+        var resolved = service.ResolveWorkshopItemIds(
+            installDirectory,
+            new WorkshopPreset
+            {
+                EnabledModIds = ["AnotherMod", "ExampleMod"],
+                MapFolders = ["RavenCreek"],
+            },
+            ["9999999999", "1234567890"]);
+
+        Assert.Equal(["2345678901", "1234567890", "9999999999"], resolved);
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_tempRoot))
