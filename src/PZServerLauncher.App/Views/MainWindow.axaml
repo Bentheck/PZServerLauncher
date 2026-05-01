@@ -20,145 +20,133 @@
         <vm:WorkspaceShellViewModel />
     </Design.DataContext>
 
-    <Grid RowDefinitions="Auto,Auto,*" RowSpacing="14" Margin="18">
-        <Border Classes="card"
-                Padding="18">
-            <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="14">
-                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="24">
-                    <StackPanel Spacing="4">
-                        <TextBlock Classes="kicker" Text="Workspaces" />
-                        <TextBlock FontSize="30"
-                                   FontWeight="Bold"
-                                   Foreground="#172024"
-                                   Text="{Binding CurrentPageTitle}" />
-                        <TextBlock Classes="caption"
-                                   FontSize="13"
-                                   Foreground="#6A7477"
-                                   Text="{Binding CurrentPageSummary}"
-                                   TextWrapping="Wrap" />
+    <Grid RowDefinitions="Auto,Auto,Auto,Auto,*" RowSpacing="14" Margin="24">
+        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="18">
+            <StackPanel Spacing="4">
+                <TextBlock Classes="kicker" Text="Windows Desktop Control" />
+                <TextBlock FontSize="34"
+                           FontWeight="Bold"
+                           Foreground="#EDF4FF"
+                           Text="PZ Server Launcher" />
+                <TextBlock Classes="caption"
+                           FontSize="13"
+                           Text="{Binding CurrentPageSummary}"
+                           TextWrapping="Wrap" />
+            </StackPanel>
+
+            <StackPanel Grid.Column="1"
+                        Spacing="6"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Center">
+                <TextBlock HorizontalAlignment="Right"
+                           Foreground="#FFD2A0"
+                           FontSize="12"
+                           FontWeight="Bold"
+                           Text="Like what I'm doing?" />
+                <Button Classes="action-warm"
+                        HorizontalAlignment="Right"
+                        MinWidth="182"
+                        Command="{Binding OpenSupportCommand}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock Text="&#x2615;" />
+                        <TextBlock Text="Buy me a coffee" />
                     </StackPanel>
+                </Button>
+            </StackPanel>
 
-                    <StackPanel Grid.Column="1"
-                                Width="320"
-                                Spacing="8"
-                                HorizontalAlignment="Right">
-                        <TextBlock Classes="kicker"
-                                   HorizontalAlignment="Right"
-                                   Text="Workspace Mode" />
-                        <TextBlock Classes="body"
-                                   FontWeight="SemiBold"
-                                   HorizontalAlignment="Right"
-                                   TextAlignment="Right"
-                                   Foreground="#1E2A2E"
-                                   Text="{Binding ActorSummary}"
-                                   TextWrapping="Wrap" />
-                        <WrapPanel Orientation="Horizontal" HorizontalAlignment="Right" ItemHeight="38">
-                            <Button Classes="action-secondary"
-                                    Command="{Binding RefreshLegacyCommand}"
-                                    Content="Refresh" />
-                            <Button Classes="action-danger"
-                                    Command="{Binding ExitDesktopCommand}"
-                                    Content="Close App" />
-                        </WrapPanel>
-                    </StackPanel>
-                </Grid>
+            <StackPanel Grid.Column="2"
+                        Width="330"
+                        Spacing="8"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Center">
+                <TextBlock Classes="caption"
+                           HorizontalAlignment="Right"
+                           TextAlignment="Right"
+                           Text="{Binding ActorSummary}"
+                           TextWrapping="Wrap" />
+                <WrapPanel Orientation="Horizontal" HorizontalAlignment="Right" ItemHeight="38">
+                    <Button Classes="action-secondary"
+                            Command="{Binding RefreshLegacyCommand}"
+                            Content="Refresh"
+                            Margin="0,0,8,0" />
+                    <Button Classes="action-danger"
+                            Command="{Binding ExitDesktopCommand}"
+                            Content="Close App" />
+                </WrapPanel>
+            </StackPanel>
+        </Grid>
 
-                <StackPanel Grid.Row="1" Spacing="8">
-                    <TextBlock Classes="kicker" Text="Jump To" />
-                    <ScrollViewer HorizontalScrollBarVisibility="Auto"
-                                  VerticalScrollBarVisibility="Disabled"
-                                  HorizontalAlignment="Stretch">
-                        <ItemsControl ItemsSource="{Binding GlobalNavigation}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <StackPanel Orientation="Horizontal" />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate x:DataType="vm:WorkspaceNavigationItemViewModel">
-                                    <Button Classes="chrome-free"
-                                            Width="216"
-                                            Height="132"
-                                            Margin="0,0,12,0"
-                                            Padding="0"
-                                            Background="Transparent"
-                                            BorderThickness="0"
-                                            HorizontalContentAlignment="Stretch"
-                                            VerticalContentAlignment="Stretch"
-                                            Command="{Binding #RootWindow.DataContext.SelectGlobalPageCommand}"
-                                            CommandParameter="{Binding .}"
-                                            IsEnabled="{Binding IsEnabled}">
-                                        <Grid RowDefinitions="6,*">
-                                            <Border Background="#355B4C"
-                                                    CornerRadius="16,16,0,0"
-                                                    IsVisible="{Binding IsSelected}" />
-                                            <Border Grid.Row="1"
-                                                    Background="#F7F3EC"
-                                                    BorderBrush="#D9D0C4"
-                                                    BorderThickness="1"
-                                                    CornerRadius="0,16,16,16"
-                                                    Padding="14,12">
-                                                <Grid RowDefinitions="Auto,*"
-                                                      RowSpacing="3">
-                                                    <TextBlock FontSize="16"
-                                                               FontWeight="SemiBold"
-                                                               Foreground="#1B2326"
-                                                               Text="{Binding Title}" />
-                                                    <TextBlock Grid.Row="1"
-                                                               Classes="caption"
-                                                               Foreground="#697075"
-                                                               Text="{Binding Summary}"
-                                                               TextWrapping="Wrap"
-                                                               MaxLines="4"
-                                                               TextTrimming="CharacterEllipsis" />
-                                                </Grid>
-                                            </Border>
-                                        </Grid>
-                                    </Button>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </ScrollViewer>
-                </StackPanel>
+        <ScrollViewer Grid.Row="1"
+                      HorizontalScrollBarVisibility="Auto"
+                      VerticalScrollBarVisibility="Disabled"
+                      HorizontalAlignment="Stretch">
+            <ItemsControl ItemsSource="{Binding GlobalNavigation}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:WorkspaceNavigationItemViewModel">
+                        <Button Classes="chrome-free"
+                                Margin="0,0,8,0"
+                                Padding="0"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                Command="{Binding #RootWindow.DataContext.SelectGlobalPageCommand}"
+                                CommandParameter="{Binding .}"
+                                IsEnabled="{Binding IsEnabled}">
+                            <Border Background="#0AFFFFFF"
+                                    BorderBrush="#2E405F"
+                                    BorderThickness="1"
+                                    CornerRadius="999"
+                                    Padding="16,10">
+                                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="9">
+                                    <Border Width="8"
+                                            Height="8"
+                                            CornerRadius="999"
+                                            Background="#8CF0CC"
+                                            VerticalAlignment="Center"
+                                            IsVisible="{Binding IsSelected}" />
+                                    <TextBlock Grid.Column="1"
+                                               FontSize="13"
+                                               FontWeight="SemiBold"
+                                               Foreground="#DCE8FA"
+                                               Text="{Binding Title}" />
+                                </Grid>
+                            </Border>
+                        </Button>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
 
-                <Grid Grid.Row="2" ColumnDefinitions="*,Auto" ColumnSpacing="18">
-                    <WrapPanel Orientation="Horizontal">
-                        <Border Classes="pill-dark" Margin="0,0,8,8">
-                            <TextBlock Classes="pill-text-light" Text="{Binding ProfileCountSummary}" />
-                        </Border>
-                        <Border Classes="pill-soft-green" Margin="0,0,8,8">
-                            <TextBlock Classes="pill-text-green" Text="{Binding RecentActivitySummary}" />
-                        </Border>
-                        <Border Classes="pill-soft-neutral" Margin="0,0,8,8">
-                            <TextBlock Classes="pill-text-neutral" Text="{Binding RuntimePostureSummary}" />
-                        </Border>
-                        <Border Classes="pill-soft-neutral" Margin="0,0,8,8">
-                            <TextBlock Classes="pill-text-neutral" Text="{Binding WorkspaceGuidance}" />
-                        </Border>
-                    </WrapPanel>
+        <Grid Grid.Row="2" ColumnDefinitions="*,Auto" ColumnSpacing="18">
+            <WrapPanel Orientation="Horizontal">
+                <Border Classes="pill-dark" Margin="0,0,8,8">
+                    <TextBlock Classes="pill-text-light" Text="{Binding ProfileCountSummary}" />
+                </Border>
+                <Border Classes="pill-soft-green" Margin="0,0,8,8">
+                    <TextBlock Classes="pill-text-green" Text="{Binding RecentActivitySummary}" />
+                </Border>
+                <Border Classes="pill-soft-neutral" Margin="0,0,8,8">
+                    <TextBlock Classes="pill-text-neutral" Text="{Binding RuntimePostureSummary}" />
+                </Border>
+                <Border Classes="pill-soft-neutral" Margin="0,0,8,8">
+                    <TextBlock Classes="pill-text-neutral" Text="{Binding WorkspaceGuidance}" />
+                </Border>
+            </WrapPanel>
 
-                    <StackPanel Grid.Column="1"
-                                Spacing="6"
-                                HorizontalAlignment="Right"
-                                VerticalAlignment="Bottom">
-                        <TextBlock Classes="caption"
-                                   HorizontalAlignment="Right"
-                                   Foreground="#7A5A43"
-                                   FontWeight="SemiBold"
-                                   Text="Like what I'm doing?" />
-                        <Button Classes="action-primary"
-                                HorizontalAlignment="Right"
-                                MinWidth="182"
-                                Command="{Binding OpenSupportCommand}"
-                                Content="☕ Buy me a coffee" />
-                    </StackPanel>
-                </Grid>
-            </Grid>
-        </Border>
+            <TextBlock Grid.Column="1"
+                       Classes="kicker"
+                       HorizontalAlignment="Right"
+                       VerticalAlignment="Center"
+                       Text="{Binding CurrentPageTitle}" />
+        </Grid>
 
-        <Border Grid.Row="1"
-                Background="#FFF4E9"
-                BorderBrush="#E2C39E"
+        <Border Grid.Row="3"
+                Background="#22FFB36B"
+                BorderBrush="#72FFB36B"
                 BorderThickness="1"
                 CornerRadius="16"
                 Padding="16,14"
@@ -174,10 +162,8 @@
             </Grid>
         </Border>
 
-        <Grid Grid.Row="2">
-            <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-                <ContentControl Content="{Binding CurrentPage}" />
-            </ScrollViewer>
+        <Grid Grid.Row="4">
+            <ContentControl Content="{Binding CurrentPage}" />
         </Grid>
     </Grid>
 </Window>

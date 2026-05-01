@@ -20,21 +20,21 @@
                                    TextWrapping="Wrap" />
                         <TextBlock Classes="body"
                                    FontSize="16"
-                                   Foreground="#465255"
+                                   Foreground="#C9D5EA"
                                    Text="{Binding DeploymentPosture}"
                                    TextWrapping="Wrap" />
                         <WrapPanel Margin="0,8,0,0" Orientation="Horizontal" ItemHeight="28">
                             <Border Background="#233238" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
                                 <TextBlock Foreground="#F7F8F6" FontSize="11" Text="{Binding Branch}" />
                             </Border>
-                            <Border Background="#EEF3EF" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
-                                <TextBlock Foreground="#355B4C" FontSize="11" Text="{Binding InstallSignal}" />
+                            <Border Background="#224FD8A9" BorderBrush="#6B8CF0CC" BorderThickness="1" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                <TextBlock Foreground="#8CF0CC" FontSize="11" Text="{Binding InstallSignal}" />
                             </Border>
-                            <Border Background="#F4F0E8" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
-                                <TextBlock Foreground="#5A656A" FontSize="11" Text="{Binding LaunchModeSignal}" />
+                            <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                <TextBlock Foreground="#C9D5EA" FontSize="11" Text="{Binding LaunchModeSignal}" />
                             </Border>
-                            <Border Background="#F4F0E8" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
-                                <TextBlock Foreground="#5A656A" FontSize="11" Text="{Binding BackupSignal}" />
+                            <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                <TextBlock Foreground="#C9D5EA" FontSize="11" Text="{Binding BackupSignal}" />
                             </Border>
                         </WrapPanel>
                     </StackPanel>
@@ -44,7 +44,7 @@
                             <TextBlock Classes="kicker" Text="Recommended Next Step" />
                             <TextBlock Classes="body"
                                        FontWeight="SemiBold"
-                                       Foreground="#1F2A2E"
+                                       Foreground="#EDF4FF"
                                        Text="{Binding NextRecommendedAction}"
                                        TextWrapping="Wrap" />
                             <TextBlock Classes="caption" Text="{Binding RuntimeActionSummary}" TextWrapping="Wrap" />
@@ -166,7 +166,7 @@
                         <ItemsControl ItemsSource="{Binding RecentInstallJobs}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border Background="#F5F0E8" CornerRadius="12" Padding="12" Margin="0,0,0,8">
+                                    <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="12" Padding="12" Margin="0,0,0,8">
                                         <StackPanel Spacing="4">
                                             <TextBlock FontWeight="SemiBold" Text="{Binding Status}" />
                                             <TextBlock Classes="caption" Text="{Binding Detail}" TextWrapping="Wrap" />
@@ -187,7 +187,7 @@
                         <ItemsControl ItemsSource="{Binding RecentUpdateJobs}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border Background="#F5F0E8" CornerRadius="12" Padding="12" Margin="0,0,0,8">
+                                    <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="12" Padding="12" Margin="0,0,0,8">
                                         <StackPanel Spacing="4">
                                             <TextBlock FontWeight="SemiBold" Text="{Binding Status}" />
                                             <TextBlock Classes="caption" Text="{Binding Detail}" TextWrapping="Wrap" />
@@ -208,13 +208,13 @@
                         <TextBlock Classes="kicker" Text="Danger Zone" />
                         <TextBlock Classes="panel-title" FontSize="24" Text="Uninstall or delete this server" />
                         <TextBlock Classes="body"
-                                   Foreground="#6A2C22"
+                                   Foreground="#FFB36B"
                                    Text="{Binding RetirementGuardrailSummary}"
                                    TextWrapping="Wrap" />
                     </StackPanel>
 
                     <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
-                        <Border Background="#FBF1E8" BorderBrush="#D8B28D" BorderThickness="1" CornerRadius="16" Padding="16">
+                        <Border Background="#22FFB36B" BorderBrush="#72FFB36B" BorderThickness="1" CornerRadius="16" Padding="16">
                             <StackPanel Spacing="10">
                                 <TextBlock Classes="kicker" Text="Uninstall Server" />
                                 <TextBlock Classes="body" FontWeight="SemiBold" Text="Remove the dedicated-server files only" />
@@ -226,7 +226,7 @@
                                         IsEnabled="{Binding CanArmUninstallServer}"
                                         IsVisible="{Binding ShowUninstallServerArmButton}" />
 
-                                <Border Background="#FFF6F0"
+                                <Border Background="#1EFF8F8F"
                                         BorderBrush="#D48A6D"
                                         BorderThickness="1"
                                         CornerRadius="12"
@@ -235,7 +235,7 @@
                                     <StackPanel Spacing="8">
                                         <TextBlock Classes="body"
                                                    FontWeight="SemiBold"
-                                                   Foreground="#6A2C22"
+                                                   Foreground="#FFF3F3"
                                                    Text="Confirm uninstall. This keeps the profile, backups, and cache so you can reinstall later."
                                                    TextWrapping="Wrap" />
                                         <WrapPanel Orientation="Horizontal" ItemHeight="36">
@@ -252,7 +252,7 @@
                             </StackPanel>
                         </Border>
 
-                        <Border Grid.Column="1" Background="#FFF1ED" BorderBrush="#D48A6D" BorderThickness="1" CornerRadius="16" Padding="16">
+                        <Border Grid.Column="1" Background="#22FF8F8F" BorderBrush="#72FF8F8F" BorderThickness="1" CornerRadius="16" Padding="16">
                             <StackPanel Spacing="10">
                                 <TextBlock Classes="kicker" Text="Delete Profile" />
                                 <TextBlock Classes="body" FontWeight="SemiBold" Text="Remove this server from the launcher" />
@@ -264,7 +264,7 @@
                                         IsEnabled="{Binding CanArmDeleteProfile}"
                                         IsVisible="{Binding ShowDeleteProfileArmButton}" />
 
-                                <Border Background="#FFF6F0"
+                                <Border Background="#1EFF8F8F"
                                         BorderBrush="#D48A6D"
                                         BorderThickness="1"
                                         CornerRadius="12"
@@ -273,7 +273,7 @@
                                     <StackPanel Spacing="8">
                                         <TextBlock Classes="body"
                                                    FontWeight="SemiBold"
-                                                   Foreground="#6A2C22"
+                                                   Foreground="#FFF3F3"
                                                    Text="Confirm delete. The launcher will remove this profile and clean up launcher-managed folders, backups, logs, and runtime artifacts."
                                                    TextWrapping="Wrap" />
                                         <WrapPanel Orientation="Horizontal" ItemHeight="36">

@@ -17,7 +17,7 @@
                         <TextBlock Classes="panel-title" FontSize="30" Text="{Binding RecoveryHeroTitle}" />
                         <TextBlock Classes="body"
                                    FontSize="16"
-                                   Foreground="#45382E"
+                                   Foreground="#C9D5EA"
                                    Text="{Binding RecoveryHeroCopy}"
                                    TextWrapping="Wrap" />
                         <TextBlock Classes="caption"
@@ -28,11 +28,11 @@
                             <Border Background="#2A2927" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
                                 <TextBlock Foreground="#F7F0E7" FontSize="11" Text="{Binding Branch}" />
                             </Border>
-                            <Border Background="#EAD6BF" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
-                                <TextBlock Foreground="#5A4330" FontSize="11" Text="{Binding BackupCountSummary}" />
+                            <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                <TextBlock Foreground="#C9D5EA" FontSize="11" Text="{Binding BackupCountSummary}" />
                             </Border>
-                            <Border Background="#EAD6BF" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
-                                <TextBlock Foreground="#5A4330" FontSize="11" Text="{Binding LatestBackupSummary}" />
+                            <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                <TextBlock Foreground="#C9D5EA" FontSize="11" Text="{Binding LatestBackupSummary}" />
                             </Border>
                         </WrapPanel>
                     </StackPanel>
@@ -104,7 +104,7 @@
                                    Text="{Binding BackupInventorySummary}"
                                    TextWrapping="Wrap" />
                         <TextBlock Classes="caption"
-                                   Foreground="#CCB9A8"
+                                   Foreground="#A8B6D4"
                                    Text="Manual, pre-update, and scheduled archives appear newest-first."
                                    TextWrapping="Wrap" />
 
@@ -115,14 +115,14 @@
                                  MinHeight="420">
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
-                                    <Border Background="#F8F0E6" CornerRadius="14" Padding="12" Margin="0,0,0,8">
+                                    <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="14" Padding="12" Margin="0,0,0,8">
                                         <StackPanel Spacing="4">
                                             <StackPanel Orientation="Horizontal" Spacing="8">
-                                                <TextBlock FontWeight="SemiBold" Foreground="#191512" Text="{Binding Title}" />
+                                                <TextBlock FontWeight="SemiBold" Foreground="#EDF4FF" Text="{Binding Title}" />
                                                 <Border Background="#E5A26B" CornerRadius="999" Padding="8,2" IsVisible="{Binding IsLatest}">
                                                     <TextBlock Foreground="#1F1D1B" FontSize="11" FontWeight="SemiBold" Text="Latest" />
                                                 </Border>
-                                                <Border Background="#26201A" CornerRadius="999" Padding="8,2">
+                                                <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="999" Padding="8,2">
                                                     <TextBlock Foreground="#F7F0E7" FontSize="11" Text="{Binding KindLabel}" />
                                                 </Border>
                                             </StackPanel>
@@ -152,9 +152,9 @@
                                        Foreground="#F7F0E7"
                                        Text="{Binding RecoveryModeHeadline}"
                                        TextWrapping="Wrap" />
-                            <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding RestoreRiskHeadline}" TextWrapping="Wrap" />
-                            <TextBlock Classes="caption" Foreground="#CCBBA8" Text="{Binding RestoreModeSummary}" TextWrapping="Wrap" />
-                            <TextBlock Classes="caption" Foreground="#CCBBA8" Text="{Binding RecoveryGuidance}" TextWrapping="Wrap" />
+                            <TextBlock Classes="body" Foreground="#C9D5EA" Text="{Binding RestoreRiskHeadline}" TextWrapping="Wrap" />
+                            <TextBlock Classes="caption" Foreground="#A8B6D4" Text="{Binding RestoreModeSummary}" TextWrapping="Wrap" />
+                            <TextBlock Classes="caption" Foreground="#A8B6D4" Text="{Binding RecoveryGuidance}" TextWrapping="Wrap" />
 
                             <WrapPanel Orientation="Horizontal" ItemWidth="168" ItemHeight="36">
                                 <Button Classes="action-primary" Command="{Binding CreateBackupCommand}" Content="Create Backup" IsEnabled="{Binding CanCreateBackup}" />
@@ -166,7 +166,7 @@
                                       IsChecked="{Binding RestartAfterRestore}"
                                       IsEnabled="{Binding CanRestore}" />
 
-                            <TextBlock Classes="caption" Foreground="#CCBBA8" Text="{Binding LoadStatus}" TextWrapping="Wrap" />
+                            <TextBlock Classes="caption" Foreground="#A8B6D4" Text="{Binding LoadStatus}" TextWrapping="Wrap" />
                         </StackPanel>
                     </Border>
 
@@ -188,7 +188,7 @@
                             <ItemsControl ItemsSource="{Binding RecoveryChecklist}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <Border Background="#F5E8DA" CornerRadius="12" Padding="10" Margin="0,0,0,8">
+                                        <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="12" Padding="10" Margin="0,0,0,8">
                                             <TextBlock Classes="caption" Text="{Binding .}" TextWrapping="Wrap" />
                                         </Border>
                                     </DataTemplate>

@@ -11,101 +11,44 @@
              x:Name="ModsRoot"
              x:DataType="vm:ModsAndMapsWorkspaceViewModel">
     <Grid>
-        <ScrollViewer>
-            <Grid RowDefinitions="Auto,Auto,*" RowSpacing="18">
-            <Grid ColumnDefinitions="1.4*,340" ColumnSpacing="18">
-                <Border Classes="card" Padding="26">
-                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18">
-                        <StackPanel Spacing="8">
-                            <TextBlock Classes="kicker" Text="Loadout Control Deck" />
-                            <TextBlock Classes="panel-title" FontSize="30" Text="{Binding ProfileDisplayName}" />
-                            <TextBlock Classes="body" FontSize="16" Foreground="#45382E" Text="{Binding WorkspaceSummary}" TextWrapping="Wrap" />
-                            <TextBlock Classes="caption" Text="{Binding ModsNextStepSummary}" TextWrapping="Wrap" />
-                            <WrapPanel Margin="0,8,0,0" Orientation="Horizontal" ItemHeight="30">
-                                <Border Background="#2A2927" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
-                                    <TextBlock Foreground="#F7F0E7" FontSize="11" Text="{Binding Branch}" />
-                                </Border>
-                                <Border Background="#EAD6BF" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
-                                    <TextBlock Foreground="#5A4330" FontSize="11" Text="{Binding LoadoutHeadline}" />
-                                </Border>
-                                <Border Background="#EAD6BF" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
-                                    <TextBlock Foreground="#5A4330" FontSize="11" Text="{Binding ValidationHeadline}" />
-                                </Border>
-                            </WrapPanel>
-                        </StackPanel>
-                        <Border Grid.Column="1" Classes="metric-card" Padding="16" Width="220">
-                            <StackPanel Spacing="6">
-                                <TextBlock Classes="kicker" Text="Rollback" />
-                                <TextBlock Classes="body" FontWeight="SemiBold" Text="{Binding RecoverySummary}" TextWrapping="Wrap" />
-                            </StackPanel>
-                        </Border>
-                    </Grid>
-                </Border>
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                      VerticalScrollBarVisibility="Auto">
+            <Grid RowDefinitions="Auto,*" RowSpacing="18">
+            <Border Classes="card" Padding="26">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18">
+                    <StackPanel Spacing="8">
+                        <TextBlock Classes="kicker" Text="Mods &amp; Maps" />
+                        <TextBlock Classes="panel-title" FontSize="30" Text="{Binding ProfileDisplayName}" />
+                        <TextBlock Classes="body" FontSize="16" Foreground="#C9D5EA" Text="{Binding WorkspaceSummary}" TextWrapping="Wrap" />
+                        <WrapPanel Margin="0,8,0,0" Orientation="Horizontal" ItemHeight="30">
+                            <Border Background="#2A2927" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                <TextBlock Foreground="#F7F0E7" FontSize="11" Text="{Binding Branch}" />
+                            </Border>
+                            <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                <TextBlock Foreground="#C9D5EA" FontSize="11" Text="{Binding LoadoutHeadline}" />
+                            </Border>
+                            <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                <TextBlock Foreground="#C9D5EA" FontSize="11" Text="{Binding ValidationHeadline}" />
+                            </Border>
+                            <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                <TextBlock Foreground="#C9D5EA" FontSize="11" Text="{Binding MapChainHeadline}" />
+                            </Border>
+                        </WrapPanel>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="8" Width="260">
+                        <TextBlock Classes="kicker" Text="Scanner" />
+                        <TextBlock Classes="body" FontWeight="SemiBold" Text="{Binding ScannerSummary}" TextWrapping="Wrap" />
+                        <TextBlock Classes="caption" Text="{Binding ScanReadinessSummary}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Grid>
+            </Border>
 
-                <Border Grid.Column="1" Classes="surface-dark" Padding="18">
-                    <StackPanel Spacing="10">
-                        <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Scanner Watch" />
-                        <TextBlock FontSize="22" FontWeight="SemiBold" Foreground="#F7F0E7" Text="{Binding ScannerSummary}" TextWrapping="Wrap" />
-                        <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding ScanReadinessSummary}" TextWrapping="Wrap" />
-                        <TextBlock Classes="caption" Foreground="#CCB9A8" Text="{Binding QueueIntegritySummary}" TextWrapping="Wrap" />
-                    </StackPanel>
-                </Border>
-            </Grid>
-
-            <Grid Grid.Row="1" ColumnDefinitions="*,*,*,*" ColumnSpacing="14">
-                <Border Classes="metric-card" Padding="16">
-                    <StackPanel Spacing="6">
-                        <TextBlock Classes="kicker" Text="Live Stack" />
-                        <TextBlock Classes="panel-title" FontSize="22" Text="{Binding LoadoutHeadline}" TextWrapping="Wrap" />
-                        <TextBlock Classes="caption" Text="{Binding WorkshopSummary}" TextWrapping="Wrap" />
-                    </StackPanel>
-                </Border>
-                <Border Grid.Column="1" Classes="metric-card" Padding="16">
-                    <StackPanel Spacing="6">
-                        <TextBlock Classes="kicker" Text="Validation" />
-                        <TextBlock Classes="panel-title" FontSize="22" Text="{Binding ValidationHeadline}" TextWrapping="Wrap" />
-                        <TextBlock Classes="caption" Text="{Binding ScannerSummary}" TextWrapping="Wrap" />
-                    </StackPanel>
-                </Border>
-                <Border Grid.Column="2" Classes="metric-card" Padding="16">
-                    <StackPanel Spacing="6">
-                        <TextBlock Classes="kicker" Text="Preset Library" />
-                        <TextBlock Classes="panel-title" FontSize="22" Text="{Binding PresetLibraryHeadline}" TextWrapping="Wrap" />
-                        <TextBlock Classes="caption" Text="{Binding SavedPresetSummary}" TextWrapping="Wrap" />
-                    </StackPanel>
-                </Border>
-                <Border Grid.Column="3" Classes="metric-card" Padding="16">
-                    <StackPanel Spacing="6">
-                        <TextBlock Classes="kicker" Text="Map Chain" />
-                        <TextBlock Classes="panel-title" FontSize="22" Text="{Binding MapChainHeadline}" TextWrapping="Wrap" />
-                        <TextBlock Classes="caption" Text="{Binding MapOrderSummary}" TextWrapping="Wrap" />
-                    </StackPanel>
-                </Border>
-            </Grid>
-
-            <Grid Grid.Row="2" ColumnDefinitions="1.22*,.78*" ColumnSpacing="18">
+            <Grid Grid.Row="1" ColumnDefinitions="1.22*,.78*" ColumnSpacing="18">
                 <StackPanel Spacing="18">
-                    <Border Classes="surface-dark" Padding="22">
-                        <StackPanel Spacing="10">
-                            <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Loadout Situation" />
-                            <TextBlock FontSize="26" FontWeight="SemiBold" Foreground="#F7F0E7" Text="{Binding QueueIntegritySummary}" TextWrapping="Wrap" />
-                            <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding MapOrderSummary}" TextWrapping="Wrap" />
-                            <TextBlock Classes="caption" Foreground="#CCB9A8" Text="{Binding RecoverySummary}" TextWrapping="Wrap" />
-                        </StackPanel>
-                    </Border>
-
                     <Border Classes="card" Padding="18">
                         <StackPanel Spacing="12">
                             <TextBlock Classes="panel-title" FontSize="22" Text="Workshop browser" />
                             <TextBlock Classes="body" Text="{Binding WorkshopBrowserSummary}" TextWrapping="Wrap" />
-                            <Border Background="#FFF7EC" CornerRadius="12" Padding="12">
-                                <StackPanel Spacing="6">
-                                    <TextBlock Classes="kicker" Text="Collection Import" />
-                                    <TextBlock Classes="caption"
-                                               Text="{Binding WorkshopCollectionImportSummary}"
-                                               TextWrapping="Wrap" />
-                                </StackPanel>
-                            </Border>
                             <Grid ColumnDefinitions="*,180,180,Auto" ColumnSpacing="8">
                                 <TextBox Text="{Binding SearchQuery}" PlaceholderText="Search mod / collection name, or paste a Workshop item / collection URL / ID" />
                                 <ComboBox Grid.Column="1" ItemsSource="{Binding AvailableSearchModes}" SelectedItem="{Binding SearchMode}" />
@@ -119,14 +62,10 @@
 
                             <TextBlock Classes="caption" Text="{Binding WorkshopBrowserModeSummary}" />
 
-                            <Border Background="#FFF7EC" CornerRadius="12" Padding="12" IsVisible="{Binding ShowSteamApiKeyHelper}">
+                            <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="12" Padding="12" IsVisible="{Binding ShowSteamApiKeyHelper}">
                                 <StackPanel Spacing="8">
                                     <TextBlock Classes="kicker" Text="Steam Search Helper" />
                                     <TextBlock Classes="caption" Text="Steam search needs a Steam Web API user key. You can still search the local cache or paste a Workshop ID manually without it." TextWrapping="Wrap" />
-                                    <TextBlock Classes="caption" Text="1. Sign in on steamcommunity.com" TextWrapping="Wrap" />
-                                    <TextBlock Classes="caption" Text="2. Open steamcommunity.com/dev/apikey" TextWrapping="Wrap" />
-                                    <TextBlock Classes="caption" Text="3. Register a key for a domain name" TextWrapping="Wrap" />
-                                    <TextBlock Classes="caption" Text="4. Paste the generated key here" TextWrapping="Wrap" />
                                 </StackPanel>
                             </Border>
 
@@ -141,28 +80,28 @@
                             <ItemsControl ItemsSource="{Binding WorkshopSearchResults}" IsVisible="{Binding HasWorkshopSearchResults}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="vm:ModsAndMapsWorkspaceViewModel+WorkshopCatalogItemViewModel">
-                                        <Border Background="#F6EFE6" CornerRadius="14" Padding="12" Margin="0,0,0,10">
+                                        <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="14" Padding="12" Margin="0,0,0,10">
                                             <Grid ColumnDefinitions="96,*,Auto" ColumnSpacing="12">
-                                                <Border Width="96" Height="58" Background="#E9DDCF" CornerRadius="10">
+                                                <Border Width="96" Height="58" Background="#10FFFFFF" BorderBrush="#20FFFFFF" BorderThickness="1" CornerRadius="10">
                                                     <Image Source="{Binding PreviewImage}" Stretch="UniformToFill" IsVisible="{Binding HasPreviewImage}" />
                                                 </Border>
                                                 <StackPanel Grid.Column="1" Spacing="4">
-                                                    <TextBlock FontWeight="SemiBold" Foreground="#1F1A14" Text="{Binding Title}" TextWrapping="Wrap" />
+                                                    <TextBlock FontWeight="SemiBold" Foreground="#EDF4FF" Text="{Binding Title}" TextWrapping="Wrap" />
                                                     <TextBlock Classes="caption" Text="{Binding WorkshopId}" />
                                                     <WrapPanel Orientation="Horizontal">
-                                                        <Border Background="#D8C1A4" CornerRadius="999" Padding="8,3" Margin="0,0,6,6" IsVisible="{Binding IsCollection}">
-                                                            <TextBlock Classes="kicker" Foreground="#5A3922" Text="{Binding KindLabel}" />
+                                                        <Border Background="#22FFB36B" BorderBrush="#72FFB36B" BorderThickness="1" CornerRadius="999" Padding="8,3" Margin="0,0,6,6" IsVisible="{Binding IsCollection}">
+                                                            <TextBlock Classes="kicker" Foreground="#FFDCB8" Text="{Binding KindLabel}" />
                                                         </Border>
-                                                        <Border Background="#EAD6BF" CornerRadius="999" Padding="8,3" Margin="0,0,6,6" IsVisible="{Binding IsCollection}">
+                                                        <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="999" Padding="8,3" Margin="0,0,6,6" IsVisible="{Binding IsCollection}">
                                                             <TextBlock Classes="kicker" Text="{Binding CollectionItemCount, StringFormat='Child items: {0}'}" />
                                                         </Border>
-                                                        <Border Background="#EAD6BF" CornerRadius="999" Padding="8,3" Margin="0,0,6,6">
+                                                        <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="999" Padding="8,3" Margin="0,0,6,6">
                                                             <TextBlock Classes="kicker" Text="{Binding SourceLabel}" />
                                                         </Border>
-                                                        <Border Background="#EAD6BF" CornerRadius="999" Padding="8,3" Margin="0,0,6,6">
+                                                        <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="999" Padding="8,3" Margin="0,0,6,6">
                                                             <TextBlock Classes="kicker" Text="{Binding IsInstalledLocally, StringFormat='Installed locally: {0}'}" />
                                                         </Border>
-                                                        <Border Background="#EAD6BF" CornerRadius="999" Padding="8,3" Margin="0,0,6,6">
+                                                        <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="999" Padding="8,3" Margin="0,0,6,6">
                                                             <TextBlock Classes="kicker" Text="{Binding IsQueued, StringFormat='Queued: {0}'}" />
                                                         </Border>
                                                     </WrapPanel>
@@ -182,7 +121,7 @@
 
                             <TextBlock Classes="caption" IsVisible="{Binding HasNoWorkshopSearchResults}" Text="No Workshop results yet. Search by mod or collection name, or paste a Workshop item / collection ID or URL to resolve it." TextWrapping="Wrap" />
 
-                            <Border Background="#FFF7EC" CornerRadius="12" Padding="12">
+                            <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="12" Padding="12">
                                 <StackPanel Spacing="8">
                                     <TextBlock Classes="kicker" Text="Steam API Key" />
                                     <TextBlock Classes="caption"
@@ -223,7 +162,7 @@
                             <TextBlock Classes="body" Text="Shape the live enabled-mod and map order here. Workshop items are resolved behind the scenes from the server mods you keep in this stack." TextWrapping="Wrap" />
 
                             <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
-                                <Border Background="#FBF7F1" CornerRadius="14" Padding="14">
+                                <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="14" Padding="14">
                                     <StackPanel Spacing="10">
                                         <TextBlock Classes="kicker" Text="Enabled Mods" />
                                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
@@ -237,9 +176,9 @@
                                         <ItemsControl ItemsSource="{Binding EnabledModEntries}" IsVisible="{Binding HasEnabledModEntries}">
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate x:DataType="vm:ModsAndMapsWorkspaceViewModel+PresetEntryViewModel">
-                                                    <Border Background="#F6EFE6" CornerRadius="12" Padding="10" Margin="0,0,0,8">
+                                                    <Border Background="#10FFFFFF" BorderBrush="#20FFFFFF" BorderThickness="1" CornerRadius="12" Padding="10" Margin="0,0,0,8">
                                                         <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="8">
-                                                            <Border Background="#E9DDCF" CornerRadius="999" Padding="8,4"><TextBlock Classes="kicker" Text="{Binding OrderLabel}" /></Border>
+                                                            <Border Background="#22FFB36B" BorderBrush="#72FFB36B" BorderThickness="1" CornerRadius="999" Padding="8,4"><TextBlock Classes="kicker" Foreground="#FFDCB8" Text="{Binding OrderLabel}" /></Border>
                                                             <TextBlock Grid.Column="1" Classes="body" Text="{Binding Value}" TextWrapping="Wrap" VerticalAlignment="Center" />
                                                             <Button Grid.Column="2" Classes="action-secondary" Command="{Binding #ModsRoot.DataContext.MoveEntryUpCommand}" CommandParameter="{Binding .}" Content="Up" />
                                                             <Button Grid.Column="3" Classes="action-secondary" Command="{Binding #ModsRoot.DataContext.MoveEntryDownCommand}" CommandParameter="{Binding .}" Content="Down" />
@@ -253,7 +192,7 @@
                                     </StackPanel>
                                 </Border>
 
-                                <Border Grid.Column="1" Background="#FBF7F1" CornerRadius="14" Padding="14">
+                                <Border Grid.Column="1" Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="14" Padding="14">
                                     <StackPanel Spacing="10">
                                         <TextBlock Classes="kicker" Text="Map Chain" />
                                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
@@ -267,9 +206,9 @@
                                         <ItemsControl ItemsSource="{Binding MapEntries}" IsVisible="{Binding HasMapEntries}">
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate x:DataType="vm:ModsAndMapsWorkspaceViewModel+PresetEntryViewModel">
-                                                    <Border Background="#F6EFE6" CornerRadius="12" Padding="10" Margin="0,0,0,8">
+                                                    <Border Background="#10FFFFFF" BorderBrush="#20FFFFFF" BorderThickness="1" CornerRadius="12" Padding="10" Margin="0,0,0,8">
                                                         <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="8">
-                                                            <Border Background="#E9DDCF" CornerRadius="999" Padding="8,4"><TextBlock Classes="kicker" Text="{Binding OrderLabel}" /></Border>
+                                                            <Border Background="#22FFB36B" BorderBrush="#72FFB36B" BorderThickness="1" CornerRadius="999" Padding="8,4"><TextBlock Classes="kicker" Foreground="#FFDCB8" Text="{Binding OrderLabel}" /></Border>
                                                             <TextBlock Grid.Column="1" Classes="body" Text="{Binding Value}" TextWrapping="Wrap" VerticalAlignment="Center" />
                                                             <Button Grid.Column="2" Classes="action-secondary" Command="{Binding #ModsRoot.DataContext.MoveEntryUpCommand}" CommandParameter="{Binding .}" Content="Up" />
                                                             <Button Grid.Column="3" Classes="action-secondary" Command="{Binding #ModsRoot.DataContext.MoveEntryDownCommand}" CommandParameter="{Binding .}" Content="Down" />
@@ -304,35 +243,11 @@
 
                 <Border Grid.Column="1" Classes="surface-dark" Padding="18">
                     <StackPanel Spacing="14">
-                        <Border Background="#F0E2D0" CornerRadius="16" Padding="14">
-                            <StackPanel Spacing="8">
-                                <TextBlock Classes="kicker" Text="Preview Modal" />
-                                <TextBlock Classes="body"
-                                           FontWeight="SemiBold"
-                                           Text="{Binding SelectedWorkshopPreview.Title}"
-                                           IsVisible="{Binding HasSelectedWorkshopPreview}"
-                                           TextWrapping="Wrap" />
-                                <TextBlock Classes="caption"
-                                           Text="Preview opens in a modal now so the image, collection contents, and queue impact all fit without crowding the workspace."
-                                           TextWrapping="Wrap" />
-                                <TextBlock Classes="caption"
-                                           IsVisible="{Binding HasSelectedWorkshopPreview}"
-                                           Text="{Binding SelectedWorkshopPreview.WorkshopId, StringFormat='Last previewed: {0}'}"
-                                           TextWrapping="Wrap" />
-                                <TextBlock Classes="caption"
-                                           IsVisible="{Binding SelectedWorkshopPreview.Item.IsCollection}"
-                                           Text="{Binding SelectedWorkshopPreview.Item.CollectionItemCount, StringFormat='Child items: {0}'}"
-                                           TextWrapping="Wrap" />
-                            </StackPanel>
-                        </Border>
-
-                        <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Command Tower" />
+                        <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Actions" />
                         <TextBlock FontSize="24" FontWeight="SemiBold" Foreground="#F7F0E7" Text="{Binding ValidationHeadline}" TextWrapping="Wrap" />
-                        <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding QueueIntegritySummary}" TextWrapping="Wrap" />
 
-                        <Border Background="#2B221C" CornerRadius="16" Padding="14">
+                        <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="16" Padding="14">
                             <StackPanel Spacing="8">
-                                <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Actions" />
                                 <WrapPanel Orientation="Horizontal" ItemWidth="152" ItemHeight="36">
                                     <Button Classes="action-primary" Command="{Binding SaveSettingsCommand}" Content="Apply Settings" />
                                     <Button Classes="action-secondary" Command="{Binding SaveDraftCommand}" Content="Save Draft" />
@@ -342,7 +257,7 @@
                             </StackPanel>
                         </Border>
 
-                        <Border Background="#2B221C" CornerRadius="16" Padding="14">
+                        <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="16" Padding="14">
                             <StackPanel Spacing="8">
                                 <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Named Presets" />
                                 <TextBlock Classes="body" Foreground="#F0E7DC" Text="{Binding SavedPresetSummary}" TextWrapping="Wrap" />
@@ -357,11 +272,11 @@
                                 <ItemsControl ItemsSource="{Binding SavedPresets}" IsVisible="{Binding HasSavedPresets}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate x:DataType="vm:ModsAndMapsWorkspaceViewModel+SavedPresetViewModel">
-                                            <Border Background="#F0E2D0" CornerRadius="12" Padding="10" Margin="0,0,0,8">
+                                            <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="12" Padding="10" Margin="0,0,0,8">
                                                 <StackPanel Spacing="6">
-                                                    <TextBlock FontWeight="SemiBold" Foreground="#1C1713" Text="{Binding Name}" />
-                                                    <TextBlock Classes="caption" Foreground="#5C4838" Text="{Binding CompositionSummary}" TextWrapping="Wrap" />
-                                                    <TextBlock Classes="caption" Foreground="#5C4838" Text="{Binding UpdatedLabel}" />
+                                                    <TextBlock FontWeight="SemiBold" Foreground="#EDF4FF" Text="{Binding Name}" />
+                                                    <TextBlock Classes="caption" Foreground="#A8B6D4" Text="{Binding CompositionSummary}" TextWrapping="Wrap" />
+                                                    <TextBlock Classes="caption" Foreground="#A8B6D4" Text="{Binding UpdatedLabel}" />
                                                     <WrapPanel Orientation="Horizontal" ItemWidth="116" ItemHeight="34">
                                                         <Button Classes="action-secondary" Command="{Binding #ModsRoot.DataContext.LoadNamedPresetCommand}" CommandParameter="{Binding .}" Content="Load" />
                                                         <Button Classes="action-danger" Command="{Binding #ModsRoot.DataContext.DeleteNamedPresetCommand}" CommandParameter="{Binding .}" Content="Delete" />
@@ -371,17 +286,17 @@
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
-                                <TextBlock Classes="caption" IsVisible="{Binding HasNoSavedPresets}" Foreground="#CCBBA8" Text="Capture the current loadout once it looks right." TextWrapping="Wrap" />
+                                <TextBlock Classes="caption" IsVisible="{Binding HasNoSavedPresets}" Foreground="#A8B6D4" Text="Capture the current loadout once it looks right." TextWrapping="Wrap" />
                             </StackPanel>
                         </Border>
 
-                        <Border Background="#F0E2D0" CornerRadius="16" Padding="14">
+                        <Border Background="#22FFB36B" BorderBrush="#72FFB36B" BorderThickness="1" CornerRadius="16" Padding="14">
                             <StackPanel Spacing="8">
                                 <TextBlock Classes="kicker" Text="Diagnostics" />
                                 <ItemsControl ItemsSource="{Binding DiagnosticBuckets}" IsVisible="{Binding HasDiagnosticBuckets}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate x:DataType="settings:ProjectZomboidModsAndMapsDiagnosticBucket">
-                                            <Border Background="#FFF8F0" CornerRadius="12" Padding="10" Margin="0,0,0,8">
+                                            <Border Background="#10FFFFFF" BorderBrush="#20FFFFFF" BorderThickness="1" CornerRadius="12" Padding="10" Margin="0,0,0,8">
                                                 <StackPanel Spacing="4">
                                                     <TextBlock FontWeight="SemiBold" Text="{Binding Title}" />
                                                     <TextBlock Classes="caption" Text="{Binding Summary}" TextWrapping="Wrap" />
@@ -445,19 +360,21 @@
                                    IsVisible="{Binding SelectedWorkshopPreview.HasPreviewImage}" />
 
                             <WrapPanel Orientation="Horizontal" ItemHeight="30">
-                                <Border Background="#EAD6BF" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
                                     <TextBlock Classes="kicker" Text="{Binding SelectedWorkshopPreview.Item.KindLabel}" />
                                 </Border>
-                                <Border Background="#EAD6BF" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
                                     <TextBlock Classes="kicker" Text="{Binding SelectedWorkshopPreview.SourceLabel}" />
                                 </Border>
-                                <Border Background="#EAD6BF" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
                                     <TextBlock Classes="kicker" Text="{Binding SelectedWorkshopPreview.Item.IsInstalledLocally, StringFormat='Installed locally: {0}'}" />
                                 </Border>
-                                <Border Background="#EAD6BF" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
                                     <TextBlock Classes="kicker" Text="{Binding SelectedWorkshopPreview.Item.IsQueued, StringFormat='Queued: {0}'}" />
                                 </Border>
-                                <Border Background="#EAD6BF"
+                                <Border Background="#14FFFFFF"
+                                        BorderBrush="#24FFFFFF"
+                                        BorderThickness="1"
                                         CornerRadius="999"
                                         Padding="10,5"
                                         Margin="0,0,8,8"
@@ -470,7 +387,7 @@
                                        Text="{Binding SelectedWorkshopPreview.Description}"
                                        TextWrapping="Wrap" />
 
-                            <Border Background="#FFF7EC" CornerRadius="14" Padding="14">
+                            <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="14" Padding="14">
                                 <StackPanel Spacing="6">
                                     <TextBlock Classes="kicker" Text="Queue Impact" />
                                     <TextBlock Classes="caption"
@@ -485,15 +402,15 @@
                                 </StackPanel>
                             </Border>
 
-                            <Border Background="#FFF7EC" CornerRadius="14" Padding="14" IsVisible="{Binding SelectedWorkshopPreview.HasCollectionChildren}">
+                            <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="14" Padding="14" IsVisible="{Binding SelectedWorkshopPreview.HasCollectionChildren}">
                                 <StackPanel Spacing="10">
                                     <TextBlock Classes="kicker" Text="Collection Contents" />
                                     <ItemsControl ItemsSource="{Binding SelectedWorkshopPreview.CollectionChildren}">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate x:DataType="settings:WorkshopCatalogPreviewChildDto">
-                                                <Border Background="#FFFDF8" CornerRadius="10" Padding="10" Margin="0,0,0,8">
+                                                <Border Background="#10FFFFFF" BorderBrush="#20FFFFFF" BorderThickness="1" CornerRadius="10" Padding="10" Margin="0,0,0,8">
                                                     <StackPanel Spacing="2">
-                                                        <TextBlock FontWeight="SemiBold" Foreground="#1F1A14" Text="{Binding Title}" TextWrapping="Wrap" />
+                                                        <TextBlock FontWeight="SemiBold" Foreground="#EDF4FF" Text="{Binding Title}" TextWrapping="Wrap" />
                                                         <TextBlock Classes="caption" Text="{Binding WorkshopId}" TextWrapping="Wrap" />
                                                         <TextBlock Classes="caption" Text="{Binding IsInstalledLocally, StringFormat='Installed locally: {0}'}" TextWrapping="Wrap" />
                                                         <TextBlock Classes="caption" Text="{Binding IsQueued, StringFormat='Queued: {0}'}" TextWrapping="Wrap" />

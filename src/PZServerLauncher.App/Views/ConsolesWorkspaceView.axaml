@@ -4,13 +4,13 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d"
-             d:DesignWidth="1600"
-             d:DesignHeight="980"
+             d:DesignWidth="1500"
+             d:DesignHeight="940"
              x:Class="PZServerLauncher.App.Views.ConsolesWorkspaceView"
              x:Name="ConsolesRoot"
              x:DataType="vm:ConsolesWorkspaceViewModel">
-    <Grid ColumnDefinitions="320,*" ColumnSpacing="18">
-        <Border Classes="card" Padding="18">
+    <Grid ColumnDefinitions="340,*" ColumnSpacing="16">
+        <Border Classes="card" Padding="20">
             <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="14">
                 <StackPanel Spacing="6">
                     <TextBlock Classes="kicker" Text="Console Picker" />
@@ -18,77 +18,65 @@
                     <TextBlock Classes="body" Text="{Binding PickerSummary}" TextWrapping="Wrap" />
                 </StackPanel>
 
-                <StackPanel Grid.Row="1" Spacing="10">
-                    <Border Background="#F6EFE6" CornerRadius="14" Padding="14">
-                        <StackPanel Spacing="6">
-                            <TextBlock Classes="kicker" Text="Target Slot" />
-                            <TextBlock Classes="body" FontWeight="SemiBold" Text="{Binding SelectionSummary}" TextWrapping="Wrap" />
-                        </StackPanel>
-                    </Border>
+                <Border Grid.Row="1" Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="18" Padding="14">
+                    <StackPanel Spacing="6">
+                        <TextBlock Classes="kicker" Text="Target Slot" />
+                        <TextBlock Classes="body" FontWeight="SemiBold" Text="{Binding SelectionSummary}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
 
-                    <ItemsControl ItemsSource="{Binding ConsoleSlots}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <UniformGrid Columns="2" Rows="2" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate x:DataType="vm:ConsolesWorkspaceViewModel+ConsoleTileViewModel">
-                                <Button Classes="chrome-free"
-                                        Margin="0,0,8,8"
-                                        Padding="0"
-                                        Background="Transparent"
-                                        BorderThickness="0"
-                                        Command="{Binding #ConsolesRoot.DataContext.SelectSlotCommand}"
-                                        CommandParameter="{Binding .}">
-                                    <Border Background="#F8F0E6"
-                                            BorderBrush="{Binding TileBorderBrush}"
-                                            BorderThickness="2"
-                                            CornerRadius="14"
-                                            Padding="12">
-                                        <StackPanel Spacing="4">
-                                            <TextBlock Classes="kicker" Text="{Binding SlotLabel}" />
-                                            <TextBlock FontWeight="SemiBold"
-                                                       Foreground="#1D2326"
-                                                       Text="{Binding ProfileDisplayName}"
-                                                       TextWrapping="Wrap" />
-                                            <TextBlock Classes="caption"
-                                                       Foreground="#5E4D3F"
-                                                       Text="{Binding StatusSummary}"
-                                                       TextWrapping="Wrap" />
-                                        </StackPanel>
-                                    </Border>
-                                </Button>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </StackPanel>
+                <ScrollViewer Grid.Row="2" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel Spacing="14">
+                        <ItemsControl ItemsSource="{Binding ConsoleSlots}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <UniformGrid Columns="2" Rows="2" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:ConsolesWorkspaceViewModel+ConsoleTileViewModel">
+                                    <Button Classes="chrome-free"
+                                            Margin="0,0,8,8"
+                                            Padding="0"
+                                            Command="{Binding #ConsolesRoot.DataContext.SelectSlotCommand}"
+                                            CommandParameter="{Binding .}">
+                                        <Border Background="#14FFFFFF"
+                                                BorderBrush="{Binding TileBorderBrush}"
+                                                BorderThickness="2"
+                                                CornerRadius="18"
+                                                Padding="12">
+                                            <StackPanel Spacing="4">
+                                                <TextBlock Classes="kicker" Text="{Binding SlotLabel}" />
+                                                <TextBlock Classes="panel-title" FontSize="15" Text="{Binding ProfileDisplayName}" TextWrapping="Wrap" />
+                                                <TextBlock Classes="caption" Text="{Binding StatusSummary}" TextWrapping="Wrap" />
+                                            </StackPanel>
+                                        </Border>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
 
-                <ScrollViewer Grid.Row="2"
-                              HorizontalScrollBarVisibility="Disabled"
-                              VerticalScrollBarVisibility="Auto">
-                    <StackPanel Spacing="10">
                         <TextBlock Classes="kicker" Text="Servers" />
                         <ItemsControl ItemsSource="{Binding ProfilePickerItems}" IsVisible="{Binding HasProfiles}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="vm:ConsolesWorkspaceViewModel+ConsoleProfilePickerItemViewModel">
-                                    <Border Background="#FBF7F1"
-                                            BorderBrush="#DDD2C6"
+                                    <Border Background="#14FFFFFF"
+                                            BorderBrush="#24FFFFFF"
                                             BorderThickness="1"
-                                            CornerRadius="14"
+                                            CornerRadius="18"
                                             Padding="14"
                                             Margin="0,0,0,10">
-                                        <StackPanel Spacing="10">
-                                            <StackPanel Spacing="4">
-                                                <TextBlock Classes="panel-title" FontSize="18" Text="{Binding DisplayName}" />
-                                                <TextBlock Classes="caption" Text="{Binding Branch}" />
-                                                <TextBlock Classes="caption" Text="{Binding RuntimeState}" />
-                                                <TextBlock Classes="caption"
-                                                           FontFamily="Cascadia Code,Consolas,monospace"
-                                                           Text="{Binding LatestLogLine}"
-                                                           TextWrapping="Wrap" />
-                                            </StackPanel>
-
+                                        <StackPanel Spacing="8">
+                                            <TextBlock Classes="panel-title" FontSize="17" Text="{Binding DisplayName}" />
+                                            <WrapPanel Orientation="Horizontal">
+                                                <Border Classes="pill-soft-neutral" Margin="0,0,6,6">
+                                                    <TextBlock Classes="pill-text-neutral" Text="{Binding Branch}" />
+                                                </Border>
+                                                <Border Classes="pill-soft-green" Margin="0,0,6,6">
+                                                    <TextBlock Classes="pill-text-green" Text="{Binding RuntimeState}" />
+                                                </Border>
+                                            </WrapPanel>
+                                            <TextBlock Classes="caption" FontFamily="Cascadia Code,Consolas,monospace" Text="{Binding LatestLogLine}" TextWrapping="Wrap" />
                                             <Button Classes="action-secondary"
                                                     Command="{Binding #ConsolesRoot.DataContext.AssignProfileCommand}"
                                                     CommandParameter="{Binding .}"
@@ -99,12 +87,7 @@
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
 
-                        <Border Background="#FBF7F1"
-                                BorderBrush="#DDD2C6"
-                                BorderThickness="1"
-                                CornerRadius="14"
-                                Padding="14"
-                                IsVisible="{Binding HasNoProfiles}">
+                        <Border Classes="callout-card" Padding="14" IsVisible="{Binding HasNoProfiles}">
                             <TextBlock Classes="body"
                                        Text="No managed servers are available yet. Create or import one from Home or Servers, then come back here to pin its console."
                                        TextWrapping="Wrap" />
@@ -113,13 +96,8 @@
                 </ScrollViewer>
 
                 <Grid Grid.Row="3" ColumnDefinitions="*,*" ColumnSpacing="10">
-                    <Button Classes="action-secondary"
-                            Command="{Binding ClearSelectedSlotCommand}"
-                            Content="Clear Slot" />
-                    <Button Grid.Column="1"
-                            Classes="action-secondary"
-                            Command="{Binding RefreshSelectedSlotCommand}"
-                            Content="Reload Now" />
+                    <Button Classes="action-secondary" Command="{Binding ClearSelectedSlotCommand}" Content="Clear Slot" />
+                    <Button Grid.Column="1" Classes="action-secondary" Command="{Binding RefreshSelectedSlotCommand}" Content="Reload Now" />
                 </Grid>
             </Grid>
         </Border>
@@ -129,11 +107,10 @@
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18">
                     <StackPanel Spacing="6">
                         <TextBlock Classes="kicker" Text="Live Console Board" />
-                        <TextBlock Classes="panel-title" FontSize="28" Text="Watch the active servers without drilling through profile pages" TextWrapping="Wrap" />
+                        <TextBlock Classes="panel-title" FontSize="28" Text="Pinned server consoles" />
                         <TextBlock Classes="body" Text="{Binding RunningServersSummary}" TextWrapping="Wrap" />
                         <TextBlock Classes="caption" Text="{Binding AutoRefreshSummary}" TextWrapping="Wrap" />
                     </StackPanel>
-
                     <StackPanel Grid.Column="1" Spacing="8" HorizontalAlignment="Right">
                         <Border Classes="pill-dark">
                             <TextBlock Classes="pill-text-light" Text="{Binding VisibleConsoleSummary}" />
@@ -145,9 +122,7 @@
                 </Grid>
             </Border>
 
-            <ScrollViewer Grid.Row="1"
-                          HorizontalScrollBarVisibility="Disabled"
-                          VerticalScrollBarVisibility="Auto">
+            <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
                 <ItemsControl ItemsSource="{Binding ConsoleSlots}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
@@ -156,107 +131,56 @@
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:ConsolesWorkspaceViewModel+ConsoleTileViewModel">
-                            <Border Margin="0,0,14,14"
-                                    Background="#243238"
+                            <Border Classes="surface-dark"
+                                    Margin="0,0,14,14"
+                                    Padding="16"
                                     BorderBrush="{Binding TileBorderBrush}"
-                                    BorderThickness="2"
-                                    CornerRadius="20"
-                                    Padding="16">
-                                <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="12">
+                                    BorderThickness="2">
+                                <Grid RowDefinitions="Auto,*,Auto" RowSpacing="12">
                                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                                         <StackPanel Spacing="5">
-                                            <TextBlock Classes="kicker" Foreground="#E5A26B" Text="{Binding SlotLabel}" />
-                                            <TextBlock FontSize="22"
-                                                       FontWeight="SemiBold"
-                                                       Foreground="#F7F0E7"
-                                                       Text="{Binding ProfileDisplayName}"
-                                                       TextWrapping="Wrap" />
-                                            <TextBlock Classes="caption"
-                                                       Foreground="#CCB9A8"
-                                                       Text="{Binding Branch}"
-                                                       TextWrapping="Wrap" />
-                                            <TextBlock Classes="body"
-                                                       Foreground="#D3C8BA"
-                                                       Text="{Binding StatusSummary}"
-                                                       TextWrapping="Wrap" />
-                                            <TextBlock Classes="caption"
-                                                       Foreground="#CCB9A8"
-                                                       Text="{Binding ActivitySummary}"
-                                                       TextWrapping="Wrap" />
+                                            <TextBlock Classes="kicker" Foreground="#FFB36B" Text="{Binding SlotLabel}" />
+                                            <TextBlock Classes="panel-title" FontSize="22" Text="{Binding ProfileDisplayName}" TextWrapping="Wrap" />
+                                            <TextBlock Classes="caption" Text="{Binding Branch}" TextWrapping="Wrap" />
+                                            <TextBlock Classes="body" Text="{Binding StatusSummary}" TextWrapping="Wrap" />
+                                            <TextBlock Classes="caption" Text="{Binding ActivitySummary}" TextWrapping="Wrap" />
                                         </StackPanel>
-
                                         <StackPanel Grid.Column="1" Spacing="8" HorizontalAlignment="Right">
                                             <Button Classes="action-secondary"
                                                     Command="{Binding #ConsolesRoot.DataContext.SelectSlotCommand}"
                                                     CommandParameter="{Binding .}"
-                                                    Content="Target Slot" />
+                                                    Content="Target" />
                                             <Button Classes="action-secondary"
                                                     Command="{Binding ReloadCommand}"
-                                                    Content="Reload Now"
+                                                    Content="Reload"
                                                     IsEnabled="{Binding HasPinnedProfile}" />
                                         </StackPanel>
                                     </Grid>
 
-                                    <Border Grid.Row="1"
-                                            Height="220"
-                                            Background="#171310"
-                                            BorderBrush="#3F565F"
-                                            BorderThickness="1"
-                                            CornerRadius="16"
-                                            Padding="0"
-                                            ClipToBounds="True">
+                                    <Border Grid.Row="1" Background="#EA070D18" BorderBrush="#22344F" BorderThickness="1" CornerRadius="18" ClipToBounds="True">
                                         <TextBox Classes="console-stream"
+                                                 MinHeight="220"
                                                  Text="{Binding LogText}"
                                                  CaretIndex="{Binding ConsoleCaretIndex}" />
                                     </Border>
 
                                     <Grid Grid.Row="2" RowDefinitions="Auto,Auto,Auto" RowSpacing="10">
                                         <WrapPanel Orientation="Horizontal" ItemHeight="34">
-                                            <Button Classes="action-primary"
-                                                    Command="{Binding PrimaryRuntimeCommand}"
-                                                    Content="Start"
-                                                    IsVisible="{Binding ShowStartAction}" />
-                                            <Button Classes="action-danger"
-                                                    Command="{Binding PrimaryRuntimeCommand}"
-                                                    Content="Stop"
-                                                    IsVisible="{Binding ShowStopAction}" />
-                                            <Button Classes="action-secondary"
-                                                    Command="{Binding RestartRuntimeCommand}"
-                                                    Content="Restart"
-                                                    IsEnabled="{Binding HasPinnedProfile}"
-                                                    Margin="8,0,0,0" />
-                                            <Button Classes="action-secondary"
-                                                    Command="{Binding RequestPlayersCommand}"
-                                                    Content="Players"
-                                                    IsEnabled="{Binding CanSendCommands}"
-                                                    Margin="8,0,0,0" />
-                                            <Button Classes="action-secondary"
-                                                    Command="{Binding SaveWorldCommand}"
-                                                    Content="Save World"
-                                                    IsEnabled="{Binding CanSendCommands}"
-                                                    Margin="8,0,0,0" />
+                                            <Button Classes="action-primary" Command="{Binding PrimaryRuntimeCommand}" Content="Start" IsVisible="{Binding ShowStartAction}" Margin="0,0,8,8" />
+                                            <Button Classes="action-danger" Command="{Binding PrimaryRuntimeCommand}" Content="Stop" IsVisible="{Binding ShowStopAction}" Margin="0,0,8,8" />
+                                            <Button Classes="action-secondary" Command="{Binding RestartRuntimeCommand}" Content="Restart" IsEnabled="{Binding HasPinnedProfile}" Margin="0,0,8,8" />
+                                            <Button Classes="action-secondary" Command="{Binding RequestPlayersCommand}" Content="Players" IsEnabled="{Binding CanSendCommands}" Margin="0,0,8,8" />
+                                            <Button Classes="action-secondary" Command="{Binding SaveWorldCommand}" Content="Save World" IsEnabled="{Binding CanSendCommands}" Margin="0,0,8,8" />
                                         </WrapPanel>
 
                                         <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                                            <TextBox Text="{Binding RawConsoleCommand}"
-                                                     IsEnabled="{Binding CanSendCommands}"
-                                                     PlaceholderText="save / players / custom console command" />
-                                            <Button Grid.Column="1"
-                                                    Classes="action-secondary"
-                                                    Command="{Binding SendRawCommand}"
-                                                    Content="Send"
-                                                    IsEnabled="{Binding CanSendCommands}" />
+                                            <TextBox Text="{Binding RawConsoleCommand}" IsEnabled="{Binding CanSendCommands}" PlaceholderText="save / players / custom console command" />
+                                            <Button Grid.Column="1" Classes="action-secondary" Command="{Binding SendRawCommand}" Content="Send" IsEnabled="{Binding CanSendCommands}" />
                                         </Grid>
 
                                         <Grid Grid.Row="2" ColumnDefinitions="Auto,*" ColumnSpacing="10">
-                                            <CheckBox Content="Follow Tail"
-                                                      IsChecked="{Binding FollowTail}"
-                                                      Foreground="#F7F0E7" />
-                                            <TextBlock Grid.Column="1"
-                                                       Classes="caption"
-                                                       Foreground="#CCB9A8"
-                                                       Text="{Binding LoadStatus}"
-                                                       TextWrapping="Wrap" />
+                                            <CheckBox Content="Follow Tail" IsChecked="{Binding FollowTail}" />
+                                            <TextBlock Grid.Column="1" Classes="caption" Text="{Binding LoadStatus}" TextWrapping="Wrap" />
                                         </Grid>
                                     </Grid>
                                 </Grid>

@@ -31,31 +31,33 @@
                 </StackPanel>
 
                 <Border Grid.Row="1"
-                        Background="#FFF4E9"
-                        BorderBrush="#E2C39E"
+                        Background="#22FFB36B"
+                        BorderBrush="#72FFB36B"
                         BorderThickness="1"
                         CornerRadius="14"
                         Padding="14">
                     <TextBlock Classes="body"
-                               Foreground="#5B4635"
+                               Foreground="#FFDCB8"
                                Text="{Binding DialogGuidance}"
                                TextWrapping="Wrap" />
                 </Border>
 
                 <Border Grid.Row="2"
-                        Background="#EEF4EF"
-                        BorderBrush="#BFD3C3"
+                        Background="#14FFFFFF"
+                        BorderBrush="#24FFFFFF"
                         BorderThickness="1"
                         CornerRadius="14"
                         Padding="14">
                     <TextBlock Classes="body"
-                               Foreground="#395346"
+                               Foreground="#C9D5EA"
                                Text="{Binding TrayGuidance}"
                                TextWrapping="Wrap" />
                 </Border>
 
                 <Border Grid.Row="3"
-                        Background="#2B221C"
+                        Background="#10FFFFFF"
+                        BorderBrush="#20FFFFFF"
+                        BorderThickness="1"
                         CornerRadius="14"
                         Padding="14">
                     <TextBlock Classes="caption"

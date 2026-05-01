@@ -20,11 +20,11 @@
                         <Border Background="#2A2927" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
                             <TextBlock Foreground="#F7F0E7" FontSize="11" Text="{Binding Branch}" />
                         </Border>
-                        <Border Background="#EAD6BF" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
-                            <TextBlock Foreground="#5A4330" FontSize="11" Text="{Binding ConsoleStatusSummary}" />
+                        <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                            <TextBlock Foreground="#C9D5EA" FontSize="11" Text="{Binding ConsoleStatusSummary}" />
                         </Border>
-                        <Border Background="#EAD6BF" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
-                            <TextBlock Foreground="#5A4330" FontSize="11" Text="{Binding ActivePlayerCountSummary}" />
+                        <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                            <TextBlock Foreground="#C9D5EA" FontSize="11" Text="{Binding ActivePlayerCountSummary}" />
                         </Border>
                     </WrapPanel>
                 </StackPanel>
@@ -94,7 +94,7 @@
                         <ItemsControl ItemsSource="{Binding ConnectedPlayers}" IsVisible="{Binding HasConnectedPlayers}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="vm:LogsWorkspaceViewModel+ConnectedPlayerRowViewModel">
-                                    <Border Background="#F5E8DA" CornerRadius="12" Padding="12" Margin="0,0,0,8">
+                                    <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="12" Padding="12" Margin="0,0,0,8">
                                         <StackPanel Spacing="8">
                                             <StackPanel Spacing="4">
                                                 <TextBlock FontSize="16" FontWeight="SemiBold" Text="{Binding UserName}" />
@@ -122,8 +122,8 @@
                     <StackPanel Spacing="8">
                         <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Live Ops Briefing" />
                         <TextBlock FontSize="22" FontWeight="SemiBold" Foreground="#F7F0E7" Text="{Binding FeedHealthHeadline}" TextWrapping="Wrap" />
-                        <TextBlock Classes="body" Foreground="#D3C8BA" Text="{Binding LiveOpsTriageSummary}" TextWrapping="Wrap" />
-                        <TextBlock Classes="caption" Foreground="#CCB9A8" Text="{Binding RosterPostureSummary}" TextWrapping="Wrap" />
+                        <TextBlock Classes="body" Foreground="#C9D5EA" Text="{Binding LiveOpsTriageSummary}" TextWrapping="Wrap" />
+                        <TextBlock Classes="caption" Foreground="#A8B6D4" Text="{Binding RosterPostureSummary}" TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
             </StackPanel>
@@ -135,7 +135,7 @@
                             <StackPanel Spacing="4">
                                 <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Live Stream" />
                                 <TextBlock FontSize="22" FontWeight="SemiBold" Foreground="#F7F0E7" Text="{Binding LogStreamSummary}" TextWrapping="Wrap" />
-                                <TextBlock Classes="caption" Foreground="#CCB9A8" Text="{Binding SignalCountSummary}" TextWrapping="Wrap" />
+                                <TextBlock Classes="caption" Foreground="#A8B6D4" Text="{Binding SignalCountSummary}" TextWrapping="Wrap" />
                             </StackPanel>
                             <Border Grid.Column="1" Background="#2A2927" CornerRadius="999" Padding="10,5" VerticalAlignment="Top">
                                 <TextBlock Foreground="#F7F0E7" FontSize="11" Text="{Binding ConsoleModeSummary}" />
@@ -199,7 +199,7 @@
                             <ItemsControl ItemsSource="{Binding LiveOpsChecklist}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <Border Background="#F5E8DA" CornerRadius="12" Padding="10" Margin="0,0,0,8">
+                                        <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="12" Padding="10" Margin="0,0,0,8">
                                             <TextBlock Classes="caption" Text="{Binding .}" TextWrapping="Wrap" />
                                         </Border>
                                     </DataTemplate>
@@ -210,7 +210,9 @@
                 </Grid>
 
                 <Border Grid.Row="2"
-                        Background="#F6EFE6"
+                        Background="#14FFFFFF"
+                        BorderBrush="#24FFFFFF"
+                        BorderThickness="1"
                         CornerRadius="14"
                         Padding="16"
                         IsVisible="{Binding HasNoLogs}">

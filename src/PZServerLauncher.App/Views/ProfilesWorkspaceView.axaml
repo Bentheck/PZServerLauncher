@@ -13,10 +13,10 @@
         <Border Classes="surface-dark" Padding="18">
             <Grid RowDefinitions="Auto,Auto,*" RowSpacing="16">
                 <StackPanel Spacing="6">
-                    <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Servers" />
-                    <TextBlock Classes="panel-title" FontSize="28" Foreground="#F7F0E7" Text="{Binding PageTitle}" />
+                    <TextBlock Classes="kicker" Foreground="#FFB36B" Text="Servers" />
+                    <TextBlock Classes="panel-title" FontSize="28" Foreground="#EDF4FF" Text="{Binding PageTitle}" />
                     <TextBlock Classes="body"
-                               Foreground="#D3C8BA"
+                               Foreground="#C9D5EA"
                                Text="Pick a server, then jump straight into the page you need."
                                TextWrapping="Wrap" />
                 </StackPanel>
@@ -41,7 +41,7 @@
                     <ListBox.ItemTemplate>
                         <DataTemplate x:DataType="vm:ProfileCardViewModel">
                             <Grid ColumnDefinitions="8,*" ColumnSpacing="0" Margin="0,0,0,10">
-                                <Border Background="#D27A3E"
+                                <Border Background="#FFB36B"
                                         CornerRadius="16,0,0,16"
                                         IsVisible="{Binding IsSelected}" />
                                 <Border Grid.Column="1"
@@ -80,12 +80,14 @@
                                             <Border Background="{Binding RosterChipBackground}" CornerRadius="999" Padding="8,3" Margin="0,0,6,6">
                                                 <TextBlock Foreground="{Binding RosterChipForeground}" FontSize="11" Text="{Binding RecoveryStateHeadline}" />
                                             </Border>
-                                            <Border Background="#F0E2D0"
+                                            <Border Background="#22FFB36B"
+                                                    BorderBrush="#72FFB36B"
+                                                    BorderThickness="1"
                                                     CornerRadius="999"
                                                     Padding="8,3"
                                                     Margin="0,0,6,6"
                                                     IsVisible="{Binding IsSelected}">
-                                                <TextBlock Foreground="#5E4735" FontSize="11" Text="Selected" />
+                                                <TextBlock Foreground="#FFDCB8" FontSize="11" Text="Selected" />
                                             </Border>
                                         </WrapPanel>
 
@@ -104,7 +106,7 @@
                         <TextBlock Classes="kicker" Text="Roster Empty" />
                         <TextBlock Classes="panel-title" FontSize="20" Text="{Binding FirstRunHeadline}" TextWrapping="Wrap" />
                         <TextBlock Classes="body" Text="{Binding FirstRunActionPlan}" TextWrapping="Wrap" />
-                        <Border Background="#F5E8DA" CornerRadius="12" Padding="12">
+                        <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="12" Padding="12">
                             <StackPanel Spacing="6">
                                 <TextBlock Classes="caption" Text="{Binding FirstRunStepOne}" TextWrapping="Wrap" />
                                 <TextBlock Classes="caption" Text="{Binding FirstRunStepTwo}" TextWrapping="Wrap" />
@@ -132,17 +134,17 @@
                         <TextBlock Classes="kicker" Text="Selected Server" />
                         <TextBlock Classes="panel-title" FontSize="28" Text="{Binding WorkspaceHeadline}" />
                         <TextBlock Classes="body"
-                                   Foreground="#45382E"
+                                   Foreground="#C9D5EA"
                                    Text="{Binding SelectedLaunchSummary}"
                                    TextWrapping="Wrap" />
                     </StackPanel>
 
                     <WrapPanel Grid.Column="1" Orientation="Horizontal" ItemHeight="30">
-                        <Border Background="#2A2927" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
-                            <TextBlock Foreground="#F7F0E7" FontSize="11" Text="{Binding SelectedProfileBranchSummary}" />
+                        <Border Background="#14FFFFFF" BorderBrush="#2E405F" BorderThickness="1" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                            <TextBlock Foreground="#EDF4FF" FontSize="11" Text="{Binding SelectedProfileBranchSummary}" />
                         </Border>
-                        <Border Background="#2A2927" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
-                            <TextBlock Foreground="#F7F0E7" FontSize="11" Text="{Binding SelectedProfileRuntimeSummary}" />
+                        <Border Background="#14FFFFFF" BorderBrush="#2E405F" BorderThickness="1" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                            <TextBlock Foreground="#EDF4FF" FontSize="11" Text="{Binding SelectedProfileRuntimeSummary}" />
                         </Border>
                     </WrapPanel>
                 </Grid>
@@ -168,18 +170,8 @@
             </Border>
 
                 <Grid Grid.Row="1" ColumnDefinitions="240,*" ColumnSpacing="16" IsVisible="{Binding HasSelectedProfile}">
-                <Grid RowDefinitions="Auto,Auto,*" RowSpacing="16">
-                    <Border Classes="surface-soft" Padding="16">
-                        <StackPanel Spacing="6">
-                            <TextBlock Classes="kicker" Text="At a Glance" />
-                            <TextBlock Classes="body" Text="{Binding SelectedProfilePathSummary}" TextWrapping="Wrap" />
-                            <TextBlock Classes="caption" Text="{Binding SelectedProfilePortsSummary}" TextWrapping="Wrap" />
-                            <TextBlock Classes="caption" Text="{Binding SelectedDeploymentSummary}" TextWrapping="Wrap" />
-                            <TextBlock Classes="caption" Text="{Binding SelectedRecoverySummary}" TextWrapping="Wrap" />
-                        </StackPanel>
-                    </Border>
-
-                    <Border Grid.Row="1" Classes="card" Padding="16" IsVisible="{Binding HasPendingSectionNavigation}">
+                <Grid RowDefinitions="Auto,*" RowSpacing="16">
+                    <Border Classes="card" Padding="16" IsVisible="{Binding HasPendingSectionNavigation}">
                         <StackPanel Spacing="8">
                             <TextBlock Classes="panel-title" Text="Unsaved changes" />
                             <TextBlock Classes="body" Text="{Binding PendingSectionNavigationMessage}" TextWrapping="Wrap" />
@@ -191,55 +183,60 @@
                         </StackPanel>
                     </Border>
 
-                    <Border Grid.Row="2" Classes="surface-dark" Padding="16">
-                        <StackPanel Spacing="10">
-                            <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Sections" />
-                            <TextBlock Classes="caption"
-                                       Foreground="#CCB9A8"
+                    <Border Grid.Row="1" Classes="surface-dark" Padding="16">
+                        <Grid RowDefinitions="Auto,Auto,*" RowSpacing="10">
+                            <TextBlock Classes="kicker" Foreground="#FFB36B" Text="Sections" />
+                            <TextBlock Grid.Row="1"
+                                       Classes="caption"
+                                       Foreground="#A8B6D4"
                                        Text="Jump directly to the page that matches the task."
                                        TextWrapping="Wrap" />
 
-                            <ItemsControl ItemsSource="{Binding SectionItems}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="vm:WorkspaceNavigationItemViewModel">
-                                        <Button Classes="chrome-free"
-                                                Margin="0,0,0,8"
-                                                Padding="0"
-                                                Background="Transparent"
-                                                BorderThickness="0"
-                                                Command="{Binding #ProfilesRoot.DataContext.SelectSectionCommand}"
-                                                CommandParameter="{Binding .}"
-                                                IsEnabled="{Binding IsEnabled}">
-                                            <Border Background="#F8F0E6"
-                                                    BorderBrush="#D8B28D"
-                                                    BorderThickness="1"
-                                                    CornerRadius="14"
-                                                    Height="96"
-                                                    Padding="0">
-                                                <Grid ColumnDefinitions="6,*" ColumnSpacing="0">
-                                                    <Border Background="#D27A3E"
-                                                            CornerRadius="14,0,0,14"
-                                                            IsVisible="{Binding IsSelected}" />
-                                                    <StackPanel Grid.Column="1"
-                                                                Spacing="3"
-                                                                Margin="12,10"
-                                                                VerticalAlignment="Center">
-                                                        <TextBlock FontWeight="SemiBold"
-                                                                   Foreground="#1D1815"
-                                                                   Text="{Binding Title}" />
-                                                        <TextBlock Classes="caption"
-                                                                   Foreground="#5E4D3F"
-                                                                   MaxLines="2"
-                                                                   Text="{Binding Summary}"
-                                                                   TextWrapping="Wrap" />
-                                                    </StackPanel>
-                                                </Grid>
-                                            </Border>
-                                        </Button>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </StackPanel>
+                            <ScrollViewer Grid.Row="2"
+                                          HorizontalScrollBarVisibility="Disabled"
+                                          VerticalScrollBarVisibility="Auto">
+                                <ItemsControl ItemsSource="{Binding SectionItems}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:WorkspaceNavigationItemViewModel">
+                                            <Button Classes="chrome-free"
+                                                    Margin="0,0,0,8"
+                                                    Padding="0"
+                                                    Background="Transparent"
+                                                    BorderThickness="0"
+                                                    Command="{Binding #ProfilesRoot.DataContext.SelectSectionCommand}"
+                                                    CommandParameter="{Binding .}"
+                                                    IsEnabled="{Binding IsEnabled}">
+                                                <Border Background="#14FFFFFF"
+                                                        BorderBrush="#2E405F"
+                                                        BorderThickness="1"
+                                                        CornerRadius="14"
+                                                        Height="96"
+                                                        Padding="0">
+                                                    <Grid ColumnDefinitions="6,*" ColumnSpacing="0">
+                                                        <Border Background="#FFB36B"
+                                                                CornerRadius="14,0,0,14"
+                                                                IsVisible="{Binding IsSelected}" />
+                                                        <StackPanel Grid.Column="1"
+                                                                    Spacing="3"
+                                                                    Margin="12,10"
+                                                                    VerticalAlignment="Center">
+                                                            <TextBlock FontWeight="SemiBold"
+                                                                       Foreground="#EDF4FF"
+                                                                       Text="{Binding Title}" />
+                                                            <TextBlock Classes="caption"
+                                                                       Foreground="#A8B6D4"
+                                                                       MaxLines="2"
+                                                                       Text="{Binding Summary}"
+                                                                       TextWrapping="Wrap" />
+                                                        </StackPanel>
+                                                    </Grid>
+                                                </Border>
+                                            </Button>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </Grid>
                     </Border>
                 </Grid>
 

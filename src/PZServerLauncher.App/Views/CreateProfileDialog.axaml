@@ -49,17 +49,17 @@
 
                 <TextBlock Grid.Row="2"
                            Classes="caption"
-                           Foreground="#6A7477"
+                           Foreground="#A8B6D4"
                            Text="{Binding PortReservationSummary}"
                            TextWrapping="Wrap" />
 
-                <Border Grid.Row="3" Background="#F6EFE6" CornerRadius="14" Padding="14">
-                    <TextBlock Classes="caption" Foreground="#5B4D3E" Text="{Binding ValidationMessage}" TextWrapping="Wrap" />
+                <Border Grid.Row="3" Background="#22FFB36B" BorderBrush="#72FFB36B" BorderThickness="1" CornerRadius="14" Padding="14">
+                    <TextBlock Classes="caption" Foreground="#FFDCB8" Text="{Binding ValidationMessage}" TextWrapping="Wrap" />
                 </Border>
 
                 <Border Grid.Row="4"
-                        Background="#FBF7F1"
-                        BorderBrush="#DDD2C6"
+                        Background="#14FFFFFF"
+                        BorderBrush="#24FFFFFF"
                         BorderThickness="1"
                         CornerRadius="16"
                         Padding="16">
@@ -129,7 +129,7 @@
                         <TextBlock Grid.Row="7"
                                    Grid.ColumnSpan="2"
                                    Classes="caption"
-                                   Foreground="#6A7477"
+                                   Foreground="#A8B6D4"
                                    Text="{Binding FooterMessage}"
                                    TextWrapping="Wrap" />
                     </Grid>

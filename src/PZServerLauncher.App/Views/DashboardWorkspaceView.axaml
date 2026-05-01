@@ -39,7 +39,7 @@
                                     Margin="0,0,10,10" />
                         </WrapPanel>
 
-                        <Border Background="#F6EFE6" CornerRadius="14" Padding="14">
+                        <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="18" Padding="14">
                             <StackPanel Spacing="6">
                                 <TextBlock Classes="kicker" Text="Current Focus" />
                                 <TextBlock Classes="body" Text="{Binding LaunchPadSummary}" TextWrapping="Wrap" />
@@ -51,7 +51,7 @@
                     </StackPanel>
                 </Border>
 
-                <Border Classes="card" Padding="22">
+                <Border Grid.Column="1" Classes="card" Padding="22">
                     <StackPanel Spacing="12">
                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                             <StackPanel Spacing="4">
@@ -59,8 +59,8 @@
                                 <TextBlock Classes="panel-title" FontSize="24" Text="What needs attention next" />
                                 <TextBlock Classes="caption" Text="{Binding FleetRiskSummary}" TextWrapping="Wrap" />
                             </StackPanel>
-                            <Border Grid.Column="1" Background="#2A2927" CornerRadius="999" Padding="10,6" VerticalAlignment="Top">
-                                <TextBlock Foreground="#F7F0E7" FontSize="11" Text="{Binding ProfileCount, StringFormat='Servers: {0}'}" />
+                            <Border Grid.Column="1" Background="#14FFFFFF" BorderBrush="#2E405F" BorderThickness="1" CornerRadius="999" Padding="10,6" VerticalAlignment="Top">
+                                <TextBlock Foreground="#EDF4FF" FontSize="11" Text="{Binding ProfileCount, StringFormat='Servers: {0}'}" />
                             </Border>
                         </Grid>
 
@@ -91,7 +91,7 @@
                             </Border>
                         </Grid>
 
-                        <Border Background="#FBF7F1" CornerRadius="14" Padding="14">
+                        <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="18" Padding="14">
                             <StackPanel Spacing="6">
                                 <TextBlock Classes="kicker" Text="Next Action" />
                                 <TextBlock Classes="body" Text="{Binding FleetNextStepSummary}" TextWrapping="Wrap" />
@@ -111,13 +111,13 @@
                         <TextBlock Classes="body" Text="{Binding CloseBehaviorSummary}" TextWrapping="Wrap" />
 
                         <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
-                            <Border Background="#F6EFE6" CornerRadius="14" Padding="14">
+                            <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="18" Padding="14">
                                 <StackPanel Spacing="4">
                                     <TextBlock Classes="kicker" Text="Consoles" />
                                     <TextBlock Classes="body" Text="{Binding ConsolesWorkspaceSummary}" TextWrapping="Wrap" />
                                 </StackPanel>
                             </Border>
-                            <Border Grid.Column="1" Background="#F6EFE6" CornerRadius="14" Padding="14">
+                            <Border Grid.Column="1" Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="18" Padding="14">
                                 <StackPanel Spacing="4">
                                     <TextBlock Classes="kicker" Text="Closing Behavior" />
                                     <TextBlock Classes="body" Text="{Binding CloseBehaviorSummary}" TextWrapping="Wrap" />
@@ -127,7 +127,7 @@
                     </StackPanel>
                 </Border>
 
-                <Border Classes="card" Padding="22">
+                <Border Grid.Column="1" Classes="card" Padding="22">
                     <StackPanel Spacing="10">
                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                             <StackPanel Spacing="4">
@@ -143,7 +143,7 @@
                         <ItemsControl ItemsSource="{Binding Legacy.ImportCandidates}" IsVisible="{Binding HasImportCandidates}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="vm:ImportCandidateViewModel">
-                                    <Border Background="#F6EFE6" CornerRadius="14" Padding="14" Margin="0,0,0,10">
+                                    <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="18" Padding="14" Margin="0,0,0,10">
                                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="14">
                                             <StackPanel Spacing="4">
                                                 <TextBlock Classes="panel-title" FontSize="18" Text="{Binding DisplayName}" />
@@ -165,8 +165,10 @@
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
 
-                        <Border Background="#FBF7F1"
-                                CornerRadius="14"
+                        <Border Background="#14FFFFFF"
+                                BorderBrush="#24FFFFFF"
+                                BorderThickness="1"
+                                CornerRadius="18"
                                 Padding="14"
                                 IsVisible="{Binding HasNoImportCandidates}">
                             <TextBlock Classes="body"
@@ -186,7 +188,7 @@
                     <ItemsControl ItemsSource="{Binding Legacy.RecentJobs}" IsVisible="{Binding HasRecentJobs}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="vm:ShellItemViewModel">
-                                <Border Background="#FBF7F1" CornerRadius="12" Padding="12" Margin="0,0,0,8">
+                                <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="16" Padding="12" Margin="0,0,0,8">
                                     <StackPanel Spacing="4">
                                         <TextBlock Classes="kicker" Text="{Binding Title}" />
                                         <TextBlock Classes="body" Text="{Binding Detail}" TextWrapping="Wrap" />
@@ -196,8 +198,10 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
-                    <Border Background="#FBF7F1"
-                            CornerRadius="14"
+                    <Border Background="#14FFFFFF"
+                            BorderBrush="#24FFFFFF"
+                            BorderThickness="1"
+                            CornerRadius="18"
                             Padding="14"
                             IsVisible="{Binding HasNoRecentJobs}">
                         <TextBlock Classes="body"

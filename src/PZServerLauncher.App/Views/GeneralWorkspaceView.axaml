@@ -17,18 +17,18 @@
                         <TextBlock Classes="panel-title" FontSize="30" Text="{Binding ProfileDisplayName}" />
                         <TextBlock Classes="body"
                                    FontSize="16"
-                                   Foreground="#465255"
+                                   Foreground="#C9D5EA"
                                    Text="{Binding WorkspaceSummary}"
                                    TextWrapping="Wrap" />
                         <WrapPanel Margin="0,8,0,0" Orientation="Horizontal" ItemHeight="28">
                             <Border Background="#233238" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
                                 <TextBlock Foreground="#F7F8F6" FontSize="11" Text="{Binding Branch}" />
                             </Border>
-                            <Border Background="#EEF3EF" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
-                                <TextBlock Foreground="#355B4C" FontSize="11" Text="{Binding CatalogSummary}" />
+                            <Border Background="#224FD8A9" BorderBrush="#6B8CF0CC" BorderThickness="1" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                <TextBlock Foreground="#8CF0CC" FontSize="11" Text="{Binding CatalogSummary}" />
                             </Border>
-                            <Border Background="#F4F0E8" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
-                                <TextBlock Foreground="#5A656A" FontSize="11" Text="{Binding ProfileNamespace}" />
+                            <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                <TextBlock Foreground="#C9D5EA" FontSize="11" Text="{Binding ProfileNamespace}" />
                             </Border>
                         </WrapPanel>
                     </StackPanel>
@@ -38,7 +38,7 @@
                             <TextBlock Classes="kicker" Text="Editor Status" />
                             <TextBlock Classes="body"
                                        FontWeight="SemiBold"
-                                       Foreground="#1F2A2E"
+                                       Foreground="#EDF4FF"
                                        Text="{Binding LoadStatus}"
                                        TextWrapping="Wrap" />
                             <TextBlock Classes="caption" Text="{Binding ActionSummary}" TextWrapping="Wrap" />
@@ -243,8 +243,8 @@
             </Grid>
 
             <Border Grid.Row="3"
-                    Background="#FBF7F1"
-                    BorderBrush="#DED3C7"
+                    Background="#22FFB36B"
+                    BorderBrush="#72FFB36B"
                     BorderThickness="1"
                     CornerRadius="14"
                     Padding="16"
