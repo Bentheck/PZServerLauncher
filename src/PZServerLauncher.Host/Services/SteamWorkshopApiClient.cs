@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Net.Http.Headers;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Caching.Memory;
@@ -203,6 +204,34 @@ public sealed class SteamWorkshopApiClient(IHttpClientFactory httpClientFactory,
         return collection;
     }
 
+    public async Task<IReadOnlyList<string>> GetRequiredWorkshopItemIdsAsync(string workshopId, CancellationToken cancellationToken = default)
+    {
+        var normalizedId = workshopId.Trim();
+        if (string.IsNullOrWhiteSpace(normalizedId))
+        {
+            return [];
+        }
+
+        var cacheKey = $"steam-required-items::{normalizedId}";
+        if (memoryCache.TryGetValue(cacheKey, out IReadOnlyList<string>? cached) && cached is not null)
+        {
+            return cached;
+        }
+
+        var client = httpClientFactory.CreateClient(nameof(SteamWorkshopApiClient));
+        var url = $"https://steamcommunity.com/sharedfiles/filedetails/?id={Uri.EscapeDataString(normalizedId)}";
+        using var response = await client.GetAsync(url, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            return [];
+        }
+
+        var html = await response.Content.ReadAsStringAsync(cancellationToken);
+        var requiredIds = ParseRequiredWorkshopItemIds(html, normalizedId);
+        memoryCache.Set(cacheKey, requiredIds, TimeSpan.FromMinutes(30));
+        return requiredIds;
+    }
+
     public async Task<SteamWorkshopImage?> DownloadImageAsync(string imageUrl, CancellationToken cancellationToken = default)
     {
         var normalizedUrl = imageUrl.Trim();
@@ -388,6 +417,29 @@ public sealed class SteamWorkshopApiClient(IHttpClientFactory httpClientFactory,
         element.TryGetProperty(propertyName, out var property) && property.ValueKind == JsonValueKind.String
             ? property.GetString()
             : null;
+
+    private static IReadOnlyList<string> ParseRequiredWorkshopItemIds(string html, string currentWorkshopId)
+    {
+        if (string.IsNullOrWhiteSpace(html))
+        {
+            return [];
+        }
+
+        var requiredBlockMatch = Regex.Match(
+            html,
+            "<div[^>]+id=\"RequiredItems\"[^>]*>(?<body>.*?)</div>\\s*</div>",
+            RegexOptions.IgnoreCase | RegexOptions.Singleline);
+        if (!requiredBlockMatch.Success)
+        {
+            return [];
+        }
+
+        return Regex.Matches(requiredBlockMatch.Groups["body"].Value, @"filedetails/\?id=(\d+)", RegexOptions.IgnoreCase)
+            .Select(match => match.Groups[1].Value)
+            .Where(value => !string.IsNullOrWhiteSpace(value) && !string.Equals(value, currentWorkshopId, StringComparison.OrdinalIgnoreCase))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+    }
 }
 
 public sealed record SteamWorkshopItem(

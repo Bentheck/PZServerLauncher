@@ -13,6 +13,7 @@ namespace PZServerLauncher.App.ViewModels;
 
 public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
 {
+    private const int ConsoleBufferLimit = 500;
     private static readonly TimeSpan LiveRefreshInterval = TimeSpan.FromSeconds(3);
 
     private readonly ConsoleWorkspaceStateService _workspaceStateService;
@@ -758,7 +759,7 @@ public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
             Dispatcher.UIThread.Post(() =>
             {
                 LogLines.Add(line);
-                while (LogLines.Count > 250)
+                while (LogLines.Count > ConsoleBufferLimit)
                 {
                     LogLines.RemoveAt(0);
                 }
@@ -822,7 +823,7 @@ public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
                 LogLines.Add(line);
             }
 
-            while (LogLines.Count > 250)
+            while (LogLines.Count > ConsoleBufferLimit)
             {
                 LogLines.RemoveAt(0);
             }

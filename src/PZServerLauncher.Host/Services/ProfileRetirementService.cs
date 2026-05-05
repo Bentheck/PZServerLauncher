@@ -80,6 +80,15 @@ public sealed class ProfileRetirementService(
         var relatedDrafts = await dbContext.SettingsDrafts
             .Where(draft => draft.ProfileId == profile.ProfileId)
             .ToListAsync(cancellationToken);
+        var relatedModsMapsDrafts = await dbContext.ModsMapsDrafts
+            .Where(draft => draft.ProfileId == profile.ProfileId)
+            .ToListAsync(cancellationToken);
+        var relatedModsMapsModRows = await dbContext.ModsMapsDraftModRows
+            .Where(row => row.ProfileId == profile.ProfileId)
+            .ToListAsync(cancellationToken);
+        var relatedModsMapsMapRows = await dbContext.ModsMapsDraftMapRows
+            .Where(row => row.ProfileId == profile.ProfileId)
+            .ToListAsync(cancellationToken);
         var relatedPresets = await dbContext.NamedWorkshopPresets
             .Where(preset => preset.ProfileId == profile.ProfileId)
             .ToListAsync(cancellationToken);
@@ -89,6 +98,9 @@ public sealed class ProfileRetirementService(
 
         dbContext.OperationJobs.RemoveRange(relatedJobs);
         dbContext.SettingsDrafts.RemoveRange(relatedDrafts);
+        dbContext.ModsMapsDraftModRows.RemoveRange(relatedModsMapsModRows);
+        dbContext.ModsMapsDraftMapRows.RemoveRange(relatedModsMapsMapRows);
+        dbContext.ModsMapsDrafts.RemoveRange(relatedModsMapsDrafts);
         dbContext.NamedWorkshopPresets.RemoveRange(relatedPresets);
         dbContext.AuditEntries.RemoveRange(relatedAudits);
         dbContext.ServerProfiles.Remove(entity);

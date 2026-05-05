@@ -4,5 +4,6 @@ public enum WorkshopCatalogSearchFilter
 {
     All = 0,
     Mods = 1,
-    Collections = 2,
+    Maps = 2,
+    Collections = 3,
 }

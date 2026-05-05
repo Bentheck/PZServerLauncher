@@ -15,6 +15,7 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
     private string? _sourceSha256;
     private bool _suppressSelectionRefresh;
     private bool _pageMatchesPreset = true;
+    private bool _isShowingDraft;
     private readonly Dictionary<string, string?> _values = new(StringComparer.Ordinal);
     private readonly Dictionary<string, SandboxPresetDto> _presetLookup = new(StringComparer.Ordinal);
 
@@ -36,6 +37,9 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         SavePresetCommand = new AsyncRelayCommand(SavePresetAsync, () => CanEdit && !string.IsNullOrWhiteSpace(PresetName));
         DeletePresetCommand = new AsyncRelayCommand(DeletePresetAsync, () => CanEdit && SelectedPreset is not null && !SelectedPreset.IsBuiltIn);
         ResetWorldCommand = new AsyncRelayCommand(ResetWorldAsync, () => SelectedProfile is not null && !IsBusy);
+        SelectCategoryCommand = new RelayCommand<SandboxCategoryViewModel>(SelectCategory);
+        ToggleCategoryExpandedCommand = new RelayCommand<SandboxCategoryViewModel>(ToggleCategoryExpanded);
+        ToggleSectionExpandedCommand = new RelayCommand<SandboxSectionViewModel>(ToggleSectionExpanded);
     }
 
     public override string PageSummary => SelectedProfile is null
@@ -52,11 +56,13 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
     public string ActionSummary => RequiresAdvancedFilesFallback
         ? "Structured editing is temporarily unavailable for this file. Use Advanced Files for raw recovery."
-        : CanEdit
-            ? "Search globally, switch categories from the left rail, compare against shipped or custom presets, then validate and apply only when you are ready."
-            : IsLoading
-                ? "Loading structured sandbox settings from the host..."
-                : "Sandbox settings are not currently editable.";
+        : IsShowingDraft
+            ? "The editor is currently showing launcher draft values. Save Draft keeps them in launcher state. Apply Settings writes them to SandboxVars.lua."
+            : CanEdit
+                ? "Search globally, switch categories from the left rail, compare against shipped or custom presets, then validate and apply only when you are ready."
+                : IsLoading
+                    ? "Loading structured sandbox settings from the host..."
+                    : "Sandbox settings are not currently editable.";
 
     public ObservableCollection<string> FieldErrors { get; } = [];
 
@@ -92,6 +98,10 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
     public string SelectedCategoryStatus => SelectedCategory?.StatusText ?? "Choose a category to browse its settings.";
 
+    public string DraftStateSummary => IsShowingDraft
+        ? "Showing launcher draft values instead of the live SandboxVars.lua file."
+        : "Showing the live SandboxVars.lua values from disk.";
+
     public string SearchSummary => string.IsNullOrWhiteSpace(SearchText)
         ? "Showing every sandbox category."
         : $"Showing categories that match \"{SearchText.Trim()}\".";
@@ -100,9 +110,11 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         ? $"{FieldErrors.Count} validation issue(s) are currently blocking a clean save."
         : RequiresAdvancedFilesFallback
             ? FallbackReason
-            : HasUnsavedChanges
-                ? "No validation issues yet, but the current sandbox edits are still local."
-                : "Structured sandbox values are currently clean.";
+            : IsShowingDraft
+                ? "No validation issues yet. These values are still staged in launcher draft state until you apply them."
+                : HasUnsavedChanges
+                    ? "No validation issues yet, but the current sandbox edits are still local."
+                    : "Structured sandbox values are currently clean.";
 
     public string WorldResetSummary => SelectedProfile is null
         ? "Select a profile before resetting the world."
@@ -129,6 +141,12 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
     public IAsyncRelayCommand DeletePresetCommand { get; }
 
     public IAsyncRelayCommand ResetWorldCommand { get; }
+
+    public IRelayCommand<SandboxCategoryViewModel> SelectCategoryCommand { get; }
+
+    public IRelayCommand<SandboxCategoryViewModel> ToggleCategoryExpandedCommand { get; }
+
+    public IRelayCommand<SandboxSectionViewModel> ToggleSectionExpandedCommand { get; }
 
     [ObservableProperty]
     private string loadStatus = "Select a profile to load the sandbox editor.";
@@ -168,6 +186,21 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
     [ObservableProperty]
     private bool restartAfterWorldReset;
+
+    public bool IsShowingDraft
+    {
+        get => _isShowingDraft;
+        private set
+        {
+            if (_isShowingDraft == value)
+            {
+                return;
+            }
+
+            _isShowingDraft = value;
+            NotifyComputedState();
+        }
+    }
 
     protected override void OnSelectedProfileChangedCore(ProfileCardViewModel? profile)
     {
@@ -384,6 +417,7 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
     private void ApplyDraft(SettingsDraftDto draft)
     {
+        IsShowingDraft = true;
         _values.Clear();
         foreach (var entry in draft.Values)
         {
@@ -404,6 +438,7 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
     private void ApplyValueSet(SettingsValueSetDto valueSet, string cleanMessage)
     {
+        IsShowingDraft = false;
         _sourceSha256 = valueSet.SourceSha256;
         RequiresAdvancedFilesFallback = valueSet.RequiresAdvancedFilesFallback;
         FallbackReason = valueSet.FallbackReason ?? string.Empty;
@@ -426,6 +461,10 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
     private void RefreshPresentation()
     {
         var selectedCategoryId = SelectedCategory?.CategoryId;
+        var categoryExpansionById = Categories.ToDictionary(category => category.CategoryId, category => category.IsExpanded, StringComparer.Ordinal);
+        var sectionExpansionByKey = Categories
+            .SelectMany(category => category.Sections)
+            .ToDictionary(section => section.SectionKey, section => section.IsExpanded, StringComparer.Ordinal);
         Categories.Clear();
 
         if (_page is null)
@@ -443,14 +482,25 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         _pageMatchesPreset = !allPresentations.Any(category => category.HasPresetComparison && !category.MatchesPreset);
         foreach (var category in presentations)
         {
+            var categoryKey = category.CategoryId;
+            var autoExpandCategory =
+                !string.IsNullOrWhiteSpace(SearchText) ||
+                string.Equals(category.CategoryId, selectedCategoryId, StringComparison.Ordinal) ||
+                !categoryExpansionById.TryGetValue(categoryKey, out var preservedCategoryExpanded) ||
+                preservedCategoryExpanded;
             Categories.Add(new SandboxCategoryViewModel(
                 category.CategoryId,
                 category.Title,
                 BuildCategoryStatus(category),
                 category.MatchesPreset,
+                autoExpandCategory,
                 category.Sections.Select(section => new SandboxSectionViewModel(
+                    $"{category.CategoryId}::{section.Section.Title}",
                     section.Section.Title,
                     section.Section.Description,
+                    !string.IsNullOrWhiteSpace(SearchText) ||
+                    !sectionExpansionByKey.TryGetValue($"{category.CategoryId}::{section.Section.Title}", out var preservedSectionExpanded) ||
+                    preservedSectionExpanded,
                     section.Fields.Select(field => new SandboxFieldEditorViewModel(
                         field,
                         CanEdit,
@@ -486,6 +536,38 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             ? $"Edited sandbox values. {PresetSummary}"
             : "Edited sandbox values. Validate, draft, or apply when ready.";
         RefreshPresentation();
+    }
+
+    private void SelectCategory(SandboxCategoryViewModel? category)
+    {
+        if (category is null)
+        {
+            return;
+        }
+
+        SelectedCategory = category;
+        category.IsExpanded = true;
+    }
+
+    private void ToggleCategoryExpanded(SandboxCategoryViewModel? category)
+    {
+        if (category is null)
+        {
+            return;
+        }
+
+        SelectedCategory = category;
+        category.IsExpanded = !category.IsExpanded;
+    }
+
+    private void ToggleSectionExpanded(SandboxSectionViewModel? section)
+    {
+        if (section is null)
+        {
+            return;
+        }
+
+        section.IsExpanded = !section.IsExpanded;
     }
 
     private void ApplyPreset()
@@ -644,6 +726,7 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         SelectedPreset = null;
         SelectedCategory = null;
         PresetName = string.Empty;
+        IsShowingDraft = false;
         FieldErrors.Clear();
         OnPropertyChanged(nameof(HasFieldErrors));
         MarkClean("Sandbox settings are in sync.");
@@ -692,6 +775,7 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         OnPropertyChanged(nameof(PresetLibrarySummary));
         OnPropertyChanged(nameof(SelectedCategoryTitle));
         OnPropertyChanged(nameof(SelectedCategoryStatus));
+        OnPropertyChanged(nameof(DraftStateSummary));
         OnPropertyChanged(nameof(SearchSummary));
         OnPropertyChanged(nameof(ValidationSummary));
         OnPropertyChanged(nameof(WorldResetSummary));

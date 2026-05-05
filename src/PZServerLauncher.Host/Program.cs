@@ -95,6 +95,7 @@ public class Program
         builder.Services.AddScoped<ConfigFileService>();
         builder.Services.AddScoped<StructuredSettingsService>();
         builder.Services.AddScoped<SettingsDraftStore>();
+        builder.Services.AddScoped<ModsMapsDraftStore>();
         builder.Services.AddScoped<NamedWorkshopPresetStore>();
         builder.Services.AddSingleton<SandboxPresetLibraryService>();
         builder.Services.AddScoped<ProfileRetirementService>();

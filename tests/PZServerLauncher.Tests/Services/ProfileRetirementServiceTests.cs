@@ -91,6 +91,35 @@ public sealed class ProfileRetirementServiceTests : IDisposable
             ValuesJson = "{}",
             UpdatedAtUtc = DateTimeOffset.UtcNow,
         });
+        harness.DbContext.ModsMapsDrafts.Add(new ModsMapsDraftEntity
+        {
+            ProfileId = profile.ProfileId,
+            Branch = (int)profile.Branch,
+            WorkshopItemIdsJson = "[\"111111\"]",
+            EditorMode = "Live",
+            IsDirty = true,
+            UpdatedAtUtc = DateTimeOffset.UtcNow,
+        });
+        harness.DbContext.ModsMapsDraftModRows.Add(new ModsMapsDraftModRowEntity
+        {
+            ProfileId = profile.ProfileId,
+            RowId = 1,
+            ModName = "Active Mod",
+            ModId = "ModA",
+            WorkshopId = "111111",
+            IsActive = true,
+            SortOrder = 0,
+        });
+        harness.DbContext.ModsMapsDraftMapRows.Add(new ModsMapsDraftMapRowEntity
+        {
+            ProfileId = profile.ProfileId,
+            RowId = 1,
+            Title = "Map One",
+            MapFolder = "MapOne",
+            WorkshopId = "111111",
+            IsActive = true,
+            SortOrder = 0,
+        });
         harness.DbContext.NamedWorkshopPresets.Add(new NamedWorkshopPresetEntity
         {
             PresetId = Guid.NewGuid(),
@@ -135,6 +164,9 @@ public sealed class ProfileRetirementServiceTests : IDisposable
         Assert.Equal(1, await harness.DbContext.AuditEntries.CountAsync(entry => entry.Subject == profile.ProfileId));
         Assert.False(await harness.DbContext.ServerProfiles.AnyAsync(entry => entry.ProfileId == profile.ProfileId));
         Assert.False(await harness.DbContext.SettingsDrafts.AnyAsync(entry => entry.ProfileId == profile.ProfileId));
+        Assert.False(await harness.DbContext.ModsMapsDrafts.AnyAsync(entry => entry.ProfileId == profile.ProfileId));
+        Assert.False(await harness.DbContext.ModsMapsDraftModRows.AnyAsync(entry => entry.ProfileId == profile.ProfileId));
+        Assert.False(await harness.DbContext.ModsMapsDraftMapRows.AnyAsync(entry => entry.ProfileId == profile.ProfileId));
         Assert.False(await harness.DbContext.NamedWorkshopPresets.AnyAsync(entry => entry.ProfileId == profile.ProfileId));
         Assert.False(await harness.DbContext.OperationJobs.AnyAsync(entry => entry.ProfileId == profile.ProfileId));
     }

@@ -5,4 +5,5 @@ public sealed record WorkshopCatalogSearchRequestDto(
     WorkshopCatalogSearchMode SearchMode,
     int Take = 12,
     PZServerLauncher.Core.Profiles.WorkshopPreset? CurrentPreset = null,
-    WorkshopCatalogSearchFilter SearchFilter = WorkshopCatalogSearchFilter.All);
+    WorkshopCatalogSearchFilter SearchFilter = WorkshopCatalogSearchFilter.All,
+    IReadOnlyList<string>? SelectedTags = null);

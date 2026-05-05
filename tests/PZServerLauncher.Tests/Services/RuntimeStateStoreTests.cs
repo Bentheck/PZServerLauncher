@@ -68,8 +68,8 @@ public sealed class RuntimeStateStoreTests
         var recent = store.GetRecentLogs("alpha");
 
         Assert.Equal(260, sink.LineCount);
-        Assert.Equal(250, recent.Count);
-        Assert.Equal("line 11", recent[0]);
+        Assert.Equal(260, recent.Count);
+        Assert.Equal("line 1", recent[0]);
         Assert.Equal("line 260", recent[^1]);
     }
 

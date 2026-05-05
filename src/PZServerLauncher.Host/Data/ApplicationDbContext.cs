@@ -17,6 +17,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     public DbSet<SettingsDraftEntity> SettingsDrafts => Set<SettingsDraftEntity>();
 
+    public DbSet<ModsMapsDraftEntity> ModsMapsDrafts => Set<ModsMapsDraftEntity>();
+
+    public DbSet<ModsMapsDraftModRowEntity> ModsMapsDraftModRows => Set<ModsMapsDraftModRowEntity>();
+
+    public DbSet<ModsMapsDraftMapRowEntity> ModsMapsDraftMapRows => Set<ModsMapsDraftMapRowEntity>();
+
     public DbSet<NamedWorkshopPresetEntity> NamedWorkshopPresets => Set<NamedWorkshopPresetEntity>();
 
     protected override void OnModelCreating(ModelBuilder builder)
@@ -70,6 +76,39 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             entity.Property(x => x.PageId).HasMaxLength(64);
             entity.Property(x => x.ValuesJson).HasColumnType("TEXT");
             entity.HasIndex(x => x.UpdatedAtUtc);
+        });
+
+        builder.Entity<ModsMapsDraftEntity>(entity =>
+        {
+            entity.HasKey(x => x.ProfileId);
+            entity.Property(x => x.ProfileId).HasMaxLength(64);
+            entity.Property(x => x.WorkshopItemIdsJson).HasColumnType("TEXT");
+            entity.Property(x => x.EditorMode).HasMaxLength(32);
+            entity.HasIndex(x => x.UpdatedAtUtc);
+        });
+
+        builder.Entity<ModsMapsDraftModRowEntity>(entity =>
+        {
+            entity.HasKey(x => new { x.ProfileId, x.RowId });
+            entity.Property(x => x.ProfileId).HasMaxLength(64);
+            entity.Property(x => x.ModName).HasMaxLength(255);
+            entity.Property(x => x.ModId).HasMaxLength(255);
+            entity.Property(x => x.WorkshopId).HasMaxLength(64);
+            entity.Property(x => x.DependencyModIdsJson).HasColumnType("TEXT");
+            entity.Property(x => x.MapFoldersJson).HasColumnType("TEXT");
+            entity.HasIndex(x => new { x.ProfileId, x.SortOrder });
+            entity.HasIndex(x => x.ModId);
+        });
+
+        builder.Entity<ModsMapsDraftMapRowEntity>(entity =>
+        {
+            entity.HasKey(x => new { x.ProfileId, x.RowId });
+            entity.Property(x => x.ProfileId).HasMaxLength(64);
+            entity.Property(x => x.Title).HasMaxLength(255);
+            entity.Property(x => x.MapFolder).HasMaxLength(255);
+            entity.Property(x => x.WorkshopId).HasMaxLength(64);
+            entity.HasIndex(x => new { x.ProfileId, x.SortOrder });
+            entity.HasIndex(x => x.MapFolder);
         });
 
         builder.Entity<NamedWorkshopPresetEntity>(entity =>

@@ -259,6 +259,96 @@ public sealed class WorkshopCatalogServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task SearchAsync_MapsFilter_ReturnsItemsWithMapFolders()
+    {
+        var installDirectory = Path.Combine(_tempRoot, "install-map-filter");
+        var itemDirectory = Path.Combine(installDirectory, "steamapps", "workshop", "content", "108600", "1234567890");
+        var modDirectory = Path.Combine(itemDirectory, "mods", "ExampleMapMod");
+        Directory.CreateDirectory(Path.Combine(modDirectory, "media", "maps", "RavenCreek"));
+        File.WriteAllText(
+            Path.Combine(itemDirectory, "workshop.txt"),
+            """
+            title=Raven Creek
+            description=Map expansion
+            """);
+        File.WriteAllText(
+            Path.Combine(modDirectory, "mod.info"),
+            """
+            name=Raven Creek
+            id=ExampleMapMod
+            map=RavenCreek
+            """);
+
+        var service = CreateService();
+
+        var result = await service.SearchAsync(
+            CreateProfile(installDirectory),
+            WorkshopPreset.Empty,
+            new WorkshopCatalogSearchRequestDto("raven", WorkshopCatalogSearchMode.Local, SearchFilter: WorkshopCatalogSearchFilter.Maps));
+
+        var item = Assert.Single(result.Results);
+        Assert.Contains("RavenCreek", item.MapFolders);
+    }
+
+    [Fact]
+    public async Task SearchAsync_SelectedTags_FilterResultsAndExposeAvailableTags()
+    {
+        var installDirectory = Path.Combine(_tempRoot, "install-tag-filter");
+        var firstItemDirectory = Path.Combine(installDirectory, "steamapps", "workshop", "content", "108600", "1234567890");
+        var firstModDirectory = Path.Combine(firstItemDirectory, "mods", "RavenCreek");
+        Directory.CreateDirectory(Path.Combine(firstModDirectory, "media", "maps", "RavenCreek"));
+        File.WriteAllText(
+            Path.Combine(firstItemDirectory, "workshop.txt"),
+            """
+            title=Raven Creek
+            description=Map expansion
+            tags=map,vehicles
+            """);
+        File.WriteAllText(
+            Path.Combine(firstModDirectory, "mod.info"),
+            """
+            name=Raven Creek
+            id=RavenCreek
+            map=RavenCreek
+            """);
+
+        var secondItemDirectory = Path.Combine(installDirectory, "steamapps", "workshop", "content", "108600", "2222222222");
+        var secondModDirectory = Path.Combine(secondItemDirectory, "mods", "Britas");
+        Directory.CreateDirectory(secondModDirectory);
+        File.WriteAllText(
+            Path.Combine(secondItemDirectory, "workshop.txt"),
+            """
+            title=Brita Weapons
+            description=Weapons pack
+            tags=weapons
+            """);
+        File.WriteAllText(
+            Path.Combine(secondModDirectory, "mod.info"),
+            """
+            name=Brita Weapons
+            id=BritaWeapons
+            """);
+
+        var service = CreateService();
+
+        var result = await service.SearchAsync(
+            CreateProfile(installDirectory),
+            WorkshopPreset.Empty,
+            new WorkshopCatalogSearchRequestDto(
+                string.Empty,
+                WorkshopCatalogSearchMode.Local,
+                SearchFilter: WorkshopCatalogSearchFilter.All,
+                SelectedTags: ["map"]));
+
+        var item = Assert.Single(result.Results);
+        Assert.Equal("Raven Creek", item.Title);
+        Assert.Contains("map", result.SelectedTags ?? []);
+        Assert.Contains("map", result.AvailableTags ?? []);
+        Assert.Contains("vehicles", result.AvailableTags ?? []);
+        Assert.Contains("weapons", result.AvailableTags ?? []);
+    }
+
+    [Fact]
     public async Task GetPreviewAsync_CollectionExpandsChildrenAndAggregatesModsAndMaps()
     {
         var handler = new RecordingHttpMessageHandler((request, body, _) =>
@@ -321,6 +411,92 @@ public sealed class WorkshopCatalogServiceTests : IDisposable
         Assert.Equal(2, collectionChildren.Count);
         Assert.Contains(collectionChildren, child => child.WorkshopId == "1111111111" && child.IsQueued);
         Assert.Contains(collectionChildren, child => child.WorkshopId == "2222222222" && !child.IsQueued);
+    }
+
+    [Fact]
+    public async Task GetPreviewAsync_ItemResolvesDependenciesRecursively()
+    {
+        var handler = new RecordingHttpMessageHandler((request, body, _) =>
+        {
+            var requestUri = request.RequestUri?.ToString() ?? string.Empty;
+            if (requestUri.Contains("GetCollectionDetails", StringComparison.OrdinalIgnoreCase))
+            {
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
+            }
+
+            if (requestUri.Contains("steamcommunity.com/sharedfiles/filedetails/?id=5555555555", StringComparison.OrdinalIgnoreCase))
+            {
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent("""
+                        <div id="RequiredItems">
+                            <a href="https://steamcommunity.com/sharedfiles/filedetails/?id=1111111111">Dependency One</a>
+                        </div></div>
+                        """),
+                });
+            }
+
+            if (requestUri.Contains("steamcommunity.com/sharedfiles/filedetails/?id=1111111111", StringComparison.OrdinalIgnoreCase))
+            {
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent("""
+                        <div id="RequiredItems">
+                            <a href="https://steamcommunity.com/sharedfiles/filedetails/?id=2222222222">Dependency Two</a>
+                        </div></div>
+                        """),
+                });
+            }
+
+            if (requestUri.Contains("steamcommunity.com/sharedfiles/filedetails/?id=2222222222", StringComparison.OrdinalIgnoreCase))
+            {
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent("<html><body>No dependencies</body></html>"),
+                });
+            }
+
+            if ((body ?? string.Empty).Contains("publishedfileids%5B0%5D=5555555555", StringComparison.OrdinalIgnoreCase) &&
+                (body ?? string.Empty).Contains("itemcount=1", StringComparison.OrdinalIgnoreCase))
+            {
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent("""
+                        {"response":{"publishedfiledetails":[{"publishedfileid":"5555555555","title":"Root Pack","description":"Mod ID: RootMod","preview_url":"https://cdn.test/root.png"}]}}
+                        """),
+                });
+            }
+
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent("""
+                    {"response":{"publishedfiledetails":[
+                        {"publishedfileid":"1111111111","title":"Dependency One","description":"Mod ID: DependencyOne","preview_url":"https://cdn.test/dep-one.png"},
+                        {"publishedfileid":"2222222222","title":"Dependency Two","description":"Mod ID: DependencyTwo","preview_url":"https://cdn.test/dep-two.png"}
+                    ]}}
+                    """),
+            });
+        });
+        var service = CreateService(handler);
+        var preset = new WorkshopPreset
+        {
+            WorkshopItemIds = ["1111111111"],
+        };
+
+        var preview = await service.GetPreviewAsync(
+            CreateProfile(Path.Combine(_tempRoot, "install-dependency-preview")),
+            preset,
+            "5555555555",
+            WorkshopCatalogSearchMode.Both);
+
+        Assert.NotNull(preview);
+        Assert.Equal(["5555555555"], preview!.WorkshopItemIdsToAdd);
+        Assert.Equal(["2222222222"], preview.DependencyWorkshopItemIdsToAdd);
+        Assert.Equal(["DependencyOne", "DependencyTwo", "RootMod"], preview.DependencyModIdsToAdd);
+        var dependencyChildren = preview.DependencyChildren ?? [];
+        Assert.Equal(2, dependencyChildren.Count);
+        Assert.Contains(dependencyChildren, child => child.WorkshopId == "1111111111" && child.IsQueued);
+        Assert.Contains(dependencyChildren, child => child.WorkshopId == "2222222222" && !child.IsQueued);
     }
 
     private WorkshopCatalogService CreateService(RecordingHttpMessageHandler? handler = null)

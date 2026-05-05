@@ -1194,7 +1194,35 @@ else
                 .ToArray()
             : preview.CollectionChildren;
 
-        return new WorkshopCatalogPreviewDto(item, workshopItemsToAdd, modIdsToAdd, mapFoldersToAdd, collectionChildren);
+        var dependencyChildren = preview.DependencyChildren is { Count: > 0 }
+            ? preview.DependencyChildren
+                .Select(child => child with
+                {
+                    IsQueued = preset.WorkshopItemIds.Any(value => string.Equals(value, child.WorkshopId, StringComparison.OrdinalIgnoreCase)),
+                })
+                .ToArray()
+            : preview.DependencyChildren;
+        var dependencyWorkshopItemsToAdd = (preview.DependencyWorkshopItemIdsToAdd ?? [])
+            .Where(value => !preset.WorkshopItemIds.Any(existing => string.Equals(existing, value, StringComparison.OrdinalIgnoreCase)))
+            .ToArray();
+        var dependencyModIdsToAdd = (preview.DependencyModIdsToAdd ?? [])
+            .Where(value => !preset.EnabledModIds.Any(existing => string.Equals(existing, value, StringComparison.OrdinalIgnoreCase)))
+            .ToArray();
+        var dependencyMapFoldersToAdd = (preview.DependencyMapFoldersToAdd ?? [])
+            .Where(value => !preset.MapFolders.Any(existing => string.Equals(existing, value, StringComparison.OrdinalIgnoreCase)))
+            .ToArray();
+
+        return new WorkshopCatalogPreviewDto(
+            item,
+            workshopItemsToAdd,
+            modIdsToAdd,
+            mapFoldersToAdd,
+            CollectionChildren: collectionChildren,
+            DependencyChildren: dependencyChildren,
+            DependencyWorkshopItemIdsToAdd: dependencyWorkshopItemsToAdd,
+            DependencyModIdsToAdd: dependencyModIdsToAdd,
+            DependencyMapFoldersToAdd: dependencyMapFoldersToAdd,
+            ModNamesById: preview.ModNamesById);
     }
 
     private static bool IsWorkshopCatalogItemQueued(WorkshopPreset preset, WorkshopCatalogItemDto item) =>

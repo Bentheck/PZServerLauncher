@@ -22,6 +22,11 @@ public sealed partial class WorkshopCatalogService(
         var mode = request.SearchMode;
         var filter = request.SearchFilter;
         var normalizedQuery = request.Query.Trim();
+        var selectedTags = (request.SelectedTags ?? [])
+            .Where(tag => !string.IsNullOrWhiteSpace(tag))
+            .Select(tag => tag.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
         var diagnostics = new List<string>();
         var hasApiKey = !string.IsNullOrWhiteSpace(await settingsStore.GetSteamWebApiKeyAsync(cancellationToken));
         var localItems = GetLocalItems(profile);
@@ -90,14 +95,20 @@ public sealed partial class WorkshopCatalogService(
         }
 
         var results = merged.Values
-            .Where(item => MatchesFilter(item, filter))
+            .Where(item => MatchesFilter(item, filter) && MatchesSelectedTags(item, selectedTags))
             .OrderByDescending(item => item.IsQueued)
             .ThenByDescending(item => item.IsInstalledLocally)
             .ThenBy(item => item.Title, StringComparer.OrdinalIgnoreCase)
             .Take(Math.Clamp(request.Take, 1, 50))
             .ToArray();
+        var availableTags = merged.Values
+            .SelectMany(item => item.Tags ?? [])
+            .Where(tag => !string.IsNullOrWhiteSpace(tag))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(tag => tag, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
 
-        return new WorkshopCatalogSearchResultDto(normalizedQuery, mode, hasApiKey, results, diagnostics);
+        return new WorkshopCatalogSearchResultDto(normalizedQuery, mode, hasApiKey, results, diagnostics, availableTags, selectedTags);
     }
 
     public async Task<WorkshopCatalogPreviewDto?> GetPreviewAsync(
@@ -142,6 +153,11 @@ public sealed partial class WorkshopCatalogService(
             return null;
         }
 
+        var dependencyWorkshopIds = preview.CollectionChildWorkshopIds?.Count > 0 || mode is WorkshopCatalogSearchMode.Local
+            ? []
+            : await steamWorkshopApiClient.GetRequiredWorkshopItemIdsAsync(workshopId, cancellationToken);
+        var dependencyItems = await ResolveDependencyItemsAsync(profile, currentPreset, dependencyWorkshopIds, localItems, cancellationToken);
+
         var workshopItemsToAdd = currentPreset.WorkshopItemIds.Any(value => string.Equals(value, workshopId, StringComparison.OrdinalIgnoreCase))
             ? Array.Empty<string>()
             : [workshopId];
@@ -151,8 +167,50 @@ public sealed partial class WorkshopCatalogService(
         var mapFoldersToAdd = preview.MapFolders
             .Where(value => !currentPreset.MapFolders.Any(existing => string.Equals(existing, value, StringComparison.OrdinalIgnoreCase)))
             .ToArray();
+        var dependencyWorkshopItemsToAdd = dependencyItems
+            .Select(item => item.WorkshopId)
+            .Where(value => !currentPreset.WorkshopItemIds.Any(existing => string.Equals(existing, value, StringComparison.OrdinalIgnoreCase)))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        var dependencyModIdsToAdd = dependencyItems
+            .SelectMany(item => item.ModIds)
+            .Concat(preview.ModIds)
+            .Where(value => !currentPreset.EnabledModIds.Any(existing => string.Equals(existing, value, StringComparison.OrdinalIgnoreCase)))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        var dependencyMapFoldersToAdd = dependencyItems
+            .SelectMany(item => item.MapFolders)
+            .Concat(preview.MapFolders)
+            .Where(value => !currentPreset.MapFolders.Any(existing => string.Equals(existing, value, StringComparison.OrdinalIgnoreCase)))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        var dependencyChildren = dependencyItems
+            .Select(item => new WorkshopCatalogPreviewChildDto(
+                item.WorkshopId,
+                item.Title,
+                item.IsInstalledLocally,
+                item.IsQueued,
+                item.ModIds,
+                item.MapFolders,
+                item.DependencyModIds ?? []))
+            .ToArray();
+        var modNamesById = dependencyItems
+            .Append(preview)
+            .SelectMany(item => item.ModIds.Select(modId => new KeyValuePair<string, string>(modId, item.Title)))
+            .GroupBy(item => item.Key, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.First().Value, StringComparer.OrdinalIgnoreCase);
 
-        return new WorkshopCatalogPreviewDto(preview, workshopItemsToAdd, modIdsToAdd, mapFoldersToAdd);
+        return new WorkshopCatalogPreviewDto(
+            preview,
+            workshopItemsToAdd,
+            modIdsToAdd,
+            mapFoldersToAdd,
+            CollectionChildren: null,
+            DependencyChildren: dependencyChildren,
+            DependencyWorkshopItemIdsToAdd: dependencyWorkshopItemsToAdd,
+            DependencyModIdsToAdd: dependencyModIdsToAdd,
+            DependencyMapFoldersToAdd: dependencyMapFoldersToAdd,
+            ModNamesById: modNamesById);
     }
 
     public async Task<SteamWorkshopImage?> GetImageAsync(
@@ -248,13 +306,16 @@ public sealed partial class WorkshopCatalogService(
             description,
             previewImagePath,
             modIds,
-            mapFolders);
+            mapFolders,
+            modInfos.SelectMany(info => info.DependencyModIds).Distinct(StringComparer.OrdinalIgnoreCase).ToArray(),
+            workshopMetadata?.Tags ?? []);
     }
 
     private static LocalWorkshopTxtMetadata? ReadWorkshopTxt(string path)
     {
         string? title = null;
         string? description = null;
+        var tags = new List<string>();
 
         foreach (var line in File.ReadLines(path))
         {
@@ -266,17 +327,23 @@ public sealed partial class WorkshopCatalogService(
             {
                 description = line["description=".Length..].Trim().Replace("<LINE>", Environment.NewLine, StringComparison.OrdinalIgnoreCase);
             }
+            else if (line.StartsWith("tags=", StringComparison.OrdinalIgnoreCase))
+            {
+                tags.AddRange(line["tags=".Length..]
+                    .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries));
+            }
         }
 
         return title is null && description is null
             ? null
-            : new LocalWorkshopTxtMetadata(title, description ?? string.Empty);
+            : new LocalWorkshopTxtMetadata(title, description ?? string.Empty, tags.Distinct(StringComparer.OrdinalIgnoreCase).ToArray());
     }
 
     private static LocalWorkshopModInfo ReadModInfo(string path)
     {
         var modIds = new List<string>();
         var mapFolders = new List<string>();
+        var dependencyModIds = new List<string>();
         string? name = null;
 
         foreach (var line in File.ReadLines(path))
@@ -289,6 +356,11 @@ public sealed partial class WorkshopCatalogService(
             {
                 mapFolders.AddRange(line["map=".Length..]
                     .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries));
+            }
+            else if (line.StartsWith("require=", StringComparison.OrdinalIgnoreCase))
+            {
+                dependencyModIds.AddRange(line["require=".Length..]
+                    .Split([',', ';'], StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries));
             }
             else if (line.StartsWith("name=", StringComparison.OrdinalIgnoreCase))
             {
@@ -305,7 +377,11 @@ public sealed partial class WorkshopCatalogService(
             }
         }
 
-        return new LocalWorkshopModInfo(name, modIds.Distinct(StringComparer.OrdinalIgnoreCase).ToArray(), mapFolders.Distinct(StringComparer.OrdinalIgnoreCase).ToArray());
+        return new LocalWorkshopModInfo(
+            name,
+            modIds.Distinct(StringComparer.OrdinalIgnoreCase).ToArray(),
+            mapFolders.Distinct(StringComparer.OrdinalIgnoreCase).ToArray(),
+            dependencyModIds.Distinct(StringComparer.OrdinalIgnoreCase).ToArray());
     }
 
     private static bool Matches(LocalWorkshopCatalogItem item, string query)
@@ -318,8 +394,9 @@ public sealed partial class WorkshopCatalogService(
         return item.WorkshopId.Contains(query, StringComparison.OrdinalIgnoreCase) ||
                item.Title.Contains(query, StringComparison.OrdinalIgnoreCase) ||
                item.Description.Contains(query, StringComparison.OrdinalIgnoreCase) ||
-               item.ModIds.Any(value => value.Contains(query, StringComparison.OrdinalIgnoreCase)) ||
-               item.MapFolders.Any(value => value.Contains(query, StringComparison.OrdinalIgnoreCase));
+            item.ModIds.Any(value => value.Contains(query, StringComparison.OrdinalIgnoreCase)) ||
+               item.MapFolders.Any(value => value.Contains(query, StringComparison.OrdinalIgnoreCase)) ||
+               item.Tags.Any(value => value.Contains(query, StringComparison.OrdinalIgnoreCase));
     }
 
     private static string? ResolveWorkshopRoot(string? installDirectory)
@@ -352,25 +429,37 @@ public sealed partial class WorkshopCatalogService(
             WorkshopPresetMergeHelper.IsQueued(currentPreset, item.WorkshopId, item.ModIds, item.MapFolders),
             item.ModIds,
             item.MapFolders,
+            item.DependencyModIds,
+            item.Tags,
             WorkshopCatalogItemKind.Item,
             0,
             Array.Empty<string>());
     }
 
-    private static WorkshopCatalogItemDto BuildSteamItem(ServerProfile profile, WorkshopPreset currentPreset, SteamWorkshopItem item) =>
-        new(
+    private static WorkshopCatalogItemDto BuildSteamItem(ServerProfile profile, WorkshopPreset currentPreset, SteamWorkshopItem item)
+    {
+        var modIds = ExtractFromDescription(item.Description, "Mod ID");
+        var mapFolders = ExtractFromDescription(item.Description, "Map Folder")
+            .Concat(ExtractFromDescription(item.Description, "Map"))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        return new WorkshopCatalogItemDto(
             item.WorkshopId,
             item.Title,
             item.Description,
             BuildPreviewImageUrl(profile.ProfileId, item.WorkshopId, WorkshopCatalogItemSource.Steam, item.PreviewUrl),
             WorkshopCatalogItemSource.Steam,
             false,
-            WorkshopPresetMergeHelper.IsQueued(currentPreset, item.WorkshopId, Array.Empty<string>(), Array.Empty<string>()),
+            WorkshopPresetMergeHelper.IsQueued(currentPreset, item.WorkshopId, modIds, mapFolders),
+            modIds,
+            mapFolders,
             Array.Empty<string>(),
-            Array.Empty<string>(),
+            item.Tags,
             item.Kind,
             item.ChildWorkshopIds.Count,
             item.ChildWorkshopIds);
+    }
 
     private static WorkshopCatalogItemDto BuildDetailItem(ServerProfile profile, WorkshopPreset currentPreset, SteamWorkshopItem item)
     {
@@ -390,6 +479,8 @@ public sealed partial class WorkshopCatalogService(
             WorkshopPresetMergeHelper.IsQueued(currentPreset, item.WorkshopId, modIds, mapFolders),
             modIds,
             mapFolders,
+            Array.Empty<string>(),
+            item.Tags,
             item.Kind,
             item.ChildWorkshopIds.Count,
             item.ChildWorkshopIds);
@@ -420,6 +511,8 @@ public sealed partial class WorkshopCatalogService(
             childWorkshopIds.Length > 0 && childWorkshopIds.All(id => currentPreset.WorkshopItemIds.Any(value => string.Equals(value, id, StringComparison.OrdinalIgnoreCase))),
             Array.Empty<string>(),
             Array.Empty<string>(),
+            Array.Empty<string>(),
+            collection.Tags,
             WorkshopCatalogItemKind.Collection,
             childWorkshopIds.Length,
             childWorkshopIds);
@@ -461,6 +554,10 @@ public sealed partial class WorkshopCatalogService(
             .SelectMany(item => item.MapFolders)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToArray();
+        var aggregatedDependencyModIds = childItems
+            .SelectMany(item => item.DependencyModIds ?? [])
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
         var localWorkshopIds = localItemsById.Keys.ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         var previewItem = new WorkshopCatalogItemDto(
@@ -473,6 +570,8 @@ public sealed partial class WorkshopCatalogService(
             childWorkshopIds.Length > 0 && childWorkshopIds.All(id => currentPreset.WorkshopItemIds.Any(value => string.Equals(value, id, StringComparison.OrdinalIgnoreCase))),
             aggregatedModIds,
             aggregatedMapFolders,
+            aggregatedDependencyModIds,
+            collection.Tags,
             WorkshopCatalogItemKind.Collection,
             childWorkshopIds.Length,
             childWorkshopIds);
@@ -486,10 +585,32 @@ public sealed partial class WorkshopCatalogService(
             .Where(value => !currentPreset.MapFolders.Any(existing => string.Equals(existing, value, StringComparison.OrdinalIgnoreCase)))
             .ToArray();
         var collectionChildren = childItems
-            .Select(item => new WorkshopCatalogPreviewChildDto(item.WorkshopId, item.Title, item.IsInstalledLocally, item.IsQueued))
+            .Select(item => new WorkshopCatalogPreviewChildDto(
+                item.WorkshopId,
+                item.Title,
+                item.IsInstalledLocally,
+                item.IsQueued,
+                item.ModIds,
+                item.MapFolders,
+                item.DependencyModIds ?? []))
             .ToArray();
 
-        return new WorkshopCatalogPreviewDto(previewItem, workshopItemsToAdd, modIdsToAdd, mapFoldersToAdd, collectionChildren);
+        var modNamesById = childItems
+            .SelectMany(item => item.ModIds.Select(modId => new KeyValuePair<string, string>(modId, item.Title)))
+            .GroupBy(item => item.Key, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.First().Value, StringComparer.OrdinalIgnoreCase);
+
+        return new WorkshopCatalogPreviewDto(
+            previewItem,
+            workshopItemsToAdd,
+            modIdsToAdd,
+            mapFoldersToAdd,
+            CollectionChildren: collectionChildren,
+            DependencyChildren: [],
+            DependencyWorkshopItemIdsToAdd: [],
+            DependencyModIdsToAdd: [],
+            DependencyMapFoldersToAdd: [],
+            ModNamesById: modNamesById);
     }
 
     private static WorkshopCatalogItemDto MergeItems(WorkshopCatalogItemDto? primary, WorkshopCatalogItemDto secondary)
@@ -521,6 +642,8 @@ public sealed partial class WorkshopCatalogService(
             primary.IsQueued || secondary.IsQueued,
             primary.ModIds.Concat(secondary.ModIds).Distinct(StringComparer.OrdinalIgnoreCase).ToArray(),
             primary.MapFolders.Concat(secondary.MapFolders).Distinct(StringComparer.OrdinalIgnoreCase).ToArray(),
+            (primary.DependencyModIds ?? []).Concat(secondary.DependencyModIds ?? []).Distinct(StringComparer.OrdinalIgnoreCase).ToArray(),
+            (primary.Tags ?? []).Concat(secondary.Tags ?? []).Distinct(StringComparer.OrdinalIgnoreCase).ToArray(),
             kind,
             Math.Max(primary.CollectionItemCount, secondary.CollectionItemCount),
             primary.CollectionChildWorkshopIds?.Count > 0 ? primary.CollectionChildWorkshopIds : secondary.CollectionChildWorkshopIds);
@@ -537,6 +660,8 @@ public sealed partial class WorkshopCatalogService(
             currentPreset.WorkshopItemIds.Any(value => string.Equals(value, workshopId, StringComparison.OrdinalIgnoreCase)),
             Array.Empty<string>(),
             Array.Empty<string>(),
+            Array.Empty<string>(),
+            Array.Empty<string>(),
             WorkshopCatalogItemKind.Item,
             0,
             Array.Empty<string>());
@@ -550,9 +675,96 @@ public sealed partial class WorkshopCatalogService(
         filter switch
         {
             WorkshopCatalogSearchFilter.Mods => item.Kind is WorkshopCatalogItemKind.Item,
+            WorkshopCatalogSearchFilter.Maps => item.Kind is WorkshopCatalogItemKind.Item &&
+                                                (item.MapFolders.Count > 0 ||
+                                                 item.Tags?.Any(tag => string.Equals(tag, "map", StringComparison.OrdinalIgnoreCase)) == true),
             WorkshopCatalogSearchFilter.Collections => item.Kind is WorkshopCatalogItemKind.Collection,
             _ => true,
         };
+
+    private static bool MatchesSelectedTags(WorkshopCatalogItemDto item, IReadOnlyList<string> selectedTags) =>
+        MatchesSelectedTags(item.Tags ?? [], selectedTags);
+
+    private static bool MatchesSelectedTags(IReadOnlyList<string> itemTags, IReadOnlyList<string> selectedTags)
+    {
+        if (selectedTags.Count == 0)
+        {
+            return true;
+        }
+
+        if (itemTags.Count == 0)
+        {
+            return false;
+        }
+
+        return selectedTags.All(selectedTag =>
+            itemTags.Any(itemTag => string.Equals(itemTag, selectedTag, StringComparison.OrdinalIgnoreCase)));
+    }
+
+    private async Task<IReadOnlyList<WorkshopCatalogItemDto>> ResolveDependencyItemsAsync(
+        ServerProfile profile,
+        WorkshopPreset currentPreset,
+        IReadOnlyList<string> seedWorkshopIds,
+        IReadOnlyList<LocalWorkshopCatalogItem> localItems,
+        CancellationToken cancellationToken)
+    {
+        var localItemsById = localItems.ToDictionary(item => item.WorkshopId, StringComparer.OrdinalIgnoreCase);
+        var dependencies = new List<WorkshopCatalogItemDto>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var pending = new Queue<string>(seedWorkshopIds.Where(id => !string.IsNullOrWhiteSpace(id)).Distinct(StringComparer.OrdinalIgnoreCase));
+        var depth = 0;
+
+        while (pending.Count > 0 && depth < 8)
+        {
+            depth += 1;
+            var batch = new List<string>();
+            while (pending.Count > 0)
+            {
+                var workshopId = pending.Dequeue();
+                if (seen.Add(workshopId))
+                {
+                    batch.Add(workshopId);
+                }
+            }
+
+            if (batch.Count == 0)
+            {
+                continue;
+            }
+
+            var detailItemsById = (await steamWorkshopApiClient.GetDetailsAsync(batch, cancellationToken))
+                .ToDictionary(item => item.WorkshopId, StringComparer.OrdinalIgnoreCase);
+
+            foreach (var workshopId in batch)
+            {
+                localItemsById.TryGetValue(workshopId, out var localItem);
+                detailItemsById.TryGetValue(workshopId, out var detailItem);
+
+                var dependencyItem = MergeItems(
+                    localItem is null ? null : BuildLocalItem(profile, currentPreset, localItem),
+                    detailItem is null ? BuildFallbackItem(workshopId, currentPreset) : BuildDetailItem(profile, currentPreset, detailItem));
+                dependencies.Add(dependencyItem);
+
+                var childDependencyIds = detailItem?.ChildWorkshopIds?.Where(id => !string.IsNullOrWhiteSpace(id)).ToArray() ?? [];
+                if (childDependencyIds.Length > 0)
+                {
+                    foreach (var childId in childDependencyIds)
+                    {
+                        pending.Enqueue(childId);
+                    }
+                }
+                else
+                {
+                    foreach (var childId in await steamWorkshopApiClient.GetRequiredWorkshopItemIdsAsync(workshopId, cancellationToken))
+                    {
+                        pending.Enqueue(childId);
+                    }
+                }
+            }
+        }
+
+        return dependencies;
+    }
 
     private static string? BuildPreviewImageUrl(
         string profileId,
@@ -630,11 +842,14 @@ internal sealed record LocalWorkshopCatalogItem(
     string Description,
     string? PreviewImagePath,
     IReadOnlyList<string> ModIds,
-    IReadOnlyList<string> MapFolders);
+    IReadOnlyList<string> MapFolders,
+    IReadOnlyList<string> DependencyModIds,
+    IReadOnlyList<string> Tags);
 
-internal sealed record LocalWorkshopTxtMetadata(string? Title, string Description);
+internal sealed record LocalWorkshopTxtMetadata(string? Title, string Description, IReadOnlyList<string> Tags);
 
 internal sealed record LocalWorkshopModInfo(
     string? Name,
     IReadOnlyList<string> ModIds,
-    IReadOnlyList<string> MapFolders);
+    IReadOnlyList<string> MapFolders,
+    IReadOnlyList<string> DependencyModIds);

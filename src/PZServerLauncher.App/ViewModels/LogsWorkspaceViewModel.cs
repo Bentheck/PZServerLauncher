@@ -12,6 +12,8 @@ namespace PZServerLauncher.App.ViewModels;
 
 public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
 {
+    private const int RawLogBufferLimit = 500;
+    private const int FriendlyLogBufferLimit = 300;
     private static readonly ProjectZomboidLogPostureSummary EmptySummary = new(
         "No buffered lines are available yet. Select a profile to inspect runtime output.",
         "Latest signal: no runtime output captured yet.",
@@ -35,6 +37,9 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
     private readonly ILauncherRuntime _runtime;
     private ServerRuntimeStatus? _runtimeStatus;
     private ProfileLiveOperationsSnapshot? _liveOperations;
+    private string? _lastCompactedWarningKey;
+    private string? _lastCompactedWarningLine;
+    private int _lastCompactedWarningCount;
 
     public LogsWorkspaceViewModel(
         MainWindowViewModel legacy,
@@ -80,6 +85,8 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
 
     public ObservableCollection<string> LogLines { get; } = [];
 
+    public ObservableCollection<string> FriendlyLogLines { get; } = [];
+
     public ObservableCollection<ConnectedPlayerRowViewModel> ConnectedPlayers { get; } = [];
 
     public ObservableCollection<string> RecentPlayerSignals { get; } = [];
@@ -89,6 +96,8 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
     public bool HasLogs => LogLines.Count > 0;
 
     public bool HasNoLogs => LogLines.Count == 0;
+
+    public bool HasFriendlyLogs => FriendlyLogLines.Count > 0;
 
     public bool HasConnectedPlayers => ConnectedPlayers.Count > 0;
 
@@ -104,6 +113,10 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
 
     public string LogStreamSummary => SelectedProfile is null
         ? "Choose a profile to inspect server output."
+        : "Launcher-friendly live feed with repeated vanilla asset warning noise compacted for readability.";
+
+    public string RawBufferSummary => SelectedProfile is null
+        ? "No raw buffer loaded."
         : CurrentSummary.BufferSummary;
 
     public string BufferCountSummary => SelectedProfile is null
@@ -119,6 +132,10 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
     public string FeedPostureSummary => SelectedProfile is null
         ? "No live feed is available yet."
         : CurrentSummary.SignalPostureSummary;
+
+    public string FriendlyFeedSummary => SelectedProfile is null
+        ? "No live feed is available yet."
+        : "Repeated vanilla asset warnings are compacted here. The full raw buffer remains available below.";
 
     public string SignalCountSummary => SelectedProfile is null
         ? "No signal count available."
@@ -310,10 +327,7 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
         LatestRuntimeState = _runtimeStatus.State.ToString();
 
         LogLines.Clear();
-        foreach (var line in logsTask.Result ?? [])
-        {
-            LogLines.Add(line);
-        }
+        ApplyLogBuffer(logsTask.Result ?? []);
 
         ApplyLiveOperations(operationsTask.Result);
 
@@ -405,10 +419,8 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
         }
 
         LogLines.Add(line);
-        while (LogLines.Count > 250)
-        {
-            LogLines.RemoveAt(0);
-        }
+        TrimToLimit(LogLines, RawLogBufferLimit);
+        AppendFriendlyLogLine(line);
 
         _runtimeStatus = (_runtimeStatus ?? new ServerRuntimeStatus(profileId, ServerRuntimeState.Stopped, null, null, null, null, null))
             with
@@ -472,9 +484,101 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
         }
     }
 
+    private void ApplyLogBuffer(IEnumerable<string> lines)
+    {
+        LogLines.Clear();
+        FriendlyLogLines.Clear();
+        ResetFriendlyCompaction();
+
+        foreach (var line in lines)
+        {
+            LogLines.Add(line);
+            AppendFriendlyLogLine(line);
+        }
+
+        TrimToLimit(LogLines, RawLogBufferLimit);
+        TrimToLimit(FriendlyLogLines, FriendlyLogBufferLimit);
+    }
+
+    private void AppendFriendlyLogLine(string line)
+    {
+        if (TryCompactFriendlyAssetWarning(line))
+        {
+            return;
+        }
+
+        ResetFriendlyCompaction();
+        FriendlyLogLines.Add(line);
+        TrimToLimit(FriendlyLogLines, FriendlyLogBufferLimit);
+    }
+
+    private bool TryCompactFriendlyAssetWarning(string line)
+    {
+        if (!IsCompactFriendlyAssetWarning(line))
+        {
+            return false;
+        }
+
+        var normalizedKey = line.Trim();
+        if (FriendlyLogLines.Count > 0 &&
+            string.Equals(_lastCompactedWarningKey, normalizedKey, StringComparison.OrdinalIgnoreCase) &&
+            !string.IsNullOrWhiteSpace(_lastCompactedWarningLine))
+        {
+            _lastCompactedWarningCount += 1;
+            FriendlyLogLines[^1] = $"{_lastCompactedWarningLine} (repeated {_lastCompactedWarningCount}x)";
+            return true;
+        }
+
+        _lastCompactedWarningKey = normalizedKey;
+        _lastCompactedWarningLine = line;
+        _lastCompactedWarningCount = 1;
+        FriendlyLogLines.Add(line);
+        TrimToLimit(FriendlyLogLines, FriendlyLogBufferLimit);
+        return true;
+    }
+
+    private static bool IsCompactFriendlyAssetWarning(string line)
+    {
+        if (!line.Contains("warn", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        if (line.Contains("mod", StringComparison.OrdinalIgnoreCase) ||
+            line.Contains("workshop", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        return line.Contains("texture", StringComparison.OrdinalIgnoreCase) ||
+               line.Contains("sprite", StringComparison.OrdinalIgnoreCase) ||
+               line.Contains("tile", StringComparison.OrdinalIgnoreCase) ||
+               line.Contains("asset", StringComparison.OrdinalIgnoreCase) ||
+               line.Contains("media", StringComparison.OrdinalIgnoreCase) ||
+               line.Contains("mesh", StringComparison.OrdinalIgnoreCase) ||
+               line.Contains("model", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void ResetFriendlyCompaction()
+    {
+        _lastCompactedWarningKey = null;
+        _lastCompactedWarningLine = null;
+        _lastCompactedWarningCount = 0;
+    }
+
+    private static void TrimToLimit(ObservableCollection<string> lines, int limit)
+    {
+        while (lines.Count > limit)
+        {
+            lines.RemoveAt(0);
+        }
+    }
+
     private void Reset()
     {
         LogLines.Clear();
+        FriendlyLogLines.Clear();
+        ResetFriendlyCompaction();
         ConnectedPlayers.Clear();
         RecentPlayerSignals.Clear();
         RecentOperatorActions.Clear();
@@ -494,6 +598,7 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
         OnPropertyChanged(nameof(Branch));
         OnPropertyChanged(nameof(HasLogs));
         OnPropertyChanged(nameof(HasNoLogs));
+        OnPropertyChanged(nameof(HasFriendlyLogs));
         OnPropertyChanged(nameof(HasConnectedPlayers));
         OnPropertyChanged(nameof(HasNoConnectedPlayers));
         OnPropertyChanged(nameof(HasPlayerSignals));
@@ -501,6 +606,8 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
         OnPropertyChanged(nameof(HasOperatorActions));
         OnPropertyChanged(nameof(HasNoOperatorActions));
         OnPropertyChanged(nameof(LogStreamSummary));
+        OnPropertyChanged(nameof(RawBufferSummary));
+        OnPropertyChanged(nameof(FriendlyFeedSummary));
         OnPropertyChanged(nameof(FeedPostureSummary));
         OnPropertyChanged(nameof(FeedHealthHeadline));
         OnPropertyChanged(nameof(IncidentHeadline));

@@ -91,26 +91,30 @@
                 <Border Classes="card" Padding="16">
                     <StackPanel Spacing="8">
                         <TextBlock Classes="kicker" Text="Connected Players" />
-                        <ItemsControl ItemsSource="{Binding ConnectedPlayers}" IsVisible="{Binding HasConnectedPlayers}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate x:DataType="vm:LogsWorkspaceViewModel+ConnectedPlayerRowViewModel">
-                                    <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="12" Padding="12" Margin="0,0,0,8">
-                                        <StackPanel Spacing="8">
-                                            <StackPanel Spacing="4">
-                                                <TextBlock FontSize="16" FontWeight="SemiBold" Text="{Binding UserName}" />
-                                                <TextBlock Classes="caption" Text="{Binding JoinedSummary}" TextWrapping="Wrap" />
-                                                <TextBlock Classes="caption" Text="{Binding LastSeenSummary}" TextWrapping="Wrap" />
+                        <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                                      VerticalScrollBarVisibility="Auto"
+                                      MaxHeight="300">
+                            <ItemsControl ItemsSource="{Binding ConnectedPlayers}" IsVisible="{Binding HasConnectedPlayers}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:LogsWorkspaceViewModel+ConnectedPlayerRowViewModel">
+                                        <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="12" Padding="12" Margin="0,0,0,8">
+                                            <StackPanel Spacing="8">
+                                                <StackPanel Spacing="4">
+                                                    <TextBlock FontSize="16" FontWeight="SemiBold" Text="{Binding UserName}" />
+                                                    <TextBlock Classes="caption" Text="{Binding JoinedSummary}" TextWrapping="Wrap" />
+                                                    <TextBlock Classes="caption" Text="{Binding LastSeenSummary}" TextWrapping="Wrap" />
+                                                </StackPanel>
+                                                <WrapPanel Orientation="Horizontal" ItemHeight="34">
+                                                    <Button Classes="action-danger" Command="{Binding #LogsRoot.DataContext.KickPlayerCommand}" CommandParameter="{Binding .}" Content="Kick" IsEnabled="{Binding #LogsRoot.DataContext.CanSendCommands}" Margin="0,0,8,0" />
+                                                    <Button Classes="action-danger" Command="{Binding #LogsRoot.DataContext.BanPlayerCommand}" CommandParameter="{Binding .}" Content="Ban" IsEnabled="{Binding #LogsRoot.DataContext.CanSendCommands}" Margin="0,0,8,0" />
+                                                    <Button Classes="action-secondary" Command="{Binding #LogsRoot.DataContext.WhitelistPlayerCommand}" CommandParameter="{Binding .}" Content="Whitelist" IsEnabled="{Binding #LogsRoot.DataContext.CanSendCommands}" />
+                                                </WrapPanel>
                                             </StackPanel>
-                                            <WrapPanel Orientation="Horizontal" ItemHeight="34">
-                                                <Button Classes="action-danger" Command="{Binding #LogsRoot.DataContext.KickPlayerCommand}" CommandParameter="{Binding .}" Content="Kick" IsEnabled="{Binding #LogsRoot.DataContext.CanSendCommands}" Margin="0,0,8,0" />
-                                                <Button Classes="action-danger" Command="{Binding #LogsRoot.DataContext.BanPlayerCommand}" CommandParameter="{Binding .}" Content="Ban" IsEnabled="{Binding #LogsRoot.DataContext.CanSendCommands}" Margin="0,0,8,0" />
-                                                <Button Classes="action-secondary" Command="{Binding #LogsRoot.DataContext.WhitelistPlayerCommand}" CommandParameter="{Binding .}" Content="Whitelist" IsEnabled="{Binding #LogsRoot.DataContext.CanSendCommands}" />
-                                            </WrapPanel>
-                                        </StackPanel>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
                         <TextBlock Classes="caption"
                                    IsVisible="{Binding HasNoConnectedPlayers}"
                                    Text="No connected players have been inferred yet. Keep the console open during joins or request the player list while the server is live."
@@ -128,13 +132,14 @@
                 </Border>
             </StackPanel>
 
-            <Grid Grid.Column="1" RowDefinitions="*,Auto,Auto" RowSpacing="16">
+            <Grid Grid.Column="1" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="16">
                 <Border Classes="surface-dark" Padding="16">
                     <Grid RowDefinitions="Auto,*" RowSpacing="12">
                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                             <StackPanel Spacing="4">
                                 <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Live Stream" />
                                 <TextBlock FontSize="22" FontWeight="SemiBold" Foreground="#F7F0E7" Text="{Binding LogStreamSummary}" TextWrapping="Wrap" />
+                                <TextBlock Classes="caption" Foreground="#A8B6D4" Text="{Binding FriendlyFeedSummary}" TextWrapping="Wrap" />
                                 <TextBlock Classes="caption" Foreground="#A8B6D4" Text="{Binding SignalCountSummary}" TextWrapping="Wrap" />
                             </StackPanel>
                             <Border Grid.Column="1" Background="#2A2927" CornerRadius="999" Padding="10,5" VerticalAlignment="Top">
@@ -145,8 +150,8 @@
                         <Border Grid.Row="1" Background="#171310" CornerRadius="16" Padding="14">
                             <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                                           VerticalScrollBarVisibility="Auto"
-                                          MaxHeight="780">
-                                <ItemsControl ItemsSource="{Binding LogLines}">
+                                          MaxHeight="460">
+                                <ItemsControl ItemsSource="{Binding FriendlyLogLines}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
                                             <TextBlock Classes="body"
@@ -168,13 +173,17 @@
                     <Border Classes="card" Padding="16">
                         <StackPanel Spacing="8">
                             <TextBlock Classes="kicker" Text="Recent Player Signals" />
-                            <ItemsControl ItemsSource="{Binding RecentPlayerSignals}" IsVisible="{Binding HasPlayerSignals}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Classes="caption" Text="{Binding .}" TextWrapping="Wrap" Margin="0,0,0,6" />
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
+                            <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                                          VerticalScrollBarVisibility="Auto"
+                                          MaxHeight="220">
+                                <ItemsControl ItemsSource="{Binding RecentPlayerSignals}" IsVisible="{Binding HasPlayerSignals}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Classes="caption" Text="{Binding .}" TextWrapping="Wrap" Margin="0,0,0,6" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
                             <TextBlock Classes="caption" IsVisible="{Binding HasNoPlayerSignals}" Text="Player join and leave signals will appear here when the host can infer them from runtime logs or launcher-issued roster commands." TextWrapping="Wrap" />
                         </StackPanel>
                     </Border>
@@ -182,13 +191,17 @@
                     <Border Grid.Column="1" Classes="card" Padding="16">
                         <StackPanel Spacing="8">
                             <TextBlock Classes="kicker" Text="Recent Operator Actions" />
-                            <ItemsControl ItemsSource="{Binding RecentOperatorActions}" IsVisible="{Binding HasOperatorActions}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Classes="caption" Text="{Binding .}" TextWrapping="Wrap" Margin="0,0,0,6" />
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
+                            <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                                          VerticalScrollBarVisibility="Auto"
+                                          MaxHeight="220">
+                                <ItemsControl ItemsSource="{Binding RecentOperatorActions}" IsVisible="{Binding HasOperatorActions}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Classes="caption" Text="{Binding .}" TextWrapping="Wrap" Margin="0,0,0,6" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
                             <TextBlock Classes="caption" IsVisible="{Binding HasNoOperatorActions}" Text="Broadcasts and raw console commands sent from the launcher will appear here as soon as the runtime is live." TextWrapping="Wrap" />
                         </StackPanel>
                     </Border>
@@ -196,20 +209,56 @@
                     <Border Grid.Column="2" Classes="card" Padding="16">
                         <StackPanel Spacing="8">
                             <TextBlock Classes="kicker" Text="Live Ops Checklist" />
-                            <ItemsControl ItemsSource="{Binding LiveOpsChecklist}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="12" Padding="10" Margin="0,0,0,8">
-                                            <TextBlock Classes="caption" Text="{Binding .}" TextWrapping="Wrap" />
-                                        </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
+                            <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                                          VerticalScrollBarVisibility="Auto"
+                                          MaxHeight="220">
+                                <ItemsControl ItemsSource="{Binding LiveOpsChecklist}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="12" Padding="10" Margin="0,0,0,8">
+                                                <TextBlock Classes="caption" Text="{Binding .}" TextWrapping="Wrap" />
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
                         </StackPanel>
                     </Border>
                 </Grid>
 
                 <Border Grid.Row="2"
+                        Classes="card"
+                        Padding="16"
+                        IsVisible="{Binding HasLogs}">
+                    <StackPanel Spacing="10">
+                        <TextBlock Classes="kicker" Text="Raw Buffer" />
+                        <TextBlock Classes="caption" Text="{Binding RawBufferSummary}" TextWrapping="Wrap" />
+                        <TextBlock Classes="caption"
+                                   Text="This buffer keeps the uncollapsed runtime output so you can inspect the exact lines behind the launcher-friendly feed."
+                                   TextWrapping="Wrap" />
+
+                        <Border Background="#171310" CornerRadius="16" Padding="14">
+                            <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                                          VerticalScrollBarVisibility="Auto"
+                                          MaxHeight="280">
+                                <ItemsControl ItemsSource="{Binding LogLines}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Classes="caption"
+                                                       FontFamily="Cascadia Code,Consolas,monospace"
+                                                       Foreground="#E9DED2"
+                                                       Text="{Binding .}"
+                                                       TextWrapping="Wrap"
+                                                       Margin="0,0,0,6" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </Border>
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Row="3"
                         Background="#14FFFFFF"
                         BorderBrush="#24FFFFFF"
                         BorderThickness="1"

@@ -45,6 +45,12 @@ public interface ILauncherRuntime : IAsyncDisposable
 
     Task DeleteSettingsDraftAsync(string profileId, string pageId, CancellationToken cancellationToken = default);
 
+    Task<ModsMapsDraftDto?> GetModsMapsDraftAsync(string profileId, CancellationToken cancellationToken = default);
+
+    Task<ModsMapsDraftDto?> SaveModsMapsDraftAsync(string profileId, ModsMapsDraftDto payload, CancellationToken cancellationToken = default);
+
+    Task DeleteModsMapsDraftAsync(string profileId, CancellationToken cancellationToken = default);
+
     Task<List<SandboxPresetDto>?> GetSandboxPresetsAsync(string profileId, CancellationToken cancellationToken = default);
 
     Task<SandboxPresetDto?> SaveSandboxPresetAsync(

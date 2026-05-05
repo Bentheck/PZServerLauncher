@@ -5,4 +5,6 @@ public sealed record WorkshopCatalogSearchResultDto(
     WorkshopCatalogSearchMode SearchMode,
     bool HasSteamWebApiKeyConfigured,
     IReadOnlyList<WorkshopCatalogItemDto> Results,
-    IReadOnlyList<string> Diagnostics);
+    IReadOnlyList<string> Diagnostics,
+    IReadOnlyList<string>? AvailableTags = null,
+    IReadOnlyList<string>? SelectedTags = null);

@@ -22,19 +22,21 @@ public sealed class SandboxPresetOptionViewModel
     public string DisplayLabel => IsBuiltIn ? $"{Label} (Shipped)" : $"{Label} (Custom)";
 }
 
-public sealed class SandboxCategoryViewModel
+public sealed partial class SandboxCategoryViewModel : ObservableObject
 {
     public SandboxCategoryViewModel(
         string categoryId,
         string title,
         string statusText,
         bool matchesPreset,
+        bool isExpanded,
         IEnumerable<SandboxSectionViewModel> sections)
     {
         CategoryId = categoryId;
         Title = title;
         StatusText = statusText;
         MatchesPreset = matchesPreset;
+        this.isExpanded = isExpanded;
         Sections = new ObservableCollection<SandboxSectionViewModel>(sections);
     }
 
@@ -47,19 +49,35 @@ public sealed class SandboxCategoryViewModel
     public bool MatchesPreset { get; }
 
     public ObservableCollection<SandboxSectionViewModel> Sections { get; }
+
+    [ObservableProperty]
+    private bool isExpanded;
+
+    public string ExpandButtonLabel => IsExpanded ? "Hide Sections" : "Open Sections";
+
+    partial void OnIsExpandedChanged(bool value)
+    {
+        OnPropertyChanged(nameof(ExpandButtonLabel));
+    }
 }
 
-public sealed class SandboxSectionViewModel
+public sealed partial class SandboxSectionViewModel : ObservableObject
 {
     public SandboxSectionViewModel(
+        string sectionKey,
         string title,
         string? description,
+        bool isExpanded,
         IEnumerable<SandboxFieldEditorViewModel> fields)
     {
+        SectionKey = sectionKey;
         Title = title;
         Description = description ?? string.Empty;
+        this.isExpanded = isExpanded;
         Fields = new ObservableCollection<SandboxFieldEditorViewModel>(fields);
     }
+
+    public string SectionKey { get; }
 
     public string Title { get; }
 
@@ -68,6 +86,16 @@ public sealed class SandboxSectionViewModel
     public bool HasDescription => !string.IsNullOrWhiteSpace(Description);
 
     public ObservableCollection<SandboxFieldEditorViewModel> Fields { get; }
+
+    [ObservableProperty]
+    private bool isExpanded;
+
+    public string ExpandButtonLabel => IsExpanded ? "Collapse" : "Expand";
+
+    partial void OnIsExpandedChanged(bool value)
+    {
+        OnPropertyChanged(nameof(ExpandButtonLabel));
+    }
 }
 
 public sealed class SandboxFieldOptionViewModel

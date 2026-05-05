@@ -7,6 +7,9 @@ public sealed class RuntimeStateStore(
     ProjectZomboidLiveOperationsInterpreter liveOperationsInterpreter,
     IRuntimeLogSink? runtimeLogSink = null)
 {
+    private const int LogBufferLimit = 500;
+    private const int PlayerSignalLimit = 50;
+    private const int OperatorActionLimit = 50;
     private readonly ConcurrentDictionary<string, ServerRuntimeStatus> _statuses = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, ConcurrentQueue<string>> _logs = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, ConcurrentDictionary<string, ConnectedPlayerSession>> _connectedPlayers = new(StringComparer.OrdinalIgnoreCase);
@@ -35,7 +38,7 @@ public sealed class RuntimeStateStore(
         var queue = _logs.GetOrAdd(profileId, _ => new ConcurrentQueue<string>());
         queue.Enqueue(line);
 
-        while (queue.Count > 250 && queue.TryDequeue(out _))
+        while (queue.Count > LogBufferLimit && queue.TryDequeue(out _))
         {
         }
 
@@ -86,7 +89,7 @@ public sealed class RuntimeStateStore(
         var queue = _operatorActions.GetOrAdd(profileId, _ => new ConcurrentQueue<OperatorActionRecord>());
         var recordedAtUtc = DateTimeOffset.UtcNow;
         queue.Enqueue(new OperatorActionRecord(kind, commandText, summary, recordedAtUtc));
-        TrimQueue(queue, 20);
+        TrimQueue(queue, OperatorActionLimit);
 
         var current = GetOrDefault(profileId);
         Update(current with
@@ -128,7 +131,7 @@ public sealed class RuntimeStateStore(
 
         var queue = _playerSignals.GetOrAdd(profileId, _ => new ConcurrentQueue<PlayerActivitySignal>());
         queue.Enqueue(signal);
-        TrimQueue(queue, 30);
+        TrimQueue(queue, PlayerSignalLimit);
 
         var current = GetOrDefault(profileId);
         Update(current with
