@@ -11,22 +11,43 @@
              x:DataType="vm:HostWorkspaceViewModel">
     <Grid RowDefinitions="Auto,Auto,*" RowSpacing="16">
         <Border Classes="card" Padding="24">
-            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18">
-                <StackPanel Spacing="8">
-                    <TextBlock Classes="kicker" Text="App Control" />
-                    <TextBlock Classes="panel-title" FontSize="30" Text="{Binding PageTitle}" />
-                    <TextBlock Classes="body" FontSize="16" Text="{Binding PageSummary}" TextWrapping="Wrap" />
-                    <TextBlock Classes="caption" Text="{Binding HostNextStepSummary}" TextWrapping="Wrap" />
-                </StackPanel>
+            <Grid RowDefinitions="Auto,Auto" RowSpacing="18">
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18">
+                    <StackPanel Spacing="8">
+                        <TextBlock Classes="kicker" Text="App Control" />
+                        <TextBlock Classes="panel-title" FontSize="30" Text="{Binding PageTitle}" />
+                        <TextBlock Classes="body" FontSize="16" Text="{Binding PageSummary}" TextWrapping="Wrap" />
+                        <TextBlock Classes="caption" Text="{Binding HostNextStepSummary}" TextWrapping="Wrap" />
+                    </StackPanel>
 
-                <StackPanel Grid.Column="1" Spacing="10" MinWidth="210" HorizontalAlignment="Right">
-                    <Border Classes="pill-soft-green" HorizontalAlignment="Right">
-                        <TextBlock Classes="pill-text-green" Text="{Binding HostStartupLabel}" />
-                    </Border>
-                    <Button Classes="action-primary"
-                            Command="{Binding Legacy.SaveHostSettingsCommand}"
-                            Content="Save App Settings" />
-                </StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="10" MinWidth="210" HorizontalAlignment="Right">
+                        <Border Classes="pill-soft-green" HorizontalAlignment="Right">
+                            <TextBlock Classes="pill-text-green" Text="{Binding HostStartupLabel}" />
+                        </Border>
+                        <Button Classes="action-primary"
+                                Command="{Binding Legacy.SaveHostSettingsCommand}"
+                                Content="Save App Settings" />
+                    </StackPanel>
+                </Grid>
+
+                <Border Grid.Row="1" Classes="callout-card" Padding="16">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                        <StackPanel Spacing="6">
+                            <TextBlock Classes="kicker" Text="Launcher Updates" />
+                            <TextBlock Classes="panel-title" FontSize="22" Text="{Binding Legacy.LauncherUpdateStateLabel}" />
+                            <TextBlock Classes="body"
+                                       Text="{Binding Legacy.LauncherLatestVersion, StringFormat='Version {0}'}"
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
+
+                        <Button Grid.Column="1"
+                                Classes="action-secondary"
+                                Command="{Binding Legacy.OpenLauncherReleasePageCommand}"
+                                Content="Open Release Page"
+                                IsEnabled="{Binding Legacy.HasLauncherReleasePage}"
+                                VerticalAlignment="Center" />
+                    </Grid>
+                </Border>
             </Grid>
         </Border>
 

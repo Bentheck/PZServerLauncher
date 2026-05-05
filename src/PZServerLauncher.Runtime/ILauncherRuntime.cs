@@ -189,5 +189,9 @@ public interface ILauncherRuntime : IAsyncDisposable
 
     Task<HostSettings?> UpdateHostSettingsAsync(HostSettings settings, CancellationToken cancellationToken = default);
 
+    Task<LauncherUpdateStatusDto> GetLauncherUpdateStatusAsync(
+        bool forceRefresh = false,
+        CancellationToken cancellationToken = default);
+
     Task<OperationResultDto?> StopRuntimeAsync(bool stopRunningServers, CancellationToken cancellationToken = default);
 }

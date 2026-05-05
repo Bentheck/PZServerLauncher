@@ -121,7 +121,9 @@ public sealed partial class LauncherRuntime : ILauncherRuntime
         builder.Services.AddMemoryCache();
         builder.Services.AddHttpClient(nameof(SteamCmdToolService));
         builder.Services.AddHttpClient(nameof(SteamWorkshopApiClient));
+        builder.Services.AddHttpClient(nameof(LauncherReleaseService));
         builder.Services.AddSingleton<SteamCmdToolService>();
+        builder.Services.AddSingleton<LauncherReleaseService>();
         builder.Services.AddSingleton<ServerProcessSupervisor>();
         builder.Services.AddSingleton<BackgroundJobDispatcher>();
         builder.Services.AddSingleton<WorkshopPresetScannerService>();

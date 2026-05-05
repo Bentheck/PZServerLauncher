@@ -53,6 +53,8 @@ public partial class MainWindowViewModel : ViewModelBase
         SaveHostSettingsCommand = new AsyncRelayCommand(SaveHostSettingsAsync);
         StopHostCommand = new AsyncRelayCommand(() => StopHostAsync(stopRunningServers: false));
         StopAllAndHostCommand = new AsyncRelayCommand(() => StopHostAsync(stopRunningServers: true));
+        CheckLauncherUpdateCommand = new AsyncRelayCommand(CheckLauncherUpdateAsync);
+        OpenLauncherReleasePageCommand = new RelayCommand(OpenLauncherReleasePage);
         ExitDesktopCommand = new RelayCommand(() => _desktopShellService.ExitDesktop());
 
         _runtime.StatusChanged += OnStatusChangedAsync;
@@ -77,6 +79,33 @@ public partial class MainWindowViewModel : ViewModelBase
 
     [ObservableProperty]
     private bool hostStartWithWindows;
+
+    [ObservableProperty]
+    private LauncherUpdateState launcherUpdateState = LauncherUpdateState.Unavailable;
+
+    [ObservableProperty]
+    private string launcherCurrentVersion = "Unknown";
+
+    [ObservableProperty]
+    private string launcherLatestVersion = "Unavailable";
+
+    [ObservableProperty]
+    private string launcherReleaseTitle = "Latest stable release metadata is not available yet.";
+
+    [ObservableProperty]
+    private string launcherReleasePublishedLabel = "Not checked yet";
+
+    [ObservableProperty]
+    private string launcherLastCheckedLabel = "Not checked yet";
+
+    [ObservableProperty]
+    private string launcherUpdateStatusMessage = "Checking for launcher updates...";
+
+    [ObservableProperty]
+    private string launcherReleasePageUrl = string.Empty;
+
+    [ObservableProperty]
+    private bool isLauncherUpdateCheckRunning;
 
     public ObservableCollection<ProfileCardViewModel> Profiles { get; } = [];
 
@@ -122,7 +151,20 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public IAsyncRelayCommand StopAllAndHostCommand { get; }
 
+    public IAsyncRelayCommand CheckLauncherUpdateCommand { get; }
+
+    public IRelayCommand OpenLauncherReleasePageCommand { get; }
+
     public IRelayCommand ExitDesktopCommand { get; }
+
+    public string LauncherUpdateStateLabel => LauncherUpdateState switch
+    {
+        LauncherUpdateState.UpdateAvailable => "Update available",
+        LauncherUpdateState.UpToDate => "Up to date",
+        _ => "Check unavailable",
+    };
+
+    public bool HasLauncherReleasePage => !string.IsNullOrWhiteSpace(LauncherReleasePageUrl);
 
     public event EventHandler<WorkspaceNavigationRequest>? WorkspaceNavigationRequested;
 
@@ -142,6 +184,7 @@ public partial class MainWindowViewModel : ViewModelBase
         _loadedHostSettings = snapshot.HostInfo.Settings;
         HostSummary = $"Integrated runtime online | {snapshot.HostInfo.Health.RunningProfileCount} running | {snapshot.Profiles.Count} managed";
         HostStartWithWindows = snapshot.HostInfo.Settings.StartHostWithWindows;
+        ApplyLauncherUpdateStatus(await _runtime.GetLauncherUpdateStatusAsync(cancellationToken: CancellationToken.None));
 
         var postureTasks = snapshot.Profiles
             .Select(profile => LoadProfilePostureSummaryAsync(profile.ProfileId, profile.DisplayName))
@@ -445,6 +488,40 @@ public partial class MainWindowViewModel : ViewModelBase
         }, stopRunningServers ? "Stopping all servers and the integrated runtime..." : "Stopping the integrated runtime...");
     }
 
+    private async Task CheckLauncherUpdateAsync()
+    {
+        if (IsLauncherUpdateCheckRunning)
+        {
+            return;
+        }
+
+        try
+        {
+            IsLauncherUpdateCheckRunning = true;
+            StatusMessage = "Checking for launcher updates...";
+            ApplyLauncherUpdateStatus(await _runtime.GetLauncherUpdateStatusAsync(forceRefresh: true, CancellationToken.None));
+            StatusMessage = LauncherUpdateStatusMessage;
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = ex.Message;
+        }
+        finally
+        {
+            IsLauncherUpdateCheckRunning = false;
+        }
+    }
+
+    private void OpenLauncherReleasePage()
+    {
+        if (!HasLauncherReleasePage)
+        {
+            return;
+        }
+
+        _desktopShellService.OpenExternalUrl(LauncherReleasePageUrl);
+    }
+
     private Task OnStatusChangedAsync(ServerRuntimeStatus status)
     {
         Dispatcher.UIThread.Post(() =>
@@ -546,6 +623,33 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             IsBusy = false;
         }
+    }
+
+    private void ApplyLauncherUpdateStatus(LauncherUpdateStatusDto? status)
+    {
+        if (status is null)
+        {
+            LauncherUpdateState = LauncherUpdateState.Unavailable;
+            LauncherCurrentVersion = "Unknown";
+            LauncherLatestVersion = "Unavailable";
+            LauncherReleaseTitle = "Latest stable release metadata is not available yet.";
+            LauncherReleasePublishedLabel = "Unavailable";
+            LauncherLastCheckedLabel = "Unavailable";
+            LauncherUpdateStatusMessage = "Unable to load launcher update status.";
+            LauncherReleasePageUrl = string.Empty;
+            return;
+        }
+
+        LauncherUpdateState = status.State;
+        LauncherCurrentVersion = status.CurrentVersion;
+        LauncherLatestVersion = string.IsNullOrWhiteSpace(status.LatestVersion) ? "Unavailable" : status.LatestVersion;
+        LauncherReleaseTitle = string.IsNullOrWhiteSpace(status.ReleaseTitle)
+            ? "Latest stable release metadata is not available yet."
+            : status.ReleaseTitle.Trim();
+        LauncherReleasePublishedLabel = status.PublishedAtUtc?.ToLocalTime().ToString("g") ?? "Unavailable";
+        LauncherLastCheckedLabel = status.CheckedAtUtc.ToLocalTime().ToString("g");
+        LauncherUpdateStatusMessage = status.StatusMessage;
+        LauncherReleasePageUrl = status.ReleasePageUrl?.Trim() ?? string.Empty;
     }
 
     private async Task DiscoverImportsCoreAsync(bool updateStatusMessage)
@@ -709,4 +813,14 @@ public partial class MainWindowViewModel : ViewModelBase
     private static bool IsMaintenanceAction(string actionName) =>
         string.Equals(actionName, "Install", StringComparison.OrdinalIgnoreCase) ||
         string.Equals(actionName, "Update", StringComparison.OrdinalIgnoreCase);
+
+    partial void OnLauncherUpdateStateChanged(LauncherUpdateState value)
+    {
+        OnPropertyChanged(nameof(LauncherUpdateStateLabel));
+    }
+
+    partial void OnLauncherReleasePageUrlChanged(string value)
+    {
+        OnPropertyChanged(nameof(HasLauncherReleasePage));
+    }
 }
