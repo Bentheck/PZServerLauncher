@@ -9,6 +9,7 @@ namespace PZServerLauncher.Host.Services;
 public sealed class ServerProcessSupervisor(
     AppPaths appPaths,
     ProjectZomboidServerPlanner planner,
+    StructuredSettingsService structuredSettingsService,
     RuntimeStateStore runtimeStateStore,
     IRuntimeEventPublisher runtimeEventPublisher,
     IServiceScopeFactory scopeFactory,
@@ -26,6 +27,8 @@ public sealed class ServerProcessSupervisor(
         }
 
         var liveOperations = runtimeStateStore.ResetLiveOperations(profile.ProfileId);
+        var configuredWorkshopIds = structuredSettingsService.GetWorkshopPreset(profile).WorkshopItemIds;
+        runtimeStateStore.BeginWorkshopDownloadSession(profile.ProfileId, configuredWorkshopIds);
         runtimeStateStore.Update(new ServerRuntimeStatus(
             profile.ProfileId,
             ServerRuntimeState.Starting,
@@ -49,6 +52,7 @@ public sealed class ServerProcessSupervisor(
 
         if (launchPlan.IsLaunchBlocked)
         {
+            runtimeStateStore.BeginWorkshopDownloadSession(profile.ProfileId, []);
             var blockedStatus = runtimeStateStore.GetOrDefault(profile.ProfileId) with
             {
                 State = ServerRuntimeState.Crashed,
@@ -234,9 +238,9 @@ public sealed class ServerProcessSupervisor(
 
         var liveOperations = runtimeStateStore.AppendLog(profileId, line);
         await runtimeEventPublisher.PublishLogLineAsync(profileId, line);
+        await runtimeEventPublisher.PublishStatusChangedAsync(runtimeStateStore.GetOrDefault(profileId));
         if (liveOperations is not null)
         {
-            await runtimeEventPublisher.PublishStatusChangedAsync(runtimeStateStore.GetOrDefault(profileId));
             await runtimeEventPublisher.PublishLiveOperationsChangedAsync(liveOperations);
         }
     }

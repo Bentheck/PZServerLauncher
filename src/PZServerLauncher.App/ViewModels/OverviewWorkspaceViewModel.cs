@@ -38,6 +38,7 @@ public sealed class OverviewWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         RestartCommand = new AsyncRelayCommand(() => ExecuteProfileCommandAsync(Legacy.RestartCommand));
         BackupCommand = new AsyncRelayCommand(() => ExecuteProfileCommandAsync(Legacy.BackupCommand));
         RestoreCommand = new AsyncRelayCommand(() => ExecuteProfileCommandAsync(Legacy.RestoreCommand));
+        _runtime.StatusChanged += OnStatusChangedAsync;
         _runtime.LiveOperationsChanged += OnLiveOperationsChangedAsync;
         Legacy.RecentOperationJobs.CollectionChanged += (_, _) =>
         {
@@ -78,7 +79,7 @@ public sealed class OverviewWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
     public string CacheDirectory => SelectedProfile?.CacheDirectory ?? "No cache path available";
 
-    public string LatestLogLine => SelectedProfile?.LatestLogLine ?? "No recent log line.";
+    public string LatestLogLine => SelectedProfile?.PinnedLatestSignal ?? "No recent log line.";
 
     public string LatestBackup => SelectedProfile?.LastBackup ?? "No backups yet.";
 
@@ -330,6 +331,24 @@ public sealed class OverviewWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         OnPropertyChanged(nameof(LivePlayerRosterSummary));
         OnPropertyChanged(nameof(PlayerActivitySummary));
         OnPropertyChanged(nameof(OperatorActionSummary));
+        return Task.CompletedTask;
+    }
+
+    private Task OnStatusChangedAsync(ServerRuntimeStatus status)
+    {
+        if (SelectedProfile is null || !string.Equals(SelectedProfile.ProfileId, status.ProfileId, StringComparison.Ordinal))
+        {
+            return Task.CompletedTask;
+        }
+
+        SelectedProfile.RuntimeState = status.State.ToString();
+        SelectedProfile.WorkshopDownloadProgress = status.WorkshopDownloadProgress;
+        if (!string.IsNullOrWhiteSpace(status.LatestLogLine))
+        {
+            SelectedProfile.LatestLogLine = status.LatestLogLine;
+        }
+
+        Notify();
         return Task.CompletedTask;
     }
 

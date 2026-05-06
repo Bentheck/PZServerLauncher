@@ -9,6 +9,7 @@ using PZServerLauncher.Host.Data.Entities;
 using PZServerLauncher.Host.Infrastructure;
 using PZServerLauncher.Host.Services;
 using PZServerLauncher.Infrastructure.Planning;
+using PZServerLauncher.Infrastructure.Settings;
 using PZServerLauncher.Tests.Testing;
 
 namespace PZServerLauncher.Tests.Services;
@@ -248,11 +249,20 @@ public sealed class ProfileRetirementServiceTests : IDisposable
         var persistentLogService = new PersistentLogService(appPaths);
         var runtimeStateStore = new RuntimeStateStore(new ProjectZomboidLiveOperationsInterpreter(), persistentLogService);
         var serviceProvider = new ServiceCollection().BuildServiceProvider();
+        var planner = new ProjectZomboidServerPlanner();
+        var structuredSettingsService = new StructuredSettingsService(
+            profileStore,
+            new ConfigFileService(planner),
+            new ProjectZomboidSettingsCatalogResolver(),
+            new IniDocumentService(),
+            new SandboxVarsDocumentService(),
+            new WorkshopPresetScannerService());
         _disposables.Add(dbContext);
         _disposables.Add(serviceProvider);
         var supervisor = new ServerProcessSupervisor(
             appPaths,
-            new ProjectZomboidServerPlanner(),
+            planner,
+            structuredSettingsService,
             runtimeStateStore,
             new NullRuntimeEventPublisher(),
             serviceProvider.GetRequiredService<IServiceScopeFactory>(),

@@ -10,4 +10,8 @@ public sealed record ServerRuntimeStatus(
     string? LatestLogLine,
     int ConnectedPlayerCount = 0,
     DateTimeOffset? LastPlayerActivityAtUtc = null,
-    string? LastOperatorCommandSummary = null);
+    string? LastOperatorCommandSummary = null,
+    WorkshopDownloadProgress? WorkshopDownloadProgress = null)
+{
+    public string? PinnedLatestSignal => WorkshopDownloadProgress?.DetailLabel ?? LatestLogLine;
+}

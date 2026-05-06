@@ -127,7 +127,7 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
 
     public string FeedHealthHeadline => SelectedProfile is null
         ? "No profile"
-        : CurrentConsoleSummary.FeedHeadline;
+        : _runtimeStatus?.WorkshopDownloadProgress?.DetailLabel ?? CurrentConsoleSummary.FeedHeadline;
 
     public string FeedPostureSummary => SelectedProfile is null
         ? "No live feed is available yet."
@@ -151,7 +151,7 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
 
     public string LatestSignalLabel => SelectedProfile is null
         ? "Latest signal unavailable"
-        : CurrentSummary.LatestSignalSummary;
+        : _runtimeStatus?.PinnedLatestSignal ?? CurrentSummary.LatestSignalSummary;
 
     public string OperatorNextStep => SelectedProfile is null
         ? "Pick a profile, then start or reload to watch runtime output."

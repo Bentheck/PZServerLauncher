@@ -62,7 +62,7 @@ else
                 <article class="metric-card">
                     <span class="metric-label">Runtime</span>
                     <strong class="metric-value">@RuntimeStateLabel</strong>
-                    <span class="metric-note">@(_runtimeStatus?.LatestLogLine ?? "No recent log line.")</span>
+                    <span class="metric-note">@(_runtimeStatus?.PinnedLatestSignal ?? "No recent log line.")</span>
                     <span class="metric-note">@RuntimeActionSummary</span>
                 </article>
                 <article class="metric-card">

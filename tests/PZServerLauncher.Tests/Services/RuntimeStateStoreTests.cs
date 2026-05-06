@@ -73,6 +73,38 @@ public sealed class RuntimeStateStoreTests
         Assert.Equal("line 260", recent[^1]);
     }
 
+    [Fact]
+    public void AppendLog_TracksWorkshopDownloadProgressFromConfiguredWorkshopItems()
+    {
+        var store = new RuntimeStateStore(new ProjectZomboidLiveOperationsInterpreter());
+        store.BeginWorkshopDownloadSession("alpha", ["111111111", "222222222", "333333333"]);
+        store.Update(new ServerRuntimeStatus("alpha", ServerRuntimeState.Running, 42, DateTimeOffset.UtcNow, null, null, null));
+
+        store.AppendLog("alpha", "Downloading workshop content for 222222222 at 1048576 bytes.");
+
+        var status = store.GetOrDefault("alpha");
+
+        Assert.NotNull(status.WorkshopDownloadProgress);
+        Assert.Equal(2, status.WorkshopDownloadProgress!.CurrentItemIndex);
+        Assert.Equal(3, status.WorkshopDownloadProgress.TotalItemCount);
+        Assert.Equal("Downloading workshop item 2/3 | Workshop ID 222222222", status.PinnedLatestSignal);
+        Assert.Equal("Downloading workshop content for 222222222 at 1048576 bytes.", status.LatestLogLine);
+    }
+
+    [Fact]
+    public void ResetLiveOperations_ClearsWorkshopDownloadProgress()
+    {
+        var store = new RuntimeStateStore(new ProjectZomboidLiveOperationsInterpreter());
+        store.BeginWorkshopDownloadSession("alpha", ["111111111"]);
+        store.Update(new ServerRuntimeStatus("alpha", ServerRuntimeState.Running, 42, DateTimeOffset.UtcNow, null, null, null));
+        store.AppendLog("alpha", "Downloading workshop content for 111111111.");
+
+        store.ResetLiveOperations("alpha");
+
+        var status = store.GetOrDefault("alpha");
+        Assert.Null(status.WorkshopDownloadProgress);
+    }
+
     private sealed class InMemoryRuntimeLogSink : IRuntimeLogSink
     {
         public int LineCount { get; private set; }

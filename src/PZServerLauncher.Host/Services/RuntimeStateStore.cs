@@ -15,6 +15,7 @@ public sealed class RuntimeStateStore(
     private readonly ConcurrentDictionary<string, ConcurrentDictionary<string, ConnectedPlayerSession>> _connectedPlayers = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, ConcurrentQueue<PlayerActivitySignal>> _playerSignals = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, ConcurrentQueue<OperatorActionRecord>> _operatorActions = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, WorkshopDownloadProgressTracker> _workshopDownloads = new(StringComparer.OrdinalIgnoreCase);
 
     public IReadOnlyList<ServerRuntimeStatus> ListStatuses() => _statuses.Keys
         .OrderBy(profileId => profileId, StringComparer.OrdinalIgnoreCase)
@@ -31,6 +32,22 @@ public sealed class RuntimeStateStore(
         _statuses[status.ProfileId] = status;
     }
 
+    public void BeginWorkshopDownloadSession(string profileId, IReadOnlyList<string> configuredWorkshopIds)
+    {
+        var tracker = new WorkshopDownloadProgressTracker(configuredWorkshopIds);
+        if (!tracker.HasConfiguredItems)
+        {
+            _workshopDownloads.TryRemove(profileId, out _);
+        }
+        else
+        {
+            _workshopDownloads[profileId] = tracker;
+        }
+
+        var current = GetOrDefault(profileId);
+        Update(current with { WorkshopDownloadProgress = null });
+    }
+
     public ProfileLiveOperationsSnapshot? AppendLog(string profileId, string line)
     {
         runtimeLogSink?.WriteProfileLine(profileId, line);
@@ -43,7 +60,14 @@ public sealed class RuntimeStateStore(
         }
 
         var current = GetOrDefault(profileId);
-        Update(current with { LatestLogLine = line });
+        var workshopProgress = _workshopDownloads.TryGetValue(profileId, out var tracker)
+            ? tracker.Observe(line, DateTimeOffset.UtcNow)
+            : null;
+        Update(current with
+        {
+            LatestLogLine = line,
+            WorkshopDownloadProgress = workshopProgress,
+        });
 
         var signal = liveOperationsInterpreter.TryParse(line, DateTimeOffset.UtcNow);
         if (signal is null)
@@ -101,10 +125,16 @@ public sealed class RuntimeStateStore(
 
     public ProfileLiveOperationsSnapshot ResetLiveOperations(string profileId)
     {
+        _workshopDownloads.TryRemove(profileId, out _);
         _connectedPlayers.TryRemove(profileId, out _);
         _playerSignals.TryRemove(profileId, out _);
         var current = GetOrDefault(profileId);
-        Update(current with { ConnectedPlayerCount = 0, LastPlayerActivityAtUtc = null });
+        Update(current with
+        {
+            ConnectedPlayerCount = 0,
+            LastPlayerActivityAtUtc = null,
+            WorkshopDownloadProgress = null,
+        });
         return GetLiveOperations(profileId);
     }
 
@@ -112,6 +142,7 @@ public sealed class RuntimeStateStore(
     {
         _statuses.TryRemove(profileId, out _);
         _logs.TryRemove(profileId, out _);
+        _workshopDownloads.TryRemove(profileId, out _);
         _connectedPlayers.TryRemove(profileId, out _);
         _playerSignals.TryRemove(profileId, out _);
         _operatorActions.TryRemove(profileId, out _);

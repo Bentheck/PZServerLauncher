@@ -165,6 +165,8 @@ public partial class ProfileCardViewModel : ViewModelBase
 
     public string RosterChipForeground => IsSelected ? "#5E4735" : "#F7F0E7";
 
+    public string PinnedLatestSignal => WorkshopDownloadProgress?.DetailLabel ?? LatestLogLine;
+
     public IReadOnlyList<ConfigFileOptionViewModel> RawConfigKinds { get; } = ConfigFileOptionViewModel.All;
 
     [ObservableProperty]
@@ -175,6 +177,9 @@ public partial class ProfileCardViewModel : ViewModelBase
 
     [ObservableProperty]
     private string latestLogLine;
+
+    [ObservableProperty]
+    private WorkshopDownloadProgress? workshopDownloadProgress;
 
     [ObservableProperty]
     private bool hasBackup;
@@ -217,6 +222,10 @@ public partial class ProfileCardViewModel : ViewModelBase
 
     [ObservableProperty]
     private string rawConfigContent = string.Empty;
+
+    partial void OnLatestLogLineChanged(string value) => OnPropertyChanged(nameof(PinnedLatestSignal));
+
+    partial void OnWorkshopDownloadProgressChanged(WorkshopDownloadProgress? value) => OnPropertyChanged(nameof(PinnedLatestSignal));
 
     [ObservableProperty]
     private string rawConfigDiagnostics;

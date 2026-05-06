@@ -389,7 +389,7 @@ public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
 
         public string RuntimeState => Profile.RuntimeState;
 
-        public string LatestLogLine => Profile.LatestLogLine;
+        public string LatestLogLine => Profile.PinnedLatestSignal;
 
         public bool IsAssigned => AssignedSlotNumber is not null;
 
@@ -465,7 +465,9 @@ public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
                 : $"{_liveOperations.ConnectedPlayers.Count} player(s) online";
 
         public string ActivitySummary => _liveOperations is null
-            ? "No live operator data loaded yet."
+            ? _runtimeStatus?.WorkshopDownloadProgress?.DetailLabel ?? "No live operator data loaded yet."
+            : _runtimeStatus?.WorkshopDownloadProgress is { } workshopProgress
+                ? workshopProgress.DetailLabel
             : _liveOperations.RecentOperatorActions.Count > 0
                 ? _liveOperations.RecentOperatorActions[0].Summary
                 : _liveOperations.RecentPlayerSignals.Count > 0
@@ -770,6 +772,11 @@ public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
                         LatestLogLine = line,
                     };
 
+                if (_profile is not null)
+                {
+                    _profile.LatestLogLine = line;
+                }
+
                 LoadStatus = $"Live log update received for {ProfileDisplayName}.";
                 NotifyComputedState();
             });
@@ -787,6 +794,15 @@ public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
             Dispatcher.UIThread.Post(() =>
             {
                 _runtimeStatus = status;
+                if (_profile is not null)
+                {
+                    _profile.WorkshopDownloadProgress = status.WorkshopDownloadProgress;
+                    if (!string.IsNullOrWhiteSpace(status.LatestLogLine))
+                    {
+                        _profile.LatestLogLine = status.LatestLogLine;
+                    }
+                }
+
                 LatestRuntimeState = status.State.ToString();
                 NotifyComputedState();
             });

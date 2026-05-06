@@ -231,6 +231,7 @@ public partial class MainWindowViewModel : ViewModelBase
                 "Workshop validation has not been run yet.",
                 posture,
                 installPosture));
+            Profiles[^1].WorkshopDownloadProgress = status?.WorkshopDownloadProgress;
         }
 
         RecentJobs.Clear();
@@ -533,6 +534,7 @@ public partial class MainWindowViewModel : ViewModelBase
             }
 
             profile.RuntimeState = status.State.ToString();
+            profile.WorkshopDownloadProgress = status.WorkshopDownloadProgress;
             if (!string.IsNullOrWhiteSpace(status.LatestLogLine))
             {
                 profile.LatestLogLine = status.LatestLogLine;
