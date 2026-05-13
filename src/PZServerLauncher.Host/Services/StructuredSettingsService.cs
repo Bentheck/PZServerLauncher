@@ -281,6 +281,7 @@ public sealed class StructuredSettingsService(
             case ProfileWorkspacePageIds.NetworkAndAdmin:
                 {
                     var branchPrefix = GetBranchPrefix(profile.Branch);
+                    var definition = ResolvePageDefinition(catalog, pageId);
                     var raw = configFileService.ReadRawFile(profile, ConfigFileKind.Ini);
                     if (!string.IsNullOrWhiteSpace(raw.Content))
                     {
@@ -298,6 +299,14 @@ public sealed class StructuredSettingsService(
                     var currentIniValues = iniDocumentService.ReadValues(raw.Content, ["Password", "RCONPassword"]);
                     var serverPassword = NormalizeWriteOnlySecret(values, $"{branchPrefix}.network.server-password", GetIniValueOrDefault(currentIniValues, "Password", null));
                     var rconPassword = NormalizeWriteOnlySecret(values, $"{branchPrefix}.network.rcon-password", GetIniValueOrDefault(currentIniValues, "RCONPassword", null));
+                    currentIniValues = iniDocumentService.ReadValues(
+                        raw.Content,
+                        (definition?.Sections
+                            .SelectMany(section => section.Fields)
+                            .Where(field => !IsNetworkProfileBackedField(field.FieldId))
+                            .Select(field => field.Target.KeyPath)
+                            ?? [])
+                        .Concat(["Password", "RCONPassword"]));
 
                     var iniValues = new Dictionary<string, string?>(StringComparer.Ordinal)
                     {
@@ -335,6 +344,7 @@ public sealed class StructuredSettingsService(
                         ["VoiceMaxDistance"] = ParseInt(values, $"{branchPrefix}.network.voice-max-distance").ToString(),
                         ["MinutesPerPage"] = ParseInt(values, $"{branchPrefix}.network.minutes-per-page").ToString(),
                     };
+                    PruneMissingInheritedNetworkValues(profile, definition, currentIniValues, iniValues);
 
                     var updatedContent = iniDocumentService.ApplyValues(raw.Content, iniValues);
                     configFileService.WriteRawFile(profile, ConfigFileKind.Ini, raw.Sha256, updatedContent);
@@ -1126,6 +1136,44 @@ public sealed class StructuredSettingsService(
         values.TryGetValue(key, out var value) && !string.IsNullOrWhiteSpace(value)
             ? value.Trim()
             : existingValue;
+
+    private static void PruneMissingInheritedNetworkValues(
+        ServerProfile profile,
+        StructuredPageDefinition? definition,
+        IReadOnlyDictionary<string, string?> sourceValues,
+        IDictionary<string, string?> iniValues)
+    {
+        if (definition is null)
+        {
+            return;
+        }
+
+        foreach (var field in definition.Sections.SelectMany(section => section.Fields))
+        {
+            if (IsNetworkProfileBackedField(field.FieldId) ||
+                sourceValues.ContainsKey(field.Target.KeyPath) ||
+                !iniValues.TryGetValue(field.Target.KeyPath, out var persistedValue))
+            {
+                continue;
+            }
+
+            var fallbackValue = GetInheritedNetworkFieldValue(profile, field) ?? string.Empty;
+            var normalizedPersisted = persistedValue?.Trim() ?? string.Empty;
+            if (string.Equals(normalizedPersisted, fallbackValue.Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                iniValues.Remove(field.Target.KeyPath);
+            }
+        }
+    }
+
+    private static string? GetInheritedNetworkFieldValue(ServerProfile profile, StructuredFieldDefinition field) =>
+        field.FieldId switch
+        {
+            var id when id.EndsWith(".network.bind-ip", StringComparison.Ordinal) => profile.BindIp ?? field.DefaultValue,
+            var id when id.EndsWith(".network.server-password", StringComparison.Ordinal) => string.Empty,
+            var id when id.EndsWith(".network.rcon-password", StringComparison.Ordinal) => string.Empty,
+            _ => field.DefaultValue,
+        };
 
     private static string JoinEditorList(IReadOnlyList<string> values) =>
         string.Join(Environment.NewLine, values);

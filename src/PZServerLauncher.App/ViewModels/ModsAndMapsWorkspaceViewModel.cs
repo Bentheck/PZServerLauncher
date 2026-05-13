@@ -50,6 +50,7 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
         PreviewWorkshopItemCommand = new AsyncRelayCommand<WorkshopCatalogItemViewModel>(PreviewWorkshopItemAsync);
         ApplyWorkshopPreviewCommand = new AsyncRelayCommand(ApplyWorkshopPreviewAsync, () => CanApplyWorkshopPreview);
         ApplyWorkshopPreviewWithDependenciesCommand = new AsyncRelayCommand(ApplyWorkshopPreviewWithDependenciesAsync, () => CanApplyWorkshopPreviewWithDependencies);
+        RemoveWorkshopPreviewCommand = new AsyncRelayCommand(RemoveWorkshopPreviewAsync, () => CanRemoveWorkshopPreview);
         CloseWorkshopPreviewCommand = new RelayCommand(CloseWorkshopPreviewModal);
         SaveSteamWebApiKeyCommand = new AsyncRelayCommand(SaveSteamWebApiKeyAsync);
         RemoveSteamWebApiKeyCommand = new AsyncRelayCommand(RemoveSteamWebApiKeyAsync);
@@ -110,6 +111,8 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
     public ObservableCollection<ModEditorItemViewModel> ModEditorItems { get; } = [];
 
     public ObservableCollection<MapEditorItemViewModel> MapEditorItems { get; } = [];
+
+    public ObservableCollection<ModEditorItemViewModel> VisibleModEditorItems { get; } = [];
 
     public ObservableCollection<SavedPresetViewModel> SavedPresets { get; } = [];
 
@@ -173,10 +176,12 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
             OnPropertyChanged(nameof(HasNoSelectedWorkshopPreview));
             OnPropertyChanged(nameof(CanApplyWorkshopPreview));
             OnPropertyChanged(nameof(CanApplyWorkshopPreviewWithDependencies));
+            OnPropertyChanged(nameof(CanRemoveWorkshopPreview));
             OnPropertyChanged(nameof(SelectedWorkshopApplyLabel));
             OnPropertyChanged(nameof(SelectedWorkshopApplyWithDependenciesLabel));
             ApplyWorkshopPreviewCommand.NotifyCanExecuteChanged();
             ApplyWorkshopPreviewWithDependenciesCommand.NotifyCanExecuteChanged();
+            RemoveWorkshopPreviewCommand.NotifyCanExecuteChanged();
         }
     }
 
@@ -224,6 +229,10 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
 
     public bool HasNoModEditorItems => ModEditorItems.Count == 0;
 
+    public bool HasVisibleModEditorItems => VisibleModEditorItems.Count > 0;
+
+    public bool HasNoVisibleModEditorItems => VisibleModEditorItems.Count == 0;
+
     public bool HasMapEditorItems => MapEditorItems.Count > 0;
 
     public bool HasNoMapEditorItems => MapEditorItems.Count == 0;
@@ -240,6 +249,8 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
 
     public bool CanApplyWorkshopPreviewWithDependencies => SelectedWorkshopPreview is not null && SelectedWorkshopPreview.HasDependencyChanges && !_isApplyingWorkshopPreview;
 
+    public bool CanRemoveWorkshopPreview => SelectedWorkshopPreview is not null && !_isApplyingWorkshopPreview && PreviewTargetsExistInEditor(SelectedWorkshopPreview);
+
     public bool CanSaveNamedPreset => SelectedProfile is not null && !string.IsNullOrWhiteSpace(NewPresetName);
 
     public bool IsBrowseMode => EditorMode == ModsMapsEditorMode.Browse;
@@ -249,6 +260,14 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
     public string SelectedWorkshopApplyLabel => SelectedWorkshopPreview?.ApplyLabel ?? "Add To Editor";
 
     public string SelectedWorkshopApplyWithDependenciesLabel => "Add With Dependencies";
+
+    public string EditorFilterSummary => string.IsNullOrWhiteSpace(EditorFilterQuery)
+        ? "Filter the live editor by Workshop display name, mod ID, or Workshop ID."
+        : $"{VisibleModEditorItems.Count} mod row(s) match '{EditorFilterQuery.Trim()}'.";
+
+    public string VisibleModEditorEmptyText => string.IsNullOrWhiteSpace(EditorFilterQuery)
+        ? "No mod rows are in the editor yet."
+        : "No mod rows match the current editor filter.";
 
     public string SelectedModDetailTitle => SelectedModEditorItem?.DisplayTitle ?? "Select a mod row";
 
@@ -297,6 +316,8 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
     public IAsyncRelayCommand ApplyWorkshopPreviewCommand { get; }
 
     public IAsyncRelayCommand ApplyWorkshopPreviewWithDependenciesCommand { get; }
+
+    public IAsyncRelayCommand RemoveWorkshopPreviewCommand { get; }
 
     public IRelayCommand CloseWorkshopPreviewCommand { get; }
 
@@ -359,6 +380,9 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
 
     [ObservableProperty]
     private string newPresetName = string.Empty;
+
+    [ObservableProperty]
+    private string editorFilterQuery = string.Empty;
 
     [ObservableProperty]
     private bool isLoading;
@@ -673,11 +697,62 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
         await ApplyWorkshopPreviewCoreAsync(SelectedWorkshopPreview, includeDependencies: true);
     }
 
+    private async Task RemoveWorkshopPreviewAsync()
+    {
+        if (SelectedWorkshopPreview is null)
+        {
+            return;
+        }
+
+        _isApplyingWorkshopPreview = true;
+        ApplyWorkshopPreviewCommand.NotifyCanExecuteChanged();
+        ApplyWorkshopPreviewWithDependenciesCommand.NotifyCanExecuteChanged();
+        RemoveWorkshopPreviewCommand.NotifyCanExecuteChanged();
+
+        try
+        {
+            if (!RemovePreviewRows(SelectedWorkshopPreview))
+            {
+                LoadStatus = "That Workshop result is not currently in the editor.";
+                return;
+            }
+
+            RefreshEditorCollections();
+            RefreshDirtyState();
+
+            var saved = await PersistDraftAsync(
+                SelectedWorkshopPreview.Item.IsCollection
+                    ? $"Removed {SelectedWorkshopPreview.Title} from the editor."
+                    : "Removed from editor.",
+                updateStatus: true);
+
+            if (!saved)
+            {
+                LoadStatus = "The editor changed locally, but the draft could not be saved yet.";
+            }
+
+            CloseWorkshopPreviewModal();
+        }
+        catch (Exception ex)
+        {
+            LoadStatus = ex.Message;
+        }
+        finally
+        {
+            _isApplyingWorkshopPreview = false;
+            ApplyWorkshopPreviewCommand.NotifyCanExecuteChanged();
+            ApplyWorkshopPreviewWithDependenciesCommand.NotifyCanExecuteChanged();
+            RemoveWorkshopPreviewCommand.NotifyCanExecuteChanged();
+            NotifyComputedState();
+        }
+    }
+
     private async Task ApplyWorkshopPreviewCoreAsync(WorkshopPreviewViewModel preview, bool includeDependencies)
     {
         _isApplyingWorkshopPreview = true;
         ApplyWorkshopPreviewCommand.NotifyCanExecuteChanged();
         ApplyWorkshopPreviewWithDependenciesCommand.NotifyCanExecuteChanged();
+        RemoveWorkshopPreviewCommand.NotifyCanExecuteChanged();
 
         try
         {
@@ -707,6 +782,7 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
             _isApplyingWorkshopPreview = false;
             ApplyWorkshopPreviewCommand.NotifyCanExecuteChanged();
             ApplyWorkshopPreviewWithDependenciesCommand.NotifyCanExecuteChanged();
+            RemoveWorkshopPreviewCommand.NotifyCanExecuteChanged();
             NotifyComputedState();
         }
     }
@@ -749,6 +825,44 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
             child.MapFolders ?? [],
             child.DependencyModIds ?? [],
             null);
+    }
+
+    private bool RemovePreviewRows(WorkshopPreviewViewModel preview)
+    {
+        var targets = CollectPreviewTargets(preview);
+        var removedAnything = false;
+
+        foreach (var modRow in ModEditorItems
+                     .Where(item => targets.ModIds.Contains(item.ModId, StringComparer.OrdinalIgnoreCase))
+                     .ToArray())
+        {
+            removedAnything = true;
+            ModEditorItems.Remove(modRow);
+            if (SelectedModEditorItem == modRow)
+            {
+                SelectedModEditorItem = null;
+                SelectedEditorPreview = null;
+            }
+        }
+
+        foreach (var mapRow in MapEditorItems
+                     .Where(item => targets.MapFolders.Contains(item.MapFolder, StringComparer.OrdinalIgnoreCase))
+                     .ToArray())
+        {
+            removedAnything = true;
+            MapEditorItems.Remove(mapRow);
+        }
+
+        var remainingManualWorkshopIds = _draftWorkshopItemIds
+            .Where(candidate => !targets.WorkshopIds.Contains(candidate, StringComparer.OrdinalIgnoreCase))
+            .ToList();
+        if (remainingManualWorkshopIds.Count != _draftWorkshopItemIds.Count)
+        {
+            removedAnything = true;
+            _draftWorkshopItemIds = remainingManualWorkshopIds;
+        }
+
+        return removedAnything;
     }
 
     private void ApplyItemToEditor(
@@ -1481,14 +1595,20 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
         }
 
         SynchronizeTransportState();
+        RefreshFilteredModEditorItems();
+        RefreshWorkshopPreviewQueueState();
         AutoOrderModEditorItemsCommand.NotifyCanExecuteChanged();
         OnPropertyChanged(nameof(HasModEditorItems));
         OnPropertyChanged(nameof(HasNoModEditorItems));
+        OnPropertyChanged(nameof(HasVisibleModEditorItems));
+        OnPropertyChanged(nameof(HasNoVisibleModEditorItems));
         OnPropertyChanged(nameof(HasMapEditorItems));
         OnPropertyChanged(nameof(HasNoMapEditorItems));
         OnPropertyChanged(nameof(ActiveModEditorItems));
         OnPropertyChanged(nameof(ActiveMapEditorItems));
         OnPropertyChanged(nameof(LoadoutSummary));
+        OnPropertyChanged(nameof(EditorFilterSummary));
+        OnPropertyChanged(nameof(VisibleModEditorEmptyText));
         OnPropertyChanged(nameof(SelectedModDetailTitle));
         OnPropertyChanged(nameof(SelectedModDetailModId));
         OnPropertyChanged(nameof(SelectedModDetailWorkshopId));
@@ -1503,6 +1623,91 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
     {
         _draftWorkshopItemIds = ResolveDraftWorkshopIds().ToList();
     }
+
+    private void RefreshFilteredModEditorItems()
+    {
+        var visibleRows = ModEditorItems
+            .Where(MatchesEditorFilter)
+            .ToArray();
+
+        VisibleModEditorItems.Clear();
+        foreach (var row in visibleRows)
+        {
+            VisibleModEditorItems.Add(row);
+        }
+
+        if (SelectedModEditorItem is not null && !visibleRows.Contains(SelectedModEditorItem))
+        {
+            SelectedModEditorItem = visibleRows.FirstOrDefault();
+        }
+        else if (SelectedModEditorItem is null && visibleRows.Length > 0 && !string.IsNullOrWhiteSpace(EditorFilterQuery))
+        {
+            SelectedModEditorItem = visibleRows[0];
+        }
+    }
+
+    private bool MatchesEditorFilter(ModEditorItemViewModel item)
+    {
+        var query = EditorFilterQuery?.Trim();
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            return true;
+        }
+
+        return item.DisplayTitle.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+               item.ModId.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+               (!string.IsNullOrWhiteSpace(item.WorkshopId) && item.WorkshopId.Contains(query, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private void RefreshWorkshopPreviewQueueState()
+    {
+        var preset = BuildPresetForWorkshopOperations();
+        foreach (var item in WorkshopSearchResults)
+        {
+            item.IsQueued = IsWorkshopCatalogItemQueued(preset, item.Item);
+        }
+
+        if (SelectedWorkshopPreview is not null)
+        {
+            SelectedWorkshopPreview.Item.IsQueued = IsWorkshopCatalogItemQueued(preset, SelectedWorkshopPreview.Item.Item);
+        }
+
+        OnPropertyChanged(nameof(CanRemoveWorkshopPreview));
+        RemoveWorkshopPreviewCommand.NotifyCanExecuteChanged();
+    }
+
+    private bool PreviewTargetsExistInEditor(WorkshopPreviewViewModel preview)
+    {
+        var targets = CollectPreviewTargets(preview);
+        return targets.WorkshopIds.Any(workshopId =>
+                   _draftWorkshopItemIds.Any(candidate => string.Equals(candidate, workshopId, StringComparison.OrdinalIgnoreCase))) ||
+               targets.ModIds.Any(modId =>
+                   ModEditorItems.Any(item => string.Equals(item.ModId, modId, StringComparison.OrdinalIgnoreCase))) ||
+               targets.MapFolders.Any(mapFolder =>
+                   MapEditorItems.Any(item => string.Equals(item.MapFolder, mapFolder, StringComparison.OrdinalIgnoreCase)));
+    }
+
+    private PreviewTargets CollectPreviewTargets(WorkshopPreviewViewModel preview)
+    {
+        if (preview.Item.IsCollection && preview.CollectionChildren.Count > 0)
+        {
+            return new PreviewTargets(
+                DistinctNonEmpty(preview.CollectionChildren.Select(child => child.WorkshopId)),
+                DistinctNonEmpty(preview.CollectionChildren.SelectMany(child => child.ModIds ?? [])),
+                DistinctNonEmpty(preview.CollectionChildren.SelectMany(child => child.MapFolders ?? [])));
+        }
+
+        return new PreviewTargets(
+            DistinctNonEmpty([preview.Item.WorkshopId]),
+            DistinctNonEmpty(preview.Item.ModIds),
+            DistinctNonEmpty(preview.Item.MapFolders));
+    }
+
+    private static bool IsWorkshopCatalogItemQueued(WorkshopPreset preset, WorkshopCatalogItemDto item) =>
+        item.Kind is WorkshopCatalogItemKind.Collection
+            ? item.CollectionChildWorkshopIds is { Count: > 0 } children &&
+              children.All(id => preset.WorkshopItemIds.Any(value => string.Equals(value, id, StringComparison.OrdinalIgnoreCase)))
+            : WorkshopPresetMergeHelper.IsQueued(preset, item.WorkshopId, item.ModIds, item.MapFolders);
 
     private void RefreshDirtyState()
     {
@@ -1838,7 +2043,9 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
         ResetWorkshopBrowserState();
         SelectedEditorPreview = null;
         SelectedModEditorItem = null;
+        VisibleModEditorItems.Clear();
         SearchQuery = string.Empty;
+        EditorFilterQuery = string.Empty;
         SearchMode = WorkshopCatalogSearchMode.Both;
         SearchFilter = WorkshopCatalogSearchFilter.All;
         WorkshopTagInput = string.Empty;
@@ -1872,6 +2079,8 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
         OnPropertyChanged(nameof(HasWorkshopTags));
         OnPropertyChanged(nameof(HasModEditorItems));
         OnPropertyChanged(nameof(HasNoModEditorItems));
+        OnPropertyChanged(nameof(HasVisibleModEditorItems));
+        OnPropertyChanged(nameof(HasNoVisibleModEditorItems));
         OnPropertyChanged(nameof(HasMapEditorItems));
         OnPropertyChanged(nameof(HasNoMapEditorItems));
         OnPropertyChanged(nameof(WorkshopTagSummary));
@@ -1881,11 +2090,14 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
         OnPropertyChanged(nameof(ShowSteamApiKeyHelper));
         OnPropertyChanged(nameof(CanApplyWorkshopPreview));
         OnPropertyChanged(nameof(CanApplyWorkshopPreviewWithDependencies));
+        OnPropertyChanged(nameof(CanRemoveWorkshopPreview));
         OnPropertyChanged(nameof(CanSaveNamedPreset));
         OnPropertyChanged(nameof(IsBrowseMode));
         OnPropertyChanged(nameof(IsLiveEditorMode));
         OnPropertyChanged(nameof(SelectedWorkshopApplyLabel));
         OnPropertyChanged(nameof(SelectedWorkshopApplyWithDependenciesLabel));
+        OnPropertyChanged(nameof(EditorFilterSummary));
+        OnPropertyChanged(nameof(VisibleModEditorEmptyText));
     }
 
     private void ReplaceSavedPresets(IReadOnlyList<NamedWorkshopPresetDto> presets)
@@ -1983,6 +2195,11 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
         OnPropertyChanged(nameof(WorkshopTagSummary));
     }
 
+    partial void OnEditorFilterQueryChanged(string value)
+    {
+        RefreshFilteredModEditorItems();
+    }
+
     partial void OnNewPresetNameChanged(string value)
     {
         SaveNamedPresetCommand.NotifyCanExecuteChanged();
@@ -2019,6 +2236,11 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
         string? WorkshopId,
         bool IsInstalled,
         IReadOnlyList<string> DependencyModIds,
+        IReadOnlyList<string> MapFolders);
+
+    private sealed record PreviewTargets(
+        IReadOnlyList<string> WorkshopIds,
+        IReadOnlyList<string> ModIds,
         IReadOnlyList<string> MapFolders);
 
     public sealed partial class ModEditorItemViewModel(

@@ -652,6 +652,89 @@ public sealed class StructuredSettingsServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task SaveAsync_NetworkPagePreservesMissingDoLuaChecksumWhenSubmittedValueMatchesInheritedDefault()
+    {
+        Directory.CreateDirectory(_tempRoot);
+        var profile = ServerProfileFactory.CreateStarterProfile() with
+        {
+            ProfileId = "profile-network-preserve-missing-checksum",
+            DisplayName = "Profile Network Preserve Missing Checksum",
+            ServerName = "profile-network-preserve-missing-checksum",
+            InstallDirectory = Path.Combine(_tempRoot, "install-network-preserve-missing-checksum"),
+            CacheDirectory = Path.Combine(_tempRoot, "cache-network-preserve-missing-checksum"),
+            BindIp = "0.0.0.0",
+        };
+
+        var planner = new ProjectZomboidServerPlanner();
+        var paths = planner.ResolvePaths(profile);
+        Directory.CreateDirectory(Path.GetDirectoryName(paths.IniFilePath)!);
+        File.WriteAllText(paths.IniFilePath, """
+            BindIP=0.0.0.0
+            PingLimit=250
+            SteamVAC=true
+            """);
+
+        await using var dbContext = TestDatabaseFactory.Create(Path.Combine(_tempRoot, "network-preserve-missing-checksum.db"));
+        var profileStore = new ProfileStore(dbContext);
+        await profileStore.UpsertAsync(profile);
+
+        var service = CreateService(profileStore, planner);
+        var valueSet = service.GetPage(profile, ProfileWorkspacePageIds.NetworkAndAdmin);
+
+        var result = await service.SaveAsync(
+            profile,
+            ProfileWorkspacePageIds.NetworkAndAdmin,
+            new Dictionary<string, string?>(valueSet.Values, StringComparer.Ordinal));
+
+        var iniText = File.ReadAllText(paths.IniFilePath);
+
+        Assert.True(result.Validation.IsValid);
+        Assert.DoesNotContain("DoLuaChecksum=", iniText);
+    }
+
+    [Fact]
+    public async Task SaveAsync_NetworkPageWritesExplicitDoLuaChecksumFalseWhenSourceWasMissing()
+    {
+        Directory.CreateDirectory(_tempRoot);
+        var profile = ServerProfileFactory.CreateStarterProfile() with
+        {
+            ProfileId = "profile-network-write-checksum-false",
+            DisplayName = "Profile Network Write Checksum False",
+            ServerName = "profile-network-write-checksum-false",
+            InstallDirectory = Path.Combine(_tempRoot, "install-network-write-checksum-false"),
+            CacheDirectory = Path.Combine(_tempRoot, "cache-network-write-checksum-false"),
+            BindIp = "0.0.0.0",
+        };
+
+        var planner = new ProjectZomboidServerPlanner();
+        var paths = planner.ResolvePaths(profile);
+        Directory.CreateDirectory(Path.GetDirectoryName(paths.IniFilePath)!);
+        File.WriteAllText(paths.IniFilePath, """
+            BindIP=0.0.0.0
+            PingLimit=250
+            SteamVAC=true
+            """);
+
+        await using var dbContext = TestDatabaseFactory.Create(Path.Combine(_tempRoot, "network-write-checksum-false.db"));
+        var profileStore = new ProfileStore(dbContext);
+        await profileStore.UpsertAsync(profile);
+
+        var service = CreateService(profileStore, planner);
+        var values = new Dictionary<string, string?>(
+            service.GetPage(profile, ProfileWorkspacePageIds.NetworkAndAdmin).Values,
+            StringComparer.Ordinal)
+        {
+            ["b42.network.do-lua-checksum"] = "false",
+        };
+
+        var result = await service.SaveAsync(profile, ProfileWorkspacePageIds.NetworkAndAdmin, values);
+        var iniText = File.ReadAllText(paths.IniFilePath);
+
+        Assert.True(result.Validation.IsValid);
+        Assert.Contains("DoLuaChecksum=false", iniText);
+    }
+
+    [Fact]
     public async Task ModsAndMaps_PageReadsAndWritesIniBackedPresetValues()
     {
         Directory.CreateDirectory(_tempRoot);

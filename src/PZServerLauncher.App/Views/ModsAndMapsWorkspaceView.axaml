@@ -240,7 +240,15 @@
                                         Content="Auto Order Active Mods" />
                             </Grid>
 
-                            <ItemsControl ItemsSource="{Binding ModEditorItems}" IsVisible="{Binding HasModEditorItems}">
+                            <StackPanel Spacing="6">
+                                <TextBox Text="{Binding EditorFilterQuery}"
+                                         PlaceholderText="Filter by Workshop display name, mod ID, or Workshop ID" />
+                                <TextBlock Classes="caption"
+                                           Text="{Binding EditorFilterSummary}"
+                                           TextWrapping="Wrap" />
+                            </StackPanel>
+
+                            <ItemsControl ItemsSource="{Binding VisibleModEditorItems}" IsVisible="{Binding HasVisibleModEditorItems}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="vm:ModsAndMapsWorkspaceViewModel+ModEditorItemViewModel">
                                         <Border Background="#14FFFFFF"
@@ -309,7 +317,10 @@
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
 
-                            <TextBlock Classes="caption" IsVisible="{Binding HasNoModEditorItems}" Text="No mod rows are in the editor yet." />
+                            <TextBlock Classes="caption"
+                                       IsVisible="{Binding HasNoVisibleModEditorItems}"
+                                       Text="{Binding VisibleModEditorEmptyText}"
+                                       TextWrapping="Wrap" />
                         </StackPanel>
                     </Border>
 
@@ -521,11 +532,16 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
-                    <Grid ColumnDefinitions="Auto,Auto" ColumnSpacing="8">
+                    <Grid ColumnDefinitions="Auto,Auto,Auto" ColumnSpacing="8">
                         <Button Classes="action-primary"
                                 Command="{Binding ApplyWorkshopPreviewCommand}"
                                 Content="{Binding SelectedWorkshopApplyLabel}" />
                         <Button Grid.Column="1"
+                                Classes="action-danger"
+                                Command="{Binding RemoveWorkshopPreviewCommand}"
+                                Content="Remove from Editor"
+                                IsVisible="{Binding CanRemoveWorkshopPreview}" />
+                        <Button Grid.Column="2"
                                 Classes="action-secondary"
                                 Command="{Binding ApplyWorkshopPreviewWithDependenciesCommand}"
                                 Content="{Binding SelectedWorkshopApplyWithDependenciesLabel}"
