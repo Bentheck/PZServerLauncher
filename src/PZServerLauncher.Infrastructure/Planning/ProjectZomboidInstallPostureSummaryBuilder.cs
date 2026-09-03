@@ -40,9 +40,11 @@ public static class ProjectZomboidInstallPostureSummaryBuilder
             ? launchPlan.Notes
             : planner.FormatLaunchCommand(launchPlan);
 
-        var branchChannelSummary = $"Build 42 Unstable | Steam app {ProjectZomboidDefaults.DedicatedServerAppId} beta unstable";
+        var branchChannelSummary = string.Equals(profile.SteamBranch, "public", StringComparison.OrdinalIgnoreCase)
+            ? $"Build 42 Stable | Steam app {ProjectZomboidDefaults.DedicatedServerAppId} public branch"
+            : $"Steam app {ProjectZomboidDefaults.DedicatedServerAppId} branch {profile.SteamBranch}";
 
-        var steamCmdCommandSummary = $"SteamCMD: app_update {ProjectZomboidDefaults.DedicatedServerAppId} -beta unstable validate";
+        var steamCmdCommandSummary = $"SteamCMD: app_update {ProjectZomboidDefaults.DedicatedServerAppId} validate";
 
         var installFootprintSummary = !installDetected
             ? "Install root is missing. Queue Install to lay down the dedicated-server footprint."

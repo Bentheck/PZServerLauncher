@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.ComponentModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PZServerLauncher.App.Services;
@@ -11,20 +12,25 @@ namespace PZServerLauncher.App.ViewModels;
 public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHeader
 {
     private readonly DesktopShellService _desktopShellService;
+    private readonly ApplicationThemeService _themeService;
     private readonly ILauncherRuntime _runtime;
     private readonly SemaphoreSlim _refreshGate = new(1, 1);
+    private ViewModelBase? _observedCurrentPage;
     private const string SupportUrl = "https://buymeacoffee.com/bentheck";
 
     public WorkspaceShellViewModel(
         MainWindowViewModel legacy,
         ILauncherRuntime runtime,
         DesktopShellService desktopShellService,
+        ApplicationThemeService themeService,
         FolderPickerService folderPickerService,
         ConsoleWorkspaceStateService consoleWorkspaceStateService)
     {
         Legacy = legacy;
         _runtime = runtime;
         _desktopShellService = desktopShellService;
+        _themeService = themeService;
+        isDarkMode = themeService.IsDarkMode;
         Legacy.Profiles.CollectionChanged += OnLegacyCollectionChanged;
         Legacy.RecentJobs.CollectionChanged += OnLegacyCollectionChanged;
         Legacy.WorkspaceNavigationRequested += OnWorkspaceNavigationRequested;
@@ -48,10 +54,10 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
 
         GlobalNavigation =
         [
-            new WorkspaceNavigationItemViewModel(WorkspacePageIds.Dashboard, "Home", Dashboard.PageSummary),
-            new WorkspaceNavigationItemViewModel(WorkspacePageIds.Profiles, "Servers", Profiles.PageSummary),
-            new WorkspaceNavigationItemViewModel(WorkspacePageIds.Consoles, "Consoles", Consoles.PageSummary),
-            new WorkspaceNavigationItemViewModel(WorkspacePageIds.Host, "App", Host.PageSummary),
+            new WorkspaceNavigationItemViewModel(WorkspacePageIds.Dashboard, "Home", Dashboard.PageSummary, "H", "Start"),
+            new WorkspaceNavigationItemViewModel(WorkspacePageIds.Profiles, "Servers", Profiles.PageSummary, "S", "Roster"),
+            new WorkspaceNavigationItemViewModel(WorkspacePageIds.Consoles, "Consoles", Consoles.PageSummary, "C", "Live"),
+            new WorkspaceNavigationItemViewModel(WorkspacePageIds.Host, "App", Host.PageSummary, "A", "System"),
         ];
 
         CurrentPage = Dashboard;
@@ -81,6 +87,24 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
     public string CurrentPageTitle => CurrentPage is IWorkspacePageHeader header ? header.PageTitle : PageTitle;
 
     public string CurrentPageSummary => CurrentPage is IWorkspacePageHeader header ? header.PageSummary : PageSummary;
+
+    public IReadOnlyList<WorkspaceCommandViewModel> CurrentPrimaryCommands =>
+        CurrentPage is IWorkspaceCommandProvider provider ? provider.PrimaryCommands : [];
+
+    public IReadOnlyList<WorkspaceCommandViewModel> CurrentSecondaryCommands =>
+        CurrentPage is IWorkspaceCommandProvider provider ? provider.SecondaryCommands : [];
+
+    public IReadOnlyList<WorkspaceCommandViewModel> CurrentDangerCommands =>
+        CurrentPage is IWorkspaceCommandProvider provider ? provider.DangerCommands : [];
+
+    public bool HasCurrentPrimaryCommands => CurrentPrimaryCommands.Count > 0;
+
+    public bool HasCurrentSecondaryCommands => CurrentSecondaryCommands.Count > 0;
+
+    public bool HasCurrentDangerCommands => CurrentDangerCommands.Count > 0;
+
+    public bool CurrentPageHasUnsavedChanges =>
+        CurrentPage is IWorkspaceDirtyState dirtyState && dirtyState.HasUnsavedChanges;
 
     public string WorkspaceGuidance => CurrentPage switch
     {
@@ -124,6 +148,9 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
     private bool hasPendingNavigation;
 
     [ObservableProperty]
+    private bool isDarkMode;
+
+    [ObservableProperty]
     private WorkspaceNavigationItemViewModel? pendingNavigationTarget;
 
     [ObservableProperty]
@@ -146,6 +173,11 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
     public IRelayCommand OpenSupportCommand { get; }
 
     public IAsyncRelayCommand RefreshLegacyCommand { get; }
+
+    partial void OnIsDarkModeChanged(bool value)
+    {
+        _themeService.SetDarkMode(value);
+    }
 
     public void SelectGlobalPageByKey(string key)
     {
@@ -240,6 +272,7 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
         {
             await dirtyState.SaveDraftAsync();
             UpdateCurrentStatus();
+            RefreshCommandSurface();
         }
     }
 
@@ -249,6 +282,7 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
         {
             await dirtyState.DiscardDraftAsync();
             UpdateCurrentStatus();
+            RefreshCommandSurface();
         }
     }
 
@@ -330,6 +364,7 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
         OnPropertyChanged(nameof(CurrentPageSummary));
         OnPropertyChanged(nameof(WorkspaceGuidance));
         PageStatus = CurrentPageSummary;
+        RefreshCommandSurface();
     }
 
     private void OnLegacyCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -365,7 +400,44 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
 
     partial void OnCurrentPageChanged(ViewModelBase value)
     {
+        ObserveCurrentPage(value);
         UpdateCurrentStatus();
+    }
+
+    private void ObserveCurrentPage(ViewModelBase value)
+    {
+        if (ReferenceEquals(_observedCurrentPage, value))
+        {
+            return;
+        }
+
+        if (_observedCurrentPage is not null)
+        {
+            _observedCurrentPage.PropertyChanged -= OnCurrentPagePropertyChanged;
+        }
+
+        _observedCurrentPage = value;
+        _observedCurrentPage.PropertyChanged += OnCurrentPagePropertyChanged;
+    }
+
+    private void OnCurrentPagePropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (string.IsNullOrEmpty(e.PropertyName) ||
+            e.PropertyName is nameof(IWorkspaceDirtyState.HasUnsavedChanges) or nameof(IWorkspaceDirtyState.DirtyStateMessage))
+        {
+            RefreshCommandSurface();
+        }
+    }
+
+    private void RefreshCommandSurface()
+    {
+        OnPropertyChanged(nameof(CurrentPrimaryCommands));
+        OnPropertyChanged(nameof(CurrentSecondaryCommands));
+        OnPropertyChanged(nameof(CurrentDangerCommands));
+        OnPropertyChanged(nameof(HasCurrentPrimaryCommands));
+        OnPropertyChanged(nameof(HasCurrentSecondaryCommands));
+        OnPropertyChanged(nameof(HasCurrentDangerCommands));
+        OnPropertyChanged(nameof(CurrentPageHasUnsavedChanges));
     }
 
     private async Task RefreshWorkspaceAsync(ViewModelBase page)

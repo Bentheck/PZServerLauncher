@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using PZServerLauncher.App.ViewModels;
 using PZServerLauncher.App.Views;
+using PZServerLauncher.Contracts.Runtime;
 
 namespace PZServerLauncher.App.Services;
 
@@ -13,7 +14,10 @@ public sealed class CreateProfileDialogService
         _mainWindow = mainWindow;
     }
 
-    public async Task<CreateProfileRequest?> ShowAsync(IEnumerable<CreateProfilePortReservation> existingProfiles)
+    public async Task<CreateProfileRequest?> ShowAsync(
+        IEnumerable<CreateProfilePortReservation> existingProfiles,
+        IReadOnlyList<SteamBranchDto> steamBranches,
+        string selectedSteamBranch)
     {
         if (_mainWindow is null)
         {
@@ -22,7 +26,7 @@ public sealed class CreateProfileDialogService
 
         var dialog = new CreateProfileDialog
         {
-            DataContext = new CreateProfileDialogViewModel(existingProfiles),
+            DataContext = new CreateProfileDialogViewModel(existingProfiles, steamBranches, selectedSteamBranch),
         };
 
         return await dialog.ShowDialog<CreateProfileRequest?>(_mainWindow);
@@ -33,7 +37,8 @@ public sealed record CreateProfileRequest(
     string DisplayName,
     int DefaultPort,
     int PreferredMemoryInGigabytes,
-    int MaxPlayers);
+    int MaxPlayers,
+    string SteamBranch);
 
 public sealed record CreateProfilePortReservation(
     string ProfileId,

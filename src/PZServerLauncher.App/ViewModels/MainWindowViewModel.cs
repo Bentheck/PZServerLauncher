@@ -21,6 +21,8 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly CreateProfileDialogService _createProfileDialogService;
     private HostSettings? _loadedHostSettings;
     private bool _attemptedInitialImportDiscovery;
+    private SteamBranchCatalogDto _steamBranchCatalog = CreateFallbackSteamBranchCatalog();
+    private Task<SteamBranchCatalogDto>? _steamBranchCatalogTask;
 
     public MainWindowViewModel(
         ILauncherRuntime runtime,
@@ -170,7 +172,21 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private async Task InitializeAsync()
     {
+        _steamBranchCatalogTask = LoadSteamBranchCatalogAsync();
         await RefreshAsync();
+        _steamBranchCatalog = await _steamBranchCatalogTask;
+    }
+
+    private async Task<SteamBranchCatalogDto> LoadSteamBranchCatalogAsync()
+    {
+        try
+        {
+            return await _runtime.GetSteamBranchCatalogAsync(CancellationToken.None);
+        }
+        catch
+        {
+            return CreateFallbackSteamBranchCatalog();
+        }
     }
 
     private async Task RefreshAsync()
@@ -208,7 +224,7 @@ public partial class MainWindowViewModel : ViewModelBase
             Profiles.Add(new ProfileCardViewModel(
                 profile.ProfileId,
                 profile.DisplayName,
-                profile.Branch.ToString(),
+                FormatSteamBranch(profile.SteamBranch),
                 profile.Branch,
                 $"{profile.DefaultPort} / {profile.UdpPort} / {profile.RconPort}",
                 status?.State.ToString() ?? "Stopped",
@@ -261,7 +277,15 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private async Task CreateStarterProfileAsync()
     {
-        var request = await _createProfileDialogService.ShowAsync(BuildCreateProfileReservations());
+        if (_steamBranchCatalogTask is not null)
+        {
+            _steamBranchCatalog = await _steamBranchCatalogTask;
+        }
+
+        var request = await _createProfileDialogService.ShowAsync(
+            BuildCreateProfileReservations(),
+            _steamBranchCatalog.Branches,
+            _steamBranchCatalog.SelectedBranch);
         if (request is null)
         {
             return;
@@ -281,12 +305,13 @@ public partial class MainWindowViewModel : ViewModelBase
                 request.DisplayName,
                 request.DefaultPort,
                 request.PreferredMemoryInGigabytes,
-                request.MaxPlayers)
+                request.MaxPlayers,
+                request.SteamBranch)
                 ?? throw new InvalidOperationException("Profile creation did not return the new profile.");
             await RefreshCoreAsync();
             StatusMessage = createdProfile.DefaultPort == request.DefaultPort
-                ? $"Created {createdProfile.DisplayName} on {createdProfile.DefaultPort}/{createdProfile.UdpPort}/{createdProfile.RconPort} with {request.PreferredMemoryInGigabytes} GB and {request.MaxPlayers} max players."
-                : $"Created {createdProfile.DisplayName} on {createdProfile.DefaultPort}/{createdProfile.UdpPort}/{createdProfile.RconPort} with {request.PreferredMemoryInGigabytes} GB and {request.MaxPlayers} max players after skipping ports already reserved by other profiles.";
+                ? $"Created {createdProfile.DisplayName} for {FormatSteamBranch(request.SteamBranch)} on {createdProfile.DefaultPort}/{createdProfile.UdpPort}/{createdProfile.RconPort} with {request.PreferredMemoryInGigabytes} GB and {request.MaxPlayers} max players."
+                : $"Created {createdProfile.DisplayName} for {FormatSteamBranch(request.SteamBranch)} on {createdProfile.DefaultPort}/{createdProfile.UdpPort}/{createdProfile.RconPort} with {request.PreferredMemoryInGigabytes} GB and {request.MaxPlayers} max players after skipping ports already reserved by other profiles.";
             RequestProfileNavigation(createdProfile.ProfileId);
         }, $"Creating {previewProfile.DisplayName}...");
     }
@@ -728,6 +753,7 @@ public partial class MainWindowViewModel : ViewModelBase
             InstallDirectory = profile.InstallDirectory,
             CacheDirectory = profile.CacheDirectory,
             Branch = profile.Branch,
+            SteamBranch = profile.SteamBranch,
             DefaultPort = profile.DefaultPort,
             UdpPort = profile.UdpPort,
             RconPort = profile.RconPort,
@@ -740,6 +766,19 @@ public partial class MainWindowViewModel : ViewModelBase
             WorkshopPreset = profile.WorkshopPreset,
             BackupPolicy = profile.BackupPolicy,
         };
+
+    private string FormatSteamBranch(string steamBranch) =>
+        _steamBranchCatalog.Branches.FirstOrDefault(branch =>
+            string.Equals(branch.Name, steamBranch, StringComparison.OrdinalIgnoreCase))?.DisplayName
+        ?? (string.Equals(steamBranch, "public", StringComparison.OrdinalIgnoreCase)
+            ? "Latest stable"
+            : steamBranch);
+
+    private static SteamBranchCatalogDto CreateFallbackSteamBranchCatalog() =>
+        new(
+            [new SteamBranchDto("public", "Latest stable (public)", "Unknown", false, true)],
+            "public",
+            DateTimeOffset.MinValue);
 
     private async Task<(string ProfileId, ProjectZomboidProfilePostureSummary Summary)> LoadProfilePostureSummaryAsync(string profileId, string displayName)
     {

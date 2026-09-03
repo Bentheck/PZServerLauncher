@@ -1,6 +1,6 @@
 using Microsoft.Data.Sqlite;
 using PZServerLauncher.Core.Profiles;
-using PZServerLauncher.Host.Services;
+using PZServerLauncher.Runtime.Services;
 using PZServerLauncher.Tests.Testing;
 
 namespace PZServerLauncher.Tests.Services;
@@ -75,6 +75,21 @@ public sealed class ProfileStoreTests : IDisposable
 
         Assert.False(Directory.Exists(profile.InstallDirectory));
         Assert.False(Directory.Exists(profile.CacheDirectory));
+    }
+
+    [Fact]
+    public async Task UpsertAsync_PersistsSelectedSteamBranch()
+    {
+        Directory.CreateDirectory(_tempRoot);
+        var databasePath = Path.Combine(_tempRoot, "profile-store-steam-branch.db");
+        await using var dbContext = TestDatabaseFactory.Create(databasePath);
+        var store = new ProfileStore(dbContext);
+
+        var profile = CreateProfile("legacy-server", "Legacy Server", 16280) with { SteamBranch = "legacy41" };
+        await store.UpsertAsync(profile);
+
+        var loaded = await store.GetAsync(profile.ProfileId);
+        Assert.Equal("legacy41", loaded?.SteamBranch);
     }
 
     public void Dispose()

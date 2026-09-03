@@ -1,6 +1,6 @@
 using PZServerLauncher.Core.Profiles;
-using PZServerLauncher.Host.Infrastructure;
-using PZServerLauncher.Host.Services;
+using PZServerLauncher.Runtime.Infrastructure;
+using PZServerLauncher.Runtime.Services;
 using PZServerLauncher.Infrastructure.Settings;
 
 namespace PZServerLauncher.Tests.Services;

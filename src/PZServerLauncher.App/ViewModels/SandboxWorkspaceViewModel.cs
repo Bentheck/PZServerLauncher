@@ -512,6 +512,7 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         SelectedCategory = Categories.FirstOrDefault(category => string.Equals(category.CategoryId, selectedCategoryId, StringComparison.Ordinal))
             ?? Categories.FirstOrDefault();
         _suppressSelectionRefresh = false;
+        RefreshCategorySelectionState();
         NotifyComputedState();
         RefreshCommandStates();
     }
@@ -547,6 +548,7 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
         SelectedCategory = category;
         category.IsExpanded = true;
+        RefreshCategorySelectionState();
     }
 
     private void ToggleCategoryExpanded(SandboxCategoryViewModel? category)
@@ -558,6 +560,15 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
         SelectedCategory = category;
         category.IsExpanded = !category.IsExpanded;
+        RefreshCategorySelectionState();
+    }
+
+    private void RefreshCategorySelectionState()
+    {
+        foreach (var category in Categories)
+        {
+            category.IsSelected = ReferenceEquals(category, SelectedCategory);
+        }
     }
 
     private void ToggleSectionExpanded(SandboxSectionViewModel? section)
@@ -807,6 +818,7 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             return;
         }
 
+        RefreshCategorySelectionState();
         NotifyComputedState();
         RefreshCommandStates();
     }

@@ -1,7 +1,7 @@
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using PZServerLauncher.Contracts.Runtime;
-using PZServerLauncher.Host.Services;
+using PZServerLauncher.Runtime.Services;
 
 namespace PZServerLauncher.Tests.Services;
 

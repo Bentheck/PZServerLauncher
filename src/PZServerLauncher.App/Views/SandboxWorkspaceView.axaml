@@ -11,18 +11,18 @@
              x:DataType="vm:SandboxWorkspaceViewModel">
     <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                   VerticalScrollBarVisibility="Auto">
-        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="16">
-            <Border Classes="card" Padding="22">
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="14">
+            <Border Classes="workspace-band" Padding="18">
                 <Grid ColumnDefinitions="*,300" ColumnSpacing="18">
                     <StackPanel Spacing="8">
                         <TextBlock Classes="kicker" Text="Sandbox" />
                         <TextBlock Classes="panel-title" FontSize="30" Text="{Binding ProfileDisplayName}" />
                         <TextBlock Classes="body"
                                    FontSize="16"
-                                   Foreground="#C9D5EA"
+                                   Foreground="{DynamicResource TextMutedBrush}"
                                    Text="{Binding WorkspaceSummary}"
                                    TextWrapping="Wrap" />
-                        <WrapPanel Margin="0,8,0,0" Orientation="Horizontal" ItemHeight="28">
+                        <WrapPanel Margin="0,8,0,0" Orientation="Horizontal">
                             <Border Classes="pill-dark" Margin="0,0,8,8">
                                 <TextBlock Classes="pill-text-light" Text="{Binding Branch}" />
                             </Border>
@@ -35,12 +35,12 @@
                         </WrapPanel>
                     </StackPanel>
 
-                    <Border Grid.Column="1" Classes="surface-soft" Padding="16">
+                    <Border Grid.Column="1" Classes="workspace-band" Padding="16">
                         <StackPanel Spacing="6">
                             <TextBlock Classes="kicker" Text="Editor Status" />
                             <TextBlock Classes="body"
                                        FontWeight="SemiBold"
-                                       Foreground="#EDF4FF"
+                                       Foreground="{DynamicResource TextBrush}"
                                        Text="{Binding LoadStatus}"
                                        TextWrapping="Wrap" />
                             <TextBlock Classes="caption" Text="{Binding DraftStateSummary}" TextWrapping="Wrap" />
@@ -51,27 +51,27 @@
             </Border>
 
             <StackPanel Grid.Row="1" Spacing="12">
-                <Border Classes="callout-card" Padding="16" IsVisible="{Binding RequiresAdvancedFilesFallback}">
+                <Border Classes="inline-warning" Padding="16" IsVisible="{Binding RequiresAdvancedFilesFallback}">
                     <StackPanel Spacing="6">
                         <TextBlock Classes="kicker" Text="Use Advanced Files Instead" />
                         <TextBlock Classes="body" Text="{Binding FallbackReason}" TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
 
-                <Border Background="#2E5D49"
-                        BorderBrush="#6CD6A1"
-                        BorderThickness="1"
-                        CornerRadius="14"
+                <Border Background="{DynamicResource SuccessSoftBrush}"
+                            BorderBrush="{DynamicResource SuccessBrush}"
+                            BorderThickness="0,1,0,1"
+                            CornerRadius="0"
                         Padding="16"
                         IsVisible="{Binding IsShowingDraft}">
                     <StackPanel Spacing="6">
-                        <TextBlock Classes="kicker" Foreground="#DFFCEC" Text="Launcher Draft Loaded" />
-                        <TextBlock Classes="body" Foreground="#F4FFF8" Text="{Binding DraftStateSummary}" TextWrapping="Wrap" />
-                        <TextBlock Classes="caption" Foreground="#D9F3E6" Text="Save Draft keeps these values in launcher state. Apply Settings writes them to the live SandboxVars.lua file." TextWrapping="Wrap" />
+                        <TextBlock Classes="kicker" Foreground="{DynamicResource SuccessBrush}" Text="Launcher Draft Loaded" />
+                        <TextBlock Classes="body" Foreground="{DynamicResource SuccessBrush}" Text="{Binding DraftStateSummary}" TextWrapping="Wrap" />
+                        <TextBlock Classes="caption" Foreground="{DynamicResource SuccessBrush}" Text="Save Draft keeps local changes. Apply Settings writes SandboxVars.lua." TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
 
-                <Border Classes="card" Padding="18" IsVisible="{Binding CanEdit}">
+                <Border Classes="workspace-band" Padding="16" IsVisible="{Binding CanEdit}">
                     <StackPanel Spacing="12">
                         <Grid ColumnDefinitions="*,260,260" ColumnSpacing="14">
                             <StackPanel Spacing="6">
@@ -99,7 +99,7 @@
                             <Button Classes="action-secondary" Margin="0,0,10,0" Command="{Binding ResetSelectedCategoryCommand}" Content="Reset Category" />
                             <Button Classes="action-secondary" Margin="0,0,10,0" Command="{Binding ResetAllToPresetCommand}" Content="Reset All To Preset" />
                             <Button Classes="action-primary" Margin="0,0,10,0" Command="{Binding SavePresetCommand}" Content="Save Custom Preset" />
-                            <Button Classes="action-danger" Command="{Binding DeletePresetCommand}" Content="Delete Selected Preset" />
+                            <Button Classes="action-danger" Command="{Binding DeletePresetCommand}" Content="Delete Preset" AutomationProperties.Name="Delete selected sandbox preset" />
                         </WrapPanel>
 
                         <TextBlock Classes="caption" Text="{Binding SearchSummary}" TextWrapping="Wrap" />
@@ -108,179 +108,190 @@
                 </Border>
             </StackPanel>
 
-            <Grid Grid.Row="2" ColumnDefinitions="300,*" ColumnSpacing="16">
-                <Border Classes="card" Padding="18">
-                    <StackPanel Spacing="12">
-                        <TextBlock Classes="kicker" Text="Windows Catalog Overview" />
-                        <TextBlock Classes="caption"
-                                   Text="Keep every sandbox category visible here, then jump into a category panel without losing the rest of the overview."
+            <Border Grid.Row="2" Classes="workspace-band" Padding="0">
+                <Grid RowDefinitions="Auto,Auto">
+                    <Grid Margin="16,12,16,0" ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                        <StackPanel Spacing="4">
+                            <TextBlock Classes="kicker" Text="Sandbox Categories" />
+                            <TextBlock Classes="caption"
+                                       Text="{Binding SearchSummary}"
+                                       TextWrapping="Wrap" />
+                        </StackPanel>
+                        <TextBlock Grid.Column="1"
+                                   Classes="caption"
+                                   VerticalAlignment="Center"
+                                   Text="{Binding SelectedCategoryStatus}"
                                    TextWrapping="Wrap" />
+                    </Grid>
 
+                    <ScrollViewer Grid.Row="1"
+                                  HorizontalScrollBarVisibility="Auto"
+                                  VerticalScrollBarVisibility="Disabled"
+                                  Margin="8,8,8,0">
                         <ItemsControl ItemsSource="{Binding Categories}" IsVisible="{Binding HasCategories}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="vm:SandboxCategoryViewModel">
-                                    <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="14" Padding="12" Margin="0,0,0,10">
-                                        <StackPanel Spacing="8">
+                                    <Button Classes="category-tab"
+                                            Classes.active="{Binding IsSelected}"
+                                            Click="OnOpenCategoryClick"
+                                            AutomationProperties.Name="{Binding Title}"
+                                            MinWidth="152"
+                                            Margin="0,0,6,0">
+                                        <StackPanel Spacing="4">
                                             <TextBlock Classes="body" FontWeight="SemiBold" Text="{Binding Title}" />
                                             <TextBlock Classes="caption" Text="{Binding StatusText}" TextWrapping="Wrap" />
-                                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                                                <Button Classes="action-secondary"
-                                                        Click="OnOpenCategoryClick"
-                                                        Content="Open Category" />
-                                                <Button Grid.Column="1"
-                                                        Classes="action-secondary"
-                                                        Command="{Binding #SandboxRoot.DataContext.ToggleCategoryExpandedCommand}"
-                                                        CommandParameter="{Binding .}"
-                                                        Content="{Binding ExpandButtonLabel}" />
-                                            </Grid>
                                         </StackPanel>
-                                    </Border>
+                                    </Button>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
+                    </ScrollViewer>
 
-                        <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="14" Padding="14" IsVisible="{Binding HasNoSelectedCategory}">
-                            <TextBlock Classes="caption" Text="No sandbox categories match the current search." TextWrapping="Wrap" />
-                        </Border>
-                    </StackPanel>
-                </Border>
+                    <Border Grid.Row="1"
+                            Background="Transparent"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="0,1,0,0"
+                            Padding="16"
+                            IsVisible="{Binding HasNoSelectedCategory}">
+                        <TextBlock Classes="caption" Text="No sandbox categories match the current search." TextWrapping="Wrap" />
+                    </Border>
+                </Grid>
+            </Border>
 
-                <ScrollViewer Grid.Column="1"
-                              HorizontalScrollBarVisibility="Disabled"
-                              VerticalScrollBarVisibility="Auto"
-                              MaxHeight="700">
-                    <StackPanel>
-                        <Border x:Name="SelectedCategoryAnchor" Classes="card" Padding="18" Margin="0,0,0,16" IsVisible="{Binding HasSelectedCategory}">
-                            <StackPanel Spacing="10">
-                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                                    <StackPanel Spacing="6">
-                                        <TextBlock Classes="kicker" Text="Category Panel" />
-                                        <TextBlock Classes="panel-title" FontSize="24" Text="{Binding SelectedCategoryTitle}" />
-                                        <TextBlock Classes="caption" Text="{Binding SelectedCategoryStatus}" TextWrapping="Wrap" />
-                                    </StackPanel>
-                                    <Button Grid.Column="1"
-                                            Classes="action-secondary"
-                                            Command="{Binding ToggleCategoryExpandedCommand}"
-                                            CommandParameter="{Binding SelectedCategory}"
-                                            Content="{Binding SelectedCategory.ExpandButtonLabel}" />
-                                </Grid>
-
-                                <TextBlock Classes="caption"
-                                           Text="Category cards stay visible in the overview while you work here. Matching sections open automatically when search is active."
-                                           TextWrapping="Wrap" />
+            <ScrollViewer Grid.Row="3"
+                          HorizontalScrollBarVisibility="Disabled"
+                          VerticalScrollBarVisibility="Auto"
+                          MaxHeight="720">
+                <StackPanel>
+                    <Border x:Name="SelectedCategoryAnchor" Classes="workspace-band" Padding="16" Margin="0,0,0,12" IsVisible="{Binding HasSelectedCategory}">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                            <StackPanel Spacing="6">
+                                <TextBlock Classes="kicker" Text="Category Panel" />
+                                <TextBlock Classes="panel-title" FontSize="24" Text="{Binding SelectedCategoryTitle}" />
+                                <TextBlock Classes="caption" Text="{Binding SelectedCategoryStatus}" TextWrapping="Wrap" />
                             </StackPanel>
-                        </Border>
+                            <Button Grid.Column="1"
+                                    Classes="action-secondary"
+                                    Command="{Binding ToggleCategoryExpandedCommand}"
+                                    CommandParameter="{Binding SelectedCategory}"
+                                    Content="{Binding SelectedCategory.ExpandButtonLabel}" />
+                        </Grid>
+                    </Border>
 
-                        <ItemsControl ItemsSource="{Binding SelectedCategory.Sections}"
-                                      IsVisible="{Binding HasSelectedCategory}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate x:DataType="vm:SandboxSectionViewModel">
-                                    <Border Classes="card"
-                                            Padding="18"
-                                            Margin="0,0,0,16"
-                                            IsVisible="{Binding #SandboxRoot.DataContext.SelectedCategory.IsExpanded}">
-                                        <StackPanel Spacing="12">
-                                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                                                <StackPanel Spacing="4">
-                                                    <TextBlock Classes="kicker" Text="{Binding Title}" />
-                                                    <TextBlock Classes="caption" Text="{Binding Description}" TextWrapping="Wrap" IsVisible="{Binding HasDescription}" />
-                                                </StackPanel>
-                                                <Button Grid.Column="1"
-                                                        Classes="action-secondary"
-                                                        Command="{Binding #SandboxRoot.DataContext.ToggleSectionExpandedCommand}"
-                                                        CommandParameter="{Binding .}"
-                                                        Content="{Binding ExpandButtonLabel}" />
-                                            </Grid>
+                    <ItemsControl ItemsSource="{Binding SelectedCategory.Sections}"
+                                  IsVisible="{Binding HasSelectedCategory}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:SandboxSectionViewModel">
+                                <Border Classes="workspace-band"
+                                        Padding="14"
+                                        Margin="0,0,0,12"
+                                        IsVisible="{Binding #SandboxRoot.DataContext.SelectedCategory.IsExpanded}">
+                                    <StackPanel Spacing="12">
+                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                            <StackPanel Spacing="4">
+                                                <TextBlock Classes="kicker" Text="{Binding Title}" />
+                                                <TextBlock Classes="caption" Text="{Binding Description}" TextWrapping="Wrap" IsVisible="{Binding HasDescription}" />
+                                            </StackPanel>
+                                            <Button Grid.Column="1"
+                                                    Classes="action-secondary"
+                                                    Command="{Binding #SandboxRoot.DataContext.ToggleSectionExpandedCommand}"
+                                                    CommandParameter="{Binding .}"
+                                                    Content="{Binding ExpandButtonLabel}" />
+                                        </Grid>
 
-                                            <ItemsControl ItemsSource="{Binding Fields}" IsVisible="{Binding IsExpanded}">
-                                                <ItemsControl.ItemTemplate>
-                                                    <DataTemplate x:DataType="vm:SandboxFieldEditorViewModel">
-                                                        <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="14" Padding="14" Margin="0,0,0,10">
-                                                            <Grid ColumnDefinitions="*,270" ColumnSpacing="14">
-                                                                <StackPanel Spacing="8">
-                                                                    <TextBlock Classes="body" FontWeight="SemiBold" Text="{Binding Label}" />
-                                                                    <TextBlock Classes="caption" Text="{Binding HelpText}" TextWrapping="Wrap" IsVisible="{Binding HasHelpText}" />
+                                        <ItemsControl ItemsSource="{Binding Fields}" IsVisible="{Binding IsExpanded}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate x:DataType="vm:SandboxFieldEditorViewModel">
+                                                    <Border Background="Transparent" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" CornerRadius="0" Padding="14" Margin="0,0,0,8">
+                                                        <Grid ColumnDefinitions="*,320" ColumnSpacing="18">
+                                                            <StackPanel Spacing="8">
+                                                                <TextBlock Classes="body" FontWeight="SemiBold" Text="{Binding Label}" />
+                                                                <TextBlock Classes="caption" Text="{Binding HelpText}" TextWrapping="Wrap" IsVisible="{Binding HasHelpText}" />
 
-                                                                    <WrapPanel Orientation="Horizontal" ItemHeight="28">
-                                                                        <Border Classes="pill-soft-neutral" Margin="0,0,8,8" IsVisible="{Binding RequiresRestart}">
-                                                                            <TextBlock Classes="pill-text-neutral" Text="Restart required" />
-                                                                        </Border>
-                                                                        <Border Classes="pill-soft-green" Margin="0,0,8,8" IsVisible="{Binding HasPresetValue}">
-                                                                            <TextBlock Classes="pill-text-green" Text="{Binding PresetStatusText}" />
-                                                                        </Border>
-                                                                    </WrapPanel>
+                                                                <WrapPanel Orientation="Horizontal" ItemHeight="28">
+                                                                    <Border Classes="pill-soft-neutral" Margin="0,0,8,8" IsVisible="{Binding RequiresRestart}">
+                                                                        <TextBlock Classes="pill-text-neutral" Text="Restart required" />
+                                                                    </Border>
+                                                                    <Border Classes="pill-soft-green" Margin="0,0,8,8" IsVisible="{Binding HasPresetValue}">
+                                                                        <TextBlock Classes="pill-text-green" Text="{Binding PresetStatusText}" />
+                                                                    </Border>
+                                                                </WrapPanel>
 
-                                                                    <ItemsControl ItemsSource="{Binding Errors}" IsVisible="{Binding HasErrors}">
-                                                                        <ItemsControl.ItemTemplate>
-                                                                            <DataTemplate>
-                                                                                <TextBlock Classes="caption" Foreground="#A0462C" Text="{Binding .}" TextWrapping="Wrap" />
-                                                                            </DataTemplate>
-                                                                        </ItemsControl.ItemTemplate>
-                                                                    </ItemsControl>
-                                                                </StackPanel>
+                                                                <ItemsControl ItemsSource="{Binding Errors}" IsVisible="{Binding HasErrors}">
+                                                                    <ItemsControl.ItemTemplate>
+                                                                        <DataTemplate>
+                                                                            <TextBlock Classes="caption" Foreground="{DynamicResource DangerBrush}" Text="{Binding .}" TextWrapping="Wrap" />
+                                                                        </DataTemplate>
+                                                                    </ItemsControl.ItemTemplate>
+                                                                </ItemsControl>
+                                                            </StackPanel>
 
-                                                                <StackPanel Grid.Column="1" Spacing="8">
-                                                                    <TextBlock Classes="caption" Text="{Binding ReadOnlyValue}" TextWrapping="Wrap" IsVisible="{Binding IsReadOnly}" />
+                                                            <StackPanel Grid.Column="1" Spacing="8">
+                                                                <TextBlock Classes="caption" Text="{Binding ReadOnlyValue}" TextWrapping="Wrap" IsVisible="{Binding IsReadOnly}" />
 
-                                                                    <CheckBox Content="Enabled"
-                                                                              IsChecked="{Binding IsChecked, Mode=TwoWay}"
-                                                                              IsEnabled="{Binding CanEdit}"
-                                                                              IsVisible="{Binding IsCheckbox}" />
+                                                                <CheckBox Content="Enabled"
+                                                                          IsChecked="{Binding IsChecked, Mode=TwoWay}"
+                                                                          IsEnabled="{Binding CanEdit}"
+                                                                          IsVisible="{Binding IsCheckbox}" />
 
-                                                                    <ComboBox ItemsSource="{Binding Options}"
-                                                                              SelectedItem="{Binding SelectedOption}"
-                                                                              IsEnabled="{Binding CanEdit}"
-                                                                              IsVisible="{Binding IsSelect}">
-                                                                        <ComboBox.ItemTemplate>
-                                                                            <DataTemplate x:DataType="vm:SandboxFieldOptionViewModel">
-                                                                                <TextBlock Text="{Binding Label}" />
-                                                                            </DataTemplate>
-                                                                        </ComboBox.ItemTemplate>
-                                                                    </ComboBox>
+                                                                <ComboBox ItemsSource="{Binding Options}"
+                                                                          SelectedItem="{Binding SelectedOption}"
+                                                                          IsEnabled="{Binding CanEdit}"
+                                                                          IsVisible="{Binding IsSelect}">
+                                                                    <ComboBox.ItemTemplate>
+                                                                        <DataTemplate x:DataType="vm:SandboxFieldOptionViewModel">
+                                                                            <TextBlock Text="{Binding Label}" />
+                                                                        </DataTemplate>
+                                                                    </ComboBox.ItemTemplate>
+                                                                </ComboBox>
 
-                                                                    <TextBox Text="{Binding CurrentValue}"
-                                                                             IsEnabled="{Binding CanEdit}"
-                                                                             IsVisible="{Binding IsNumeric}" />
+                                                                <TextBox Text="{Binding CurrentValue}"
+                                                                         IsEnabled="{Binding CanEdit}"
+                                                                         IsVisible="{Binding IsNumeric}" />
 
-                                                                    <TextBox Text="{Binding CurrentValue}"
-                                                                             IsEnabled="{Binding CanEdit}"
-                                                                             PasswordChar="*"
-                                                                             IsVisible="{Binding IsPassword}" />
+                                                                <TextBox Text="{Binding CurrentValue}"
+                                                                         IsEnabled="{Binding CanEdit}"
+                                                                         PasswordChar="*"
+                                                                         IsVisible="{Binding IsPassword}" />
 
-                                                                    <TextBox Text="{Binding CurrentValue}"
-                                                                             IsEnabled="{Binding CanEdit}"
-                                                                             AcceptsReturn="True"
-                                                                             Height="92"
-                                                                             TextWrapping="Wrap"
-                                                                             IsVisible="{Binding IsMultiline}" />
+                                                                <TextBox Text="{Binding CurrentValue}"
+                                                                         IsEnabled="{Binding CanEdit}"
+                                                                         AcceptsReturn="True"
+                                                                         Height="92"
+                                                                         TextWrapping="Wrap"
+                                                                         IsVisible="{Binding IsMultiline}" />
 
-                                                                    <TextBox Text="{Binding CurrentValue}"
-                                                                             IsEnabled="{Binding CanEdit}"
-                                                                             IsVisible="{Binding IsTextBox}" />
-                                                                </StackPanel>
-                                                            </Grid>
-                                                        </Border>
-                                                    </DataTemplate>
-                                                </ItemsControl.ItemTemplate>
-                                            </ItemsControl>
-                                        </StackPanel>
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                                                                <TextBox Text="{Binding CurrentValue}"
+                                                                         IsEnabled="{Binding CanEdit}"
+                                                                         IsVisible="{Binding IsTextBox}" />
+                                                            </StackPanel>
+                                                        </Grid>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
 
-                        <Border Classes="surface-soft" Padding="18" IsVisible="{Binding HasNoSelectedCategory}">
-                            <TextBlock Classes="caption" Text="Select a category to browse its sandbox settings." TextWrapping="Wrap" />
-                        </Border>
-                    </StackPanel>
-                </ScrollViewer>
-            </Grid>
+                    <Border Classes="workspace-band" Padding="18" IsVisible="{Binding HasNoSelectedCategory}">
+                        <TextBlock Classes="caption" Text="Select a category to browse its sandbox settings." TextWrapping="Wrap" />
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
 
-            <Border Grid.Row="3" Classes="card" Padding="18">
+            <Border Grid.Row="4" Classes="danger-panel" Padding="16">
                 <StackPanel Spacing="12">
                     <TextBlock Classes="kicker" Text="Fresh World" />
                     <TextBlock Classes="body"
-                               Text="Delete the current multiplayer world so the next server start generates a fresh map from the current sandbox settings. ResetID is bumped and Seed is randomized on every reset."
+                               Text="Delete the current world so the next start generates a fresh map."
                                TextWrapping="Wrap" />
                     <TextBlock Classes="caption" Text="{Binding WorldResetSummary}" TextWrapping="Wrap" />
                     <TextBlock Classes="caption" Text="{Binding WorldDirectory}" TextWrapping="Wrap" />
@@ -295,17 +306,17 @@
                     </WrapPanel>
 
                     <WrapPanel Orientation="Horizontal" ItemHeight="38">
-                        <Button Classes="action-danger" Command="{Binding ResetWorldCommand}" Content="Reset World" />
+                        <Button Classes="action-danger" Command="{Binding ResetWorldCommand}" Content="Reset World" AutomationProperties.Name="Reset server world" />
                     </WrapPanel>
                 </StackPanel>
             </Border>
 
-            <Border Grid.Row="4" Classes="surface-dark" Padding="18">
+            <Border Grid.Row="5" Classes="command-strip" Padding="16">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
                     <StackPanel Spacing="8">
-                        <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Actions" />
-                        <TextBlock Classes="body" Foreground="#F7F0E7" Text="{Binding ActionSummary}" TextWrapping="Wrap" />
-                        <TextBlock Classes="caption" Foreground="#A8B6D4" Text="{Binding ValidationSummary}" TextWrapping="Wrap" />
+                        <TextBlock Classes="kicker" Foreground="{DynamicResource AccentBrush}" Text="Actions" />
+                        <TextBlock Classes="body" Foreground="{DynamicResource TextBrush}" Text="{Binding ActionSummary}" TextWrapping="Wrap" />
+                        <TextBlock Classes="caption" Foreground="{DynamicResource TextSubtleBrush}" Text="{Binding ValidationSummary}" TextWrapping="Wrap" />
                     </StackPanel>
 
                     <WrapPanel Grid.Column="1" Orientation="Horizontal" ItemWidth="152" ItemHeight="38">

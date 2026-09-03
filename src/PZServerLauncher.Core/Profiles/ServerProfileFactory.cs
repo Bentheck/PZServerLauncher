@@ -26,7 +26,8 @@ public static class ServerProfileFactory
         int defaultPort,
         IEnumerable<string> existingProfileIds,
         string? baseDirectory = null,
-        int preferredMemoryInGigabytes = DefaultPreferredMemoryInGigabytes)
+        int preferredMemoryInGigabytes = DefaultPreferredMemoryInGigabytes,
+        string steamBranch = "public")
     {
         var trimmedDisplayName = string.IsNullOrWhiteSpace(displayName)
             ? DefaultDisplayName
@@ -48,6 +49,7 @@ public static class ServerProfileFactory
             InstallDirectory = BuildInstallDirectory(profileId, baseDirectory),
             CacheDirectory = BuildCacheDirectory(profileId, baseDirectory),
             Branch = ProjectZomboidBranch.Unstable42,
+            SteamBranch = string.IsNullOrWhiteSpace(steamBranch) ? "public" : steamBranch.Trim(),
             DefaultPort = validatedPort,
             UdpPort = validatedPort + UdpPortOffset,
             RconPort = validatedPort + RconPortOffset,

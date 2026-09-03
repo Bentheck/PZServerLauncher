@@ -9,22 +9,22 @@
              x:Class="PZServerLauncher.App.Views.LogsWorkspaceView"
              x:Name="LogsRoot"
              x:DataType="vm:LogsWorkspaceViewModel">
-    <Grid RowDefinitions="Auto,*" RowSpacing="16">
-        <Border Classes="card" Padding="22">
+    <Grid RowDefinitions="Auto,*" RowSpacing="8">
+        <Border Classes="workspace-band" Padding="14,12">
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18">
                 <StackPanel Spacing="8">
                     <TextBlock Classes="kicker" Text="Live Operations Console" />
                     <TextBlock Classes="panel-title" FontSize="28" Text="{Binding ConsoleHeroTitle}" />
                     <TextBlock Classes="body" Text="{Binding ConsoleHeroCopy}" TextWrapping="Wrap" />
-                    <WrapPanel Orientation="Horizontal" ItemHeight="30">
-                        <Border Background="#2A2927" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
-                            <TextBlock Foreground="#F7F0E7" FontSize="11" Text="{Binding Branch}" />
+                    <WrapPanel Orientation="Horizontal">
+                        <Border Background="{DynamicResource PanelSubtleBrush}" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                            <TextBlock Foreground="{DynamicResource TextBrush}" FontSize="11" Text="{Binding Branch}" />
                         </Border>
-                        <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
-                            <TextBlock Foreground="#C9D5EA" FontSize="11" Text="{Binding ConsoleStatusSummary}" />
+                        <Border Background="{DynamicResource PanelSubtleBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                            <TextBlock Foreground="{DynamicResource TextMutedBrush}" FontSize="11" Text="{Binding ConsoleStatusSummary}" />
                         </Border>
-                        <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
-                            <TextBlock Foreground="#C9D5EA" FontSize="11" Text="{Binding ActivePlayerCountSummary}" />
+                        <Border Background="{DynamicResource PanelSubtleBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                            <TextBlock Foreground="{DynamicResource TextMutedBrush}" FontSize="11" Text="{Binding ActivePlayerCountSummary}" />
                         </Border>
                     </WrapPanel>
                 </StackPanel>
@@ -42,9 +42,9 @@
             </Grid>
         </Border>
 
-        <Grid Grid.Row="1" ColumnDefinitions="310,*" ColumnSpacing="16">
-            <StackPanel Spacing="16">
-                <Border Classes="card" Padding="16">
+        <Grid Grid.Row="1" ColumnDefinitions="310,*" ColumnSpacing="12">
+            <StackPanel Spacing="8">
+                <Border Classes="workspace-band" Padding="12,10">
                     <StackPanel Spacing="10">
                         <TextBlock Classes="kicker" Text="Live Controls" />
                         <TextBlock Classes="body" Text="{Binding BroadcastGuidance}" TextWrapping="Wrap" />
@@ -88,7 +88,7 @@
                     </StackPanel>
                 </Border>
 
-                <Border Classes="card" Padding="16">
+                <Border Classes="workspace-band" Padding="12,10">
                     <StackPanel Spacing="8">
                         <TextBlock Classes="kicker" Text="Connected Players" />
                         <ScrollViewer HorizontalScrollBarVisibility="Disabled"
@@ -97,7 +97,7 @@
                             <ItemsControl ItemsSource="{Binding ConnectedPlayers}" IsVisible="{Binding HasConnectedPlayers}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="vm:LogsWorkspaceViewModel+ConnectedPlayerRowViewModel">
-                                        <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="12" Padding="12" Margin="0,0,0,8">
+                                        <Border Classes="row-strip">
                                             <StackPanel Spacing="8">
                                                 <StackPanel Spacing="4">
                                                     <TextBlock FontSize="16" FontWeight="SemiBold" Text="{Binding UserName}" />
@@ -105,8 +105,8 @@
                                                     <TextBlock Classes="caption" Text="{Binding LastSeenSummary}" TextWrapping="Wrap" />
                                                 </StackPanel>
                                                 <WrapPanel Orientation="Horizontal" ItemHeight="34">
-                                                    <Button Classes="action-danger" Command="{Binding #LogsRoot.DataContext.KickPlayerCommand}" CommandParameter="{Binding .}" Content="Kick" IsEnabled="{Binding #LogsRoot.DataContext.CanSendCommands}" Margin="0,0,8,0" />
-                                                    <Button Classes="action-danger" Command="{Binding #LogsRoot.DataContext.BanPlayerCommand}" CommandParameter="{Binding .}" Content="Ban" IsEnabled="{Binding #LogsRoot.DataContext.CanSendCommands}" Margin="0,0,8,0" />
+                                                    <Button Classes="action-danger" Command="{Binding #LogsRoot.DataContext.KickPlayerCommand}" CommandParameter="{Binding .}" Content="Kick" AutomationProperties.Name="Kick selected player" IsEnabled="{Binding #LogsRoot.DataContext.CanSendCommands}" Margin="0,0,8,0" />
+                                                    <Button Classes="action-danger" Command="{Binding #LogsRoot.DataContext.BanPlayerCommand}" CommandParameter="{Binding .}" Content="Ban" AutomationProperties.Name="Ban selected player" IsEnabled="{Binding #LogsRoot.DataContext.CanSendCommands}" Margin="0,0,8,0" />
                                                     <Button Classes="action-secondary" Command="{Binding #LogsRoot.DataContext.WhitelistPlayerCommand}" CommandParameter="{Binding .}" Content="Whitelist" IsEnabled="{Binding #LogsRoot.DataContext.CanSendCommands}" />
                                                 </WrapPanel>
                                             </StackPanel>
@@ -117,37 +117,37 @@
                         </ScrollViewer>
                         <TextBlock Classes="caption"
                                    IsVisible="{Binding HasNoConnectedPlayers}"
-                                   Text="No connected players have been inferred yet. Keep the console open during joins or request the player list while the server is live."
+                                   Text="No players inferred yet. Keep the console open or request the live list."
                                    TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
 
-                <Border Classes="surface-dark" Padding="16">
+                <Border Classes="workspace-band" Padding="12,10">
                     <StackPanel Spacing="8">
-                        <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Live Ops Briefing" />
-                        <TextBlock FontSize="22" FontWeight="SemiBold" Foreground="#F7F0E7" Text="{Binding FeedHealthHeadline}" TextWrapping="Wrap" />
-                        <TextBlock Classes="body" Foreground="#C9D5EA" Text="{Binding LiveOpsTriageSummary}" TextWrapping="Wrap" />
-                        <TextBlock Classes="caption" Foreground="#A8B6D4" Text="{Binding RosterPostureSummary}" TextWrapping="Wrap" />
+                        <TextBlock Classes="kicker" Foreground="{DynamicResource AccentBrush}" Text="Live Ops Briefing" />
+                        <TextBlock FontSize="22" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" Text="{Binding FeedHealthHeadline}" TextWrapping="Wrap" />
+                        <TextBlock Classes="body" Foreground="{DynamicResource TextMutedBrush}" Text="{Binding LiveOpsTriageSummary}" TextWrapping="Wrap" />
+                        <TextBlock Classes="caption" Foreground="{DynamicResource TextSubtleBrush}" Text="{Binding RosterPostureSummary}" TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
             </StackPanel>
 
-            <Grid Grid.Column="1" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="16">
-                <Border Classes="surface-dark" Padding="16">
+            <Grid Grid.Column="1" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="8">
+                <Border Classes="workspace-band" Padding="12,10">
                     <Grid RowDefinitions="Auto,*" RowSpacing="12">
                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                             <StackPanel Spacing="4">
-                                <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Live Stream" />
-                                <TextBlock FontSize="22" FontWeight="SemiBold" Foreground="#F7F0E7" Text="{Binding LogStreamSummary}" TextWrapping="Wrap" />
-                                <TextBlock Classes="caption" Foreground="#A8B6D4" Text="{Binding FriendlyFeedSummary}" TextWrapping="Wrap" />
-                                <TextBlock Classes="caption" Foreground="#A8B6D4" Text="{Binding SignalCountSummary}" TextWrapping="Wrap" />
+                                <TextBlock Classes="kicker" Foreground="{DynamicResource AccentBrush}" Text="Live Stream" />
+                                <TextBlock FontSize="22" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" Text="{Binding LogStreamSummary}" TextWrapping="Wrap" />
+                                <TextBlock Classes="caption" Foreground="{DynamicResource TextSubtleBrush}" Text="{Binding FriendlyFeedSummary}" TextWrapping="Wrap" />
+                                <TextBlock Classes="caption" Foreground="{DynamicResource TextSubtleBrush}" Text="{Binding SignalCountSummary}" TextWrapping="Wrap" />
                             </StackPanel>
-                            <Border Grid.Column="1" Background="#2A2927" CornerRadius="999" Padding="10,5" VerticalAlignment="Top">
-                                <TextBlock Foreground="#F7F0E7" FontSize="11" Text="{Binding ConsoleModeSummary}" />
+                            <Border Grid.Column="1" Background="{DynamicResource PanelSubtleBrush}" CornerRadius="999" Padding="10,5" VerticalAlignment="Top">
+                                <TextBlock Foreground="{DynamicResource TextBrush}" FontSize="11" Text="{Binding ConsoleModeSummary}" />
                             </Border>
                         </Grid>
 
-                        <Border Grid.Row="1" Background="#171310" CornerRadius="16" Padding="14">
+                        <Border Grid.Row="1" Classes="terminal-panel" Padding="12">
                             <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                                           VerticalScrollBarVisibility="Auto"
                                           MaxHeight="460">
@@ -170,7 +170,7 @@
                 </Border>
 
                 <Grid Grid.Row="1" ColumnDefinitions="*,*,*" ColumnSpacing="14" IsVisible="{Binding HasLogs}">
-                    <Border Classes="card" Padding="16">
+                    <Border Classes="workspace-band" Padding="12,10">
                         <StackPanel Spacing="8">
                             <TextBlock Classes="kicker" Text="Recent Player Signals" />
                             <ScrollViewer HorizontalScrollBarVisibility="Disabled"
@@ -184,11 +184,11 @@
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
                             </ScrollViewer>
-                            <TextBlock Classes="caption" IsVisible="{Binding HasNoPlayerSignals}" Text="Player join and leave signals will appear here when the host can infer them from runtime logs or launcher-issued roster commands." TextWrapping="Wrap" />
+                            <TextBlock Classes="caption" IsVisible="{Binding HasNoPlayerSignals}" Text="Join and leave signals appear here when the runtime can infer them." TextWrapping="Wrap" />
                         </StackPanel>
                     </Border>
 
-                    <Border Grid.Column="1" Classes="card" Padding="16">
+                    <Border Grid.Column="1" Classes="workspace-band" Padding="12,10">
                         <StackPanel Spacing="8">
                             <TextBlock Classes="kicker" Text="Recent Operator Actions" />
                             <ScrollViewer HorizontalScrollBarVisibility="Disabled"
@@ -206,7 +206,7 @@
                         </StackPanel>
                     </Border>
 
-                    <Border Grid.Column="2" Classes="card" Padding="16">
+                    <Border Grid.Column="2" Classes="workspace-band" Padding="12,10">
                         <StackPanel Spacing="8">
                             <TextBlock Classes="kicker" Text="Live Ops Checklist" />
                             <ScrollViewer HorizontalScrollBarVisibility="Disabled"
@@ -215,7 +215,7 @@
                                 <ItemsControl ItemsSource="{Binding LiveOpsChecklist}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="12" Padding="10" Margin="0,0,0,8">
+                                            <Border Classes="row-strip">
                                                 <TextBlock Classes="caption" Text="{Binding .}" TextWrapping="Wrap" />
                                             </Border>
                                         </DataTemplate>
@@ -227,17 +227,17 @@
                 </Grid>
 
                 <Border Grid.Row="2"
-                        Classes="card"
+                        Classes="workspace-band"
                         Padding="16"
                         IsVisible="{Binding HasLogs}">
                     <StackPanel Spacing="10">
                         <TextBlock Classes="kicker" Text="Raw Buffer" />
                         <TextBlock Classes="caption" Text="{Binding RawBufferSummary}" TextWrapping="Wrap" />
                         <TextBlock Classes="caption"
-                                   Text="This buffer keeps the uncollapsed runtime output so you can inspect the exact lines behind the launcher-friendly feed."
+                                   Text="Raw runtime output behind the friendly feed."
                                    TextWrapping="Wrap" />
 
-                        <Border Background="#171310" CornerRadius="16" Padding="14">
+                        <Border Classes="terminal-panel" Padding="12">
                             <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                                           VerticalScrollBarVisibility="Auto"
                                           MaxHeight="280">
@@ -259,13 +259,13 @@
                 </Border>
 
                 <Border Grid.Row="3"
-                        Background="#14FFFFFF"
-                        BorderBrush="#24FFFFFF"
-                        BorderThickness="1"
-                        CornerRadius="14"
+                        Background="{DynamicResource PanelSubtleBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="0,1,0,1"
+                        CornerRadius="0"
                         Padding="16"
                         IsVisible="{Binding HasNoLogs}">
-                    <TextBlock Classes="body" Text="No buffered logs are available yet. Start or reload the profile, then return here to watch the live console fill with runtime output, roster changes, and operator commands." TextWrapping="Wrap" />
+                    <TextBlock Classes="body" Text="No buffered logs yet. Start or reload the profile, then watch live output here." TextWrapping="Wrap" />
                 </Border>
             </Grid>
         </Grid>

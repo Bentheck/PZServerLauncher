@@ -9,42 +9,42 @@
              x:Class="PZServerLauncher.App.Views.InstallUpdateWorkspaceView"
              x:DataType="vm:InstallUpdateWorkspaceViewModel">
     <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-        <Grid RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="16">
-            <Border Classes="card" Padding="22">
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="8">
+            <Border Classes="workspace-band" Padding="14,12">
                 <Grid ColumnDefinitions="*,260" ColumnSpacing="18">
                     <StackPanel Spacing="8">
                         <TextBlock Classes="kicker" Text="Install" />
                         <TextBlock Classes="panel-title"
-                                   FontSize="30"
+                                   FontSize="26"
                                    Text="{Binding ProfileDisplayName}"
                                    TextWrapping="Wrap" />
                         <TextBlock Classes="body"
                                    FontSize="16"
-                                   Foreground="#C9D5EA"
+                                   Foreground="{DynamicResource TextMutedBrush}"
                                    Text="{Binding DeploymentPosture}"
                                    TextWrapping="Wrap" />
-                        <WrapPanel Margin="0,8,0,0" Orientation="Horizontal" ItemHeight="28">
-                            <Border Background="#233238" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
-                                <TextBlock Foreground="#F7F8F6" FontSize="11" Text="{Binding Branch}" />
+                        <WrapPanel Margin="0,8,0,0" Orientation="Horizontal">
+                            <Border Background="{DynamicResource PanelSubtleBrush}" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                <TextBlock Foreground="{DynamicResource TextBrush}" FontSize="11" Text="{Binding Branch}" />
                             </Border>
-                            <Border Background="#224FD8A9" BorderBrush="#6B8CF0CC" BorderThickness="1" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
-                                <TextBlock Foreground="#8CF0CC" FontSize="11" Text="{Binding InstallSignal}" />
+                            <Border Background="{DynamicResource AccentSoftBrush}" BorderBrush="{DynamicResource AccentBrush}" BorderThickness="1" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                <TextBlock Foreground="{DynamicResource AccentBrush}" FontSize="11" Text="{Binding InstallSignal}" />
                             </Border>
-                            <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
-                                <TextBlock Foreground="#C9D5EA" FontSize="11" Text="{Binding LaunchModeSignal}" />
+                            <Border Background="{DynamicResource PanelSubtleBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                <TextBlock Foreground="{DynamicResource TextMutedBrush}" FontSize="11" Text="{Binding LaunchModeSignal}" />
                             </Border>
-                            <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
-                                <TextBlock Foreground="#C9D5EA" FontSize="11" Text="{Binding BackupSignal}" />
+                            <Border Background="{DynamicResource PanelSubtleBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                <TextBlock Foreground="{DynamicResource TextMutedBrush}" FontSize="11" Text="{Binding BackupSignal}" />
                             </Border>
                         </WrapPanel>
                     </StackPanel>
 
-                    <Border Grid.Column="1" Classes="surface-soft" Padding="16">
+                    <Border Grid.Column="1" Classes="inline-warning" Padding="10,8">
                         <StackPanel Spacing="6">
                             <TextBlock Classes="kicker" Text="Recommended Next Step" />
                             <TextBlock Classes="body"
                                        FontWeight="SemiBold"
-                                       Foreground="#EDF4FF"
+                                       Foreground="{DynamicResource TextBrush}"
                                        Text="{Binding NextRecommendedAction}"
                                        TextWrapping="Wrap" />
                             <TextBlock Classes="caption" Text="{Binding RuntimeActionSummary}" TextWrapping="Wrap" />
@@ -53,105 +53,126 @@
                 </Grid>
             </Border>
 
-            <Grid Grid.Row="1" ColumnDefinitions="*,*,*" ColumnSpacing="16">
-                <Border Classes="card" Padding="18">
+            <Grid Grid.Row="1" RowDefinitions="Auto,Auto,Auto" RowSpacing="0">
+                <Border Classes="workspace-band" Padding="12,10">
                     <StackPanel Spacing="10">
-                        <TextBlock Classes="kicker" Text="Step 1" />
-                        <TextBlock Classes="panel-title" FontSize="22" Text="Choose where this server lives" />
-                        <TextBlock Classes="caption"
-                                   Text="By default the launcher creates PZServers\\Installs and PZServers\\Profiles inside its own install folder. Override either path only if you need a custom layout."
+                        <TextBlock Classes="kicker" Text="Path Setup" />
+                        <TextBlock Classes="panel-title" FontSize="20" Text="Choose where this server lives" />
+                        <TextBlock Classes="caption" MaxLines="2"
+                                   Text="Defaults live under PZServers. Override paths only for a custom layout."
                                    TextWrapping="Wrap" />
 
-                        <StackPanel Spacing="4">
-                            <TextBlock Classes="body" Text="Install folder" />
-                            <TextBox Text="{Binding EditableInstallDirectory}" />
-                        </StackPanel>
-                        <WrapPanel Orientation="Horizontal" ItemHeight="34">
-                            <Button Classes="action-secondary" Command="{Binding BrowseInstallDirectoryCommand}" Content="Browse Install Folder" />
-                            <Button Classes="action-secondary" Command="{Binding ResetPathOverridesCommand}" Content="Reset" />
-                        </WrapPanel>
+                        <Grid ColumnDefinitions="*,Auto,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="8" RowSpacing="8">
+                            <StackPanel Spacing="4">
+                                <TextBlock Classes="body" Text="Install folder" />
+                                <TextBox Text="{Binding EditableInstallDirectory}" />
+                            </StackPanel>
+                            <Button Grid.Column="1" Classes="action-secondary" Command="{Binding BrowseInstallDirectoryCommand}" Content="Browse Install" />
+                            <Button Grid.Column="2" Classes="action-secondary" Command="{Binding ResetPathOverridesCommand}" Content="Reset" />
 
-                        <StackPanel Spacing="4">
-                            <TextBlock Classes="body" Text="Profile data folder" />
-                            <TextBox Text="{Binding EditableCacheDirectory}" />
-                        </StackPanel>
-                        <WrapPanel Orientation="Horizontal" ItemHeight="34">
-                            <Button Classes="action-secondary" Command="{Binding BrowseCacheDirectoryCommand}" Content="Browse Cache Folder" />
-                            <Button Classes="action-primary" Command="{Binding SavePathOverridesCommand}" Content="Save Folders" />
-                        </WrapPanel>
+                            <StackPanel Grid.Row="1" Spacing="4">
+                                <TextBlock Classes="body" Text="Profile data folder" />
+                                <TextBox Text="{Binding EditableCacheDirectory}" />
+                            </StackPanel>
+                            <Button Grid.Row="1" Grid.Column="1" Classes="action-secondary" Command="{Binding BrowseCacheDirectoryCommand}" Content="Browse Data" />
+                            <Button Grid.Row="1" Grid.Column="2" Classes="action-primary" Command="{Binding SavePathOverridesCommand}" Content="Save Folders" />
+                        </Grid>
 
                         <TextBlock Classes="caption" Text="{Binding PathOverrideSummary}" TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
 
-                <Border Grid.Column="1" Classes="card" Padding="18">
+                <Border Grid.Row="1" Classes="workspace-band" Padding="12,10">
                     <StackPanel Spacing="10">
-                        <TextBlock Classes="kicker" Text="Step 2" />
-                        <TextBlock Classes="panel-title" FontSize="22" Text="Install or update the server" />
-                        <TextBlock Classes="caption"
+                        <TextBlock Classes="kicker" Text="Install / Update" />
+                        <TextBlock Classes="panel-title" FontSize="20" Text="Install or update the server" />
+                        <TextBlock Classes="caption" MaxLines="2"
                                    Text="{Binding BranchInstallStatus}"
                                    TextWrapping="Wrap" />
 
-                        <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
-                            <Border Classes="metric-card" Padding="12">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                            <StackPanel Spacing="4">
+                                <TextBlock Classes="body" Text="Server version" />
+                                <ComboBox ItemsSource="{Binding SteamBranches}"
+                                          SelectedItem="{Binding SelectedSteamBranch}"
+                                          MinWidth="320"
+                                          HorizontalAlignment="Left"
+                                          AutomationProperties.Name="Project Zomboid server version">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:SteamBranchOptionViewModel">
+                                            <TextBlock Text="{Binding DisplayLabel}" />
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                            </StackPanel>
+                            <Button Grid.Column="1"
+                                    Classes="action-secondary"
+                                    Command="{Binding RefreshSteamBranchesCommand}"
+                                    Content="Refresh Versions"
+                                    AutomationProperties.Name="Refresh available server versions" />
+                        </Grid>
+                        <TextBlock Classes="caption"
+                                   Text="{Binding SteamVersionStatus}"
+                                   TextWrapping="Wrap" />
+
+                        <Grid ColumnDefinitions="*,*,Auto" ColumnSpacing="10">
+                            <Border Classes="row-strip">
                                 <StackPanel Spacing="4">
                                     <TextBlock Classes="kicker" Text="Install" />
                                     <TextBlock Classes="body" FontWeight="SemiBold" Text="{Binding InstallSignal}" />
-                                    <TextBlock Classes="caption" Text="{Binding InstallSignalSummary}" TextWrapping="Wrap" />
+                                    <TextBlock Classes="caption" Text="{Binding InstallSignalSummary}" TextWrapping="Wrap" MaxLines="2" />
                                 </StackPanel>
                             </Border>
-                            <Border Grid.Column="1" Classes="metric-card" Padding="12">
+                            <Border Grid.Column="1" Classes="row-strip">
                                 <StackPanel Spacing="4">
                                     <TextBlock Classes="kicker" Text="Config" />
                                     <TextBlock Classes="body" FontWeight="SemiBold" Text="{Binding ConfigSignal}" />
-                                    <TextBlock Classes="caption" Text="{Binding ConfigSignalSummary}" TextWrapping="Wrap" />
+                                    <TextBlock Classes="caption" Text="{Binding ConfigSignalSummary}" TextWrapping="Wrap" MaxLines="2" />
                                 </StackPanel>
                             </Border>
+                            <StackPanel Grid.Column="2" Width="280" Spacing="8">
+                                <Button Classes="action-primary" Command="{Binding InstallCommand}" Content="Install Server" IsEnabled="{Binding CanQueueInstall}" />
+                                <Button Classes="action-secondary" Command="{Binding UpdateCommand}" Content="Update Server" IsEnabled="{Binding CanQueueUpdate}" />
+                                <Button Classes="action-secondary" Command="{Binding BackupCommand}" Content="Create Backup" />
+                            </StackPanel>
                         </Grid>
 
-                        <WrapPanel Orientation="Horizontal" ItemHeight="36">
-                            <Button Classes="action-primary" Command="{Binding InstallCommand}" Content="Install Server" IsEnabled="{Binding CanQueueInstall}" />
-                            <Button Classes="action-secondary" Command="{Binding UpdateCommand}" Content="Update Server" IsEnabled="{Binding CanQueueUpdate}" />
-                            <Button Classes="action-secondary" Command="{Binding BackupCommand}" Content="Create Backup" />
-                        </WrapPanel>
-
-                        <TextBlock Classes="body" Text="{Binding BackupSafety}" TextWrapping="Wrap" />
-                        <TextBlock Classes="caption" Text="{Binding MaintenanceQueueSummary}" TextWrapping="Wrap" />
-                        <TextBlock Classes="caption" Text="{Binding PreflightSummary}" TextWrapping="Wrap" />
+                        <TextBlock Classes="body" MaxLines="2" Text="{Binding BackupSafety}" TextWrapping="Wrap" />
+                        <TextBlock Classes="caption" MaxLines="2" Text="{Binding MaintenanceQueueSummary}" TextWrapping="Wrap" />
+                        <TextBlock Classes="caption" MaxLines="2" Text="{Binding PreflightSummary}" TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
 
-                <Border Grid.Column="2" Classes="card" Padding="18">
+                <Border Grid.Row="2" Classes="workspace-band" Padding="12,10">
                     <StackPanel Spacing="10">
-                        <TextBlock Classes="kicker" Text="Step 3" />
-                        <TextBlock Classes="panel-title" FontSize="22" Text="Run the server" />
-                        <TextBlock Classes="caption"
+                        <TextBlock Classes="kicker" Text="Runtime" />
+                        <TextBlock Classes="panel-title" FontSize="20" Text="Run the server" />
+                        <TextBlock Classes="caption" MaxLines="2"
                                    Text="{Binding RuntimeActionHeadline}"
                                    TextWrapping="Wrap" />
 
-                        <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
-                            <Border Classes="metric-card" Padding="12">
+                        <Grid ColumnDefinitions="*,*,Auto" ColumnSpacing="10">
+                            <Border Classes="row-strip">
                                 <StackPanel Spacing="4">
                                     <TextBlock Classes="kicker" Text="Runtime" />
                                     <TextBlock Classes="body" FontWeight="SemiBold" Text="{Binding RuntimeState}" />
-                                    <TextBlock Classes="caption" Text="{Binding RuntimeActionSummary}" TextWrapping="Wrap" />
+                                    <TextBlock Classes="caption" Text="{Binding RuntimeActionSummary}" TextWrapping="Wrap" MaxLines="2" />
                                 </StackPanel>
                             </Border>
-                            <Border Grid.Column="1" Classes="metric-card" Padding="12">
+                            <Border Grid.Column="1" Classes="row-strip">
                                 <StackPanel Spacing="4">
                                     <TextBlock Classes="kicker" Text="Launch Path" />
                                     <TextBlock Classes="body" FontWeight="SemiBold" Text="{Binding LaunchModeLabel}" />
-                                    <TextBlock Classes="caption" Text="{Binding LaunchModeSummary}" TextWrapping="Wrap" />
+                                    <TextBlock Classes="caption" Text="{Binding LaunchModeSummary}" TextWrapping="Wrap" MaxLines="2" />
                                 </StackPanel>
                             </Border>
+                            <WrapPanel Grid.Column="2" Width="280" Orientation="Horizontal" ItemHeight="36">
+                                <Button Classes="action-primary" Command="{Binding StartCommand}" Content="Start" Margin="0,0,8,8" />
+                                <Button Classes="action-danger" Command="{Binding StopCommand}" Content="Stop" Margin="0,0,8,8" />
+                                <Button Classes="action-secondary" Command="{Binding RestartCommand}" Content="Restart" Margin="0,0,8,8" />
+                                <Button Classes="action-secondary" Command="{Binding RefreshCommand}" Content="Refresh" Margin="0,0,8,8" />
+                            </WrapPanel>
                         </Grid>
-
-                        <WrapPanel Orientation="Horizontal" ItemHeight="36">
-                            <Button Classes="action-primary" Command="{Binding StartCommand}" Content="Start" />
-                            <Button Classes="action-secondary" Command="{Binding StopCommand}" Content="Stop" />
-                            <Button Classes="action-secondary" Command="{Binding RestartCommand}" Content="Restart" />
-                            <Button Classes="action-secondary" Command="{Binding RefreshCommand}" Content="Refresh" />
-                        </WrapPanel>
 
                         <TextBlock Classes="caption" Text="{Binding LastJobSummary}" TextWrapping="Wrap" />
                     </StackPanel>
@@ -159,14 +180,14 @@
             </Grid>
 
             <Grid Grid.Row="2" ColumnDefinitions="*,*" ColumnSpacing="16">
-                <Border Classes="card" Padding="18">
+                <Border Classes="workspace-band" Padding="12,10">
                     <StackPanel Spacing="8">
                         <TextBlock Classes="kicker" Text="Recent Install Jobs" />
                         <TextBlock Classes="caption" Text="{Binding InstallJobHistorySummary}" TextWrapping="Wrap" />
                         <ItemsControl ItemsSource="{Binding RecentInstallJobs}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="12" Padding="12" Margin="0,0,0,8">
+                                    <Border Classes="data-row" Margin="0,0,0,8">
                                         <StackPanel Spacing="4">
                                             <TextBlock FontWeight="SemiBold" Text="{Binding Status}" />
                                             <TextBlock Classes="caption" Text="{Binding Detail}" TextWrapping="Wrap" />
@@ -180,14 +201,14 @@
                     </StackPanel>
                 </Border>
 
-                <Border Grid.Column="1" Classes="card" Padding="18">
+                <Border Grid.Column="1" Classes="workspace-band" Padding="12,10">
                     <StackPanel Spacing="8">
                         <TextBlock Classes="kicker" Text="Recent Update Jobs" />
                         <TextBlock Classes="caption" Text="{Binding UpdateJobHistorySummary}" TextWrapping="Wrap" />
                         <ItemsControl ItemsSource="{Binding RecentUpdateJobs}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="12" Padding="12" Margin="0,0,0,8">
+                                    <Border Classes="data-row" Margin="0,0,0,8">
                                         <StackPanel Spacing="4">
                                             <TextBlock FontWeight="SemiBold" Text="{Binding Status}" />
                                             <TextBlock Classes="caption" Text="{Binding Detail}" TextWrapping="Wrap" />
@@ -202,19 +223,19 @@
                 </Border>
             </Grid>
 
-            <Border Grid.Row="3" Classes="card" Padding="18">
+            <Border Grid.Row="3" Classes="danger-panel" Padding="16">
                 <StackPanel Spacing="14">
                     <StackPanel Spacing="6">
                         <TextBlock Classes="kicker" Text="Danger Zone" />
                         <TextBlock Classes="panel-title" FontSize="24" Text="Uninstall or delete this server" />
                         <TextBlock Classes="body"
-                                   Foreground="#FFB36B"
+                                   Foreground="{DynamicResource AccentBrush}"
                                    Text="{Binding RetirementGuardrailSummary}"
                                    TextWrapping="Wrap" />
                     </StackPanel>
 
                     <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
-                        <Border Background="#22FFB36B" BorderBrush="#72FFB36B" BorderThickness="1" CornerRadius="16" Padding="16">
+                        <Border Classes="row-strip">
                             <StackPanel Spacing="10">
                                 <TextBlock Classes="kicker" Text="Uninstall Server" />
                                 <TextBlock Classes="body" FontWeight="SemiBold" Text="Remove the dedicated-server files only" />
@@ -226,16 +247,16 @@
                                         IsEnabled="{Binding CanArmUninstallServer}"
                                         IsVisible="{Binding ShowUninstallServerArmButton}" />
 
-                                <Border Background="#1EFF8F8F"
-                                        BorderBrush="#D48A6D"
-                                        BorderThickness="1"
-                                        CornerRadius="12"
+                                <Border Background="{DynamicResource DangerSoftBrush}"
+                                        BorderBrush="{DynamicResource DangerBorderBrush}"
+                                        BorderThickness="0,1,0,1"
+                                        CornerRadius="0"
                                         Padding="12"
                                         IsVisible="{Binding ShowUninstallServerConfirmation}">
                                     <StackPanel Spacing="8">
                                         <TextBlock Classes="body"
                                                    FontWeight="SemiBold"
-                                                   Foreground="#FFF3F3"
+                                                   Foreground="{DynamicResource DangerBrush}"
                                                    Text="Confirm uninstall. This keeps the profile, backups, and cache so you can reinstall later."
                                                    TextWrapping="Wrap" />
                                         <WrapPanel Orientation="Horizontal" ItemHeight="36">
@@ -252,7 +273,7 @@
                             </StackPanel>
                         </Border>
 
-                        <Border Grid.Column="1" Background="#22FF8F8F" BorderBrush="#72FF8F8F" BorderThickness="1" CornerRadius="16" Padding="16">
+                        <Border Grid.Column="1" Classes="danger-panel">
                             <StackPanel Spacing="10">
                                 <TextBlock Classes="kicker" Text="Delete Profile" />
                                 <TextBlock Classes="body" FontWeight="SemiBold" Text="Remove this server from the launcher" />
@@ -264,17 +285,17 @@
                                         IsEnabled="{Binding CanArmDeleteProfile}"
                                         IsVisible="{Binding ShowDeleteProfileArmButton}" />
 
-                                <Border Background="#1EFF8F8F"
-                                        BorderBrush="#D48A6D"
-                                        BorderThickness="1"
-                                        CornerRadius="12"
+                                <Border Background="{DynamicResource DangerSoftBrush}"
+                                        BorderBrush="{DynamicResource DangerBorderBrush}"
+                                        BorderThickness="0,1,0,1"
+                                        CornerRadius="0"
                                         Padding="12"
                                         IsVisible="{Binding ShowDeleteProfileConfirmation}">
                                     <StackPanel Spacing="8">
                                         <TextBlock Classes="body"
                                                    FontWeight="SemiBold"
-                                                   Foreground="#FFF3F3"
-                                                   Text="Confirm delete. The launcher will remove this profile and clean up launcher-managed folders, backups, logs, and runtime artifacts."
+                                                   Foreground="{DynamicResource DangerBrush}"
+                                                   Text="Confirm delete. This removes the profile and launcher-managed artifacts."
                                                    TextWrapping="Wrap" />
                                         <WrapPanel Orientation="Horizontal" ItemHeight="36">
                                             <Button Classes="action-danger"

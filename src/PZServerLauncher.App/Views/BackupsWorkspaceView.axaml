@@ -11,34 +11,34 @@
     <ScrollViewer HorizontalScrollBarVisibility="Disabled">
         <Grid RowDefinitions="Auto,*" RowSpacing="16">
             <Grid ColumnDefinitions="1.08*,.92*" ColumnSpacing="16">
-                <Border Classes="card" Padding="24">
+                <Border Classes="workspace-band" Padding="24">
                     <StackPanel Spacing="8">
                         <TextBlock Classes="kicker" Text="Recovery Console" />
                         <TextBlock Classes="panel-title" FontSize="30" Text="{Binding RecoveryHeroTitle}" />
                         <TextBlock Classes="body"
                                    FontSize="16"
-                                   Foreground="#C9D5EA"
+                                   Foreground="{DynamicResource TextMutedBrush}"
                                    Text="{Binding RecoveryHeroCopy}"
                                    TextWrapping="Wrap" />
                         <TextBlock Classes="caption"
                                    Text="{Binding BackupPosture}"
                                    TextWrapping="Wrap" />
 
-                        <WrapPanel Margin="0,8,0,0" Orientation="Horizontal" ItemHeight="30">
-                            <Border Background="#2A2927" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
-                                <TextBlock Foreground="#F7F0E7" FontSize="11" Text="{Binding Branch}" />
+                        <WrapPanel Margin="0,8,0,0" Orientation="Horizontal">
+                            <Border Background="{DynamicResource PanelSubtleBrush}" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                <TextBlock Foreground="{DynamicResource TextBrush}" FontSize="11" Text="{Binding Branch}" />
                             </Border>
-                            <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
-                                <TextBlock Foreground="#C9D5EA" FontSize="11" Text="{Binding BackupCountSummary}" />
+                            <Border Background="{DynamicResource PanelSubtleBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                <TextBlock Foreground="{DynamicResource TextMutedBrush}" FontSize="11" Text="{Binding BackupCountSummary}" />
                             </Border>
-                            <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
-                                <TextBlock Foreground="#C9D5EA" FontSize="11" Text="{Binding LatestBackupSummary}" />
+                            <Border Background="{DynamicResource PanelSubtleBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                <TextBlock Foreground="{DynamicResource TextMutedBrush}" FontSize="11" Text="{Binding LatestBackupSummary}" />
                             </Border>
                         </WrapPanel>
                     </StackPanel>
                 </Border>
 
-                <Border Grid.Column="1" Classes="card" Padding="20">
+                <Border Grid.Column="1" Classes="workspace-band" Padding="20">
                     <StackPanel Spacing="10">
                         <TextBlock Classes="kicker" Text="Recovery Policy" />
                         <TextBlock Classes="panel-title" FontSize="24" Text="Set retention before you need it" TextWrapping="Wrap" />
@@ -95,16 +95,16 @@
             </Grid>
 
             <Grid Grid.Row="1" ColumnDefinitions="360,*" ColumnSpacing="16">
-                <Border Classes="surface-dark" Padding="18">
+                <Border Classes="command-strip" Padding="18">
                     <StackPanel Spacing="10">
-                        <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Archive Inventory" />
+                        <TextBlock Classes="kicker" Foreground="{DynamicResource AccentBrush}" Text="Archive Inventory" />
                         <TextBlock FontSize="22"
                                    FontWeight="SemiBold"
-                                   Foreground="#F7F0E7"
+                                   Foreground="{DynamicResource TextBrush}"
                                    Text="{Binding BackupInventorySummary}"
                                    TextWrapping="Wrap" />
                         <TextBlock Classes="caption"
-                                   Foreground="#A8B6D4"
+                                   Foreground="{DynamicResource TextSubtleBrush}"
                                    Text="Manual, pre-update, and scheduled archives appear newest-first."
                                    TextWrapping="Wrap" />
 
@@ -115,15 +115,15 @@
                                  MinHeight="420">
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
-                                    <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="14" Padding="12" Margin="0,0,0,8">
+                                    <Border Background="Transparent" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" CornerRadius="0" Padding="12" Margin="0,0,0,8">
                                         <StackPanel Spacing="4">
                                             <StackPanel Orientation="Horizontal" Spacing="8">
-                                                <TextBlock FontWeight="SemiBold" Foreground="#EDF4FF" Text="{Binding Title}" />
-                                                <Border Background="#E5A26B" CornerRadius="999" Padding="8,2" IsVisible="{Binding IsLatest}">
-                                                    <TextBlock Foreground="#1F1D1B" FontSize="11" FontWeight="SemiBold" Text="Latest" />
+                                                <TextBlock FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" Text="{Binding Title}" />
+                                                <Border Background="{DynamicResource AccentSoftBrush}" CornerRadius="999" Padding="8,2" IsVisible="{Binding IsLatest}">
+                                                    <TextBlock Foreground="{DynamicResource AccentBrush}" FontSize="11" FontWeight="SemiBold" Text="Latest" />
                                                 </Border>
-                                                <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="999" Padding="8,2">
-                                                    <TextBlock Foreground="#F7F0E7" FontSize="11" Text="{Binding KindLabel}" />
+                                                <Border Background="{DynamicResource PanelSubtleBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="999" Padding="8,2">
+                                                    <TextBlock Foreground="{DynamicResource TextBrush}" FontSize="11" Text="{Binding KindLabel}" />
                                                 </Border>
                                             </StackPanel>
                                             <TextBlock Classes="caption" Text="{Binding TimestampLabel}" TextWrapping="Wrap" />
@@ -144,17 +144,17 @@
                 </Border>
 
                 <StackPanel Grid.Column="1" Spacing="16">
-                    <Border Classes="surface-dark" Padding="18">
+                    <Border Classes="command-strip" Padding="18">
                         <StackPanel Spacing="14">
-                            <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Restore Actions" />
+                            <TextBlock Classes="kicker" Foreground="{DynamicResource AccentBrush}" Text="Restore Actions" />
                             <TextBlock FontSize="24"
                                        FontWeight="SemiBold"
-                                       Foreground="#F7F0E7"
+                                       Foreground="{DynamicResource TextBrush}"
                                        Text="{Binding RecoveryModeHeadline}"
                                        TextWrapping="Wrap" />
-                            <TextBlock Classes="body" Foreground="#C9D5EA" Text="{Binding RestoreRiskHeadline}" TextWrapping="Wrap" />
-                            <TextBlock Classes="caption" Foreground="#A8B6D4" Text="{Binding RestoreModeSummary}" TextWrapping="Wrap" />
-                            <TextBlock Classes="caption" Foreground="#A8B6D4" Text="{Binding RecoveryGuidance}" TextWrapping="Wrap" />
+                            <TextBlock Classes="body" Foreground="{DynamicResource TextMutedBrush}" Text="{Binding RestoreRiskHeadline}" TextWrapping="Wrap" />
+                            <TextBlock Classes="caption" Foreground="{DynamicResource TextSubtleBrush}" Text="{Binding RestoreModeSummary}" TextWrapping="Wrap" />
+                            <TextBlock Classes="caption" Foreground="{DynamicResource TextSubtleBrush}" Text="{Binding RecoveryGuidance}" TextWrapping="Wrap" />
 
                             <WrapPanel Orientation="Horizontal" ItemWidth="168" ItemHeight="36">
                                 <Button Classes="action-primary" Command="{Binding CreateBackupCommand}" Content="Create Backup" IsEnabled="{Binding CanCreateBackup}" />
@@ -166,11 +166,11 @@
                                       IsChecked="{Binding RestartAfterRestore}"
                                       IsEnabled="{Binding CanRestore}" />
 
-                            <TextBlock Classes="caption" Foreground="#A8B6D4" Text="{Binding LoadStatus}" TextWrapping="Wrap" />
+                            <TextBlock Classes="caption" Foreground="{DynamicResource TextSubtleBrush}" Text="{Binding LoadStatus}" TextWrapping="Wrap" />
                         </StackPanel>
                     </Border>
 
-                    <Border Classes="card" Padding="20">
+                    <Border Classes="workspace-band" Padding="20">
                         <StackPanel Spacing="8">
                             <TextBlock Classes="kicker" Text="Selected Recovery Point" />
                             <TextBlock Classes="panel-title" FontSize="24" Text="{Binding SelectedBackupHeadline}" TextWrapping="Wrap" />
@@ -181,14 +181,14 @@
                         </StackPanel>
                     </Border>
 
-                    <Border Classes="card" Padding="18">
+                    <Border Classes="workspace-band" Padding="18">
                         <StackPanel Spacing="8">
                             <TextBlock Classes="kicker" Text="Recovery Checklist" />
                             <TextBlock Classes="body" Text="{Binding RecoveryOperatorSummary}" TextWrapping="Wrap" />
                             <ItemsControl ItemsSource="{Binding RecoveryChecklist}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="12" Padding="10" Margin="0,0,0,8">
+                                        <Border Background="Transparent" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" CornerRadius="0" Padding="10" Margin="0,0,0,8">
                                             <TextBlock Classes="caption" Text="{Binding .}" TextWrapping="Wrap" />
                                         </Border>
                                     </DataTemplate>

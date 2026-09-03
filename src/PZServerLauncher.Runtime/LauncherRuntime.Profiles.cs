@@ -3,8 +3,8 @@ using PZServerLauncher.Contracts.Profiles;
 using PZServerLauncher.Contracts.Runtime;
 using PZServerLauncher.Core.Profiles;
 using PZServerLauncher.Core.Runtime;
-using PZServerLauncher.Host;
-using PZServerLauncher.Host.Services;
+using PZServerLauncher.Runtime;
+using PZServerLauncher.Runtime.Services;
 
 namespace PZServerLauncher.Runtime;
 
@@ -58,6 +58,28 @@ public sealed partial class LauncherRuntime
         int maxPlayers,
         CancellationToken cancellationToken = default)
     {
+        return await CreateStarterProfileAsync(
+            displayName,
+            defaultPort,
+            preferredMemoryInGigabytes,
+            maxPlayers,
+            "public",
+            cancellationToken);
+    }
+
+    public async Task<ProfileDto?> CreateStarterProfileAsync(
+        string displayName,
+        int defaultPort,
+        int preferredMemoryInGigabytes,
+        int maxPlayers,
+        string steamBranch,
+        CancellationToken cancellationToken = default)
+    {
+        var branchCatalog = await GetSteamBranchCatalogAsync(cancellationToken);
+        var advertisedBranch = branchCatalog.Branches.FirstOrDefault(branch =>
+            !branch.RequiresPassword &&
+            string.Equals(branch.Name, steamBranch, StringComparison.OrdinalIgnoreCase))
+            ?? throw new InvalidOperationException($"Steam branch '{steamBranch}' is no longer available. Reopen Create and choose an advertised version.");
         var existingProfiles = await ExecuteScopedAsync(
             async services => await services.GetRequiredService<ProfileStore>().ListAsync(cancellationToken),
             cancellationToken);
@@ -69,7 +91,8 @@ public sealed partial class LauncherRuntime
             displayName,
             availablePort,
             existingProfiles.Select(profile => profile.ProfileId),
-            preferredMemoryInGigabytes: preferredMemoryInGigabytes);
+            preferredMemoryInGigabytes: preferredMemoryInGigabytes,
+            steamBranch: advertisedBranch.Name);
 
         var request = new ProfileUpsertRequestDto(
             starter.ProfileId,
@@ -89,7 +112,8 @@ public sealed partial class LauncherRuntime
             starter.StartWithHost,
             starter.AutoRestartOnCrash,
             starter.WorkshopPreset,
-            starter.BackupPolicy);
+            starter.BackupPolicy,
+            starter.SteamBranch);
 
         await CreateProfileAsync(request, cancellationToken);
         return await ExecuteScopedAsync(

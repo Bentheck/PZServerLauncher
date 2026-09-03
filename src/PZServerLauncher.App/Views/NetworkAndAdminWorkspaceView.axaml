@@ -11,26 +11,26 @@
     <ScrollViewer>
         <Grid RowDefinitions="Auto,Auto,*" RowSpacing="18">
             <Grid ColumnDefinitions="1.42*,340" ColumnSpacing="18">
-                <Border Classes="card" Padding="26">
+                <Border Classes="workspace-band" Padding="26">
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18">
                         <StackPanel Spacing="8">
                             <TextBlock Classes="kicker" Text="Trust &amp; Access Console" />
                             <TextBlock Classes="panel-title" FontSize="30" Text="{Binding ProfileDisplayName}" />
                             <TextBlock Classes="body"
                                        FontSize="16"
-                                       Foreground="#C9D5EA"
+                                       Foreground="{DynamicResource TextMutedBrush}"
                                        Text="{Binding WorkspaceSummary}"
                                        TextWrapping="Wrap" />
                             <TextBlock Classes="caption" Text="{Binding ActionSummary}" TextWrapping="Wrap" />
-                            <WrapPanel Margin="0,8,0,0" Orientation="Horizontal" ItemHeight="30">
-                                <Border Background="#2A2927" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
-                                    <TextBlock Foreground="#F7F0E7" FontSize="11" Text="{Binding Branch}" />
+                            <WrapPanel Margin="0,8,0,0" Orientation="Horizontal">
+                                <Border Background="{DynamicResource PanelSubtleBrush}" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                    <TextBlock Foreground="{DynamicResource TextBrush}" FontSize="11" Text="{Binding Branch}" />
                                 </Border>
-                                <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
-                                    <TextBlock Foreground="#C9D5EA" FontSize="11" Text="{Binding AccessHeadline}" />
+                                <Border Background="{DynamicResource PanelSubtleBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                    <TextBlock Foreground="{DynamicResource TextMutedBrush}" FontSize="11" Text="{Binding AccessHeadline}" />
                                 </Border>
-                                <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
-                                    <TextBlock Foreground="#C9D5EA" FontSize="11" Text="{Binding TrustHeadline}" />
+                                <Border Background="{DynamicResource PanelSubtleBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                    <TextBlock Foreground="{DynamicResource TextMutedBrush}" FontSize="11" Text="{Binding TrustHeadline}" />
                                 </Border>
                             </WrapPanel>
                         </StackPanel>
@@ -43,12 +43,12 @@
                     </Grid>
                 </Border>
 
-                <Border Grid.Column="1" Classes="surface-dark" Padding="18">
+                <Border Grid.Column="1" Classes="command-strip" Padding="18">
                     <StackPanel Spacing="10">
-                        <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Security Watch" />
-                        <TextBlock FontSize="22" FontWeight="SemiBold" Foreground="#F7F0E7" Text="{Binding OperatorSummary}" TextWrapping="Wrap" />
-                        <TextBlock Classes="body" Foreground="#C9D5EA" Text="{Binding IdentityAndSafetyHeadline}" TextWrapping="Wrap" />
-                        <TextBlock Classes="caption" Foreground="#A8B6D4" Text="{Binding VoiceHeadline}" TextWrapping="Wrap" />
+                        <TextBlock Classes="kicker" Foreground="{DynamicResource AccentBrush}" Text="Security Watch" />
+                        <TextBlock FontSize="22" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" Text="{Binding OperatorSummary}" TextWrapping="Wrap" />
+                        <TextBlock Classes="body" Foreground="{DynamicResource TextMutedBrush}" Text="{Binding IdentityAndSafetyHeadline}" TextWrapping="Wrap" />
+                        <TextBlock Classes="caption" Foreground="{DynamicResource TextSubtleBrush}" Text="{Binding VoiceHeadline}" TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
             </Grid>
@@ -82,19 +82,19 @@
 
             <Grid Grid.Row="2" ColumnDefinitions="1.22*,.78*" ColumnSpacing="18">
                 <StackPanel Spacing="18">
-                    <Border Classes="surface-dark" Padding="22">
+                    <Border Classes="command-strip" Padding="22">
                         <Grid ColumnDefinitions="1.08*,.92*" ColumnSpacing="18">
                             <StackPanel Spacing="10">
-                                <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Trust Situation" />
-                                <TextBlock FontSize="26" FontWeight="SemiBold" Foreground="#F7F0E7" Text="{Binding AccessHeadline}" TextWrapping="Wrap" />
-                                <TextBlock Classes="body" Foreground="#C9D5EA" Text="{Binding TrustHeadline}" TextWrapping="Wrap" />
-                                <TextBlock Classes="caption" Foreground="#A8B6D4" Text="{Binding RecoveryHeadline}" TextWrapping="Wrap" />
+                                <TextBlock Classes="kicker" Foreground="{DynamicResource AccentBrush}" Text="Trust Situation" />
+                                <TextBlock FontSize="26" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" Text="{Binding AccessHeadline}" TextWrapping="Wrap" />
+                                <TextBlock Classes="body" Foreground="{DynamicResource TextMutedBrush}" Text="{Binding TrustHeadline}" TextWrapping="Wrap" />
+                                <TextBlock Classes="caption" Foreground="{DynamicResource TextSubtleBrush}" Text="{Binding RecoveryHeadline}" TextWrapping="Wrap" />
                             </StackPanel>
                             <ItemsControl Grid.Column="1" ItemsSource="{Binding NetworkChecklist}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="14" Padding="12" Margin="0,0,0,8">
-                                            <TextBlock Classes="caption" Foreground="#A8B6D4" Text="{Binding .}" TextWrapping="Wrap" />
+                                        <Border Background="Transparent" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" CornerRadius="0" Padding="12" Margin="0,0,0,8">
+                                            <TextBlock Classes="caption" Foreground="{DynamicResource TextSubtleBrush}" Text="{Binding .}" TextWrapping="Wrap" />
                                         </Border>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
@@ -104,7 +104,7 @@
 
                     <Grid ColumnDefinitions="1.05*,.95*" ColumnSpacing="16" IsEnabled="{Binding CanEdit}">
                         <StackPanel Spacing="16">
-                            <Border Classes="card" Padding="18">
+                            <Border Classes="workspace-band" Padding="18">
                                 <StackPanel Spacing="14">
                                     <TextBlock Classes="kicker" Text="Access &amp; Passwords" />
                                     <StackPanel Spacing="4">
@@ -125,7 +125,7 @@
                                 </StackPanel>
                             </Border>
 
-                            <Border Classes="card" Padding="18">
+                            <Border Classes="workspace-band" Padding="18">
                                 <StackPanel Spacing="14">
                                     <TextBlock Classes="kicker" Text="Compatibility &amp; Discovery" />
                                     <CheckBox Content="Auto Create Whitelist Users" IsChecked="{Binding AutoCreateWhitelistUsers}" />
@@ -153,7 +153,7 @@
                                 </StackPanel>
                             </Border>
 
-                            <Border Classes="card" Padding="18">
+                            <Border Classes="workspace-band" Padding="18">
                                 <StackPanel Spacing="14">
                                     <TextBlock Classes="kicker" Text="Identity &amp; PvP Safety" />
                                     <CheckBox Content="Display Username" IsChecked="{Binding DisplayUserName}" />
@@ -199,7 +199,7 @@
                         </StackPanel>
 
                         <StackPanel Grid.Column="1" Spacing="16">
-                            <Border Classes="card" Padding="18">
+                            <Border Classes="workspace-band" Padding="18">
                                 <StackPanel Spacing="14">
                                     <TextBlock Classes="kicker" Text="Account Policy" />
                                     <StackPanel Spacing="4">
@@ -211,7 +211,7 @@
                                 </StackPanel>
                             </Border>
 
-                            <Border Classes="card" Padding="18">
+                            <Border Classes="workspace-band" Padding="18">
                                 <StackPanel Spacing="14">
                                     <TextBlock Classes="kicker" Text="Voice Chat" />
                                     <CheckBox Content="Enable Voice Chat" IsChecked="{Binding VoiceEnabled}" />
@@ -234,7 +234,7 @@
                                 </StackPanel>
                             </Border>
 
-                            <Border Classes="card" Padding="18">
+                            <Border Classes="workspace-band" Padding="18">
                                 <StackPanel Spacing="14">
                                     <TextBlock Classes="kicker" Text="Launcher Admin Bootstrap" />
                                     <StackPanel Spacing="4">
@@ -249,22 +249,22 @@
                                 </StackPanel>
                             </Border>
 
-                            <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="12" Padding="12" IsVisible="{Binding DraftsDisabled}">
+                            <Border Background="Transparent" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" CornerRadius="0" Padding="12" IsVisible="{Binding DraftsDisabled}">
                                 <TextBlock Classes="caption" Text="Drafts are intentionally disabled on this page so passwords are never persisted in workspace draft storage." TextWrapping="Wrap" />
                             </Border>
                         </StackPanel>
                     </Grid>
                 </StackPanel>
 
-                <Border Grid.Column="1" Classes="surface-dark" Padding="18">
+                <Border Grid.Column="1" Classes="command-strip" Padding="18">
                     <StackPanel Spacing="14">
-                        <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Command Tower" />
-                        <TextBlock FontSize="24" FontWeight="SemiBold" Foreground="#F7F0E7" Text="{Binding OperatorSummary}" TextWrapping="Wrap" />
-                        <TextBlock Classes="body" Foreground="#C9D5EA" Text="{Binding RecoveryHeadline}" TextWrapping="Wrap" />
+                        <TextBlock Classes="kicker" Foreground="{DynamicResource AccentBrush}" Text="Command Tower" />
+                        <TextBlock FontSize="24" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" Text="{Binding OperatorSummary}" TextWrapping="Wrap" />
+                        <TextBlock Classes="body" Foreground="{DynamicResource TextMutedBrush}" Text="{Binding RecoveryHeadline}" TextWrapping="Wrap" />
 
-                        <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="16" Padding="14">
+                        <Border Background="{DynamicResource PanelSubtleBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="16" Padding="14">
                             <StackPanel Spacing="8">
-                                <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Actions" />
+                                <TextBlock Classes="kicker" Foreground="{DynamicResource AccentBrush}" Text="Actions" />
                                 <WrapPanel Orientation="Horizontal" ItemWidth="152" ItemHeight="36">
                                     <Button Classes="action-primary" Command="{Binding SaveSettingsCommand}" Content="Apply Settings" IsEnabled="{Binding CanEdit}" />
                                     <Button Classes="action-secondary" Command="{Binding DiscardDraftCommand}" Content="Reload" />
@@ -273,7 +273,7 @@
                             </StackPanel>
                         </Border>
 
-                        <Border Background="#22FFB36B" BorderBrush="#72FFB36B" BorderThickness="1" CornerRadius="16" Padding="14">
+                        <Border Background="{DynamicResource SuccessSoftBrush}" BorderBrush="{DynamicResource SuccessBrush}" BorderThickness="1" CornerRadius="16" Padding="14">
                             <StackPanel Spacing="8">
                                 <TextBlock Classes="kicker" Text="Current Signals" />
                                 <TextBlock Classes="body" Text="{Binding CatalogSummary}" TextWrapping="Wrap" />
@@ -282,7 +282,7 @@
                             </StackPanel>
                         </Border>
 
-                        <Border Background="#22FFB36B" BorderBrush="#72FFB36B" BorderThickness="1" CornerRadius="16" Padding="14">
+                        <Border Background="{DynamicResource SuccessSoftBrush}" BorderBrush="{DynamicResource SuccessBrush}" BorderThickness="1" CornerRadius="16" Padding="14">
                             <StackPanel Spacing="8">
                                 <TextBlock Classes="kicker" Text="Validation" />
                                 <StackPanel Spacing="6" IsVisible="{Binding HasFieldErrors}">

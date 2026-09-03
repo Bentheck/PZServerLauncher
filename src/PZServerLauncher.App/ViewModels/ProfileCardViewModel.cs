@@ -153,17 +153,27 @@ public partial class ProfileCardViewModel : ViewModelBase
 
     public string RecoveryStateHeadline => HasBackup ? "Recovery ready" : "No backup";
 
-    public string RosterCardBackground => IsSelected ? "#241C16" : "#F8F0E6";
+    public string RosterPrimarySignal => IsInstallDetected
+        ? RuntimeState
+        : "Needs install";
 
-    public string RosterCardBorderBrush => IsSelected ? "#D27A3E" : "#D8B28D";
+    public string RosterSecondarySignal => HasBackup ? "Backup ready" : "No backup";
 
-    public string RosterTitleForeground => IsSelected ? "#F7F0E7" : "#191512";
+    public string RosterTertiarySignal => UsesDirectJavaTemplate ? "Direct Java" : "Fallback launch";
 
-    public string RosterSummaryForeground => IsSelected ? "#D4C3B2" : "#5E4D3F";
+    public string RosterOneLineDetail => $"{EditableServerName} | TCP {EditableDefaultPort}";
 
-    public string RosterChipBackground => IsSelected ? "#F0E2D0" : "#26201A";
+    public string RosterCardBackground => IsSelected ? "#E7F0FA" : "#FFFFFF";
 
-    public string RosterChipForeground => IsSelected ? "#5E4735" : "#F7F0E7";
+    public string RosterCardBorderBrush => IsSelected ? "#2563A8" : "#D6DEE8";
+
+    public string RosterTitleForeground => "#17212B";
+
+    public string RosterSummaryForeground => "#526170";
+
+    public string RosterChipBackground => IsSelected ? "#D9E9F8" : "#F8FAFC";
+
+    public string RosterChipForeground => IsSelected ? "#1E548F" : "#526170";
 
     public string PinnedLatestSignal => WorkshopDownloadProgress?.DetailLabel ?? LatestLogLine;
 

@@ -14,6 +14,8 @@ public sealed record ServerProfile
 
     public ProjectZomboidBranch Branch { get; init; } = ProjectZomboidBranch.Unstable42;
 
+    public string SteamBranch { get; init; } = "public";
+
     public int DefaultPort { get; init; } = 16261;
 
     public int UdpPort { get; init; } = 16261;

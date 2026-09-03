@@ -30,15 +30,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="..\PZServerLauncher.Host\ContractsMappingExtensions.cs" Link="Host\ContractsMappingExtensions.cs" />
-    <Compile Include="..\PZServerLauncher.Host\Data\**\*.cs" Link="Host\Data\%(RecursiveDir)%(Filename)%(Extension)" />
-    <Compile Include="..\PZServerLauncher.Host\Infrastructure\**\*.cs" Link="Host\Infrastructure\%(RecursiveDir)%(Filename)%(Extension)" />
-    <Compile Include="..\PZServerLauncher.Host\Services\*.cs"
-             Exclude="..\PZServerLauncher.Host\Services\SignalRRuntimeEventPublisher.cs"
-             Link="Host\Services\%(Filename)%(Extension)" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Content Include="Assets\ProjectZomboid\SandboxPresets\**\*.lua">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>

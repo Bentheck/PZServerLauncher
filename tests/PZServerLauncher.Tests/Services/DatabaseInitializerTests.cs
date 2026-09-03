@@ -1,10 +1,11 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Logging.Abstractions;
-using PZServerLauncher.Host.Data;
-using PZServerLauncher.Host.Data.Entities;
-using PZServerLauncher.Host.Infrastructure;
-using PZServerLauncher.Host.Services;
+using PZServerLauncher.Runtime.Data;
+using PZServerLauncher.Runtime.Data.Entities;
+using PZServerLauncher.Runtime.Infrastructure;
+using PZServerLauncher.Runtime.Services;
 
 namespace PZServerLauncher.Tests.Services;
 
@@ -88,6 +89,7 @@ public sealed class DatabaseInitializerTests : IDisposable
     {
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
             .UseSqlite($"Data Source={databasePath};Cache=Shared")
+            .ConfigureWarnings(warnings => warnings.Log(RelationalEventId.PendingModelChangesWarning))
             .Options;
 
         return new ApplicationDbContext(options);

@@ -9,13 +9,45 @@ public sealed class ProjectZomboidServerPlannerTests
     private readonly ProjectZomboidServerPlanner _planner = new();
 
     [Fact]
-    public void CreateInstallScript_UsesUnstableBranchCommandForBuild42()
+    public void CreateInstallScript_UsesPublicBranchCommandForBuild42()
     {
         var profile = ServerProfileFactory.CreateStarterProfile();
 
         var plan = _planner.CreateInstallScript(profile);
 
-        Assert.Contains("app_update 380870 -beta unstable validate", plan.ScriptLines);
+        Assert.Contains("app_update 380870 validate", plan.ScriptLines);
+        Assert.DoesNotContain(plan.ScriptLines, line => line.Contains("-beta", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public void CreateInstallScript_UsesSelectedAdvertisedBranch()
+    {
+        var profile = ServerProfileFactory.CreateStarterProfile();
+
+        var plan = _planner.CreateInstallScript(profile, "42.19");
+
+        Assert.Contains("app_update 380870 -beta 42.19 validate", plan.ScriptLines);
+    }
+
+    [Fact]
+    public void CreateInstallScript_UsesBranchSavedOnProfile()
+    {
+        var profile = ServerProfileFactory.CreateStarterProfile() with { SteamBranch = "legacy41" };
+
+        var plan = _planner.CreateInstallScript(profile);
+
+        Assert.Contains("app_update 380870 -beta legacy41 validate", plan.ScriptLines);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("unstable quit")]
+    [InlineData("branch/with/slash")]
+    public void CreateInstallScript_RejectsUnsafeBranchNames(string branch)
+    {
+        var profile = ServerProfileFactory.CreateStarterProfile();
+
+        Assert.Throws<ArgumentException>(() => _planner.CreateInstallScript(profile, branch));
     }
 
     [Fact]

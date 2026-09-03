@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using PZServerLauncher.App.Services;
+using PZServerLauncher.Contracts.Runtime;
 using PZServerLauncher.Core.Profiles;
 
 namespace PZServerLauncher.App.ViewModels;
@@ -10,7 +11,10 @@ public partial class CreateProfileDialogViewModel : ViewModelBase
     private readonly IReadOnlyList<CreateProfilePortReservation> _existingProfiles;
     private readonly IReadOnlyDictionary<int, CreateProfilePortReservation> _reservedPorts;
 
-    public CreateProfileDialogViewModel(IEnumerable<CreateProfilePortReservation> existingProfiles)
+    public CreateProfileDialogViewModel(
+        IEnumerable<CreateProfilePortReservation> existingProfiles,
+        IEnumerable<SteamBranchDto> steamBranches,
+        string selectedSteamBranch)
     {
         _existingProfiles = existingProfiles.ToArray();
         _reservedPorts = BuildReservedPortLookup(_existingProfiles);
@@ -20,8 +24,18 @@ public partial class CreateProfileDialogViewModel : ViewModelBase
             _reservedPorts.Keys).ToString();
         preferredMemoryInGigabytesText = ServerProfileFactory.DefaultPreferredMemoryInGigabytes.ToString();
         maxPlayersText = ServerProfileFactory.DefaultMaxPlayers.ToString();
+        SteamBranches = steamBranches.Where(branch => !branch.RequiresPassword).ToArray();
+        selectedVersion = SteamBranches.FirstOrDefault(branch =>
+                              string.Equals(branch.Name, selectedSteamBranch, StringComparison.OrdinalIgnoreCase))
+                          ?? SteamBranches.FirstOrDefault(branch => branch.IsDefault)
+                          ?? SteamBranches.FirstOrDefault();
         NotifyComputedState();
     }
+
+    public IReadOnlyList<SteamBranchDto> SteamBranches { get; }
+
+    [ObservableProperty]
+    private SteamBranchDto? selectedVersion;
 
     [ObservableProperty]
     private string displayName;
@@ -38,8 +52,8 @@ public partial class CreateProfileDialogViewModel : ViewModelBase
     public string DialogTitle => "Create Server Profile";
 
     public string DialogSummary => _existingProfiles.Count == 0
-        ? $"Pick the server name and base port now, then leave memory at {ServerProfileFactory.DefaultPreferredMemoryInGigabytes} GB and max players at {ServerProfileFactory.DefaultMaxPlayers} if you want the normal setup. The launcher will derive the profile id, server name, install path, data path, UDP port, and RCON port from those inputs."
-        : $"Pick the server name and base port now, then leave memory at {ServerProfileFactory.DefaultPreferredMemoryInGigabytes} GB and max players at {ServerProfileFactory.DefaultMaxPlayers} if you want the normal setup. The launcher will derive the profile id, server name, install path, data path, UDP port, and RCON port from those inputs, while skipping port sets already used by other profiles.";
+        ? $"Choose the Steam version, server name, and base port. Leave memory at {ServerProfileFactory.DefaultPreferredMemoryInGigabytes} GB and max players at {ServerProfileFactory.DefaultMaxPlayers} for the normal setup. The launcher derives the remaining paths, names, and ports."
+        : $"Choose the Steam version, server name, and base port. Leave memory at {ServerProfileFactory.DefaultPreferredMemoryInGigabytes} GB and max players at {ServerProfileFactory.DefaultMaxPlayers} for the normal setup. The launcher derives the remaining values and skips port sets used by other profiles.";
 
     public string PortReservationSummary => _existingProfiles.Count == 0
         ? "No other managed profiles are using launcher ports yet."
@@ -50,6 +64,7 @@ public partial class CreateProfileDialogViewModel : ViewModelBase
         TryParsePort(out var requestedPort) &&
         TryParsePositiveInteger(PreferredMemoryInGigabytesText, out _) &&
         TryParsePositiveInteger(MaxPlayersText, out _) &&
+        SelectedVersion is not null &&
         TryFindConflictingPort(requestedPort, out _, out _) is false;
 
     public string ValidationMessage
@@ -69,6 +84,11 @@ public partial class CreateProfileDialogViewModel : ViewModelBase
             if (!TryParsePositiveInteger(MaxPlayersText, out _))
             {
                 return "Max players must be a whole number greater than zero.";
+            }
+
+            if (SelectedVersion is null)
+            {
+                return "Choose an available Project Zomboid server version.";
             }
 
             if (TryFindConflictingPort(parsedPort, out var conflictingPort, out var conflictingProfile))
@@ -137,7 +157,8 @@ public partial class CreateProfileDialogViewModel : ViewModelBase
             DisplayName.Trim(),
             defaultPort,
             preferredMemoryInGigabytes,
-            maxPlayers);
+            maxPlayers,
+            SelectedVersion!.Name);
         return true;
     }
 
@@ -161,6 +182,11 @@ public partial class CreateProfileDialogViewModel : ViewModelBase
         NotifyComputedState();
     }
 
+    partial void OnSelectedVersionChanged(SteamBranchDto? value)
+    {
+        NotifyComputedState();
+    }
+
     private bool TryBuildPreview(out ServerProfile profile)
     {
         var previewPort = ResolvePreviewPort();
@@ -169,7 +195,8 @@ public partial class CreateProfileDialogViewModel : ViewModelBase
             DisplayName,
             previewPort,
             _existingProfiles.Select(profile => profile.ProfileId),
-            preferredMemoryInGigabytes: previewMemory);
+            preferredMemoryInGigabytes: previewMemory,
+            steamBranch: SelectedVersion?.Name ?? "public");
         return true;
     }
 

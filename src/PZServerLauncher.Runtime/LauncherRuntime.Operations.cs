@@ -1,14 +1,20 @@
 using Microsoft.Extensions.DependencyInjection;
 using PZServerLauncher.Contracts.Runtime;
 using PZServerLauncher.Core.Runtime;
-using PZServerLauncher.Host.Services;
+using PZServerLauncher.Runtime.Services;
 
 namespace PZServerLauncher.Runtime;
 
 public sealed partial class LauncherRuntime
 {
     public Task<OperationResultDto?> InstallAsync(string profileId, CancellationToken cancellationToken = default) =>
-        QueueLifecycleJobAsync(
+        ExecuteForSavedSteamBranchAsync(profileId, isUpdate: false, cancellationToken);
+
+    public async Task<OperationResultDto?> InstallSteamBranchAsync(string profileId, string steamBranch, CancellationToken cancellationToken = default)
+    {
+        var advertisedBranch = await ResolveAdvertisedSteamBranchAsync(profileId, steamBranch, cancellationToken);
+        await SaveSteamBranchAsync(profileId, advertisedBranch, cancellationToken);
+        return await QueueLifecycleJobAsync(
             OperationJobKind.Install,
             profileId,
             $"Install {profileId}",
@@ -17,13 +23,20 @@ public sealed partial class LauncherRuntime
                 var installer = services.GetRequiredService<ServerInstallService>();
                 var jobStore = services.GetRequiredService<JobStore>();
                 var runtimeStateStore = services.GetRequiredService<RuntimeStateStore>();
-                await installer.ExecuteInstallAsync(profileId, runningJob, jobStore, runtimeStateStore, token);
+                await installer.ExecuteInstallAsync(profileId, advertisedBranch, runningJob, jobStore, runtimeStateStore, token);
             },
             "Install queued. SteamCMD may take a few minutes on first bootstrap.",
             cancellationToken);
+    }
 
     public Task<OperationResultDto?> UpdateAsync(string profileId, CancellationToken cancellationToken = default) =>
-        QueueLifecycleJobAsync(
+        ExecuteForSavedSteamBranchAsync(profileId, isUpdate: true, cancellationToken);
+
+    public async Task<OperationResultDto?> UpdateSteamBranchAsync(string profileId, string steamBranch, CancellationToken cancellationToken = default)
+    {
+        var advertisedBranch = await ResolveAdvertisedSteamBranchAsync(profileId, steamBranch, cancellationToken);
+        await SaveSteamBranchAsync(profileId, advertisedBranch, cancellationToken);
+        return await QueueLifecycleJobAsync(
             OperationJobKind.Update,
             profileId,
             $"Update {profileId}",
@@ -34,9 +47,78 @@ public sealed partial class LauncherRuntime
                 var runtimeStateStore = services.GetRequiredService<RuntimeStateStore>();
                 var backupService = services.GetRequiredService<ServerBackupService>();
                 await backupService.CreateBackupAsync(profileId, BackupTrigger.PreUpdate, token);
-                await installer.ExecuteInstallAsync(profileId, runningJob, jobStore, runtimeStateStore, token);
+                await installer.ExecuteInstallAsync(profileId, advertisedBranch, runningJob, jobStore, runtimeStateStore, token);
             },
             "Update queued. SteamCMD may take a few minutes on first bootstrap.",
+            cancellationToken);
+    }
+
+    public async Task<SteamBranchCatalogDto> GetSteamBranchesAsync(string profileId, CancellationToken cancellationToken = default)
+    {
+        var profile = await RequireProfileAsync(profileId, cancellationToken);
+        return await ExecuteScopedAsync(
+            services => services.GetRequiredService<SteamCmdToolService>()
+                .GetBranchCatalogAsync(profile.InstallDirectory, profile.SteamBranch, cancellationToken: cancellationToken),
+            cancellationToken);
+    }
+
+    public async Task<SteamBranchCatalogDto> RefreshSteamBranchesAsync(string profileId, CancellationToken cancellationToken = default)
+    {
+        var profile = await RequireProfileAsync(profileId, cancellationToken);
+        return await ExecuteScopedAsync(
+            services => services.GetRequiredService<SteamCmdToolService>()
+                .GetBranchCatalogAsync(profile.InstallDirectory, profile.SteamBranch, forceRefresh: true, cancellationToken),
+            cancellationToken);
+    }
+
+    public Task<SteamBranchCatalogDto> GetSteamBranchCatalogAsync(CancellationToken cancellationToken = default) =>
+        ExecuteScopedAsync(
+            services => services.GetRequiredService<SteamCmdToolService>()
+                .GetBranchCatalogAsync(null, cancellationToken: cancellationToken),
+            cancellationToken);
+
+    private async Task<OperationResultDto?> ExecuteForSavedSteamBranchAsync(
+        string profileId,
+        bool isUpdate,
+        CancellationToken cancellationToken)
+    {
+        var profile = await RequireProfileAsync(profileId, cancellationToken);
+        return isUpdate
+            ? await UpdateSteamBranchAsync(profileId, profile.SteamBranch, cancellationToken)
+            : await InstallSteamBranchAsync(profileId, profile.SteamBranch, cancellationToken);
+    }
+
+    private async Task<string> ResolveAdvertisedSteamBranchAsync(
+        string profileId,
+        string steamBranch,
+        CancellationToken cancellationToken)
+    {
+        var catalog = await GetSteamBranchesAsync(profileId, cancellationToken);
+        var selectedBranch = catalog.Branches.FirstOrDefault(branch =>
+            string.Equals(branch.Name, steamBranch, StringComparison.OrdinalIgnoreCase));
+        if (selectedBranch is null)
+        {
+            throw new InvalidOperationException($"Steam branch '{steamBranch}' is no longer advertised. Refresh versions and choose an available branch.");
+        }
+
+        if (selectedBranch.RequiresPassword)
+        {
+            throw new InvalidOperationException($"Steam branch '{steamBranch}' requires a private-beta password and cannot be installed anonymously.");
+        }
+
+        return selectedBranch.Name;
+    }
+
+    private Task SaveSteamBranchAsync(string profileId, string steamBranch, CancellationToken cancellationToken) =>
+        ExecuteScopedAsync(
+            async services =>
+            {
+                var store = services.GetRequiredService<ProfileStore>();
+                var profile = await store.GetAsync(profileId, cancellationToken)
+                    ?? throw new InvalidOperationException($"Profile '{profileId}' was not found.");
+                await store.UpsertAsync(profile with { SteamBranch = steamBranch }, cancellationToken);
+                return 0;
+            },
             cancellationToken);
 
     public Task<OperationResultDto?> StartAsync(string profileId, CancellationToken cancellationToken = default) =>

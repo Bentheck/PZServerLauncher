@@ -4,10 +4,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using PZServerLauncher.Core.Profiles;
 using PZServerLauncher.Core.Runtime;
-using PZServerLauncher.Host.Data;
-using PZServerLauncher.Host.Data.Entities;
-using PZServerLauncher.Host.Infrastructure;
-using PZServerLauncher.Host.Services;
+using PZServerLauncher.Runtime.Data;
+using PZServerLauncher.Runtime.Data.Entities;
+using PZServerLauncher.Runtime.Infrastructure;
+using PZServerLauncher.Runtime.Services;
 using PZServerLauncher.Infrastructure.Planning;
 using PZServerLauncher.Infrastructure.Settings;
 using PZServerLauncher.Tests.Testing;
@@ -289,6 +289,7 @@ public sealed class ProfileRetirementServiceTests : IDisposable
     private async Task<ServerProfile> CreateManagedProfileAsync(ProfileStore profileStore)
     {
         var profile = ServerProfileFactory.CreateStarterProfile("Main Server", ServerProfileFactory.DefaultStarterPort, [], _tempRoot);
+        Directory.CreateDirectory(profile.InstallDirectory);
         return await profileStore.UpsertAsync(profile);
     }
 

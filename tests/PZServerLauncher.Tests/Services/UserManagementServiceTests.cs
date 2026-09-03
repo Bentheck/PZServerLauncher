@@ -5,8 +5,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using PZServerLauncher.Contracts.Runtime;
 using PZServerLauncher.Core.Runtime;
-using PZServerLauncher.Host.Data;
-using PZServerLauncher.Host.Services;
+using PZServerLauncher.Runtime.Data;
+using PZServerLauncher.Runtime.Services;
 
 namespace PZServerLauncher.Tests.Services;
 

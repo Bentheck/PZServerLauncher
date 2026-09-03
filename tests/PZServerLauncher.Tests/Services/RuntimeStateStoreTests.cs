@@ -1,5 +1,5 @@
 using PZServerLauncher.Core.Runtime;
-using PZServerLauncher.Host.Services;
+using PZServerLauncher.Runtime.Services;
 
 namespace PZServerLauncher.Tests.Services;
 

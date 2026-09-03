@@ -1,0 +1,6 @@
+namespace PZServerLauncher.Runtime.Services;
+
+public interface IRuntimeLogSink
+{
+    void WriteProfileLine(string profileId, string line);
+}

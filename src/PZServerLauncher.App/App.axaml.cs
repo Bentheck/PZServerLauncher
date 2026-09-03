@@ -27,9 +27,11 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
+        var storageRoot = LauncherStorageRootResolver.Resolve();
         _serviceProvider = new ServiceCollection()
             .AddSingleton<DesktopLogService>()
-            .AddSingleton<ILauncherRuntime>(_ => new LauncherRuntime(LauncherStorageRootResolver.Resolve()))
+            .AddSingleton<ILauncherRuntime>(_ => new LauncherRuntime(storageRoot))
+            .AddSingleton(new ApplicationThemeService(storageRoot))
             .AddSingleton<DesktopShutdownService>()
             .AddSingleton<ShutdownWarningDialogService>()
             .AddSingleton<DesktopShellService>()
@@ -39,6 +41,8 @@ public partial class App : Application
             .AddSingleton<MainWindowViewModel>()
             .AddSingleton<WorkspaceShellViewModel>()
             .BuildServiceProvider();
+
+        _serviceProvider.GetRequiredService<ApplicationThemeService>().Initialize();
 
         _desktopLogService = _serviceProvider.GetRequiredService<DesktopLogService>();
         _desktopLogService.Info("Desktop application starting.");

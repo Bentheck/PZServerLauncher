@@ -1,7 +1,7 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
-using PZServerLauncher.Host.Infrastructure;
-using PZServerLauncher.Host.Services;
+using PZServerLauncher.Runtime.Infrastructure;
+using PZServerLauncher.Runtime.Services;
 using PZServerLauncher.Tests.Testing;
 
 namespace PZServerLauncher.Tests.Services;

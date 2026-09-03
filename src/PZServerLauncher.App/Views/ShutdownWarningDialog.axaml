@@ -17,7 +17,7 @@
         Title="Close PZ Server Launcher">
     <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                   VerticalScrollBarVisibility="Auto">
-        <Border Classes="card" Margin="18" Padding="20">
+        <Border Classes="workspace-band" Margin="18" Padding="20">
             <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="16">
                 <StackPanel Spacing="6">
                     <TextBlock Classes="kicker" Text="Close Warning" />
@@ -31,37 +31,37 @@
                 </StackPanel>
 
                 <Border Grid.Row="1"
-                        Background="#22FFB36B"
-                        BorderBrush="#72FFB36B"
+                        Background="{DynamicResource SuccessSoftBrush}"
+                        BorderBrush="{DynamicResource SuccessBrush}"
                         BorderThickness="1"
                         CornerRadius="14"
                         Padding="14">
                     <TextBlock Classes="body"
-                               Foreground="#FFDCB8"
+                               Foreground="{DynamicResource SuccessBrush}"
                                Text="{Binding DialogGuidance}"
                                TextWrapping="Wrap" />
                 </Border>
 
                 <Border Grid.Row="2"
-                        Background="#14FFFFFF"
-                        BorderBrush="#24FFFFFF"
+                        Background="{DynamicResource PanelSubtleBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
                         BorderThickness="1"
                         CornerRadius="14"
                         Padding="14">
                     <TextBlock Classes="body"
-                               Foreground="#C9D5EA"
+                               Foreground="{DynamicResource TextMutedBrush}"
                                Text="{Binding TrayGuidance}"
                                TextWrapping="Wrap" />
                 </Border>
 
                 <Border Grid.Row="3"
-                        Background="#10FFFFFF"
-                        BorderBrush="#20FFFFFF"
+                        Background="{DynamicResource PanelSubtleBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
                         BorderThickness="1"
                         CornerRadius="14"
                         Padding="14">
                     <TextBlock Classes="caption"
-                               Foreground="#E6D5C3"
+                               Foreground="{DynamicResource TextMutedBrush}"
                                Text="{Binding ImpactList}"
                                TextWrapping="Wrap" />
                 </Border>

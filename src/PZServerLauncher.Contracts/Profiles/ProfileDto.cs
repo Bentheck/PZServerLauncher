@@ -18,4 +18,5 @@ public sealed record ProfileDto(
     bool StartWithHost,
     bool AutoRestartOnCrash,
     WorkshopPreset WorkshopPreset,
-    BackupPolicy BackupPolicy);
+    BackupPolicy BackupPolicy,
+    string SteamBranch = "public");

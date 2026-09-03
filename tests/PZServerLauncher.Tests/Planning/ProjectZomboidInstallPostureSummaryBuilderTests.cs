@@ -42,8 +42,8 @@ public sealed class ProjectZomboidInstallPostureSummaryBuilderTests : IDisposabl
         Assert.True(summary.SandboxDetected);
         Assert.True(summary.WorldDetected);
         Assert.True(summary.UsesDirectJavaTemplate);
-        Assert.Contains("Build 42 Unstable", summary.BranchChannelSummary);
-        Assert.Contains("-beta unstable", summary.SteamCmdCommandSummary);
+        Assert.Contains("Build 42 Stable", summary.BranchChannelSummary);
+        Assert.Contains("app_update 380870 validate", summary.SteamCmdCommandSummary);
         Assert.Contains("@ShutdownOnFailedCommand 1", summary.SteamCmdScriptPreview);
         Assert.Contains("force_install_dir", summary.SteamCmdScriptPreview);
         Assert.Contains("-servername", summary.LaunchCommandPreview);
@@ -69,7 +69,7 @@ public sealed class ProjectZomboidInstallPostureSummaryBuilderTests : IDisposabl
             @echo off
             echo launcher exists but no java template can be extracted
             """);
-        Directory.CreateDirectory(profile.CacheDirectory);
+        Directory.CreateDirectory(Path.Combine(profile.CacheDirectory, "Server"));
 
         var summary = ProjectZomboidInstallPostureSummaryBuilder.Build(profile, "Stopped", hasBackup: false, latestBackup: "No backups");
 
@@ -77,9 +77,9 @@ public sealed class ProjectZomboidInstallPostureSummaryBuilderTests : IDisposabl
         Assert.True(summary.CacheDetected);
         Assert.True(summary.LauncherDetected);
         Assert.False(summary.UsesDirectJavaTemplate);
-        Assert.Contains("Build 42 Unstable", summary.BranchChannelSummary);
-        Assert.Contains("-beta unstable", summary.SteamCmdCommandSummary);
-        Assert.Contains("-beta unstable validate", summary.SteamCmdScriptPreview);
+        Assert.Contains("Build 42 Stable", summary.BranchChannelSummary);
+        Assert.Contains("app_update 380870 validate", summary.SteamCmdCommandSummary);
+        Assert.DoesNotContain("-beta", summary.SteamCmdScriptPreview, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Launch blocked", summary.LaunchCommandPreview, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Launch blocked", summary.LaunchReadinessSummary, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("No backup archive exists yet", summary.BackupSafetySummary);

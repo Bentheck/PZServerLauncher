@@ -2,6 +2,7 @@ using System.Collections.Specialized;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PZServerLauncher.App.Services;
+using PZServerLauncher.Contracts.Runtime;
 using PZServerLauncher.Core.Runtime;
 using PZServerLauncher.Core.Profiles;
 using PZServerLauncher.Runtime;
@@ -28,8 +29,8 @@ public sealed partial class InstallUpdateWorkspaceViewModel : ProfileWorkspacePa
         _launcherRuntime = launcherRuntime;
         _folderPickerService = folderPickerService;
         Legacy.RecentOperationJobs.CollectionChanged += OnRecentOperationJobsChanged;
-        InstallCommand = new AsyncRelayCommand(() => ExecuteProfileCommandAsync(Legacy.InstallCommand));
-        UpdateCommand = new AsyncRelayCommand(() => ExecuteProfileCommandAsync(Legacy.UpdateCommand));
+        InstallCommand = new AsyncRelayCommand(() => ExecuteSteamBranchActionAsync(isUpdate: false));
+        UpdateCommand = new AsyncRelayCommand(() => ExecuteSteamBranchActionAsync(isUpdate: true));
         BackupCommand = new AsyncRelayCommand(() => ExecuteProfileCommandAsync(Legacy.BackupCommand));
         StartCommand = new AsyncRelayCommand(() => ExecuteProfileCommandAsync(Legacy.StartCommand));
         StopCommand = new AsyncRelayCommand(() => ExecuteProfileCommandAsync(Legacy.StopCommand));
@@ -39,6 +40,7 @@ public sealed partial class InstallUpdateWorkspaceViewModel : ProfileWorkspacePa
         ResetPathOverridesCommand = new RelayCommand(ResetPathOverrides);
         BrowseInstallDirectoryCommand = new AsyncRelayCommand(BrowseInstallDirectoryAsync);
         BrowseCacheDirectoryCommand = new AsyncRelayCommand(BrowseCacheDirectoryAsync);
+        RefreshSteamBranchesCommand = new AsyncRelayCommand(() => RefreshSteamBranchesAsync(forceRefresh: true));
         ArmUninstallServerCommand = new RelayCommand(ArmUninstallServer);
         ArmDeleteProfileCommand = new RelayCommand(ArmDeleteProfile);
         CancelRetirementCommand = new RelayCommand(CancelRetirement);
@@ -67,6 +69,8 @@ public sealed partial class InstallUpdateWorkspaceViewModel : ProfileWorkspacePa
     public IAsyncRelayCommand BrowseInstallDirectoryCommand { get; }
 
     public IAsyncRelayCommand BrowseCacheDirectoryCommand { get; }
+
+    public IAsyncRelayCommand RefreshSteamBranchesCommand { get; }
 
     public IRelayCommand ArmUninstallServerCommand { get; }
 
@@ -123,9 +127,22 @@ public sealed partial class InstallUpdateWorkspaceViewModel : ProfileWorkspacePa
             job.Kind is OperationJobKind.Install or OperationJobKind.Update &&
             job.Status is OperationJobStatus.Queued or OperationJobStatus.Running);
 
-    public bool CanQueueInstall => SelectedProfile is not null && !HasActiveLifecycleJob;
+    public bool CanQueueInstall => SelectedProfile is not null &&
+        SelectedSteamBranch?.CanInstall == true &&
+        !IsScanningSteamBranches &&
+        !HasActiveLifecycleJob;
 
-    public bool CanQueueUpdate => SelectedProfile is not null && !HasActiveLifecycleJob;
+    public bool CanQueueUpdate => CanQueueInstall;
+
+    public string SteamVersionStatus => IsScanningSteamBranches
+        ? "Scanning Steam for available versions..."
+        : SelectedSteamBranch is null
+            ? SteamBranchScanError.Length > 0
+                ? SteamBranchScanError
+                : "Refresh versions before installing or updating."
+            : SelectedSteamBranch.CanInstall
+                ? $"Build {SelectedSteamBranch.BuildId} | Steam channel {SelectedSteamBranch.Name}"
+                : $"{SelectedSteamBranch.DisplayName} requires a private-beta password and cannot be installed anonymously.";
 
     public bool HasActiveProfileJob => SelectedProfile is not null &&
         Legacy.RecentOperationJobs.Any(job =>
@@ -192,8 +209,8 @@ public sealed partial class InstallUpdateWorkspaceViewModel : ProfileWorkspacePa
     public string BranchInstallStatus => SelectedProfile is null
         ? "No profile selected."
         : SelectedProfile.IsInstallDetected
-            ? $"{SelectedProfile.Branch} is already installed for this server."
-            : $"{SelectedProfile.Branch} is not installed yet for this server.";
+            ? $"{SelectedSteamBranch?.DisplayName ?? SelectedProfile.Branch} is installed for this server."
+            : $"{SelectedSteamBranch?.DisplayName ?? SelectedProfile.Branch} is not installed yet for this server.";
 
     public string LaunchModeLabel => SelectedProfile is null
         ? "Unknown"
@@ -399,6 +416,18 @@ public sealed partial class InstallUpdateWorkspaceViewModel : ProfileWorkspacePa
     private string editableCacheDirectory = string.Empty;
 
     [ObservableProperty]
+    private IReadOnlyList<SteamBranchOptionViewModel> steamBranches = [];
+
+    [ObservableProperty]
+    private SteamBranchOptionViewModel? selectedSteamBranch;
+
+    [ObservableProperty]
+    private bool isScanningSteamBranches;
+
+    [ObservableProperty]
+    private string steamBranchScanError = string.Empty;
+
+    [ObservableProperty]
     private bool isRetirementBusy;
 
     [ObservableProperty]
@@ -411,14 +440,18 @@ public sealed partial class InstallUpdateWorkspaceViewModel : ProfileWorkspacePa
     {
         EditableInstallDirectory = profile?.InstallDirectory ?? string.Empty;
         EditableCacheDirectory = profile?.CacheDirectory ?? string.Empty;
+        SteamBranches = [];
+        SelectedSteamBranch = null;
+        SteamBranchScanError = string.Empty;
         CancelRetirement();
         Notify();
+        _ = RefreshSteamBranchesAsync();
     }
 
-    public override Task RefreshPageAsync()
+    public override async Task RefreshPageAsync()
     {
         Notify();
-        return Task.CompletedTask;
+        await RefreshSteamBranchesAsync();
     }
 
     partial void OnEditableInstallDirectoryChanged(string value)
@@ -432,6 +465,23 @@ public sealed partial class InstallUpdateWorkspaceViewModel : ProfileWorkspacePa
         OnPropertyChanged(nameof(HasPathOverridesDirty));
         OnPropertyChanged(nameof(PathOverrideSummary));
     }
+
+    partial void OnSelectedSteamBranchChanged(SteamBranchOptionViewModel? value)
+    {
+        OnPropertyChanged(nameof(SteamVersionStatus));
+        OnPropertyChanged(nameof(BranchInstallStatus));
+        OnPropertyChanged(nameof(CanQueueInstall));
+        OnPropertyChanged(nameof(CanQueueUpdate));
+    }
+
+    partial void OnIsScanningSteamBranchesChanged(bool value)
+    {
+        OnPropertyChanged(nameof(SteamVersionStatus));
+        OnPropertyChanged(nameof(CanQueueInstall));
+        OnPropertyChanged(nameof(CanQueueUpdate));
+    }
+
+    partial void OnSteamBranchScanErrorChanged(string value) => OnPropertyChanged(nameof(SteamVersionStatus));
 
     partial void OnIsRetirementBusyChanged(bool value) => NotifyRetirementState();
 
@@ -448,6 +498,76 @@ public sealed partial class InstallUpdateWorkspaceViewModel : ProfileWorkspacePa
 
         await command.ExecuteAsync(SelectedProfile);
         Notify();
+    }
+
+    private async Task ExecuteSteamBranchActionAsync(bool isUpdate)
+    {
+        if (SelectedProfile is null || SelectedSteamBranch?.CanInstall != true)
+        {
+            return;
+        }
+
+        var action = isUpdate ? "Update" : "Install";
+        try
+        {
+            Legacy.StatusMessage = $"Validating {SelectedSteamBranch.DisplayName} with Steam...";
+            var result = isUpdate
+                ? await _launcherRuntime.UpdateSteamBranchAsync(SelectedProfile.ProfileId, SelectedSteamBranch.Name, CancellationToken.None)
+                : await _launcherRuntime.InstallSteamBranchAsync(SelectedProfile.ProfileId, SelectedSteamBranch.Name, CancellationToken.None);
+            Legacy.StatusMessage = result?.Message ?? $"{action} queued.";
+            await Legacy.RefreshCommand.ExecuteAsync(null);
+        }
+        catch (Exception ex)
+        {
+            Legacy.StatusMessage = ex.Message;
+            await RefreshSteamBranchesAsync();
+        }
+
+        Notify();
+    }
+
+    private async Task RefreshSteamBranchesAsync(bool forceRefresh = false)
+    {
+        if (SelectedProfile is null || IsScanningSteamBranches)
+        {
+            return;
+        }
+
+        var profileId = SelectedProfile.ProfileId;
+        IsScanningSteamBranches = true;
+        SteamBranchScanError = string.Empty;
+        try
+        {
+            var catalog = forceRefresh
+                ? await _launcherRuntime.RefreshSteamBranchesAsync(profileId, CancellationToken.None)
+                : await _launcherRuntime.GetSteamBranchesAsync(profileId, CancellationToken.None);
+            if (!string.Equals(SelectedProfile?.ProfileId, profileId, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            SteamBranches = catalog.Branches
+                .Select(branch => new SteamBranchOptionViewModel(
+                    branch.Name,
+                    branch.DisplayName,
+                    branch.BuildId,
+                    branch.RequiresPassword,
+                    branch.IsDefault))
+                .ToArray();
+            SelectedSteamBranch = SteamBranches.FirstOrDefault(branch =>
+                string.Equals(branch.Name, catalog.SelectedBranch, StringComparison.OrdinalIgnoreCase));
+        }
+        catch (Exception ex)
+        {
+            SteamBranches = [];
+            SelectedSteamBranch = null;
+            SteamBranchScanError = $"Version scan failed: {ex.Message}";
+        }
+        finally
+        {
+            IsScanningSteamBranches = false;
+            OnPropertyChanged(nameof(SteamBranches));
+        }
     }
 
     private async Task SavePathOverridesAsync()
@@ -603,6 +723,7 @@ public sealed partial class InstallUpdateWorkspaceViewModel : ProfileWorkspacePa
         OnPropertyChanged(nameof(HasActiveLifecycleJob));
         OnPropertyChanged(nameof(CanQueueInstall));
         OnPropertyChanged(nameof(CanQueueUpdate));
+        OnPropertyChanged(nameof(SteamVersionStatus));
         OnPropertyChanged(nameof(HasActiveProfileJob));
         OnPropertyChanged(nameof(MaintenanceQueueSummary));
         OnPropertyChanged(nameof(JobHistorySummary));
@@ -696,3 +817,17 @@ public sealed record InstallReadinessCheckpointViewModel(
     string Title,
     string Status,
     string Summary);
+
+public sealed record SteamBranchOptionViewModel(
+    string Name,
+    string DisplayName,
+    string BuildId,
+    bool RequiresPassword,
+    bool IsDefault)
+{
+    public bool CanInstall => !RequiresPassword;
+
+    public string DisplayLabel => RequiresPassword
+        ? $"{DisplayName} (password required)"
+        : DisplayName;
+}

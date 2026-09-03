@@ -53,6 +53,9 @@ public sealed partial class SandboxCategoryViewModel : ObservableObject
     [ObservableProperty]
     private bool isExpanded;
 
+    [ObservableProperty]
+    private bool isSelected;
+
     public string ExpandButtonLabel => IsExpanded ? "Hide Sections" : "Open Sections";
 
     partial void OnIsExpandedChanged(bool value)

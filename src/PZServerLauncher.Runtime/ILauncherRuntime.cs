@@ -76,6 +76,14 @@ public interface ILauncherRuntime : IAsyncDisposable
         int maxPlayers,
         CancellationToken cancellationToken = default);
 
+    Task<ProfileDto?> CreateStarterProfileAsync(
+        string displayName,
+        int defaultPort,
+        int preferredMemoryInGigabytes,
+        int maxPlayers,
+        string steamBranch,
+        CancellationToken cancellationToken = default);
+
     Task CreateProfileAsync(ProfileUpsertRequestDto request, CancellationToken cancellationToken = default);
 
     Task<ProfileDto?> UpdateProfilePathsAsync(
@@ -86,7 +94,17 @@ public interface ILauncherRuntime : IAsyncDisposable
 
     Task<OperationResultDto?> InstallAsync(string profileId, CancellationToken cancellationToken = default);
 
+    Task<OperationResultDto?> InstallSteamBranchAsync(string profileId, string steamBranch, CancellationToken cancellationToken = default);
+
     Task<OperationResultDto?> UpdateAsync(string profileId, CancellationToken cancellationToken = default);
+
+    Task<OperationResultDto?> UpdateSteamBranchAsync(string profileId, string steamBranch, CancellationToken cancellationToken = default);
+
+    Task<SteamBranchCatalogDto> GetSteamBranchesAsync(string profileId, CancellationToken cancellationToken = default);
+
+    Task<SteamBranchCatalogDto> RefreshSteamBranchesAsync(string profileId, CancellationToken cancellationToken = default);
+
+    Task<SteamBranchCatalogDto> GetSteamBranchCatalogAsync(CancellationToken cancellationToken = default);
 
     Task<OperationResultDto?> StartAsync(string profileId, CancellationToken cancellationToken = default);
 

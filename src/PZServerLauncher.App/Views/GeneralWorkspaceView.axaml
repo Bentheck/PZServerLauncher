@@ -10,35 +10,35 @@
              x:DataType="vm:GeneralWorkspaceViewModel">
     <ScrollViewer HorizontalScrollBarVisibility="Disabled">
         <Grid RowDefinitions="Auto,Auto,*,Auto,Auto" RowSpacing="16">
-            <Border Classes="card" Padding="22">
+            <Border Classes="workspace-band" Padding="22">
                 <Grid ColumnDefinitions="*,300" ColumnSpacing="18">
                     <StackPanel Spacing="8">
                         <TextBlock Classes="kicker" Text="Settings" />
                         <TextBlock Classes="panel-title" FontSize="30" Text="{Binding ProfileDisplayName}" />
                         <TextBlock Classes="body"
                                    FontSize="16"
-                                   Foreground="#C9D5EA"
+                                   Foreground="{DynamicResource TextMutedBrush}"
                                    Text="{Binding WorkspaceSummary}"
                                    TextWrapping="Wrap" />
-                        <WrapPanel Margin="0,8,0,0" Orientation="Horizontal" ItemHeight="28">
-                            <Border Background="#233238" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
-                                <TextBlock Foreground="#F7F8F6" FontSize="11" Text="{Binding Branch}" />
+                        <WrapPanel Margin="0,8,0,0" Orientation="Horizontal">
+                            <Border Background="{DynamicResource PanelSubtleBrush}" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                <TextBlock Foreground="{DynamicResource TextBrush}" FontSize="11" Text="{Binding Branch}" />
                             </Border>
-                            <Border Background="#224FD8A9" BorderBrush="#6B8CF0CC" BorderThickness="1" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
-                                <TextBlock Foreground="#8CF0CC" FontSize="11" Text="{Binding CatalogSummary}" />
+                            <Border Background="{DynamicResource AccentSoftBrush}" BorderBrush="{DynamicResource AccentBrush}" BorderThickness="1" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                <TextBlock Foreground="{DynamicResource AccentBrush}" FontSize="11" Text="{Binding CatalogSummary}" />
                             </Border>
-                            <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
-                                <TextBlock Foreground="#C9D5EA" FontSize="11" Text="{Binding ProfileNamespace}" />
+                            <Border Background="{DynamicResource PanelSubtleBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="999" Padding="10,5" Margin="0,0,8,8">
+                                <TextBlock Foreground="{DynamicResource TextMutedBrush}" FontSize="11" Text="{Binding ProfileNamespace}" />
                             </Border>
                         </WrapPanel>
                     </StackPanel>
 
-                    <Border Grid.Column="1" Classes="surface-soft" Padding="16">
+                    <Border Grid.Column="1" Classes="workspace-band" Padding="16">
                         <StackPanel Spacing="6">
                             <TextBlock Classes="kicker" Text="Editor Status" />
                             <TextBlock Classes="body"
                                        FontWeight="SemiBold"
-                                       Foreground="#EDF4FF"
+                                       Foreground="{DynamicResource TextBrush}"
                                        Text="{Binding LoadStatus}"
                                        TextWrapping="Wrap" />
                             <TextBlock Classes="caption" Text="{Binding ActionSummary}" TextWrapping="Wrap" />
@@ -48,21 +48,21 @@
             </Border>
 
             <Border Grid.Row="1"
-                    Classes="callout-card"
+                    Classes="inline-warning"
                     Padding="16"
                     IsVisible="{Binding RequiresAdvancedFilesFallback}">
                 <StackPanel Spacing="6">
                     <TextBlock Classes="kicker" Text="Use Advanced Files Instead" />
                     <TextBlock Classes="body" Text="{Binding FallbackReason}" TextWrapping="Wrap" />
                     <TextBlock Classes="caption"
-                               Text="The structured editor stays safe on purpose. If the file is unusual or unsupported, edit it from Advanced Files instead of forcing a risky rewrite."
+                               Text="Unsupported files stay in Advanced Files to avoid risky rewrites."
                                TextWrapping="Wrap" />
                 </StackPanel>
             </Border>
 
             <Grid Grid.Row="2" ColumnDefinitions="1.05*,.95*" ColumnSpacing="16" IsEnabled="{Binding CanEdit}">
                 <StackPanel Spacing="16">
-                    <Border Classes="card" Padding="18">
+                    <Border Classes="workspace-band" Padding="18">
                         <StackPanel Spacing="12">
                             <TextBlock Classes="kicker" Text="Basic Server Info" />
                             <TextBlock Classes="caption"
@@ -97,7 +97,7 @@
                         </StackPanel>
                     </Border>
 
-                    <Border Classes="card" Padding="18">
+                    <Border Classes="workspace-band" Padding="18">
                         <StackPanel Spacing="12">
                             <TextBlock Classes="kicker" Text="Gameplay Basics" />
                             <Grid ColumnDefinitions="*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="10">
@@ -113,7 +113,7 @@
                         </StackPanel>
                     </Border>
 
-                    <Border Classes="card" Padding="18">
+                    <Border Classes="workspace-band" Padding="18">
                         <StackPanel Spacing="12">
                             <TextBlock Classes="kicker" Text="Spawn, Loot, and Cleanup" />
 
@@ -156,7 +156,7 @@
                 </StackPanel>
 
                 <StackPanel Grid.Column="1" Spacing="16">
-                    <Border Classes="card" Padding="18">
+                    <Border Classes="workspace-band" Padding="18">
                         <StackPanel Spacing="12">
                             <TextBlock Classes="kicker" Text="Safehouses" />
                             <Grid ColumnDefinitions="*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="10">
@@ -182,7 +182,7 @@
                         </StackPanel>
                     </Border>
 
-                    <Border Classes="card" Padding="18">
+                    <Border Classes="workspace-band" Padding="18">
                         <StackPanel Spacing="12">
                             <TextBlock Classes="kicker" Text="Factions and Trade" />
                             <Grid ColumnDefinitions="*,*" ColumnSpacing="12" RowDefinitions="Auto,Auto,Auto" RowSpacing="10">
@@ -200,7 +200,7 @@
                         </StackPanel>
                     </Border>
 
-                    <Border Classes="card" Padding="18">
+                    <Border Classes="workspace-band" Padding="18">
                         <StackPanel Spacing="12">
                             <TextBlock Classes="kicker" Text="Ports and Launcher" />
 
@@ -225,17 +225,17 @@
                                 <TextBox Text="{Binding MemoryInGigabytes}" />
                             </StackPanel>
 
-                            <CheckBox Content="Start this server when the host starts" IsChecked="{Binding StartWithHost}" />
+                            <CheckBox Content="Start with host" IsChecked="{Binding StartWithHost}" />
                             <CheckBox Content="Auto restart on crash" IsChecked="{Binding AutoRestartOnCrash}" />
                         </StackPanel>
                     </Border>
 
-                    <Border Classes="surface-soft" Padding="18">
+                    <Border Classes="workspace-band" Padding="18">
                         <StackPanel Spacing="8">
                             <TextBlock Classes="kicker" Text="Before You Save" />
                             <TextBlock Classes="body" Text="{Binding ActionSummary}" TextWrapping="Wrap" />
                             <TextBlock Classes="caption"
-                                       Text="Apply Settings writes to the real server files. Save Draft keeps a local work-in-progress copy. Reload pulls fresh values from the host."
+                                       Text="Apply writes server files. Save Draft keeps local changes. Reload pulls from host."
                                        TextWrapping="Wrap" />
                         </StackPanel>
                     </Border>
@@ -243,10 +243,10 @@
             </Grid>
 
             <Border Grid.Row="3"
-                    Background="#22FFB36B"
-                    BorderBrush="#72FFB36B"
-                    BorderThickness="1"
-                    CornerRadius="14"
+                    Background="{DynamicResource SuccessSoftBrush}"
+                            BorderBrush="{DynamicResource SuccessBrush}"
+                            BorderThickness="0,1,0,1"
+                            CornerRadius="0"
                     Padding="16"
                     IsVisible="{Binding HasFieldErrors}">
                 <StackPanel Spacing="8">
@@ -261,7 +261,7 @@
                 </StackPanel>
             </Border>
 
-            <Border Grid.Row="4" Classes="card" Padding="18">
+            <Border Grid.Row="4" Classes="workspace-band" Padding="18">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
                     <StackPanel Spacing="6">
                         <TextBlock Classes="kicker" Text="Save Options" />

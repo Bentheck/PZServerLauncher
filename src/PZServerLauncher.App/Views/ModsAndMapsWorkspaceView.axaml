@@ -13,7 +13,7 @@
     <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                   VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="0,0,0,20" Spacing="18">
-            <Border Classes="card" Padding="24">
+            <Border Classes="workspace-band" Padding="18">
                 <StackPanel Spacing="12">
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
                         <StackPanel Spacing="8">
@@ -21,31 +21,31 @@
                             <TextBlock Classes="panel-title" FontSize="30" Text="{Binding ProfileDisplayName}" />
                             <TextBlock Classes="body"
                                        FontSize="15"
-                                       Foreground="#C9D5EA"
+                                       Foreground="{DynamicResource TextMutedBrush}"
                                        Text="{Binding WorkspaceSummary}"
                                        TextWrapping="Wrap" />
                         </StackPanel>
                         <StackPanel Grid.Column="1" HorizontalAlignment="Right" Spacing="8">
-                            <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="999" Padding="12,6">
+                            <Border Background="{DynamicResource PanelSubtleBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="999" Padding="12,6">
                                 <TextBlock Classes="kicker" Text="{Binding Branch}" />
                             </Border>
-                            <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="999" Padding="12,6">
+                            <Border Background="{DynamicResource PanelSubtleBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="999" Padding="12,6">
                                 <TextBlock Classes="kicker" Text="{Binding LoadoutSummary}" />
                             </Border>
-                            <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="999" Padding="12,6">
+                            <Border Background="{DynamicResource PanelSubtleBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="999" Padding="12,6">
                                 <TextBlock Classes="kicker" Text="{Binding DraftStateSummary}" />
                             </Border>
                         </StackPanel>
                     </Grid>
 
-                    <Border Background="#3A5B3B"
-                            BorderBrush="#6FC377"
-                            BorderThickness="1"
-                            CornerRadius="14"
+                    <Border Background="{DynamicResource SuccessSoftBrush}"
+                            BorderBrush="{DynamicResource SuccessBrush}"
+                            BorderThickness="0,1,0,1"
+                            CornerRadius="0"
                             Padding="14"
                             IsVisible="{Binding HasUnsavedChanges}">
                         <TextBlock Classes="body"
-                                   Foreground="#F4FFF4"
+                                   Foreground="{DynamicResource SuccessBrush}"
                                    Text="{Binding DraftBannerText}"
                                    TextWrapping="Wrap" />
                     </Border>
@@ -72,7 +72,7 @@
                                 Command="{Binding DiscardDraftCommand}" />
                         <Button Grid.Column="5"
                                 Classes="action-secondary"
-                                Content="Scan Installed Workshop and Use It"
+                                Content="Scan Workshop"
                                 Command="{Binding ScanInstalledWorkshopAndUseItCommand}" />
                         <TextBlock Grid.Column="6"
                                    Classes="caption"
@@ -85,14 +85,14 @@
 
             <Grid ColumnDefinitions="1.15*,.85*" ColumnSpacing="18">
                 <StackPanel Spacing="18">
-                    <Border Classes="card" Padding="18" IsVisible="{Binding IsBrowseMode}">
+                    <Border Classes="workspace-band" Padding="16" IsVisible="{Binding IsBrowseMode}">
                         <StackPanel Spacing="12">
                             <TextBlock Classes="panel-title" FontSize="22" Text="Browse &amp; Add" />
                             <TextBlock Classes="body" Text="{Binding BrowserSummary}" TextWrapping="Wrap" />
 
                             <Grid ColumnDefinitions="*,180,180,Auto" ColumnSpacing="8">
                                 <TextBox Text="{Binding SearchQuery}"
-                                         PlaceholderText="Search mod / map / collection name, or paste a Workshop item / collection URL / ID" />
+                                         PlaceholderText="Search or paste Workshop URL / ID" />
                                 <ComboBox Grid.Column="1"
                                           ItemsSource="{Binding AvailableSearchModes}"
                                           SelectedItem="{Binding SearchMode}" />
@@ -109,7 +109,7 @@
                             <StackPanel Spacing="8">
                                 <TextBlock Classes="kicker" Text="Steam Tags" />
                                 <TextBox Text="{Binding WorkshopTagInput}"
-                                         PlaceholderText="Optional comma-separated Steam tags like map, weapons, vehicles" />
+                                         PlaceholderText="Optional tags" />
                                 <TextBlock Classes="caption"
                                            Text="{Binding WorkshopTagSummary}"
                                            TextWrapping="Wrap" />
@@ -132,21 +132,17 @@
                                 </ItemsControl>
                             </StackPanel>
 
-                            <Border Background="#14FFFFFF"
-                                    BorderBrush="#24FFFFFF"
-                                    BorderThickness="1"
-                                    CornerRadius="12"
-                                    Padding="12"
+                            <Border Classes="row-strip"
                                     IsVisible="{Binding ShowSteamApiKeyHelper}">
                                 <StackPanel Spacing="8">
                                     <TextBlock Classes="kicker" Text="Steam Search Helper" />
                                     <TextBlock Classes="caption"
-                                               Text="Steam search needs a Steam Web API user key. Local cache search and direct Workshop ID or URL lookup still work without it."
+                                               Text="Steam search needs an API key. Local cache and direct IDs still work."
                                                TextWrapping="Wrap" />
                                 </StackPanel>
                             </Border>
 
-                            <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="12" Padding="12">
+                            <Border Background="Transparent" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" CornerRadius="0" Padding="12">
                                 <StackPanel Spacing="8">
                                     <TextBlock Classes="kicker" Text="Steam API Key" />
                                     <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8"
@@ -183,25 +179,25 @@
                             <ItemsControl ItemsSource="{Binding WorkshopSearchResults}" IsVisible="{Binding HasWorkshopSearchResults}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="vm:ModsAndMapsWorkspaceViewModel+WorkshopCatalogItemViewModel">
-                                        <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="14" Padding="12" Margin="0,0,0,10">
+                                        <Border Background="Transparent" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" CornerRadius="0" Padding="12" Margin="0,0,0,10">
                                             <Grid ColumnDefinitions="96,*,Auto" ColumnSpacing="12">
-                                                <Border Width="96" Height="72" Background="#10FFFFFF" BorderBrush="#20FFFFFF" BorderThickness="1" CornerRadius="10">
+                                                <Border Width="96" Height="72" Background="Transparent" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" CornerRadius="0">
                                                     <Image Source="{Binding PreviewImage}" Stretch="UniformToFill" IsVisible="{Binding HasPreviewImage}" />
                                                 </Border>
                                                 <StackPanel Grid.Column="1" Spacing="4">
-                                                    <TextBlock FontWeight="SemiBold" Foreground="#EDF4FF" Text="{Binding Title}" TextWrapping="Wrap" />
+                                                    <TextBlock FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" Text="{Binding Title}" TextWrapping="Wrap" />
                                                     <TextBlock Classes="caption" Text="{Binding WorkshopId}" />
                                                     <WrapPanel Orientation="Horizontal">
-                                                        <Border Background="#22FFB36B" BorderBrush="#72FFB36B" BorderThickness="1" CornerRadius="999" Padding="8,3" Margin="0,0,6,6" IsVisible="{Binding IsCollection}">
-                                                            <TextBlock Classes="kicker" Foreground="#FFDCB8" Text="{Binding KindLabel}" />
+                                                        <Border Background="{DynamicResource SuccessSoftBrush}" BorderBrush="{DynamicResource SuccessBrush}" BorderThickness="1" CornerRadius="999" Padding="8,3" Margin="0,0,6,6" IsVisible="{Binding IsCollection}">
+                                                            <TextBlock Classes="kicker" Foreground="{DynamicResource SuccessBrush}" Text="{Binding KindLabel}" />
                                                         </Border>
-                                                        <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="999" Padding="8,3" Margin="0,0,6,6">
+                                                        <Border Background="{DynamicResource PanelSubtleBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="999" Padding="8,3" Margin="0,0,6,6">
                                                             <TextBlock Classes="kicker" Text="{Binding SourceLabel}" />
                                                         </Border>
-                                                        <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="999" Padding="8,3" Margin="0,0,6,6">
+                                                        <Border Background="{DynamicResource PanelSubtleBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="999" Padding="8,3" Margin="0,0,6,6">
                                                             <TextBlock Classes="kicker" Text="{Binding IsInstalledLocally, StringFormat='Installed locally: {0}'}" />
                                                         </Border>
-                                                        <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="999" Padding="8,3" Margin="0,0,6,6">
+                                                        <Border Background="{DynamicResource PanelSubtleBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="999" Padding="8,3" Margin="0,0,6,6">
                                                             <TextBlock Classes="kicker" Text="{Binding IsQueued, StringFormat='Already in editor: {0}'}" />
                                                         </Border>
                                                     </WrapPanel>
@@ -225,13 +221,13 @@
                         </StackPanel>
                     </Border>
 
-                    <Border Classes="card" Padding="18" IsVisible="{Binding IsLiveEditorMode}">
+                    <Border Classes="workspace-band" Padding="16" IsVisible="{Binding IsLiveEditorMode}">
                         <StackPanel Spacing="12">
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                                 <StackPanel Spacing="4">
                                     <TextBlock Classes="panel-title" FontSize="22" Text="Mods in the Editor" />
                                     <TextBlock Classes="body"
-                                               Text="The mod rows are the source of truth for draft state. Active rows are written to Mods=. Inactive rows stay saved in the editor and remain visible."
+                                               Text="Active rows write to Mods=. Inactive rows stay in the editor."
                                                TextWrapping="Wrap" />
                                 </StackPanel>
                                 <Button Grid.Column="1"
@@ -242,7 +238,7 @@
 
                             <StackPanel Spacing="6">
                                 <TextBox Text="{Binding EditorFilterQuery}"
-                                         PlaceholderText="Filter by Workshop display name, mod ID, or Workshop ID" />
+                                         PlaceholderText="Filter mods" />
                                 <TextBlock Classes="caption"
                                            Text="{Binding EditorFilterSummary}"
                                            TextWrapping="Wrap" />
@@ -251,20 +247,20 @@
                             <ItemsControl ItemsSource="{Binding VisibleModEditorItems}" IsVisible="{Binding HasVisibleModEditorItems}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="vm:ModsAndMapsWorkspaceViewModel+ModEditorItemViewModel">
-                                        <Border Background="#14FFFFFF"
-                                                BorderBrush="#24FFFFFF"
-                                                BorderThickness="1"
-                                                CornerRadius="14"
-                                                Padding="12"
-                                                Margin="0,0,0,10"
+                                        <Border Background="Transparent"
+                                                BorderBrush="{DynamicResource BorderBrush}"
+                                                BorderThickness="0,0,0,1"
+                                                CornerRadius="0"
+                                                Padding="10,9"
+                                                Margin="0"
                                                 DragDrop.AllowDrop="True"
                                                 DragDrop.DragOver="OnModEditorRowDragOver"
                                                 DragDrop.Drop="OnModEditorRowDrop">
                                             <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto,Auto" ColumnSpacing="8">
-                                                <Border Background="#10FFFFFF"
-                                                        BorderBrush="#24FFFFFF"
+                                                <Border Background="Transparent"
+                                                        BorderBrush="{DynamicResource BorderBrush}"
                                                         BorderThickness="1"
-                                                        CornerRadius="10"
+                                                        CornerRadius="4"
                                                         Padding="10,8"
                                                         VerticalAlignment="Center"
                                                         PointerPressed="OnModEditorDragHandlePointerPressed">
@@ -276,17 +272,17 @@
                                                         CommandParameter="{Binding .}"
                                                         Content="{Binding ActiveButtonLabel}" />
                                                 <StackPanel Grid.Column="2" Spacing="4">
-                                                    <TextBlock FontWeight="SemiBold" Foreground="#EDF4FF" Text="{Binding DisplayTitle}" TextWrapping="Wrap" />
+                                                    <TextBlock FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" Text="{Binding DisplayTitle}" TextWrapping="Wrap" />
                                                     <TextBlock Classes="caption" Text="{Binding ModId, StringFormat='Mod ID: {0}'}" />
                                                     <TextBlock Classes="caption" Text="{Binding WorkshopId, StringFormat='Workshop ID: {0}'}" />
                                                     <WrapPanel Orientation="Horizontal">
-                                                        <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="999" Padding="8,3" Margin="0,0,6,6">
+                                                        <Border Background="{DynamicResource PanelSubtleBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="999" Padding="8,3" Margin="0,0,6,6">
                                                             <TextBlock Classes="kicker" Text="{Binding LoadOrderLabel}" />
                                                         </Border>
-                                                        <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="999" Padding="8,3" Margin="0,0,6,6">
+                                                        <Border Background="{DynamicResource PanelSubtleBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="999" Padding="8,3" Margin="0,0,6,6">
                                                             <TextBlock Classes="kicker" Text="{Binding ActiveStateLabel}" />
                                                         </Border>
-                                                        <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="999" Padding="8,3" Margin="0,0,6,6">
+                                                        <Border Background="{DynamicResource PanelSubtleBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="999" Padding="8,3" Margin="0,0,6,6">
                                                             <TextBlock Classes="kicker" Text="{Binding InstallStateLabel}" />
                                                         </Border>
                                                     </WrapPanel>
@@ -310,7 +306,9 @@
                                                         Classes="action-danger"
                                                         Command="{Binding #ModsRoot.DataContext.RemoveModEditorItemCommand}"
                                                         CommandParameter="{Binding .}"
-                                                        Content="X" />
+                                                        Content="Remove"
+                                                        AutomationProperties.Name="Remove mod row"
+                                                        ToolTip.Tip="Remove this mod row from the editor" />
                                             </Grid>
                                         </Border>
                                     </DataTemplate>
@@ -324,32 +322,32 @@
                         </StackPanel>
                     </Border>
 
-                    <Border Classes="card" Padding="18" IsVisible="{Binding IsLiveEditorMode}">
+                    <Border Classes="workspace-band" Padding="16" IsVisible="{Binding IsLiveEditorMode}">
                         <StackPanel Spacing="12">
                             <TextBlock Classes="panel-title" FontSize="22" Text="Maps in the Editor" />
                             <TextBlock Classes="body"
-                                       Text="Maps are tracked separately from mods. Active map rows are written to Map=. Inactive rows stay saved in the editor."
+                                       Text="Active map rows write to Map=. Inactive rows stay in the editor."
                                        TextWrapping="Wrap" />
 
                             <ItemsControl ItemsSource="{Binding MapEditorItems}" IsVisible="{Binding HasMapEditorItems}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="vm:ModsAndMapsWorkspaceViewModel+MapEditorItemViewModel">
-                                        <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="14" Padding="12" Margin="0,0,0,10">
+                                        <Border Background="Transparent" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" CornerRadius="0" Padding="12" Margin="0,0,0,10">
                                             <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto" ColumnSpacing="8">
                                                 <Button Classes="action-secondary"
                                                         Command="{Binding #ModsRoot.DataContext.ToggleMapEditorItemCommand}"
                                                         CommandParameter="{Binding .}"
                                                         Content="{Binding ActiveButtonLabel}" />
                                                 <StackPanel Grid.Column="1" Spacing="4">
-                                                    <TextBlock FontWeight="SemiBold" Foreground="#EDF4FF" Text="{Binding Title}" TextWrapping="Wrap" />
+                                                    <TextBlock FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" Text="{Binding Title}" TextWrapping="Wrap" />
                                                     <TextBlock Classes="caption" Text="{Binding RowId, StringFormat='Row ID: {0}'}" />
                                                     <TextBlock Classes="caption" Text="{Binding MapFolder, StringFormat='Map Folder: {0}'}" />
                                                     <TextBlock Classes="caption" Text="{Binding WorkshopId, StringFormat='Workshop ID: {0}'}" />
                                                     <WrapPanel Orientation="Horizontal">
-                                                        <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="999" Padding="8,3" Margin="0,0,6,6">
+                                                        <Border Background="{DynamicResource PanelSubtleBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="999" Padding="8,3" Margin="0,0,6,6">
                                                             <TextBlock Classes="kicker" Text="{Binding LoadOrderLabel}" />
                                                         </Border>
-                                                        <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="999" Padding="8,3" Margin="0,0,6,6">
+                                                        <Border Background="{DynamicResource PanelSubtleBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="999" Padding="8,3" Margin="0,0,6,6">
                                                             <TextBlock Classes="kicker" Text="{Binding InstallStateLabel}" />
                                                         </Border>
                                                     </WrapPanel>
@@ -368,7 +366,9 @@
                                                         Classes="action-danger"
                                                         Command="{Binding #ModsRoot.DataContext.RemoveMapEditorItemCommand}"
                                                         CommandParameter="{Binding .}"
-                                                        Content="X" />
+                                                        Content="Remove"
+                                                        AutomationProperties.Name="Remove map row"
+                                                        ToolTip.Tip="Remove this map row from the editor" />
                                             </Grid>
                                         </Border>
                                     </DataTemplate>
@@ -379,7 +379,7 @@
                         </StackPanel>
                     </Border>
 
-                    <Border Classes="card" Padding="18">
+                    <Border Classes="workspace-band" Padding="16">
                         <StackPanel Spacing="12">
                             <TextBlock Classes="panel-title" FontSize="22" Text="Named Presets" />
                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
@@ -393,7 +393,7 @@
                             <ItemsControl ItemsSource="{Binding SavedPresets}" IsVisible="{Binding HasSavedPresets}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="vm:ModsAndMapsWorkspaceViewModel+SavedPresetViewModel">
-                                        <Border Background="#10FFFFFF" BorderBrush="#20FFFFFF" BorderThickness="1" CornerRadius="12" Padding="10" Margin="0,0,0,8">
+                                        <Border Background="Transparent" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" CornerRadius="0" Padding="10" Margin="0,0,0,8">
                                             <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
                                                 <StackPanel Spacing="2">
                                                     <TextBlock FontWeight="SemiBold" Text="{Binding Name}" />
@@ -422,26 +422,26 @@
                 </StackPanel>
 
                 <StackPanel Grid.Column="1" Spacing="18">
-                    <Border Classes="surface-dark" Padding="18">
+                    <Border Classes="command-strip" Padding="16">
                         <StackPanel Spacing="10">
-                            <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Status" />
-                            <TextBlock FontSize="24" FontWeight="SemiBold" Foreground="#F7F0E7" Text="{Binding CatalogSummaryText}" TextWrapping="Wrap" />
-                            <TextBlock Classes="body" Foreground="#C9D5EA" Text="{Binding ScanSummary}" TextWrapping="Wrap" />
-                            <TextBlock Classes="caption" Foreground="#C9D5EA" Text="{Binding LoadStatus}" TextWrapping="Wrap" />
+                            <TextBlock Classes="kicker" Foreground="{DynamicResource AccentBrush}" Text="Status" />
+                            <TextBlock FontSize="24" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" Text="{Binding CatalogSummaryText}" TextWrapping="Wrap" />
+                            <TextBlock Classes="body" Foreground="{DynamicResource TextMutedBrush}" Text="{Binding ScanSummary}" TextWrapping="Wrap" />
+                            <TextBlock Classes="caption" Foreground="{DynamicResource TextMutedBrush}" Text="{Binding LoadStatus}" TextWrapping="Wrap" />
                         </StackPanel>
                     </Border>
 
-                    <Border Classes="surface-dark" Padding="18" IsVisible="{Binding IsLiveEditorMode}">
+                    <Border Classes="command-strip" Padding="16" IsVisible="{Binding IsLiveEditorMode}">
                         <StackPanel Spacing="12">
-                            <TextBlock Classes="kicker" Foreground="#E5A26B" Text="Selected Mod Detail" />
-                            <TextBlock FontSize="24" FontWeight="SemiBold" Foreground="#F7F0E7" Text="{Binding SelectedModDetailTitle}" TextWrapping="Wrap" />
+                            <TextBlock Classes="kicker" Foreground="{DynamicResource AccentBrush}" Text="Selected Mod Detail" />
+                            <TextBlock FontSize="24" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" Text="{Binding SelectedModDetailTitle}" TextWrapping="Wrap" />
                             <Image Source="{Binding SelectedEditorPreview.PreviewImage}" Height="180" Stretch="UniformToFill" IsVisible="{Binding HasSelectedEditorPreview}" />
-                            <TextBlock Classes="caption" Foreground="#C9D5EA" Text="{Binding SelectedModDetailState}" TextWrapping="Wrap" />
-                            <TextBlock Classes="caption" Foreground="#C9D5EA" Text="{Binding SelectedModDetailInstallState}" TextWrapping="Wrap" />
-                            <TextBlock Classes="caption" Foreground="#C9D5EA" Text="{Binding SelectedModDetailModId, StringFormat='Mod ID: {0}'}" TextWrapping="Wrap" />
-                            <TextBlock Classes="caption" Foreground="#C9D5EA" Text="{Binding SelectedModDetailWorkshopId, StringFormat='Workshop ID: {0}'}" TextWrapping="Wrap" />
-                            <TextBlock Classes="caption" Foreground="#C9D5EA" Text="{Binding SelectedModDetailMapFolders, StringFormat='Known maps: {0}'}" TextWrapping="Wrap" />
-                            <TextBlock Classes="caption" Foreground="#C9D5EA" Text="{Binding SelectedModDetailDependencyIds, StringFormat='Dependency mod IDs: {0}'}" TextWrapping="Wrap" />
+                            <TextBlock Classes="caption" Foreground="{DynamicResource TextMutedBrush}" Text="{Binding SelectedModDetailState}" TextWrapping="Wrap" />
+                            <TextBlock Classes="caption" Foreground="{DynamicResource TextMutedBrush}" Text="{Binding SelectedModDetailInstallState}" TextWrapping="Wrap" />
+                            <TextBlock Classes="caption" Foreground="{DynamicResource TextMutedBrush}" Text="{Binding SelectedModDetailModId, StringFormat='Mod ID: {0}'}" TextWrapping="Wrap" />
+                            <TextBlock Classes="caption" Foreground="{DynamicResource TextMutedBrush}" Text="{Binding SelectedModDetailWorkshopId, StringFormat='Workshop ID: {0}'}" TextWrapping="Wrap" />
+                            <TextBlock Classes="caption" Foreground="{DynamicResource TextMutedBrush}" Text="{Binding SelectedModDetailMapFolders, StringFormat='Known maps: {0}'}" TextWrapping="Wrap" />
+                            <TextBlock Classes="caption" Foreground="{DynamicResource TextMutedBrush}" Text="{Binding SelectedModDetailDependencyIds, StringFormat='Dependency mod IDs: {0}'}" TextWrapping="Wrap" />
                             <TextBox Text="{Binding SelectedModDetailDescription}"
                                      IsReadOnly="True"
                                      AcceptsReturn="True"
@@ -453,7 +453,7 @@
                 </StackPanel>
             </Grid>
 
-            <Border Background="#101820" BorderBrush="#22334A" BorderThickness="1" CornerRadius="14" Padding="16" IsVisible="{Binding HasSelectedWorkshopPreview}">
+            <Border Background="Transparent" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" CornerRadius="0" Padding="16" IsVisible="{Binding HasSelectedWorkshopPreview}">
                 <StackPanel Spacing="12">
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                         <StackPanel Spacing="4">
@@ -488,15 +488,15 @@
                     <ItemsControl ItemsSource="{Binding SelectedWorkshopPreview.CollectionChildren}" IsVisible="{Binding SelectedWorkshopPreview.Item.IsCollection}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="profiles:WorkshopCatalogPreviewChildDto">
-                                <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="12" Padding="12" Margin="0,0,0,8">
+                                <Border Background="Transparent" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" CornerRadius="0" Padding="12" Margin="0,0,0,8">
                                     <StackPanel Spacing="6">
                                         <TextBlock FontWeight="SemiBold" Text="{Binding Title}" TextWrapping="Wrap" />
                                         <TextBlock Classes="caption" Text="{Binding WorkshopId}" TextWrapping="Wrap" />
                                         <WrapPanel Orientation="Horizontal">
-                                            <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="999" Padding="8,3" Margin="0,0,6,6">
+                                            <Border Background="{DynamicResource PanelSubtleBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="999" Padding="8,3" Margin="0,0,6,6">
                                                 <TextBlock Classes="kicker" Text="{Binding IsInstalledLocally, StringFormat='Installed locally: {0}'}" />
                                             </Border>
-                                            <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="999" Padding="8,3" Margin="0,0,6,6">
+                                            <Border Background="{DynamicResource PanelSubtleBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="999" Padding="8,3" Margin="0,0,6,6">
                                                 <TextBlock Classes="kicker" Text="{Binding IsQueued, StringFormat='Already in editor: {0}'}" />
                                             </Border>
                                         </WrapPanel>
@@ -511,15 +511,15 @@
                     <ItemsControl ItemsSource="{Binding SelectedWorkshopPreview.DependencyChildren}" IsVisible="{Binding SelectedWorkshopPreview.HasDependencyChanges}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="profiles:WorkshopCatalogPreviewChildDto">
-                                <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="12" Padding="12" Margin="0,0,0,8">
+                                <Border Background="Transparent" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" CornerRadius="0" Padding="12" Margin="0,0,0,8">
                                     <StackPanel Spacing="6">
                                         <TextBlock FontWeight="SemiBold" Text="{Binding Title}" TextWrapping="Wrap" />
                                         <TextBlock Classes="caption" Text="{Binding WorkshopId}" TextWrapping="Wrap" />
                                         <WrapPanel Orientation="Horizontal">
-                                            <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="999" Padding="8,3" Margin="0,0,6,6">
+                                            <Border Background="{DynamicResource PanelSubtleBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="999" Padding="8,3" Margin="0,0,6,6">
                                                 <TextBlock Classes="kicker" Text="{Binding IsInstalledLocally, StringFormat='Installed locally: {0}'}" />
                                             </Border>
-                                            <Border Background="#14FFFFFF" BorderBrush="#24FFFFFF" BorderThickness="1" CornerRadius="999" Padding="8,3" Margin="0,0,6,6">
+                                            <Border Background="{DynamicResource PanelSubtleBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="999" Padding="8,3" Margin="0,0,6,6">
                                                 <TextBlock Classes="kicker" Text="{Binding IsQueued, StringFormat='Already in editor: {0}'}" />
                                             </Border>
                                         </WrapPanel>

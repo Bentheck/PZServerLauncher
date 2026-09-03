@@ -6,7 +6,7 @@ using PZServerLauncher.Core.Settings;
 
 namespace PZServerLauncher.App.ViewModels;
 
-public sealed class DashboardWorkspaceViewModel : WorkspacePageViewModelBase
+public sealed class DashboardWorkspaceViewModel : WorkspacePageViewModelBase, IWorkspaceCommandProvider
 {
     private ProjectZomboidFleetAccessPostureSummary _fleetAccessPosture = ProjectZomboidFleetAccessPostureSummaryBuilder.Build(Array.Empty<ProjectZomboidProfilePostureSummary>(), remoteAccessEnabled: false);
 
@@ -45,6 +45,20 @@ public sealed class DashboardWorkspaceViewModel : WorkspacePageViewModelBase
     public IRelayCommand OpenConsolesWorkspaceCommand { get; }
 
     public IRelayCommand OpenHostWorkspaceCommand { get; }
+
+    public IReadOnlyList<WorkspaceCommandViewModel> PrimaryCommands =>
+    [
+        new("Create", Legacy.CreateStarterProfileCommand, "Create a new managed server profile"),
+    ];
+
+    public IReadOnlyList<WorkspaceCommandViewModel> SecondaryCommands =>
+    [
+        new("Scan", Legacy.DiscoverImportsCommand, "Scan this machine for local server candidates"),
+        new("Servers", OpenProfilesWorkspaceCommand, "Open the server workspace"),
+        new("Consoles", OpenConsolesWorkspaceCommand, "Open the console board"),
+    ];
+
+    public IReadOnlyList<WorkspaceCommandViewModel> DangerCommands => [];
 
     public string HostStateSummary => Legacy.HostSummary;
 

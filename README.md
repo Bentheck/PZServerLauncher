@@ -19,9 +19,9 @@ PZServerLauncher is a Windows desktop app for installing, configuring, backing u
 
 1. Download and install the launcher with the MSI above.
 2. Open **PZServerLauncher** and click **Create Profile**.
-3. Choose a server name, base port, RAM amount, and max players, or keep the defaults for the normal setup.
+3. Choose a Steam version, server name, base port, RAM amount, and max players, or keep the defaults for the normal setup. Available Steam versions are loaded when the launcher starts.
 4. Open **Servers > Install & Update** and confirm where the server should live.
-5. Click **Install** to download the dedicated server.
+5. Confirm the saved Steam version, then click **Install** to download the dedicated server. You can refresh the list if Steam publishes or retires a branch while the launcher is open.
 6. Move through **General**, **Sandbox**, **Mods & Maps**, and **Network & Admin** to finish setup.
 7. Open **Backups** and capture a restore point before major updates or mod changes.
 8. Start the server and use **Consoles** or **Logs** to watch it live.
@@ -53,7 +53,7 @@ Use the consoles workspace to keep live server windows pinned and easy to revisi
 
 ### App
 
-Use the app workspace for startup behavior and desktop runtime / close behavior.
+Use the app workspace for startup behavior and desktop runtime / close behavior. Use the persistent **Dark mode** switch in the app rail to change the appearance of every workspace and popup.
 
 ## Default Folder Layout
 
@@ -95,4 +95,3 @@ Create restore points, set retention, and bring a server back quickly when neede
 - The launcher is desktop-first and built for Windows.
 - You do not need to manually unpack the dedicated server before using it. The launcher can install it for you.
 - Shipped sandbox preset files are bundled with the app, so preset selection works on a fresh launcher install too.
-

@@ -8,7 +8,7 @@ using PZServerLauncher.Runtime;
 
 namespace PZServerLauncher.App.ViewModels;
 
-public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageHeader, IWorkspaceDirtyState, IWorkspaceRefreshable
+public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageHeader, IWorkspaceDirtyState, IWorkspaceRefreshable, IWorkspaceCommandProvider
 {
     private readonly IReadOnlyDictionary<string, ViewModelBase> _sections;
     private string? _selectedProfileId;
@@ -54,15 +54,15 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
 
         SectionItems =
         [
-            new WorkspaceNavigationItemViewModel(ProfileWorkspacePageIds.Overview, "Overview", "Runtime state, latest log, and quick actions."),
-            new WorkspaceNavigationItemViewModel(ProfileWorkspacePageIds.InstallAndUpdate, "Install & Update", "Install state, branch, and lifecycle actions."),
-            new WorkspaceNavigationItemViewModel(ProfileWorkspacePageIds.General, "General", "Structured server name, ports, startup, and memory."),
-            new WorkspaceNavigationItemViewModel(ProfileWorkspacePageIds.Sandbox, "Sandbox", "Branch-specific gameplay and world settings."),
-            new WorkspaceNavigationItemViewModel(ProfileWorkspacePageIds.ModsAndMaps, "Mods & Maps", "Workshop, mods, map ordering, and presets."),
-            new WorkspaceNavigationItemViewModel(ProfileWorkspacePageIds.NetworkAndAdmin, "Network & Admin", "Network-facing server options and admin controls."),
-            new WorkspaceNavigationItemViewModel(ProfileWorkspacePageIds.Backups, "Backups", "Manual backups, restore, and retention."),
-            new WorkspaceNavigationItemViewModel(ProfileWorkspacePageIds.Logs, "Logs", "Live runtime output and recent history."),
-            new WorkspaceNavigationItemViewModel(ProfileWorkspacePageIds.AdvancedFiles, "Advanced Files", "Raw config editors for unsupported cases."),
+            new WorkspaceNavigationItemViewModel(ProfileWorkspacePageIds.Overview, "Overview", "Runtime state, latest log, and quick actions.", "01", "Live"),
+            new WorkspaceNavigationItemViewModel(ProfileWorkspacePageIds.InstallAndUpdate, "Install & Update", "Install state, branch, and lifecycle actions.", "02", "Deploy"),
+            new WorkspaceNavigationItemViewModel(ProfileWorkspacePageIds.General, "General", "Structured server name, ports, startup, and memory.", "03", "Core"),
+            new WorkspaceNavigationItemViewModel(ProfileWorkspacePageIds.Sandbox, "Sandbox", "Branch-specific gameplay and world settings.", "04", "World"),
+            new WorkspaceNavigationItemViewModel(ProfileWorkspacePageIds.ModsAndMaps, "Mods & Maps", "Workshop, mods, map ordering, and presets.", "05", "Workshop"),
+            new WorkspaceNavigationItemViewModel(ProfileWorkspacePageIds.NetworkAndAdmin, "Network & Admin", "Network-facing server options and admin controls.", "06", "Access"),
+            new WorkspaceNavigationItemViewModel(ProfileWorkspacePageIds.Backups, "Backups", "Manual backups, restore, and retention.", "07", "Recovery"),
+            new WorkspaceNavigationItemViewModel(ProfileWorkspacePageIds.Logs, "Logs", "Live runtime output and recent history.", "08", "Output"),
+            new WorkspaceNavigationItemViewModel(ProfileWorkspacePageIds.AdvancedFiles, "Advanced Files", "Raw config editors for unsupported cases.", "09", "Raw"),
         ];
 
         CurrentSection = Overview;
@@ -121,6 +121,16 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
     public IReadOnlyList<WorkspaceNavigationItemViewModel> SectionItems { get; }
 
     public IReadOnlyList<ProfileCardViewModel> Profiles => Legacy.Profiles;
+
+    public IReadOnlyList<ProfileCardViewModel> VisibleProfiles => string.IsNullOrWhiteSpace(ProfileSearchText)
+        ? Legacy.Profiles
+        : Legacy.Profiles
+            .Where(profile =>
+                profile.DisplayName.Contains(ProfileSearchText, StringComparison.OrdinalIgnoreCase) ||
+                profile.EditableServerName.Contains(ProfileSearchText, StringComparison.OrdinalIgnoreCase) ||
+                profile.Branch.Contains(ProfileSearchText, StringComparison.OrdinalIgnoreCase) ||
+                profile.RuntimeState.Contains(ProfileSearchText, StringComparison.OrdinalIgnoreCase))
+            .ToArray();
 
     public OverviewWorkspaceViewModel Overview { get; }
 
@@ -206,6 +216,9 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
     private ProfileCardViewModel? selectedProfile;
 
     [ObservableProperty]
+    private string profileSearchText = string.Empty;
+
+    [ObservableProperty]
     private ViewModelBase currentSection = null!;
 
     [ObservableProperty]
@@ -228,6 +241,18 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
     public IAsyncRelayCommand ConfirmSectionNavigationDiscardCommand { get; }
 
     public IRelayCommand CancelSectionNavigationCommand { get; }
+
+    public IReadOnlyList<WorkspaceCommandViewModel> PrimaryCommands =>
+    [
+        new("Create", Legacy.CreateStarterProfileCommand, "Create a new server profile"),
+    ];
+
+    public IReadOnlyList<WorkspaceCommandViewModel> SecondaryCommands =>
+    [
+        new("Scan", Legacy.DiscoverImportsCommand, "Scan for local server candidates"),
+    ];
+
+    public IReadOnlyList<WorkspaceCommandViewModel> DangerCommands => [];
 
     public void ApplyBootstrap(IReadOnlyList<WorkspacePageDto> profilePages)
     {
@@ -449,6 +474,11 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
         RefreshWorkspaceState();
     }
 
+    partial void OnProfileSearchTextChanged(string value)
+    {
+        OnPropertyChanged(nameof(VisibleProfiles));
+    }
+
     private void OnProfilesChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
         if (Legacy.Profiles.Count == 0)
@@ -471,9 +501,11 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
         }
 
         OnPropertyChanged(nameof(ProfileCountSummary));
+        OnPropertyChanged(nameof(VisibleProfiles));
         OnPropertyChanged(nameof(HasProfiles));
         OnPropertyChanged(nameof(HasNoProfiles));
         OnPropertyChanged(nameof(HasImportCandidates));
+        OnPropertyChanged(nameof(VisibleProfiles));
         OnPropertyChanged(nameof(ImportCandidateCount));
         OnPropertyChanged(nameof(FirstRunHeadline));
         OnPropertyChanged(nameof(FirstRunActionPlan));
@@ -504,6 +536,7 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
     private void RefreshWorkspaceState()
     {
         OnPropertyChanged(nameof(ProfileCountSummary));
+        OnPropertyChanged(nameof(VisibleProfiles));
         OnPropertyChanged(nameof(HasProfiles));
         OnPropertyChanged(nameof(HasNoProfiles));
         OnPropertyChanged(nameof(HasImportCandidates));

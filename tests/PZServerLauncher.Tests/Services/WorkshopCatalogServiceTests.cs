@@ -4,9 +4,9 @@ using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Caching.Memory;
 using PZServerLauncher.Contracts.Profiles;
 using PZServerLauncher.Core.Profiles;
-using PZServerLauncher.Host.Data;
-using PZServerLauncher.Host.Infrastructure;
-using PZServerLauncher.Host.Services;
+using PZServerLauncher.Runtime.Data;
+using PZServerLauncher.Runtime.Infrastructure;
+using PZServerLauncher.Runtime.Services;
 using PZServerLauncher.Tests.Testing;
 
 namespace PZServerLauncher.Tests.Services;

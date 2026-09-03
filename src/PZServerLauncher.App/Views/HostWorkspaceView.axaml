@@ -10,7 +10,7 @@
              x:Class="PZServerLauncher.App.Views.HostWorkspaceView"
              x:DataType="vm:HostWorkspaceViewModel">
     <Grid RowDefinitions="Auto,Auto,*" RowSpacing="16">
-        <Border Classes="card" Padding="24">
+        <Border Classes="workspace-band" Padding="24">
             <Grid RowDefinitions="Auto,Auto" RowSpacing="18">
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18">
                     <StackPanel Spacing="8">
@@ -30,7 +30,7 @@
                     </StackPanel>
                 </Grid>
 
-                <Border Grid.Row="1" Classes="callout-card" Padding="16">
+                <Border Grid.Row="1" Classes="inline-warning" Padding="16">
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
                         <StackPanel Spacing="6">
                             <TextBlock Classes="kicker" Text="Launcher Updates" />
@@ -83,7 +83,7 @@
         </Grid>
 
         <Grid Grid.Row="2" ColumnDefinitions="1.25*,.75*" ColumnSpacing="16">
-            <Border Classes="card" Padding="20">
+            <Border Classes="workspace-band" Padding="20">
                 <Grid RowDefinitions="Auto,*" RowSpacing="14">
                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                         <StackPanel Spacing="5">
@@ -101,8 +101,8 @@
                             <ItemsControl ItemsSource="{Binding ManagedProfiles}" IsVisible="{Binding HasManagedProfiles}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="vm:HostWorkspaceViewModel+HostManagedProfileRowViewModel">
-                                        <Border Background="#14FFFFFF"
-                                                BorderBrush="#24FFFFFF"
+                                        <Border Background="{DynamicResource PanelSubtleBrush}"
+                                                BorderBrush="{DynamicResource BorderBrush}"
                                                 BorderThickness="1"
                                                 CornerRadius="18"
                                                 Padding="14"
@@ -130,7 +130,7 @@
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
 
-                            <Border Classes="callout-card" Padding="18" IsVisible="{Binding HasNoManagedProfiles}">
+                            <Border Classes="inline-warning" Padding="18" IsVisible="{Binding HasNoManagedProfiles}">
                                 <StackPanel Spacing="8">
                                     <TextBlock Classes="kicker" Text="No Servers Yet" />
                                     <TextBlock Classes="panel-title" FontSize="22" Text="Nothing is under app supervision" />
@@ -144,9 +144,9 @@
                 </Grid>
             </Border>
 
-            <Border Grid.Column="1" Classes="surface-dark" Padding="20">
+            <Border Grid.Column="1" Classes="command-strip" Padding="20">
                 <StackPanel Spacing="14">
-                    <TextBlock Classes="kicker" Foreground="#FFB36B" Text="Operations" />
+                    <TextBlock Classes="kicker" Foreground="{DynamicResource AccentBrush}" Text="Operations" />
                     <TextBlock Classes="panel-title" FontSize="24" Text="{Binding HostOperatorSummary}" TextWrapping="Wrap" />
                     <TextBlock Classes="body" Text="{Binding HostShutdownSummary}" TextWrapping="Wrap" />
 
@@ -162,7 +162,7 @@
 
                     <Border Classes="command-card" Padding="14">
                         <StackPanel Spacing="6">
-                            <TextBlock Classes="kicker" Foreground="#FFB36B" Text="Guidance" />
+                            <TextBlock Classes="kicker" Foreground="{DynamicResource AccentBrush}" Text="Guidance" />
                             <TextBlock Classes="caption" Text="{Binding HostActionSummary}" TextWrapping="Wrap" />
                             <TextBlock Classes="caption" Text="{Binding HostRecoverySummary}" TextWrapping="Wrap" />
                             <TextBlock Classes="caption" Text="{Binding HostRiskSummary}" TextWrapping="Wrap" />

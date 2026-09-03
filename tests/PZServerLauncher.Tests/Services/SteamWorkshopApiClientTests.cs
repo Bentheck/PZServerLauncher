@@ -2,7 +2,7 @@ using System.Net;
 using System.Net.Http;
 using Microsoft.Extensions.Caching.Memory;
 using PZServerLauncher.Contracts.Profiles;
-using PZServerLauncher.Host.Services;
+using PZServerLauncher.Runtime.Services;
 using PZServerLauncher.Tests.Testing;
 
 namespace PZServerLauncher.Tests.Services;

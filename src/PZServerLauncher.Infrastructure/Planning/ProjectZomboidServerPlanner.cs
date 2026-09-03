@@ -19,9 +19,14 @@ public sealed class ProjectZomboidServerPlanner : IProjectZomboidServerPlanner
         "-ip",
     };
 
-    public SteamCmdScriptPlan CreateInstallScript(ServerProfile profile)
+    public SteamCmdScriptPlan CreateInstallScript(ServerProfile profile) =>
+        CreateInstallScript(profile, profile.SteamBranch);
+
+    public SteamCmdScriptPlan CreateInstallScript(ServerProfile profile, string steamBranch)
     {
         ArgumentNullException.ThrowIfNull(profile);
+
+        var normalizedSteamBranch = NormalizeSteamBranch(steamBranch);
 
         var lines = new List<string>
         {
@@ -29,7 +34,7 @@ public sealed class ProjectZomboidServerPlanner : IProjectZomboidServerPlanner
             "@NoPromptForPassword 1",
             $"force_install_dir {QuoteForSteamCmd(profile.InstallDirectory)}",
             "login anonymous",
-            GetAppUpdateCommand(profile.Branch),
+            GetAppUpdateCommand(normalizedSteamBranch),
             "quit",
         };
 
@@ -99,8 +104,21 @@ public sealed class ProjectZomboidServerPlanner : IProjectZomboidServerPlanner
     public string FormatSteamCmdScript(SteamCmdScriptPlan plan) =>
         string.Join(Environment.NewLine, plan.ScriptLines);
 
-    private static string GetAppUpdateCommand(ProjectZomboidBranch branch) =>
-        $"app_update {ProjectZomboidDefaults.DedicatedServerAppId} -beta unstable validate";
+    private static string GetAppUpdateCommand(string steamBranch) =>
+        string.Equals(steamBranch, "public", StringComparison.OrdinalIgnoreCase)
+            ? $"app_update {ProjectZomboidDefaults.DedicatedServerAppId} validate"
+            : $"app_update {ProjectZomboidDefaults.DedicatedServerAppId} -beta {steamBranch} validate";
+
+    private static string NormalizeSteamBranch(string steamBranch)
+    {
+        var normalized = steamBranch.Trim();
+        if (normalized.Length is 0 or > 64 || !Regex.IsMatch(normalized, "^[A-Za-z0-9._-]+$"))
+        {
+            throw new ArgumentException("Steam branch names may contain only letters, numbers, periods, underscores, and hyphens.", nameof(steamBranch));
+        }
+
+        return normalized;
+    }
 
     private static string QuoteForSteamCmd(string value) =>
         value.Contains(' ', StringComparison.Ordinal) ? $"\"{value}\"" : value;

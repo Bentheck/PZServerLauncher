@@ -7,9 +7,9 @@
         x:Class="PZServerLauncher.App.Views.CreateProfileDialog"
         x:DataType="vm:CreateProfileDialogViewModel"
         Width="560"
-        Height="690"
+        Height="750"
         MinWidth="560"
-        MinHeight="690"
+        MinHeight="750"
         CanResize="False"
         ShowInTaskbar="False"
         WindowDecorations="BorderOnly"
@@ -17,8 +17,8 @@
         Title="Create Server Profile">
     <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                   VerticalScrollBarVisibility="Auto">
-        <Border Classes="card" Margin="18" Padding="20">
-            <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="16">
+        <Border Classes="workspace-band" Margin="18" Padding="20">
+            <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="16">
                 <StackPanel Spacing="6">
                     <TextBlock Classes="kicker" Text="New Server" />
                     <TextBlock Classes="panel-title" FontSize="28" Text="{Binding DialogTitle}" />
@@ -47,19 +47,30 @@
                     </StackPanel>
                 </Grid>
 
-                <TextBlock Grid.Row="2"
+                <StackPanel Grid.Row="2" Spacing="6">
+                    <TextBlock Classes="kicker" Text="Server Version" />
+                    <ComboBox ItemsSource="{Binding SteamBranches}"
+                              SelectedItem="{Binding SelectedVersion}"
+                              DisplayMemberBinding="{Binding DisplayName}" />
+                    <TextBlock Classes="caption"
+                               Foreground="{DynamicResource TextSubtleBrush}"
+                               Text="Available Steam versions were scanned when the launcher started."
+                               TextWrapping="Wrap" />
+                </StackPanel>
+
+                <TextBlock Grid.Row="3"
                            Classes="caption"
-                           Foreground="#A8B6D4"
+                           Foreground="{DynamicResource TextSubtleBrush}"
                            Text="{Binding PortReservationSummary}"
                            TextWrapping="Wrap" />
 
-                <Border Grid.Row="3" Background="#22FFB36B" BorderBrush="#72FFB36B" BorderThickness="1" CornerRadius="14" Padding="14">
-                    <TextBlock Classes="caption" Foreground="#FFDCB8" Text="{Binding ValidationMessage}" TextWrapping="Wrap" />
+                <Border Grid.Row="4" Background="{DynamicResource SuccessSoftBrush}" BorderBrush="{DynamicResource SuccessBrush}" BorderThickness="1" CornerRadius="14" Padding="14">
+                    <TextBlock Classes="caption" Foreground="{DynamicResource SuccessBrush}" Text="{Binding ValidationMessage}" TextWrapping="Wrap" />
                 </Border>
 
-                <Border Grid.Row="4"
-                        Background="#14FFFFFF"
-                        BorderBrush="#24FFFFFF"
+                <Border Grid.Row="5"
+                        Background="{DynamicResource PanelSubtleBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
                         BorderThickness="1"
                         CornerRadius="16"
                         Padding="16">
@@ -129,13 +140,13 @@
                         <TextBlock Grid.Row="7"
                                    Grid.ColumnSpan="2"
                                    Classes="caption"
-                                   Foreground="#A8B6D4"
+                                   Foreground="{DynamicResource TextSubtleBrush}"
                                    Text="{Binding FooterMessage}"
                                    TextWrapping="Wrap" />
                     </Grid>
                 </Border>
 
-                <Grid Grid.Row="5" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
+                <Grid Grid.Row="6" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
                     <Border Background="Transparent" />
                     <Button Grid.Column="1"
                             Classes="action-secondary"
