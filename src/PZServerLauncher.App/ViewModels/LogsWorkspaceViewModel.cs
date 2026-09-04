@@ -37,9 +37,7 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
     private readonly ILauncherRuntime _runtime;
     private ServerRuntimeStatus? _runtimeStatus;
     private ProfileLiveOperationsSnapshot? _liveOperations;
-    private string? _lastCompactedWarningKey;
-    private string? _lastCompactedWarningLine;
-    private int _lastCompactedWarningCount;
+    private readonly LogDisplayCompactor _logDisplayCompactor = new();
 
     public LogsWorkspaceViewModel(
         MainWindowViewModel legacy,
@@ -502,68 +500,22 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
 
     private void AppendFriendlyLogLine(string line)
     {
-        if (TryCompactFriendlyAssetWarning(line))
+        var compacted = _logDisplayCompactor.Append(line);
+        if (compacted.ReplacePrevious && FriendlyLogLines.Count > 0)
         {
-            return;
+            FriendlyLogLines[^1] = compacted.DisplayLine;
+        }
+        else
+        {
+            FriendlyLogLines.Add(compacted.DisplayLine);
         }
 
-        ResetFriendlyCompaction();
-        FriendlyLogLines.Add(line);
         TrimToLimit(FriendlyLogLines, FriendlyLogBufferLimit);
-    }
-
-    private bool TryCompactFriendlyAssetWarning(string line)
-    {
-        if (!IsCompactFriendlyAssetWarning(line))
-        {
-            return false;
-        }
-
-        var normalizedKey = line.Trim();
-        if (FriendlyLogLines.Count > 0 &&
-            string.Equals(_lastCompactedWarningKey, normalizedKey, StringComparison.OrdinalIgnoreCase) &&
-            !string.IsNullOrWhiteSpace(_lastCompactedWarningLine))
-        {
-            _lastCompactedWarningCount += 1;
-            FriendlyLogLines[^1] = $"{_lastCompactedWarningLine} (repeated {_lastCompactedWarningCount}x)";
-            return true;
-        }
-
-        _lastCompactedWarningKey = normalizedKey;
-        _lastCompactedWarningLine = line;
-        _lastCompactedWarningCount = 1;
-        FriendlyLogLines.Add(line);
-        TrimToLimit(FriendlyLogLines, FriendlyLogBufferLimit);
-        return true;
-    }
-
-    private static bool IsCompactFriendlyAssetWarning(string line)
-    {
-        if (!line.Contains("warn", StringComparison.OrdinalIgnoreCase))
-        {
-            return false;
-        }
-
-        if (line.Contains("mod", StringComparison.OrdinalIgnoreCase) ||
-            line.Contains("workshop", StringComparison.OrdinalIgnoreCase))
-        {
-            return false;
-        }
-
-        return line.Contains("texture", StringComparison.OrdinalIgnoreCase) ||
-               line.Contains("sprite", StringComparison.OrdinalIgnoreCase) ||
-               line.Contains("tile", StringComparison.OrdinalIgnoreCase) ||
-               line.Contains("asset", StringComparison.OrdinalIgnoreCase) ||
-               line.Contains("media", StringComparison.OrdinalIgnoreCase) ||
-               line.Contains("mesh", StringComparison.OrdinalIgnoreCase) ||
-               line.Contains("model", StringComparison.OrdinalIgnoreCase);
     }
 
     private void ResetFriendlyCompaction()
     {
-        _lastCompactedWarningKey = null;
-        _lastCompactedWarningLine = null;
-        _lastCompactedWarningCount = 0;
+        _logDisplayCompactor.Reset();
     }
 
     private static void TrimToLimit(ObservableCollection<string> lines, int limit)

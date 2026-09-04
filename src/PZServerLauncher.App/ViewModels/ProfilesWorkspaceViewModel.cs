@@ -16,7 +16,8 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
     public ProfilesWorkspaceViewModel(
         MainWindowViewModel legacy,
         ILauncherRuntime runtime,
-        FolderPickerService folderPickerService)
+        FolderPickerService folderPickerService,
+        DesktopShellService desktopShellService)
     {
         Legacy = legacy;
         if (Legacy.Profiles is INotifyCollectionChanged profiles)
@@ -32,7 +33,7 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
         Overview = new OverviewWorkspaceViewModel(legacy, runtime);
         InstallAndUpdate = new InstallUpdateWorkspaceViewModel(legacy, runtime, folderPickerService);
         General = new GeneralWorkspaceViewModel(legacy, runtime);
-        Sandbox = new SandboxWorkspaceViewModel(legacy, runtime);
+        Sandbox = new SandboxWorkspaceViewModel(legacy, runtime, desktopShellService);
         ModsAndMaps = new ModsAndMapsWorkspaceViewModel(legacy, runtime);
         NetworkAndAdmin = new NetworkAndAdminWorkspaceViewModel(legacy, runtime);
         Backups = new BackupsWorkspaceViewModel(legacy, runtime);
@@ -57,7 +58,7 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
             new WorkspaceNavigationItemViewModel(ProfileWorkspacePageIds.Overview, "Overview", "Runtime state, latest log, and quick actions.", "01", "Live"),
             new WorkspaceNavigationItemViewModel(ProfileWorkspacePageIds.InstallAndUpdate, "Install & Update", "Install state, branch, and lifecycle actions.", "02", "Deploy"),
             new WorkspaceNavigationItemViewModel(ProfileWorkspacePageIds.General, "General", "Structured server name, ports, startup, and memory.", "03", "Core"),
-            new WorkspaceNavigationItemViewModel(ProfileWorkspacePageIds.Sandbox, "Sandbox", "Branch-specific gameplay and world settings.", "04", "World"),
+            new WorkspaceNavigationItemViewModel(ProfileWorkspacePageIds.Sandbox, "Sandbox & Mods", "World rules and discovered mod settings.", "04", "World"),
             new WorkspaceNavigationItemViewModel(ProfileWorkspacePageIds.ModsAndMaps, "Mods & Maps", "Workshop, mods, map ordering, and presets.", "05", "Workshop"),
             new WorkspaceNavigationItemViewModel(ProfileWorkspacePageIds.NetworkAndAdmin, "Network & Admin", "Network-facing server options and admin controls.", "06", "Access"),
             new WorkspaceNavigationItemViewModel(ProfileWorkspacePageIds.Backups, "Backups", "Manual backups, restore, and retention.", "07", "Recovery"),

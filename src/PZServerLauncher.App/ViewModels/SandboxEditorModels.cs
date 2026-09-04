@@ -30,12 +30,14 @@ public sealed partial class SandboxCategoryViewModel : ObservableObject
         string statusText,
         bool matchesPreset,
         bool isExpanded,
+        string? sourceFilePath,
         IEnumerable<SandboxSectionViewModel> sections)
     {
         CategoryId = categoryId;
         Title = title;
         StatusText = statusText;
         MatchesPreset = matchesPreset;
+        SourceFilePath = sourceFilePath ?? string.Empty;
         this.isExpanded = isExpanded;
         Sections = new ObservableCollection<SandboxSectionViewModel>(sections);
     }
@@ -47,6 +49,10 @@ public sealed partial class SandboxCategoryViewModel : ObservableObject
     public string StatusText { get; }
 
     public bool MatchesPreset { get; }
+
+    public string SourceFilePath { get; }
+
+    public bool HasSourceFile => !string.IsNullOrWhiteSpace(SourceFilePath);
 
     public ObservableCollection<SandboxSectionViewModel> Sections { get; }
 

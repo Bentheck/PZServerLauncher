@@ -41,7 +41,7 @@ This is the main workspace for day-to-day server management. After you pick a pr
 - **Overview**: runtime status, latest log posture, and quick operational context.
 - **Install & Update**: install or update the server, change folders, uninstall the managed server, or delete the profile.
 - **General**: core server identity, world basics, ports, and launcher runtime settings.
-- **Sandbox**: apply presets or fine-tune world rules in detail.
+- **Sandbox & Mods**: apply presets, fine-tune world rules, and edit typed settings discovered from enabled mods' `sandbox-options.txt` files.
 - **Mods & Maps**: manage enabled mod order, map chain, workshop validation, and preset recovery.
 - **Network & Admin**: passwords, RCON, public listing, anti-cheat, and admin bootstrap.
 - **Backups**: manual backups, scheduled backups, retention, and restore.

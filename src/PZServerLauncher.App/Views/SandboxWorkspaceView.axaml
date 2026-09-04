@@ -73,6 +73,11 @@
 
                 <Border Classes="workspace-band" Padding="16" IsVisible="{Binding CanEdit}">
                     <StackPanel Spacing="12">
+                        <StackPanel Spacing="4">
+                            <TextBlock Classes="kicker" Text="Detected Mod Configuration" />
+                            <TextBlock Classes="caption" Text="{Binding ModSettingsSummary}" TextWrapping="Wrap" />
+                        </StackPanel>
+
                         <Grid ColumnDefinitions="*,260,260" ColumnSpacing="14">
                             <StackPanel Spacing="6">
                                 <TextBlock Classes="kicker" Text="Search" />
@@ -124,33 +129,66 @@
                                    TextWrapping="Wrap" />
                     </Grid>
 
-                    <ScrollViewer Grid.Row="1"
-                                  HorizontalScrollBarVisibility="Auto"
-                                  VerticalScrollBarVisibility="Disabled"
-                                  Margin="8,8,8,0">
-                        <ItemsControl ItemsSource="{Binding Categories}" IsVisible="{Binding HasCategories}">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <StackPanel Orientation="Horizontal" />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate x:DataType="vm:SandboxCategoryViewModel">
-                                    <Button Classes="category-tab"
-                                            Classes.active="{Binding IsSelected}"
-                                            Click="OnOpenCategoryClick"
-                                            AutomationProperties.Name="{Binding Title}"
-                                            MinWidth="152"
-                                            Margin="0,0,6,0">
-                                        <StackPanel Spacing="4">
-                                            <TextBlock Classes="body" FontWeight="SemiBold" Text="{Binding Title}" />
-                                            <TextBlock Classes="caption" Text="{Binding StatusText}" TextWrapping="Wrap" />
-                                        </StackPanel>
-                                    </Button>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </ScrollViewer>
+                    <Grid Grid.Row="1"
+                          ColumnDefinitions="Auto,*,Auto"
+                          ColumnSpacing="8"
+                          Margin="8,8,8,0"
+                          IsVisible="{Binding HasCategories}">
+                        <Button x:Name="PreviousCategoriesButton"
+                                Grid.Column="0"
+                                Classes="action-secondary"
+                                Width="42"
+                                MinHeight="64"
+                                Padding="0"
+                                VerticalAlignment="Top"
+                                Content="←"
+                                Click="OnPreviousCategoriesClick"
+                                IsEnabled="False"
+                                ToolTip.Tip="Show previous categories"
+                                AutomationProperties.Name="Show previous sandbox categories" />
+
+                        <ScrollViewer x:Name="CategoryScrollViewer"
+                                      Grid.Column="1"
+                                      HorizontalScrollBarVisibility="Auto"
+                                      VerticalScrollBarVisibility="Disabled"
+                                      ScrollChanged="OnCategoryScrollChanged">
+                            <ItemsControl ItemsSource="{Binding Categories}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:SandboxCategoryViewModel">
+                                        <Button Classes="category-tab"
+                                                Classes.active="{Binding IsSelected}"
+                                                Click="OnOpenCategoryClick"
+                                                AutomationProperties.Name="{Binding Title}"
+                                                MinWidth="152"
+                                                Margin="0,0,6,0">
+                                            <StackPanel Spacing="4">
+                                                <TextBlock Classes="body" FontWeight="SemiBold" Text="{Binding Title}" />
+                                                <TextBlock Classes="caption" Text="{Binding StatusText}" TextWrapping="Wrap" />
+                                            </StackPanel>
+                                        </Button>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+
+                        <Button x:Name="NextCategoriesButton"
+                                Grid.Column="2"
+                                Classes="action-secondary"
+                                Width="42"
+                                MinHeight="64"
+                                Padding="0"
+                                VerticalAlignment="Top"
+                                Content="→"
+                                Click="OnNextCategoriesClick"
+                                IsEnabled="False"
+                                ToolTip.Tip="Show more categories, including mod settings"
+                                AutomationProperties.Name="Show more sandbox and mod categories" />
+                    </Grid>
 
                     <Border Grid.Row="1"
                             Background="Transparent"
@@ -175,11 +213,18 @@
                                 <TextBlock Classes="panel-title" FontSize="24" Text="{Binding SelectedCategoryTitle}" />
                                 <TextBlock Classes="caption" Text="{Binding SelectedCategoryStatus}" TextWrapping="Wrap" />
                             </StackPanel>
-                            <Button Grid.Column="1"
-                                    Classes="action-secondary"
-                                    Command="{Binding ToggleCategoryExpandedCommand}"
-                                    CommandParameter="{Binding SelectedCategory}"
-                                    Content="{Binding SelectedCategory.ExpandButtonLabel}" />
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                                <Button Classes="action-secondary"
+                                        Command="{Binding OpenSelectedModDefinitionCommand}"
+                                        Content="Open Mod Definition"
+                                        IsVisible="{Binding SelectedCategory.HasSourceFile}"
+                                        ToolTip.Tip="{Binding SelectedCategory.SourceFilePath}"
+                                        AutomationProperties.Name="Open the selected mod sandbox option definition" />
+                                <Button Classes="action-secondary"
+                                        Command="{Binding ToggleCategoryExpandedCommand}"
+                                        CommandParameter="{Binding SelectedCategory}"
+                                        Content="{Binding SelectedCategory.ExpandButtonLabel}" />
+                            </StackPanel>
                         </Grid>
                     </Border>
 

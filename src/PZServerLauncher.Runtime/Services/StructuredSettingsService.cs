@@ -17,13 +17,15 @@ public sealed class StructuredSettingsService(
     ISettingsCatalogResolver catalogResolver,
     IIniDocumentService iniDocumentService,
     ISandboxVarsDocumentService sandboxVarsDocumentService,
-    WorkshopPresetScannerService workshopPresetScannerService)
+    WorkshopPresetScannerService workshopPresetScannerService,
+    ModSandboxOptionsService modSandboxOptionsService,
+    ModsMapsDraftStore? modsMapsDraftStore = null)
 {
     private const string SettingsUnavailableMessage = "Structured editing for this page has not been implemented yet. Use Advanced Files for the raw editor.";
 
     public SettingsCatalogDto GetCatalog(ServerProfile profile)
     {
-        var catalog = catalogResolver.Resolve(profile.Branch);
+        var catalog = ResolveCatalog(profile);
         return new SettingsCatalogDto(
             catalog.CatalogId,
             catalog.CatalogVersion,
@@ -33,7 +35,7 @@ public sealed class StructuredSettingsService(
 
     public SettingsValueSetDto GetPage(ServerProfile profile, string pageId)
     {
-        var catalog = catalogResolver.Resolve(profile.Branch);
+        var catalog = ResolveCatalog(profile);
         var definition = ResolvePageDefinition(catalog, pageId);
         if (definition is null)
         {
@@ -129,7 +131,7 @@ public sealed class StructuredSettingsService(
         CancellationToken cancellationToken = default)
     {
         var validation = Validate(profile, pageId, values);
-        var catalog = catalogResolver.Resolve(profile.Branch);
+        var catalog = ResolveCatalog(profile);
         if (!validation.IsValid || validation.RequiresAdvancedFilesFallback)
         {
             return new SettingsSaveResultDto(
@@ -634,7 +636,7 @@ public sealed class StructuredSettingsService(
         IReadOnlyDictionary<string, string?> values)
     {
         var fieldErrors = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
-        var catalog = catalogResolver.Resolve(profile.Branch);
+        var catalog = ResolveCatalog(profile);
         var definition = ResolvePageDefinition(catalog, pageId);
 
         if (definition is not null)
@@ -772,7 +774,8 @@ public sealed class StructuredSettingsService(
             definition.Fields.Select(MapField).ToArray(),
             definition.CategoryId,
             definition.CategoryTitle,
-            definition.CategoryOrder);
+            definition.CategoryOrder,
+            definition.SourceFilePath);
 
     private static SettingsFieldDto MapField(StructuredFieldDefinition definition) =>
         new(
@@ -799,6 +802,33 @@ public sealed class StructuredSettingsService(
 
     private static StructuredPageDefinition? ResolvePageDefinition(StructuredSettingsCatalog catalog, string pageId) =>
         catalog.Pages.FirstOrDefault(definition => string.Equals(MapPageId(definition.PageId), pageId, StringComparison.Ordinal));
+
+    private StructuredSettingsCatalog ResolveCatalog(ServerProfile profile)
+    {
+        var catalog = catalogResolver.Resolve(profile.Branch);
+        var sandboxPage = ResolvePageDefinition(catalog, ProfileWorkspacePageIds.Sandbox);
+        if (sandboxPage is null)
+        {
+            return catalog;
+        }
+
+        var enabledMods = GetWorkshopPreset(profile).EnabledModIds
+            .Concat(modsMapsDraftStore?.GetActiveModIds(profile.ProfileId) ?? [])
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        var discovered = modSandboxOptionsService.Discover(profile, enabledMods);
+        if (discovered.Sections.Count == 0)
+        {
+            return catalog;
+        }
+
+        var pages = catalog.Pages
+            .Select(page => ReferenceEquals(page, sandboxPage)
+                ? page with { Sections = page.Sections.Concat(discovered.Sections).ToArray() }
+                : page)
+            .ToArray();
+        return catalog with { Pages = pages };
+    }
 
     private static IReadOnlyDictionary<string, string?> BuildDefaultPageValues(StructuredPageDefinition definition)
     {
@@ -876,6 +906,7 @@ public sealed class StructuredSettingsService(
         return definition.ValueKind switch
         {
             StructuredValueKind.Integer => SettingsFieldControlKind.Numeric,
+            StructuredValueKind.Number => SettingsFieldControlKind.Numeric,
             StructuredValueKind.Boolean => SettingsFieldControlKind.Checkbox,
             StructuredValueKind.MultiLineText => SettingsFieldControlKind.MultiLineText,
             StructuredValueKind.Choice => SettingsFieldControlKind.Select,
@@ -887,6 +918,7 @@ public sealed class StructuredSettingsService(
         valueKind switch
         {
             StructuredValueKind.Integer => SettingsValueKind.Integer,
+            StructuredValueKind.Number => SettingsValueKind.Number,
             StructuredValueKind.Boolean => SettingsValueKind.Boolean,
             StructuredValueKind.MultiLineText => SettingsValueKind.List,
             _ => SettingsValueKind.String,
@@ -1099,12 +1131,24 @@ public sealed class StructuredSettingsService(
                 case StructuredValueKind.Integer when !int.TryParse(value, out _):
                     fieldErrors[field.FieldId] = [$"{field.DisplayName} must be a whole number."];
                     break;
+                case StructuredValueKind.Number when !decimal.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out _):
+                    fieldErrors[field.FieldId] = [$"{field.DisplayName} must be a number."];
+                    break;
                 case StructuredValueKind.Choice when field.Options is { Count: > 0 } &&
                                                     field.Options.All(option =>
                                                         !SandboxValueNormalizer.ChoiceValueMatches(option.Value, value) &&
                                                         !string.Equals(option.Label, value, StringComparison.Ordinal)):
                     fieldErrors[field.FieldId] = [$"{field.DisplayName} must use one of the supported options."];
                     break;
+            }
+
+            if (!fieldErrors.ContainsKey(field.FieldId) &&
+                (field.Minimum is not null || field.Maximum is not null) &&
+                decimal.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var numericValue) &&
+                ((field.Minimum is not null && numericValue < field.Minimum) ||
+                 (field.Maximum is not null && numericValue > field.Maximum)))
+            {
+                fieldErrors[field.FieldId] = [$"{field.DisplayName} must be between {field.Minimum?.ToString(CultureInfo.InvariantCulture) ?? "any value"} and {field.Maximum?.ToString(CultureInfo.InvariantCulture) ?? "any value"}."];
             }
         }
     }

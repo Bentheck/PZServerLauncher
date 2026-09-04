@@ -8,4 +8,6 @@ public sealed record StructuredFieldDefinition(
     string? DefaultValue = null,
     bool RestartRequired = false,
     string? HelpText = null,
-    IReadOnlyList<StructuredFieldOptionDefinition>? Options = null);
+    IReadOnlyList<StructuredFieldOptionDefinition>? Options = null,
+    decimal? Minimum = null,
+    decimal? Maximum = null);

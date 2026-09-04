@@ -88,6 +88,30 @@ public sealed class DesktopShellService : IDisposable
         }
     }
 
+    public bool OpenLocalFile(string filePath)
+    {
+        if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+        {
+            return false;
+        }
+
+        try
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = filePath,
+                UseShellExecute = true,
+            });
+            _logService.Info($"Opened local file: {filePath}");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logService.Error($"Failed to open local file: {filePath}", ex);
+            return false;
+        }
+    }
+
     public void Dispose()
     {
         if (_mainWindow is not null)

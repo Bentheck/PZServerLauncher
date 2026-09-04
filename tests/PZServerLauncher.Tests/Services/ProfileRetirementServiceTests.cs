@@ -256,7 +256,8 @@ public sealed class ProfileRetirementServiceTests : IDisposable
             new ProjectZomboidSettingsCatalogResolver(),
             new IniDocumentService(),
             new SandboxVarsDocumentService(),
-            new WorkshopPresetScannerService());
+            new WorkshopPresetScannerService(),
+            new ModSandboxOptionsService());
         _disposables.Add(dbContext);
         _disposables.Add(serviceProvider);
         var supervisor = new ServerProcessSupervisor(

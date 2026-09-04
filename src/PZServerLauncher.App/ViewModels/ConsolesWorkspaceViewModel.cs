@@ -406,6 +406,7 @@ public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
         private ProfileLiveOperationsSnapshot? _liveOperations;
         private ProfileCardViewModel? _profile;
         private string? _assignedProfileId;
+        private readonly LogDisplayCompactor _logDisplayCompactor = new();
 
         public ConsoleTileViewModel(
             int slotNumber,
@@ -435,6 +436,8 @@ public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
         public string SlotLabel { get; }
 
         public ObservableCollection<string> LogLines { get; } = [];
+
+        public ObservableCollection<string> DisplayLogLines { get; } = [];
 
         public bool HasPinnedProfile => !string.IsNullOrWhiteSpace(_assignedProfileId);
 
@@ -483,9 +486,9 @@ public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
         public bool CanSendCommands => HasPinnedProfile && IsRunning;
 
         public string LogText => HasPinnedProfile
-            ? LogLines.Count == 0
+            ? DisplayLogLines.Count == 0
                 ? "No buffered logs yet. Start or reload the server to populate this console."
-                : string.Join(Environment.NewLine, LogLines)
+                : string.Join(Environment.NewLine, DisplayLogLines)
             : "Pin a server from the roster to open a live console in this slot.";
 
         public int ConsoleCaretIndex => FollowTail ? LogText.Length : 0;
@@ -556,6 +559,8 @@ public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
             if (profile is null)
             {
                 LogLines.Clear();
+                DisplayLogLines.Clear();
+                _logDisplayCompactor.Reset();
                 _runtimeStatus = null;
                 _liveOperations = null;
                 LatestRuntimeState = "Unknown";
@@ -606,6 +611,8 @@ public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
             {
                 _profile = null;
                 LogLines.Clear();
+                DisplayLogLines.Clear();
+                _logDisplayCompactor.Reset();
                 _runtimeStatus = null;
                 _liveOperations = null;
                 LatestRuntimeState = "Unknown";
@@ -766,6 +773,8 @@ public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
                     LogLines.RemoveAt(0);
                 }
 
+                AppendDisplayLogLine(line);
+
                 _runtimeStatus = (_runtimeStatus ?? new ServerRuntimeStatus(profileId, ServerRuntimeState.Stopped, null, null, null, null, null))
                     with
                     {
@@ -834,9 +843,12 @@ public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
         private void ApplyLogBuffer(IEnumerable<string> lines)
         {
             LogLines.Clear();
+            DisplayLogLines.Clear();
+            _logDisplayCompactor.Reset();
             foreach (var line in lines)
             {
                 LogLines.Add(line);
+                AppendDisplayLogLine(line);
             }
 
             while (LogLines.Count > ConsoleBufferLimit)
@@ -845,9 +857,29 @@ public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
             }
         }
 
+        private void AppendDisplayLogLine(string line)
+        {
+            var compacted = _logDisplayCompactor.Append(line);
+            if (compacted.ReplacePrevious && DisplayLogLines.Count > 0)
+            {
+                DisplayLogLines[^1] = compacted.DisplayLine;
+            }
+            else
+            {
+                DisplayLogLines.Add(compacted.DisplayLine);
+            }
+
+            while (DisplayLogLines.Count > ConsoleBufferLimit)
+            {
+                DisplayLogLines.RemoveAt(0);
+            }
+        }
+
         private void Reset()
         {
             LogLines.Clear();
+            DisplayLogLines.Clear();
+            _logDisplayCompactor.Reset();
             _runtimeStatus = null;
             _liveOperations = null;
             LatestRuntimeState = "Unknown";

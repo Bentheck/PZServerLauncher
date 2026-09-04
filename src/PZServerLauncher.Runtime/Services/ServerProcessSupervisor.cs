@@ -13,11 +13,12 @@ public sealed class ServerProcessSupervisor(
     RuntimeStateStore runtimeStateStore,
     IRuntimeEventPublisher runtimeEventPublisher,
     IServiceScopeFactory scopeFactory,
-    ILogger<ServerProcessSupervisor> logger)
+    ILogger<ServerProcessSupervisor> logger) : IDisposable
 {
     private readonly ConcurrentDictionary<string, Process> _processes = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, SemaphoreSlim> _commandGates = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, bool> _stopRequested = new(StringComparer.OrdinalIgnoreCase);
+    private readonly WindowsProcessLifetimeJob _processLifetimeJob = new();
 
     public async Task StartAsync(PZServerLauncher.Core.Profiles.ServerProfile profile, CancellationToken cancellationToken)
     {
@@ -43,6 +44,8 @@ public sealed class ServerProcessSupervisor(
         var runtimeDir = Path.Combine(appPaths.RuntimeProfileDirectory(profile.ProfileId), "launch");
         Directory.CreateDirectory(runtimeDir);
         var wrapperPath = Path.Combine(runtimeDir, "launch.cmd");
+        var launchReadyPath = Path.Combine(runtimeDir, "launch.ready");
+        File.Delete(launchReadyPath);
         var launchPlan = planner.CreateLaunchPlan(profile);
         if (!string.IsNullOrWhiteSpace(launchPlan.Notes))
         {
@@ -70,6 +73,12 @@ public sealed class ServerProcessSupervisor(
         var scriptContent = $"""
             @echo off
             setlocal
+            :wait_for_launcher
+            if not exist "{launchReadyPath}" (
+                >nul 2>&1 ping 127.0.0.1 -n 2
+                goto wait_for_launcher
+            )
+            del /q "{launchReadyPath}" >nul 2>&1
             cd /d "{launchPlan.WorkingDirectory}"
             {launchCommand}
             """;
@@ -97,6 +106,18 @@ public sealed class ServerProcessSupervisor(
 
         _stopRequested[profile.ProfileId] = false;
         process.Start();
+        try
+        {
+            _processLifetimeJob.Assign(process);
+            await File.WriteAllTextAsync(launchReadyPath, string.Empty, cancellationToken);
+        }
+        catch
+        {
+            process.Kill(entireProcessTree: true);
+            process.Dispose();
+            throw;
+        }
+
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
 
@@ -228,6 +249,21 @@ public sealed class ServerProcessSupervisor(
 
     public bool IsRunning(string profileId) =>
         _processes.TryGetValue(profileId, out var process) && !process.HasExited;
+
+    public void Dispose()
+    {
+        _processLifetimeJob.Dispose();
+
+        foreach (var process in _processes.Values)
+        {
+            process.Dispose();
+        }
+
+        foreach (var gate in _commandGates.Values)
+        {
+            gate.Dispose();
+        }
+    }
 
     private async Task OnOutputAsync(string profileId, string? line)
     {

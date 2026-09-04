@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using PZServerLauncher.App.Services;
 using PZServerLauncher.Contracts.Profiles;
 using PZServerLauncher.Contracts.Runtime;
 using PZServerLauncher.Runtime;
@@ -10,6 +11,7 @@ namespace PZServerLauncher.App.ViewModels;
 public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBase
 {
     private readonly ILauncherRuntime _runtime;
+    private readonly DesktopShellService _desktopShellService;
     private SettingsCatalogDto? _catalog;
     private SettingsPageDto? _page;
     private string? _sourceSha256;
@@ -19,16 +21,20 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
     private readonly Dictionary<string, string?> _values = new(StringComparer.Ordinal);
     private readonly Dictionary<string, SandboxPresetDto> _presetLookup = new(StringComparer.Ordinal);
 
-    public SandboxWorkspaceViewModel(MainWindowViewModel legacy, ILauncherRuntime runtime)
+    public SandboxWorkspaceViewModel(
+        MainWindowViewModel legacy,
+        ILauncherRuntime runtime,
+        DesktopShellService desktopShellService)
         : base(
             ProfileWorkspacePageIds.Sandbox,
-            "Sandbox",
-            "Browse SandboxVars.lua by category with shipped and custom preset comparison plus file-safe apply workflows.",
+            "Sandbox & Mod Settings",
+            "Edit vanilla sandbox rules and settings discovered from enabled, locally installed mods.",
             "Sandbox settings are in sync.",
             legacy,
             ["Time", "Zombie", "Loot", "World", "Nature", "Meta", "Character", "Vehicles", "Livestock"])
     {
         _runtime = runtime;
+        _desktopShellService = desktopShellService;
         SaveSettingsCommand = new AsyncRelayCommand(SaveSettingsAsync);
         ReloadCommand = new AsyncRelayCommand(ReloadAsync);
         ApplyPresetCommand = new RelayCommand(ApplyPreset, () => CanEdit && HasPresets);
@@ -38,21 +44,38 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         DeletePresetCommand = new AsyncRelayCommand(DeletePresetAsync, () => CanEdit && SelectedPreset is not null && !SelectedPreset.IsBuiltIn);
         ResetWorldCommand = new AsyncRelayCommand(ResetWorldAsync, () => SelectedProfile is not null && !IsBusy);
         SelectCategoryCommand = new RelayCommand<SandboxCategoryViewModel>(SelectCategory);
+        OpenSelectedModDefinitionCommand = new RelayCommand(OpenSelectedModDefinition, () => SelectedCategory?.HasSourceFile == true);
         ToggleCategoryExpandedCommand = new RelayCommand<SandboxCategoryViewModel>(ToggleCategoryExpanded);
         ToggleSectionExpandedCommand = new RelayCommand<SandboxSectionViewModel>(ToggleSectionExpanded);
     }
 
     public override string PageSummary => SelectedProfile is null
-        ? "Select a profile to load the sandbox editor."
-        : $"Category-first Sandbox editor for {SelectedProfile.DisplayName}.";
+        ? "Select a profile to load sandbox and mod settings."
+        : $"Sandbox and installed mod settings for {SelectedProfile.DisplayName}.";
 
     public string ProfileDisplayName => SelectedProfile?.DisplayName ?? "No profile selected";
 
     public string Branch => SelectedProfile?.Branch ?? "Unknown";
 
     public string WorkspaceSummary => SelectedProfile is null
-        ? "Choose a profile to browse SandboxVars.lua as game-familiar categories."
-        : $"{SelectedProfile.DisplayName} now uses a category-driven sandbox editor with a real preset library, search, and per-category reset flows.";
+        ? "Choose a profile to browse SandboxVars.lua and discovered mod controls."
+        : $"Browse vanilla categories and settings generated from active mods for {SelectedProfile.DisplayName}.";
+
+    public int ModSettingsFieldCount => _page?.Sections
+        .Where(IsModSection)
+        .Sum(section => section.Fields.Count) ?? 0;
+
+    public int ConfigurableModCount => _page?.Sections
+        .Where(IsModSection)
+        .Select(section => section.CategoryId)
+        .Distinct(StringComparer.Ordinal)
+        .Count() ?? 0;
+
+    public bool HasModSettings => ModSettingsFieldCount > 0;
+
+    public string ModSettingsSummary => HasModSettings
+        ? $"Discovered {ModSettingsFieldCount} setting(s) from {ConfigurableModCount} active mod(s). Mod categories appear after the vanilla categories."
+        : "No configurable mod options were found. Enable and install mods that provide sandbox-options.txt, then reload this page.";
 
     public string ActionSummary => RequiresAdvancedFilesFallback
         ? "Structured editing is temporarily unavailable for this file. Use Advanced Files for raw recovery."
@@ -143,6 +166,8 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
     public IAsyncRelayCommand ResetWorldCommand { get; }
 
     public IRelayCommand<SandboxCategoryViewModel> SelectCategoryCommand { get; }
+
+    public IRelayCommand OpenSelectedModDefinitionCommand { get; }
 
     public IRelayCommand<SandboxCategoryViewModel> ToggleCategoryExpandedCommand { get; }
 
@@ -354,11 +379,10 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             var draft = await _runtime.GetSettingsDraftAsync(profile.ProfileId, ProfileWorkspacePageIds.Sandbox);
             var presets = await _runtime.GetSandboxPresetsAsync(profile.ProfileId) ?? [];
 
+            _page = _catalog?.Pages.FirstOrDefault(page => string.Equals(page.PageId, ProfileWorkspacePageIds.Sandbox, StringComparison.Ordinal));
             CatalogSummary = _catalog is null
                 ? "No structured catalog available."
-                : $"{_catalog.CatalogId} v{_catalog.CatalogVersion} | {_catalog.Branch}";
-
-            _page = _catalog?.Pages.FirstOrDefault(page => string.Equals(page.PageId, ProfileWorkspacePageIds.Sandbox, StringComparison.Ordinal));
+                : $"{_catalog.CatalogId} v{_catalog.CatalogVersion} | {_catalog.Branch} | {ModSettingsFieldCount} mod field(s)";
 
             if (valueSet is null)
             {
@@ -494,6 +518,7 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
                 BuildCategoryStatus(category),
                 category.MatchesPreset,
                 autoExpandCategory,
+                category.Sections.Select(section => section.Section.SourceFilePath).FirstOrDefault(path => !string.IsNullOrWhiteSpace(path)),
                 category.Sections.Select(section => new SandboxSectionViewModel(
                     $"{category.CategoryId}::{section.Section.Title}",
                     section.Section.Title,
@@ -549,6 +574,20 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         SelectedCategory = category;
         category.IsExpanded = true;
         RefreshCategorySelectionState();
+    }
+
+    private void OpenSelectedModDefinition()
+    {
+        var sourceFilePath = SelectedCategory?.SourceFilePath;
+        if (string.IsNullOrWhiteSpace(sourceFilePath) || !File.Exists(sourceFilePath))
+        {
+            LoadStatus = "The selected mod definition file is no longer available. Reload the page to rescan installed mods.";
+            return;
+        }
+
+        LoadStatus = _desktopShellService.OpenLocalFile(sourceFilePath)
+            ? $"Opened {Path.GetFileName(sourceFilePath)} for {SelectedCategory!.Title}."
+            : $"Could not open {Path.GetFileName(sourceFilePath)}. Check the application log for details.";
     }
 
     private void ToggleCategoryExpanded(SandboxCategoryViewModel? category)
@@ -753,6 +792,7 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         ResetAllToPresetCommand.NotifyCanExecuteChanged();
         SavePresetCommand.NotifyCanExecuteChanged();
         DeletePresetCommand.NotifyCanExecuteChanged();
+        OpenSelectedModDefinitionCommand.NotifyCanExecuteChanged();
         ResetWorldCommand.NotifyCanExecuteChanged();
     }
 
@@ -776,6 +816,10 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         OnPropertyChanged(nameof(ProfileDisplayName));
         OnPropertyChanged(nameof(Branch));
         OnPropertyChanged(nameof(WorkspaceSummary));
+        OnPropertyChanged(nameof(ModSettingsFieldCount));
+        OnPropertyChanged(nameof(ConfigurableModCount));
+        OnPropertyChanged(nameof(HasModSettings));
+        OnPropertyChanged(nameof(ModSettingsSummary));
         OnPropertyChanged(nameof(ActionSummary));
         OnPropertyChanged(nameof(HasPresets));
         OnPropertyChanged(nameof(HasCategories));
@@ -838,4 +882,7 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         OnPropertyChanged(nameof(PresetLibrarySummary));
         RefreshCommandStates();
     }
+
+    private static bool IsModSection(SettingsSectionDto section) =>
+        section.CategoryId?.StartsWith("mod.", StringComparison.Ordinal) == true;
 }

@@ -42,7 +42,7 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
             () => SelectGlobalPageByKey(WorkspacePageIds.Host));
         Host = new HostWorkspaceViewModel(legacy);
         Consoles = new ConsolesWorkspaceViewModel(legacy, runtime, consoleWorkspaceStateService);
-        Profiles = new ProfilesWorkspaceViewModel(legacy, runtime, folderPickerService);
+        Profiles = new ProfilesWorkspaceViewModel(legacy, runtime, folderPickerService, desktopShellService);
 
         _pages = new Dictionary<string, ViewModelBase>(StringComparer.Ordinal)
         {

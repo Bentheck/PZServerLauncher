@@ -159,9 +159,10 @@
                                         </StackPanel>
                                     </Grid>
 
-                                    <Border Grid.Row="1" Classes="terminal-panel">
+                                    <Border Grid.Row="1" Classes="terminal-panel" Height="260">
                                         <TextBox Classes="console-stream"
-                                                 MinHeight="220"
+                                                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                                                  Text="{Binding LogText}"
                                                  CaretIndex="{Binding ConsoleCaretIndex}" />
                                     </Border>

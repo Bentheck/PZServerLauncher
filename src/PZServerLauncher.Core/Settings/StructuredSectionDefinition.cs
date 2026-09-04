@@ -7,4 +7,5 @@ public sealed record StructuredSectionDefinition(
     string? Description = null,
     string? CategoryId = null,
     string? CategoryTitle = null,
-    int CategoryOrder = 0);
+    int CategoryOrder = 0,
+    string? SourceFilePath = null);

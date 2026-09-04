@@ -11,6 +11,15 @@ public sealed class ModsMapsDraftStore(ApplicationDbContext dbContext)
 {
     private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web);
 
+    public IReadOnlyList<string> GetActiveModIds(string profileId) =>
+        dbContext.ModsMapsDraftModRows
+            .AsNoTracking()
+            .Where(entity => entity.ProfileId == profileId && entity.IsActive)
+            .OrderBy(entity => entity.SortOrder)
+            .ThenBy(entity => entity.RowId)
+            .Select(entity => entity.ModId)
+            .ToArray();
+
     public async Task<ModsMapsDraftDto?> GetAsync(string profileId, CancellationToken cancellationToken = default)
     {
         var draft = await dbContext.ModsMapsDrafts

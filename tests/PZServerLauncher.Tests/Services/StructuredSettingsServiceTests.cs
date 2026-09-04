@@ -989,6 +989,79 @@ public sealed class StructuredSettingsServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Sandbox_PageDiscoversValidatesAndWritesEnabledModOptions()
+    {
+        Directory.CreateDirectory(_tempRoot);
+        var installDirectory = Path.Combine(_tempRoot, "install");
+        var profile = ServerProfileFactory.CreateStarterProfile() with
+        {
+            ProfileId = "profile-mod-options",
+            DisplayName = "Mod Options Profile",
+            ServerName = "mod-options-server",
+            InstallDirectory = installDirectory,
+            CacheDirectory = Path.Combine(_tempRoot, "cache"),
+        };
+
+        var modMediaDirectory = Path.Combine(
+            installDirectory,
+            "steamapps",
+            "workshop",
+            "content",
+            "108600",
+            "1234567890",
+            "mods",
+            "TestMod",
+            "42.19",
+            "media");
+        Directory.CreateDirectory(modMediaDirectory);
+        File.WriteAllText(Path.Combine(Directory.GetParent(modMediaDirectory)!.FullName, "mod.info"), "id=TestMod\nname=Test Mod");
+        File.WriteAllText(Path.Combine(modMediaDirectory, "sandbox-options.txt"), """
+            option TestMod.Amount {
+                type = integer,
+                min = 1,
+                max = 25,
+                default = 5,
+                page = TestMod,
+            }
+            """);
+
+        var planner = new ProjectZomboidServerPlanner();
+        await using var dbContext = TestDatabaseFactory.Create(Path.Combine(_tempRoot, "sandbox-mod-options.db"));
+        var profileStore = new ProfileStore(dbContext);
+        await profileStore.UpsertAsync(profile);
+        var modsMapsDraftStore = new ModsMapsDraftStore(dbContext);
+        await modsMapsDraftStore.UpsertAsync(new ModsMapsDraftDto(
+            profile.ProfileId,
+            profile.Branch,
+            ["1234567890"],
+            [new ModsMapsModRowDto(0, "Test Mod", "TestMod", "1234567890", true, 0, [], [])],
+            [],
+            ModsMapsEditorMode.Live,
+            true,
+            DateTimeOffset.UtcNow));
+        var service = CreateService(profileStore, planner, modsMapsDraftStore);
+
+        var valueSet = service.GetPage(profile, ProfileWorkspacePageIds.Sandbox);
+        Assert.Equal("5", valueSet.Values["mod.testmod.testmod-amount"]);
+
+        var invalidValues = new Dictionary<string, string?>(valueSet.Values, StringComparer.Ordinal)
+        {
+            ["mod.testmod.testmod-amount"] = "26",
+        };
+        var invalidResult = await service.SaveAsync(profile, ProfileWorkspacePageIds.Sandbox, invalidValues);
+        Assert.False(invalidResult.Validation.IsValid);
+        Assert.Contains("between 1 and 25", invalidResult.Validation.FieldErrors["mod.testmod.testmod-amount"].Single());
+
+        invalidValues["mod.testmod.testmod-amount"] = "12";
+        var saveResult = await service.SaveAsync(profile, ProfileWorkspacePageIds.Sandbox, invalidValues);
+        var sandboxText = File.ReadAllText(planner.ResolvePaths(profile).SandboxVarsFilePath);
+
+        Assert.True(saveResult.Validation.IsValid);
+        Assert.Contains("TestMod = {", sandboxText);
+        Assert.Contains("Amount = 12,", sandboxText);
+    }
+
+    [Fact]
     public async Task Sandbox_PageReadsAndWritesExpandedTopLevelFields()
     {
         Directory.CreateDirectory(_tempRoot);
@@ -1463,7 +1536,8 @@ public sealed class StructuredSettingsServiceTests : IDisposable
                 new ProjectZomboidSettingsCatalogResolver(),
                 new IniDocumentService(),
                 new SandboxVarsDocumentService(),
-                workshopScannerService);
+                workshopScannerService,
+                new ModSandboxOptionsService());
 
             var candidate = Assert.Single(await importer.DiscoverAsync());
             Assert.False(candidate.IsAlreadyImported);
@@ -1586,14 +1660,19 @@ public sealed class StructuredSettingsServiceTests : IDisposable
         }
     }
 
-    private static StructuredSettingsService CreateService(ProfileStore profileStore, ProjectZomboidServerPlanner planner) =>
+    private static StructuredSettingsService CreateService(
+        ProfileStore profileStore,
+        ProjectZomboidServerPlanner planner,
+        ModsMapsDraftStore? modsMapsDraftStore = null) =>
         new(
             profileStore,
             new ConfigFileService(planner),
             new ProjectZomboidSettingsCatalogResolver(),
             new IniDocumentService(),
             new SandboxVarsDocumentService(),
-            new WorkshopPresetScannerService());
+            new WorkshopPresetScannerService(),
+            new ModSandboxOptionsService(),
+            modsMapsDraftStore);
 
     private static string CreateInstallDirectory(string batchFileContent)
     {

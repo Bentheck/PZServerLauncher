@@ -127,6 +127,7 @@ public sealed partial class LauncherRuntime : ILauncherRuntime
         builder.Services.AddSingleton<ServerProcessSupervisor>();
         builder.Services.AddSingleton<BackgroundJobDispatcher>();
         builder.Services.AddSingleton<WorkshopPresetScannerService>();
+        builder.Services.AddSingleton<ModSandboxOptionsService>();
         builder.Services.AddScoped<WorkshopBrowserSettingsStore>();
         builder.Services.AddScoped<WorkshopCatalogService>();
         builder.Services.AddScoped<SteamWorkshopApiClient>();
