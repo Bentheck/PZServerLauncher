@@ -60,14 +60,27 @@ public sealed partial class LauncherRuntime
             },
             cancellationToken);
 
-    public Task<SettingsCatalogDto?> GetSettingsCatalogAsync(string profileId, CancellationToken cancellationToken = default) =>
+    public Task<SettingsCatalogDto?> GetSettingsCatalogAsync(
+        string profileId,
+        bool includeModSettings = true,
+        CancellationToken cancellationToken = default) =>
         ExecuteScopedAsync(
             async services =>
             {
                 var profile = await services.GetRequiredService<ProfileStore>().GetAsync(profileId, cancellationToken);
-                return profile is null
-                    ? null
-                    : services.GetRequiredService<StructuredSettingsService>().GetCatalog(profile);
+                if (profile is null)
+                {
+                    return null;
+                }
+
+                var structuredSettings = services.GetRequiredService<StructuredSettingsService>();
+                return includeModSettings
+                    ? await Task.Run(
+                        () => structuredSettings.GetCatalog(
+                            profile,
+                            includeModSettings: true),
+                        cancellationToken)
+                    : structuredSettings.GetCatalog(profile, includeModSettings: false);
             },
             cancellationToken);
 
@@ -79,9 +92,15 @@ public sealed partial class LauncherRuntime
             async services =>
             {
                 var profile = await services.GetRequiredService<ProfileStore>().GetAsync(profileId, cancellationToken);
-                return profile is null
-                    ? null
-                    : services.GetRequiredService<StructuredSettingsService>().GetPage(profile, pageId);
+                if (profile is null)
+                {
+                    return null;
+                }
+
+                var structuredSettings = services.GetRequiredService<StructuredSettingsService>();
+                return string.Equals(pageId, ProfileWorkspacePageIds.Sandbox, StringComparison.Ordinal)
+                    ? await Task.Run(() => structuredSettings.GetPage(profile, pageId), cancellationToken)
+                    : structuredSettings.GetPage(profile, pageId);
             },
             cancellationToken);
 

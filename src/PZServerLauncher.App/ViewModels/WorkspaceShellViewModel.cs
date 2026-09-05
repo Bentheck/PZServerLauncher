@@ -331,6 +331,12 @@ public partial class WorkspaceShellViewModel : ViewModelBase, IWorkspacePageHead
             currentConsoles.SuspendLiveRefresh();
         }
 
+        if (!ReferenceEquals(CurrentPage, next) &&
+            CurrentPage is ProfilesWorkspaceViewModel currentProfiles)
+        {
+            currentProfiles.SuspendLiveUpdates();
+        }
+
         if (!ReferenceEquals(CurrentPage, next))
         {
             CurrentPage = next;

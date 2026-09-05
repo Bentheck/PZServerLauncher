@@ -308,6 +308,11 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
         await RefreshCurrentSectionAsync();
     }
 
+    public void SuspendLiveUpdates()
+    {
+        Logs.SuspendLiveLogs();
+    }
+
     private async Task SelectSectionAsync(WorkspaceNavigationItemViewModel? section)
     {
         if (section is null || !section.IsEnabled)
@@ -394,6 +399,11 @@ public partial class ProfilesWorkspaceViewModel : ViewModelBase, IWorkspacePageH
 
     private async Task SwitchSectionAsync(string pageId, ViewModelBase section)
     {
+        if (!ReferenceEquals(CurrentSection, section) && CurrentSection is LogsWorkspaceViewModel currentLogs)
+        {
+            currentLogs.SuspendLiveLogs();
+        }
+
         if (!ReferenceEquals(CurrentSection, section))
         {
             CurrentSection = section;

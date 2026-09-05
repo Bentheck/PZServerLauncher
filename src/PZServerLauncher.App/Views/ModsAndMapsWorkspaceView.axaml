@@ -10,6 +10,47 @@
              x:Class="PZServerLauncher.App.Views.ModsAndMapsWorkspaceView"
              x:Name="ModsRoot"
              x:DataType="vm:ModsAndMapsWorkspaceViewModel">
+    <UserControl.Styles>
+        <Style Selector="Border.mod-editor-card">
+            <Setter Property="Background" Value="{DynamicResource PanelSubtleBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Padding" Value="14" />
+            <Setter Property="Margin" Value="0,0,0,8" />
+        </Style>
+        <Style Selector="Border.mod-editor-card:pointerover">
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderStrongBrush}" />
+        </Style>
+        <Style Selector="Button.mod-drag-handle">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="Padding" Value="4" />
+            <Setter Property="MinWidth" Value="28" />
+            <Setter Property="MinHeight" Value="54" />
+            <Setter Property="FontSize" Value="18" />
+        </Style>
+        <Style Selector="Button.mod-toggle">
+            <Setter Property="Background" Value="{DynamicResource PanelBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderStrongBrush}" />
+            <Setter Property="Padding" Value="12,7" />
+            <Setter Property="MinHeight" Value="34" />
+        </Style>
+        <Style Selector="Button.mod-toggle.active">
+            <Setter Property="Background" Value="{DynamicResource SuccessSoftBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource SuccessBrush}" />
+        </Style>
+        <Style Selector="Button.mod-order-button">
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="MinWidth" Value="36" />
+            <Setter Property="Width" Value="36" />
+            <Setter Property="MinHeight" Value="34" />
+            <Setter Property="FontSize" Value="17" />
+        </Style>
+    </UserControl.Styles>
     <ScrollViewer HorizontalScrollBarVisibility="Disabled"
                   VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="0,0,0,20" Spacing="18">
@@ -81,6 +122,76 @@
                                    TextWrapping="Wrap" />
                     </Grid>
                 </StackPanel>
+            </Border>
+
+            <Border Classes="workspace-band" Padding="16">
+                <Grid ColumnDefinitions="128,*,Auto" ColumnSpacing="16">
+                    <Border Width="128"
+                            Height="96"
+                            Background="{DynamicResource PanelSubtleBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            ClipToBounds="True">
+                        <Grid>
+                            <TextBlock HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       Classes="panel-title"
+                                       FontSize="22"
+                                       Text="B42" />
+                            <Image Source="{Binding FeaturedWorkshopItem.PreviewImage}"
+                                   Stretch="UniformToFill"
+                                   IsVisible="{Binding FeaturedWorkshopItem.HasPreviewImage}" />
+                        </Grid>
+                    </Border>
+
+                    <StackPanel Grid.Column="1" Spacing="6" VerticalAlignment="Center">
+                        <TextBlock Classes="kicker" Text="Featured Mod" />
+                        <TextBlock Classes="panel-title"
+                                   FontSize="21"
+                                   Text="{Binding FeaturedWorkshopItem.Title}"
+                                   TextWrapping="Wrap" />
+                        <TextBlock Classes="body"
+                                   Foreground="{DynamicResource TextMutedBrush}"
+                                   MaxWidth="720"
+                                   Text="{Binding FeaturedWorkshopItem.Description}"
+                                   TextWrapping="Wrap" />
+                        <WrapPanel Orientation="Horizontal">
+                            <Border Background="{DynamicResource AccentSoftBrush}"
+                                    BorderBrush="{DynamicResource AccentBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="999"
+                                    Margin="0,0,6,0"
+                                    Padding="8,3">
+                                <TextBlock Classes="kicker" Text="Build 42.20" />
+                            </Border>
+                            <Border Background="{DynamicResource PanelSubtleBrush}"
+                                    BorderBrush="{DynamicResource BorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="999"
+                                    Margin="0,0,6,0"
+                                    Padding="8,3">
+                                <TextBlock Classes="kicker" Text="Multiplayer" />
+                            </Border>
+                            <Border Background="{DynamicResource PanelSubtleBrush}"
+                                    BorderBrush="{DynamicResource BorderBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="999"
+                                    Padding="8,3">
+                                <TextBlock Classes="kicker"
+                                           Text="{Binding FeaturedWorkshopItem.IsQueued, StringFormat='In editor: {0}'}" />
+                            </Border>
+                        </WrapPanel>
+                    </StackPanel>
+
+                    <Button Grid.Column="2"
+                            Classes="action-primary"
+                            VerticalAlignment="Center"
+                            MinWidth="118"
+                            Command="{Binding PreviewWorkshopItemCommand}"
+                            CommandParameter="{Binding FeaturedWorkshopItem}"
+                            Content="Preview &amp; Add" />
+                </Grid>
             </Border>
 
             <Grid ColumnDefinitions="1.15*,.85*" ColumnSpacing="18">
@@ -247,68 +358,68 @@
                             <ItemsControl ItemsSource="{Binding VisibleModEditorItems}" IsVisible="{Binding HasVisibleModEditorItems}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate x:DataType="vm:ModsAndMapsWorkspaceViewModel+ModEditorItemViewModel">
-                                        <Border Background="Transparent"
-                                                BorderBrush="{DynamicResource BorderBrush}"
-                                                BorderThickness="0,0,0,1"
-                                                CornerRadius="0"
-                                                Padding="10,9"
-                                                Margin="0"
+                                        <Border Classes="mod-editor-card"
                                                 DragDrop.AllowDrop="True"
                                                 DragDrop.DragOver="OnModEditorRowDragOver"
                                                 DragDrop.Drop="OnModEditorRowDrop">
-                                            <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto,Auto" ColumnSpacing="8">
-                                                <Border Background="Transparent"
-                                                        BorderBrush="{DynamicResource BorderBrush}"
-                                                        BorderThickness="1"
-                                                        CornerRadius="4"
-                                                        Padding="10,8"
-                                                        VerticalAlignment="Center"
-                                                        PointerPressed="OnModEditorDragHandlePointerPressed">
-                                                    <TextBlock Classes="kicker" Text="Drag" />
-                                                </Border>
-                                                <Button Classes="action-secondary"
-                                                        Grid.Column="1"
-                                                        Command="{Binding #ModsRoot.DataContext.ToggleModEditorItemCommand}"
-                                                        CommandParameter="{Binding .}"
-                                                        Content="{Binding ActiveButtonLabel}" />
-                                                <StackPanel Grid.Column="2" Spacing="4">
-                                                    <TextBlock FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" Text="{Binding DisplayTitle}" TextWrapping="Wrap" />
-                                                    <TextBlock Classes="caption" Text="{Binding ModId, StringFormat='Mod ID: {0}'}" />
-                                                    <TextBlock Classes="caption" Text="{Binding WorkshopId, StringFormat='Workshop ID: {0}'}" />
+                                            <Grid ColumnDefinitions="32,*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="10">
+                                                <Button Grid.RowSpan="2"
+                                                        Classes="mod-drag-handle"
+                                                        VerticalAlignment="Stretch"
+                                                        Content="⋮⋮"
+                                                        AutomationProperties.Name="Drag to reorder mod"
+                                                        ToolTip.Tip="Drag to change the active load order"
+                                                        PointerPressed="OnModEditorDragHandlePointerPressed" />
+
+                                                <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                                                    <TextBlock FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" Text="{Binding DisplayTitle}" TextWrapping="Wrap" />
                                                     <WrapPanel Orientation="Horizontal">
-                                                        <Border Background="{DynamicResource PanelSubtleBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="999" Padding="8,3" Margin="0,0,6,6">
-                                                            <TextBlock Classes="kicker" Text="{Binding LoadOrderLabel}" />
-                                                        </Border>
-                                                        <Border Background="{DynamicResource PanelSubtleBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="999" Padding="8,3" Margin="0,0,6,6">
-                                                            <TextBlock Classes="kicker" Text="{Binding ActiveStateLabel}" />
-                                                        </Border>
-                                                        <Border Background="{DynamicResource PanelSubtleBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="999" Padding="8,3" Margin="0,0,6,6">
-                                                            <TextBlock Classes="kicker" Text="{Binding InstallStateLabel}" />
-                                                        </Border>
+                                                        <TextBlock Classes="caption" Text="{Binding ModId, StringFormat='Mod ID: {0}'}" Margin="0,0,14,0" />
+                                                        <TextBlock Classes="caption" Text="{Binding WorkshopId, StringFormat='Workshop ID: {0}'}" />
                                                     </WrapPanel>
                                                 </StackPanel>
-                                                <Button Grid.Column="3"
-                                                        Classes="action-secondary"
-                                                        Command="{Binding #ModsRoot.DataContext.SelectModEditorItemCommand}"
-                                                        CommandParameter="{Binding .}"
-                                                        Content="Inspect" />
-                                                <Button Grid.Column="4"
-                                                        Classes="action-secondary"
-                                                        Command="{Binding #ModsRoot.DataContext.MoveModEditorItemUpCommand}"
-                                                        CommandParameter="{Binding .}"
-                                                        Content="Up" />
-                                                <Button Grid.Column="5"
-                                                        Classes="action-secondary"
-                                                        Command="{Binding #ModsRoot.DataContext.MoveModEditorItemDownCommand}"
-                                                        CommandParameter="{Binding .}"
-                                                        Content="Down" />
-                                                <Button Grid.Column="6"
-                                                        Classes="action-danger"
-                                                        Command="{Binding #ModsRoot.DataContext.RemoveModEditorItemCommand}"
-                                                        CommandParameter="{Binding .}"
-                                                        Content="Remove"
-                                                        AutomationProperties.Name="Remove mod row"
-                                                        ToolTip.Tip="Remove this mod row from the editor" />
+
+                                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                                    <Button Classes="mod-toggle"
+                                                            Classes.active="{Binding IsActive}"
+                                                            Command="{Binding #ModsRoot.DataContext.ToggleModEditorItemCommand}"
+                                                            CommandParameter="{Binding .}"
+                                                            Content="{Binding ActiveButtonLabel}" />
+                                                    <Button Classes="action-secondary"
+                                                            Command="{Binding #ModsRoot.DataContext.SelectModEditorItemCommand}"
+                                                            CommandParameter="{Binding .}"
+                                                            Content="Details" />
+                                                </StackPanel>
+
+                                                <WrapPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <Border Background="{DynamicResource AccentSoftBrush}" BorderBrush="{DynamicResource AccentBrush}" BorderThickness="1" CornerRadius="999" Padding="8,3" Margin="0,0,6,0">
+                                                        <TextBlock Classes="kicker" Foreground="{DynamicResource AccentBrush}" Text="{Binding LoadOrderLabel}" />
+                                                    </Border>
+                                                    <Border Background="{DynamicResource PanelBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" CornerRadius="999" Padding="8,3">
+                                                        <TextBlock Classes="kicker" Text="{Binding InstallStateLabel}" />
+                                                    </Border>
+                                                </WrapPanel>
+
+                                                <StackPanel Grid.Row="1" Grid.Column="2" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                                                    <Button Classes="action-secondary mod-order-button"
+                                                            Command="{Binding #ModsRoot.DataContext.MoveModEditorItemUpCommand}"
+                                                            CommandParameter="{Binding .}"
+                                                            Content="↑"
+                                                            AutomationProperties.Name="Move mod up"
+                                                            ToolTip.Tip="Move up in the active load order" />
+                                                    <Button Classes="action-secondary mod-order-button"
+                                                            Command="{Binding #ModsRoot.DataContext.MoveModEditorItemDownCommand}"
+                                                            CommandParameter="{Binding .}"
+                                                            Content="↓"
+                                                            AutomationProperties.Name="Move mod down"
+                                                            ToolTip.Tip="Move down in the active load order" />
+                                                    <Button Classes="action-danger"
+                                                            Command="{Binding #ModsRoot.DataContext.RemoveModEditorItemCommand}"
+                                                            CommandParameter="{Binding .}"
+                                                            Content="Remove"
+                                                            AutomationProperties.Name="Remove mod row"
+                                                            ToolTip.Tip="Remove this mod row from the editor" />
+                                                </StackPanel>
                                             </Grid>
                                         </Border>
                                     </DataTemplate>
@@ -422,15 +533,6 @@
                 </StackPanel>
 
                 <StackPanel Grid.Column="1" Spacing="18">
-                    <Border Classes="command-strip" Padding="16">
-                        <StackPanel Spacing="10">
-                            <TextBlock Classes="kicker" Foreground="{DynamicResource AccentBrush}" Text="Status" />
-                            <TextBlock FontSize="24" FontWeight="SemiBold" Foreground="{DynamicResource TextBrush}" Text="{Binding CatalogSummaryText}" TextWrapping="Wrap" />
-                            <TextBlock Classes="body" Foreground="{DynamicResource TextMutedBrush}" Text="{Binding ScanSummary}" TextWrapping="Wrap" />
-                            <TextBlock Classes="caption" Foreground="{DynamicResource TextMutedBrush}" Text="{Binding LoadStatus}" TextWrapping="Wrap" />
-                        </StackPanel>
-                    </Border>
-
                     <Border Classes="command-strip" Padding="16" IsVisible="{Binding IsLiveEditorMode}">
                         <StackPanel Spacing="12">
                             <TextBlock Classes="kicker" Foreground="{DynamicResource AccentBrush}" Text="Selected Mod Detail" />

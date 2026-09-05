@@ -23,9 +23,11 @@ public sealed class StructuredSettingsService(
 {
     private const string SettingsUnavailableMessage = "Structured editing for this page has not been implemented yet. Use Advanced Files for the raw editor.";
 
-    public SettingsCatalogDto GetCatalog(ServerProfile profile)
+    public SettingsCatalogDto GetCatalog(
+        ServerProfile profile,
+        bool includeModSettings = true)
     {
-        var catalog = ResolveCatalog(profile);
+        var catalog = ResolveCatalog(profile, includeModSettings);
         return new SettingsCatalogDto(
             catalog.CatalogId,
             catalog.CatalogVersion,
@@ -35,7 +37,7 @@ public sealed class StructuredSettingsService(
 
     public SettingsValueSetDto GetPage(ServerProfile profile, string pageId)
     {
-        var catalog = ResolveCatalog(profile);
+        var catalog = ResolveCatalog(profile, includeModSettings: string.Equals(pageId, ProfileWorkspacePageIds.Sandbox, StringComparison.Ordinal));
         var definition = ResolvePageDefinition(catalog, pageId);
         if (definition is null)
         {
@@ -131,7 +133,7 @@ public sealed class StructuredSettingsService(
         CancellationToken cancellationToken = default)
     {
         var validation = Validate(profile, pageId, values);
-        var catalog = ResolveCatalog(profile);
+        var catalog = ResolveCatalog(profile, includeModSettings: string.Equals(pageId, ProfileWorkspacePageIds.Sandbox, StringComparison.Ordinal));
         if (!validation.IsValid || validation.RequiresAdvancedFilesFallback)
         {
             return new SettingsSaveResultDto(
@@ -803,9 +805,16 @@ public sealed class StructuredSettingsService(
     private static StructuredPageDefinition? ResolvePageDefinition(StructuredSettingsCatalog catalog, string pageId) =>
         catalog.Pages.FirstOrDefault(definition => string.Equals(MapPageId(definition.PageId), pageId, StringComparison.Ordinal));
 
-    private StructuredSettingsCatalog ResolveCatalog(ServerProfile profile)
+    private StructuredSettingsCatalog ResolveCatalog(
+        ServerProfile profile,
+        bool includeModSettings = true)
     {
         var catalog = catalogResolver.Resolve(profile.Branch);
+        if (!includeModSettings)
+        {
+            return catalog;
+        }
+
         var sandboxPage = ResolvePageDefinition(catalog, ProfileWorkspacePageIds.Sandbox);
         if (sandboxPage is null)
         {

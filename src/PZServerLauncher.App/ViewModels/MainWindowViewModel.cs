@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Collections.Concurrent;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -23,6 +24,8 @@ public partial class MainWindowViewModel : ViewModelBase
     private bool _attemptedInitialImportDiscovery;
     private SteamBranchCatalogDto _steamBranchCatalog = CreateFallbackSteamBranchCatalog();
     private Task<SteamBranchCatalogDto>? _steamBranchCatalogTask;
+    private readonly ConcurrentDictionary<string, string> _pendingLatestLogLines = new(StringComparer.Ordinal);
+    private readonly DispatcherTimer _latestLogFlushTimer;
 
     public MainWindowViewModel(
         ILauncherRuntime runtime,
@@ -62,6 +65,13 @@ public partial class MainWindowViewModel : ViewModelBase
         _runtime.StatusChanged += OnStatusChangedAsync;
         _runtime.JobChanged += OnJobChangedAsync;
         _runtime.LogLineReceived += OnLogLineReceivedAsync;
+
+        _latestLogFlushTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(100),
+        };
+        _latestLogFlushTimer.Tick += OnLatestLogFlushTimerTick;
+        _latestLogFlushTimer.Start();
 
         _ = InitializeAsync();
     }
@@ -617,16 +627,34 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private Task OnLogLineReceivedAsync(string profileId, string line)
     {
-        Dispatcher.UIThread.Post(() =>
+        if (!LogDisplayCompactor.IsDiscardedNoise(line))
         {
-            var profile = Profiles.FirstOrDefault(x => x.ProfileId == profileId);
-            if (profile is not null)
-            {
-                profile.LatestLogLine = line;
-            }
-        });
+            _pendingLatestLogLines[profileId] = line;
+        }
 
         return Task.CompletedTask;
+    }
+
+    private void OnLatestLogFlushTimerTick(object? sender, EventArgs e)
+    {
+        if (_pendingLatestLogLines.IsEmpty)
+        {
+            return;
+        }
+
+        foreach (var profileId in _pendingLatestLogLines.Keys)
+        {
+            if (!_pendingLatestLogLines.TryRemove(profileId, out var latestLine))
+            {
+                continue;
+            }
+
+            var profile = Profiles.FirstOrDefault(candidate => candidate.ProfileId == profileId);
+            if (profile is not null)
+            {
+                profile.LatestLogLine = latestLine;
+            }
+        }
     }
 
     private async Task RunBusyAsync(Func<Task> work, string busyMessage)

@@ -124,6 +124,57 @@ public sealed class ModSandboxOptionsServiceTests : IDisposable
     }
 
     [Fact]
+    public void Discover_RescansOnlyAfterANewModIsEnabled()
+    {
+        var modDirectory = CreateModDirectory("42.19", "CachedMod", "Cached Mod");
+        WriteOptions(modDirectory, "option Cached.Original { type = boolean, default = true, }");
+        var service = new ModSandboxOptionsService();
+        var profile = CreateProfile("42.19");
+
+        var first = service.Discover(profile, ["CachedMod"]);
+        Assert.Equal(1, service.WorkshopIndexBuildCount);
+        WriteOptions(modDirectory, "option Cached.Refreshed { type = boolean, default = false, }");
+        var cached = service.Discover(profile, ["CachedMod"]);
+        Assert.Equal(1, service.WorkshopIndexBuildCount);
+        var addedModDirectory = CreateModDirectory("42.19", "AddedMod", "Added Mod");
+        WriteOptions(addedModDirectory, "option Added.Enabled { type = boolean, default = true, }");
+        var refreshed = service.Discover(profile, ["CachedMod", "AddedMod"]);
+        Assert.Equal(2, service.WorkshopIndexBuildCount);
+        service.Discover(profile, ["AddedMod"]);
+        Assert.Equal(2, service.WorkshopIndexBuildCount);
+
+        Assert.Same(first, cached);
+        Assert.Equal("Cached.Original", Assert.Single(Assert.Single(cached.Sections).Fields).Target.KeyPath);
+        Assert.Contains(
+            refreshed.Sections.SelectMany(section => section.Fields),
+            field => field.Target.KeyPath == "Cached.Refreshed");
+        Assert.Contains(
+            refreshed.Sections.SelectMany(section => section.Fields),
+            field => field.Target.KeyPath == "Added.Enabled");
+    }
+
+    [Fact]
+    public void Discover_ConcurrentCallsShareOneCachedResult()
+    {
+        var modIds = Enumerable.Range(0, 40).Select(index => $"Mod{index}").ToArray();
+        foreach (var modId in modIds)
+        {
+            var modDirectory = CreateModDirectory("42.19", modId, $"Mod {modId}");
+            WriteOptions(modDirectory, $"option {modId}.Enabled {{ type = boolean, default = true, }}");
+        }
+
+        var service = new ModSandboxOptionsService();
+        var profile = CreateProfile("42.19");
+        var results = Enumerable.Range(0, 12)
+            .AsParallel()
+            .Select(_ => service.Discover(profile, modIds))
+            .ToArray();
+
+        Assert.Equal(40, results[0].DiscoveredModCount);
+        Assert.All(results, result => Assert.Same(results[0], result));
+    }
+
+    [Fact]
     public void ParseSteamLibraryRoots_ReadsEscapedVdfPaths()
     {
         const string content = """

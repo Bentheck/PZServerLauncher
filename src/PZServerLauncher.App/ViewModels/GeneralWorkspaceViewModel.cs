@@ -322,7 +322,7 @@ public partial class GeneralWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
         try
         {
-            _catalog = await _runtime.GetSettingsCatalogAsync(profile.ProfileId);
+            _catalog = await _runtime.GetSettingsCatalogAsync(profile.ProfileId, includeModSettings: false);
             var valueSet = await _runtime.GetSettingsPageAsync(profile.ProfileId, ProfileWorkspacePageIds.General);
             var draft = await _runtime.GetSettingsDraftAsync(profile.ProfileId, ProfileWorkspacePageIds.General);
 

@@ -9,38 +9,111 @@ namespace PZServerLauncher.Runtime.Services;
 
 public sealed partial class ModSandboxOptionsService
 {
-    private static readonly TimeSpan WorkshopIndexCacheDuration = TimeSpan.FromSeconds(5);
-    private readonly object _workshopIndexLock = new();
-    private string? _cachedWorkshopIndexKey;
-    private DateTimeOffset _cachedWorkshopIndexExpiresAt;
-    private IReadOnlyList<string> _cachedModInfoPaths = [];
+    private const int MaximumDiscoveryCacheEntries = 16;
+    private readonly object _cacheLock = new();
+    private readonly Dictionary<string, WorkshopModIndex> _workshopIndexes = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, HashSet<string>> _enabledModIdsByProfile = new(StringComparer.Ordinal);
+    private long _workshopIndexRevision;
+    private readonly Dictionary<string, Lazy<ModSandboxDiscoveryResult>> _discoveryCache = new(StringComparer.OrdinalIgnoreCase);
 
-    public ModSandboxDiscoveryResult Discover(ServerProfile profile, IReadOnlyList<string> enabledModIds)
+    internal long WorkshopIndexBuildCount
     {
-        var workshopRoots = ResolveWorkshopRoots(profile.InstallDirectory);
-        if (workshopRoots.Count == 0 || enabledModIds.Count == 0)
+        get
         {
-            return new ModSandboxDiscoveryResult([], [], enabledModIds.Count);
+            lock (_cacheLock)
+            {
+                return _workshopIndexRevision;
+            }
+        }
+    }
+
+    public ModSandboxDiscoveryResult Discover(
+        ServerProfile profile,
+        IReadOnlyList<string> enabledModIds)
+    {
+        var enabledModIdSnapshot = enabledModIds.ToArray();
+        var workshopRoots = ResolveWorkshopRoots(profile.InstallDirectory);
+        if (workshopRoots.Count == 0)
+        {
+            return new ModSandboxDiscoveryResult([], [], enabledModIdSnapshot.Length);
         }
 
-        var diagnostics = new List<string>();
-        var sections = new List<StructuredSectionDefinition>();
-        var discoveredModCount = 0;
-        IReadOnlyList<string> modInfoPaths;
+        if (enabledModIdSnapshot.Length == 0)
+        {
+            RememberEnabledMods(profile.ProfileId, enabledModIdSnapshot);
+            return new ModSandboxDiscoveryResult([], [], 0);
+        }
+
+        WorkshopModIndex workshopIndex;
         try
         {
-            modInfoPaths = GetModInfoPaths(workshopRoots);
+            workshopIndex = GetWorkshopIndex(workshopRoots, profile.ProfileId, enabledModIdSnapshot);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            diagnostics.Add($"The local Workshop cache could not be scanned: {exception.Message}");
-            return new ModSandboxDiscoveryResult([], diagnostics, enabledModIds.Count);
+            return new ModSandboxDiscoveryResult(
+                [],
+                [$"The local Workshop cache could not be scanned: {exception.Message}"],
+                enabledModIdSnapshot.Length);
         }
+
+        var discoveryKey = BuildDiscoveryCacheKey(workshopIndex.Revision, profile.SteamBranch, enabledModIdSnapshot);
+        Lazy<ModSandboxDiscoveryResult> cachedDiscovery;
+        lock (_cacheLock)
+        {
+            if (!_discoveryCache.TryGetValue(discoveryKey, out cachedDiscovery!))
+            {
+                if (_discoveryCache.Count >= MaximumDiscoveryCacheEntries)
+                {
+                    _discoveryCache.Clear();
+                }
+
+                cachedDiscovery = new Lazy<ModSandboxDiscoveryResult>(
+                    () => DiscoverCore(profile.SteamBranch, enabledModIdSnapshot, workshopIndex.CandidatesByModId),
+                    LazyThreadSafetyMode.ExecutionAndPublication);
+                _discoveryCache[discoveryKey] = cachedDiscovery;
+            }
+        }
+
+        try
+        {
+            return cachedDiscovery.Value;
+        }
+        catch
+        {
+            lock (_cacheLock)
+            {
+                if (_discoveryCache.TryGetValue(discoveryKey, out var current) && ReferenceEquals(current, cachedDiscovery))
+                {
+                    _discoveryCache.Remove(discoveryKey);
+                }
+            }
+
+            throw;
+        }
+    }
+
+    private void RememberEnabledMods(string profileId, IReadOnlyList<string> enabledModIds)
+    {
+        lock (_cacheLock)
+        {
+            _enabledModIdsByProfile[profileId] = enabledModIds.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        }
+    }
+
+    private static ModSandboxDiscoveryResult DiscoverCore(
+        string steamBranch,
+        IReadOnlyList<string> enabledModIds,
+        IReadOnlyDictionary<string, IReadOnlyList<IndexedModDefinition>> candidatesByModId)
+    {
+        var diagnostics = new List<string>();
+        var sections = new List<StructuredSectionDefinition>();
+        var discoveredModCount = 0;
 
         for (var modIndex = 0; modIndex < enabledModIds.Count; modIndex++)
         {
             var enabledModId = enabledModIds[modIndex];
-            var candidates = FindCandidates(modInfoPaths, enabledModId, profile.SteamBranch);
+            var candidates = FindCandidates(candidatesByModId, enabledModId, steamBranch);
             if (candidates.Count == 0)
             {
                 diagnostics.Add($"{enabledModId}: no compatible sandbox-options.txt was found in the local Workshop cache.");
@@ -209,36 +282,26 @@ public sealed partial class ModSandboxOptionsService
     }
 
     private static IReadOnlyList<ModOptionsCandidate> FindCandidates(
-        IEnumerable<string> modInfoPaths,
+        IReadOnlyDictionary<string, IReadOnlyList<IndexedModDefinition>> candidatesByModId,
         string enabledModId,
         string steamBranch)
     {
-        var matches = new List<ModOptionsCandidate>();
-        foreach (var modInfoPath in modInfoPaths)
+        if (!candidatesByModId.TryGetValue(enabledModId, out var indexedCandidates))
         {
-            var metadata = ReadModInfo(modInfoPath);
-            if (!string.Equals(metadata.Id, enabledModId, StringComparison.OrdinalIgnoreCase))
-            {
-                continue;
-            }
-
-            var modDirectory = Path.GetDirectoryName(modInfoPath)!;
-            var optionsPath = Path.Combine(modDirectory, "media", "sandbox-options.txt");
-            if (!File.Exists(optionsPath))
-            {
-                continue;
-            }
-
-            var modRoot = ResolveModRoot(modDirectory);
-            var variant = Path.GetRelativePath(modRoot, modDirectory);
-            var priority = GetVariantPriority(variant, steamBranch);
-            if (priority >= 0)
-            {
-                matches.Add(new ModOptionsCandidate(optionsPath, modRoot, metadata.Name ?? enabledModId, variant, priority));
-            }
+            return [];
         }
 
-        if (matches.Count == 0)
+        var matches = indexedCandidates
+            .Select(candidate => new ModOptionsCandidate(
+                candidate.OptionsPath,
+                candidate.ModRoot,
+                candidate.DisplayName,
+                candidate.Variant,
+                GetVariantPriority(candidate.Variant, steamBranch)))
+            .Where(candidate => candidate.Priority >= 0)
+            .ToArray();
+
+        if (matches.Length == 0)
         {
             return [];
         }
@@ -322,36 +385,77 @@ public sealed partial class ModSandboxOptionsService
         return translations;
     }
 
-    private IReadOnlyList<string> GetModInfoPaths(IReadOnlyList<string> workshopRoots)
+    private WorkshopModIndex GetWorkshopIndex(
+        IReadOnlyList<string> workshopRoots,
+        string profileId,
+        IReadOnlyList<string> enabledModIds)
     {
         var cacheKey = string.Join(
             "|",
             workshopRoots.OrderBy(path => path, StringComparer.OrdinalIgnoreCase));
-        var now = DateTimeOffset.UtcNow;
-
-        lock (_workshopIndexLock)
+        lock (_cacheLock)
         {
-            if (string.Equals(_cachedWorkshopIndexKey, cacheKey, StringComparison.OrdinalIgnoreCase) &&
-                now < _cachedWorkshopIndexExpiresAt)
+            var enabledSet = enabledModIds.ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var hasNewEnabledMod = false;
+            if (_enabledModIdsByProfile.TryGetValue(profileId, out var previousEnabledSet))
             {
-                return _cachedModInfoPaths;
+                hasNewEnabledMod = enabledSet.Except(previousEnabledSet, StringComparer.OrdinalIgnoreCase).Any();
             }
+            else if (_workshopIndexes.TryGetValue(cacheKey, out var existingIndex))
+            {
+                hasNewEnabledMod = enabledSet.Any(modId => !existingIndex.CandidatesByModId.ContainsKey(modId));
+            }
+
+            _enabledModIdsByProfile[profileId] = enabledSet;
+            if (_workshopIndexes.TryGetValue(cacheKey, out var cachedIndex) && !hasNewEnabledMod)
+            {
+                return cachedIndex;
+            }
+
+            var candidates = workshopRoots
+                .SelectMany(EnumerateWorkshopModInfoPaths)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Select(BuildIndexedDefinition)
+                .Where(candidate => candidate is not null)
+                .Cast<IndexedModDefinition>()
+                .GroupBy(candidate => candidate.ModId, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(
+                    group => group.Key,
+                    group => (IReadOnlyList<IndexedModDefinition>)group.ToArray(),
+                    StringComparer.OrdinalIgnoreCase);
+
+            var refreshedIndex = new WorkshopModIndex(++_workshopIndexRevision, candidates);
+            _workshopIndexes[cacheKey] = refreshedIndex;
+            return refreshedIndex;
         }
-
-        var paths = workshopRoots
-            .SelectMany(EnumerateWorkshopModInfoPaths)
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToArray();
-
-        lock (_workshopIndexLock)
-        {
-            _cachedWorkshopIndexKey = cacheKey;
-            _cachedWorkshopIndexExpiresAt = now + WorkshopIndexCacheDuration;
-            _cachedModInfoPaths = paths;
-        }
-
-        return paths;
     }
+
+    private static IndexedModDefinition? BuildIndexedDefinition(string modInfoPath)
+    {
+        var metadata = ReadModInfo(modInfoPath);
+        if (string.IsNullOrWhiteSpace(metadata.Id))
+        {
+            return null;
+        }
+
+        var modDirectory = Path.GetDirectoryName(modInfoPath)!;
+        var optionsPath = Path.Combine(modDirectory, "media", "sandbox-options.txt");
+        if (!File.Exists(optionsPath))
+        {
+            return null;
+        }
+
+        var modRoot = ResolveModRoot(modDirectory);
+        return new IndexedModDefinition(
+            metadata.Id,
+            optionsPath,
+            modRoot,
+            metadata.Name ?? metadata.Id,
+            Path.GetRelativePath(modRoot, modDirectory));
+    }
+
+    private static string BuildDiscoveryCacheKey(long revision, string steamBranch, IReadOnlyList<string> enabledModIds) =>
+        $"{revision}|{steamBranch}|{string.Join('\u001f', enabledModIds)}";
 
     private static IEnumerable<string> EnumerateWorkshopModInfoPaths(string workshopRoot)
     {
@@ -567,3 +671,14 @@ internal sealed record ModOptionsCandidate(
     string DisplayName,
     string Variant,
     int Priority);
+
+internal sealed record IndexedModDefinition(
+    string ModId,
+    string OptionsPath,
+    string ModRoot,
+    string DisplayName,
+    string Variant);
+
+internal sealed record WorkshopModIndex(
+    long Revision,
+    IReadOnlyDictionary<string, IReadOnlyList<IndexedModDefinition>> CandidatesByModId);

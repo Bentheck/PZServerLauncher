@@ -14,6 +14,8 @@ namespace PZServerLauncher.App.ViewModels;
 
 public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
 {
+    private const string FeaturedWorkshopId = "3699503439";
+    private const string FeaturedWorkshopPreviewUrl = "https://images.steamusercontent.com/ugc/14012306878787347144/8F7A30F8648F3B2810D7056CFBA7661F49AA9E57/";
     private readonly ILauncherRuntime _runtime;
     private SettingsCatalogDto? _catalog;
     private WorkshopScanResultDto? _lastScanResult;
@@ -25,7 +27,7 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
     private bool _isApplyingState;
     private bool _isApplyingWorkshopPreview;
     private bool _hasStoredDraft;
-    private string _livePresetHash = string.Empty;
+    private string _persistedEditorHash = string.Empty;
     private List<string> _draftWorkshopItemIds = [];
     private int _nextModRowId = 1;
     private int _nextMapRowId = 1;
@@ -42,6 +44,17 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
             ["Browse Workshop items", "Keep draft rows in launcher state", "Save only active rows to the server", "Auto-order active mods from dependencies"])
     {
         _runtime = runtime;
+        FeaturedWorkshopItem = new WorkshopCatalogItemViewModel(new WorkshopCatalogItemDto(
+            FeaturedWorkshopId,
+            "Quick Restart [B42.20 Stable]",
+            "Restart faster after death in Build 42.20. Choose a fresh world or respawn in the same one while restoring the original character setup.",
+            FeaturedWorkshopPreviewUrl,
+            WorkshopCatalogItemSource.Details,
+            IsInstalledLocally: false,
+            IsQueued: false,
+            ModIds: ["QuickRestart"],
+            MapFolders: [],
+            Tags: ["Build 42", "Multiplayer", "QOL"]));
 
         SaveSettingsCommand = new AsyncRelayCommand(SaveSettingsAsync);
         ReloadCommand = new AsyncRelayCommand(ReloadAsync);
@@ -86,7 +99,9 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
 
     public string DraftBannerText => HasUnsavedChanges
         ? "The Mods & Maps editor has unsaved draft changes. Save Draft keeps them in launcher state first. Save to Server writes the active rows to the real server config."
-        : "The editor matches the current live server config.";
+        : HasStoredDraft
+            ? "The editor matches its saved launcher draft. Save to Server when you are ready to apply the active rows to the real server config."
+            : "The editor matches the current live server config.";
 
     public string LoadoutSummary => $"{ActiveModEditorItems.Count} active mod(s) | {ActiveMapEditorItems.Count} active map(s) | {ResolveDraftWorkshopIds().Count} workshop item(s) tracked";
 
@@ -117,6 +132,8 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
     public ObservableCollection<SavedPresetViewModel> SavedPresets { get; } = [];
 
     public ObservableCollection<WorkshopCatalogItemViewModel> WorkshopSearchResults { get; } = [];
+
+    public WorkshopCatalogItemViewModel FeaturedWorkshopItem { get; }
 
     public ObservableCollection<string> WorkshopSearchDiagnostics { get; } = [];
 
@@ -460,9 +477,9 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
             }
 
             HasStoredDraft = false;
-            _livePresetHash = BuildPresetHash(updatedPreset);
             await LoadMetadataAsync(SelectedProfile.ProfileId, updatedPreset);
             ApplyPresetToEditor(updatedPreset);
+            _persistedEditorHash = BuildEditorHash();
             MarkClean("Mods & Maps settings are in sync.");
             LoadStatus = $"Saved Mods & Maps to the server config for {SelectedProfile.DisplayName}.";
             await Legacy.RefreshCommand.ExecuteAsync(null);
@@ -521,16 +538,16 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
 
         IsLoading = true;
         LoadStatus = $"Loading Mods & Maps for {profile.DisplayName}...";
+        _ = FeaturedWorkshopItem.LoadImageAsync(_runtime, CancellationToken.None);
 
         try
         {
-            _catalog = await _runtime.GetSettingsCatalogAsync(profile.ProfileId);
+            _catalog = await _runtime.GetSettingsCatalogAsync(profile.ProfileId, includeModSettings: false);
             _workshopBrowserSettings = await _runtime.GetWorkshopBrowserSettingsAsync() ?? new SteamWorkshopBrowserSettingsDto(false);
             var livePreset = await _runtime.GetWorkshopPresetAsync(profile.ProfileId) ?? WorkshopPreset.Empty;
             var draft = await _runtime.GetModsMapsDraftAsync(profile.ProfileId);
             var presets = await _runtime.GetNamedWorkshopPresetsAsync(profile.ProfileId) ?? [];
 
-            _livePresetHash = BuildPresetHash(livePreset);
             await LoadMetadataAsync(profile.ProfileId, draft is null ? livePreset : BuildPresetFromDraft(draft));
             ReplaceSavedPresets(presets);
             ResetWorkshopBrowserState();
@@ -553,6 +570,7 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
                 LoadStatus = "Loaded Mods & Maps from the local host.";
             }
 
+            _persistedEditorHash = BuildEditorHash();
             RefreshDirtyState();
             NotifyComputedState();
         }
@@ -1482,6 +1500,8 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
 
             HasStoredDraft = true;
             _draftWorkshopItemIds = DistinctNonEmpty(saved.WorkshopItemIds).ToList();
+            _persistedEditorHash = BuildEditorHash();
+            RefreshDirtyState();
             if (updateStatus && !string.IsNullOrWhiteSpace(successMessage))
             {
                 LoadStatus = successMessage;
@@ -1662,6 +1682,7 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
     private void RefreshWorkshopPreviewQueueState()
     {
         var preset = BuildPresetForWorkshopOperations();
+        FeaturedWorkshopItem.IsQueued = IsWorkshopCatalogItemQueued(preset, FeaturedWorkshopItem.Item);
         foreach (var item in WorkshopSearchResults)
         {
             item.IsQueued = IsWorkshopCatalogItemQueued(preset, item.Item);
@@ -1711,8 +1732,9 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
 
     private void RefreshDirtyState()
     {
-        var livePresetChanged = !string.Equals(_livePresetHash, BuildPresetHash(BuildPresetForSave()), StringComparison.Ordinal);
-        if (HasStoredDraft || livePresetChanged)
+        var editorChanged = !string.IsNullOrWhiteSpace(_persistedEditorHash) &&
+                            !string.Equals(_persistedEditorHash, BuildEditorHash(), StringComparison.Ordinal);
+        if (editorChanged)
         {
             MarkDirty("The Mods & Maps editor has unsaved draft changes.");
         }
@@ -1874,7 +1896,7 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
     {
         var combined = new List<string>(_draftWorkshopItemIds.Count + ModEditorItems.Count + MapEditorItems.Count);
         combined.AddRange(_draftWorkshopItemIds);
-        combined.AddRange(ModEditorItems.Select(item => item.WorkshopId));
+        combined.AddRange(ModEditorItems.Where(item => item.IsActive).Select(item => item.WorkshopId));
         combined.AddRange(MapEditorItems.Where(item => item.IsActive).Select(item => item.WorkshopId));
         return DistinctNonEmpty(combined);
     }
@@ -2032,6 +2054,7 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
         _lastScanResult = null;
         _workshopSearchResult = null;
         _draftWorkshopItemIds = [];
+        _persistedEditorHash = string.Empty;
         _metadataByModId.Clear();
         _metadataByMapId.Clear();
         _nextModRowId = 1;
@@ -2130,12 +2153,16 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
             $"{preset.Preset.EnabledModIds.Count} mods | {preset.Preset.MapFolders.Count} maps"));
     }
 
-    private static string BuildPresetHash(WorkshopPreset preset)
+    private string BuildEditorHash()
     {
-        var source = string.Join("|",
-            string.Join(",", DistinctNonEmpty(preset.WorkshopItemIds)),
-            string.Join(",", DistinctNonEmpty(preset.EnabledModIds)),
-            string.Join(",", DistinctNonEmpty(preset.MapFolders)));
+        var draft = BuildDraftModel();
+        var source = System.Text.Json.JsonSerializer.Serialize(new
+        {
+            draft.WorkshopItemIds,
+            draft.ModRows,
+            draft.MapRows,
+            draft.EditorMode,
+        });
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(source)));
     }
 
@@ -2289,7 +2316,7 @@ public partial class ModsAndMapsWorkspaceViewModel : ProfileWorkspacePageViewMod
 
         public string ActiveStateLabel => IsActive ? "Active" : "Inactive";
 
-        public string ActiveButtonLabel => IsActive ? "[x] Active" : "[ ] Inactive";
+        public string ActiveButtonLabel => IsActive ? "✓ Active" : "Inactive";
 
         public string InstallStateLabel => IsInstalled ? "Installed locally" : "Not installed";
 

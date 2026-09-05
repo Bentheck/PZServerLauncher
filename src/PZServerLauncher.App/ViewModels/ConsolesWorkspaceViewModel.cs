@@ -14,11 +14,14 @@ namespace PZServerLauncher.App.ViewModels;
 public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
 {
     private const int ConsoleBufferLimit = 500;
+    private const int LogBatchSize = 200;
     private static readonly TimeSpan LiveRefreshInterval = TimeSpan.FromSeconds(3);
+    private static readonly TimeSpan LogFlushInterval = TimeSpan.FromMilliseconds(500);
 
     private readonly ConsoleWorkspaceStateService _workspaceStateService;
     private bool _hasInitializedSlots;
     private readonly DispatcherTimer _liveRefreshTimer;
+    private readonly DispatcherTimer _logFlushTimer;
     private bool _isLiveRefreshRunning;
     private int _liveRefreshCycle;
 
@@ -63,6 +66,11 @@ public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
             Interval = LiveRefreshInterval,
         };
         _liveRefreshTimer.Tick += OnLiveRefreshTimerTick;
+        _logFlushTimer = new DispatcherTimer
+        {
+            Interval = LogFlushInterval,
+        };
+        _logFlushTimer.Tick += OnLogFlushTimerTick;
 
         RestorePersistedState();
         SeedEmptySlots();
@@ -142,6 +150,11 @@ public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
         {
             _liveRefreshTimer.Start();
         }
+
+        if (!_logFlushTimer.IsEnabled)
+        {
+            _logFlushTimer.Start();
+        }
     }
 
     public void SuspendLiveRefresh()
@@ -149,6 +162,11 @@ public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
         if (_liveRefreshTimer.IsEnabled)
         {
             _liveRefreshTimer.Stop();
+        }
+
+        if (_logFlushTimer.IsEnabled)
+        {
+            _logFlushTimer.Stop();
         }
     }
 
@@ -222,6 +240,14 @@ public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
         finally
         {
             _isLiveRefreshRunning = false;
+        }
+    }
+
+    private void OnLogFlushTimerTick(object? sender, EventArgs e)
+    {
+        foreach (var slot in ConsoleSlots)
+        {
+            slot.FlushPendingLogLines(LogBatchSize);
         }
     }
 
@@ -407,6 +433,8 @@ public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
         private ProfileCardViewModel? _profile;
         private string? _assignedProfileId;
         private readonly LogDisplayCompactor _logDisplayCompactor = new();
+        private readonly BoundedLogLineQueue _pendingLogLines = new(2_000);
+        private string _cachedLogText = "Pin a server from the roster to open a live console in this slot.";
 
         public ConsoleTileViewModel(
             int slotNumber,
@@ -485,13 +513,9 @@ public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
 
         public bool CanSendCommands => HasPinnedProfile && IsRunning;
 
-        public string LogText => HasPinnedProfile
-            ? DisplayLogLines.Count == 0
-                ? "No buffered logs yet. Start or reload the server to populate this console."
-                : string.Join(Environment.NewLine, DisplayLogLines)
-            : "Pin a server from the roster to open a live console in this slot.";
+        public string LogText => _cachedLogText;
 
-        public int ConsoleCaretIndex => FollowTail ? LogText.Length : 0;
+        public int ConsoleCaretIndex => FollowTail ? _cachedLogText.Length : 0;
 
         public IAsyncRelayCommand ReloadCommand { get; }
 
@@ -534,6 +558,7 @@ public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
         {
             _assignedProfileId = profile?.ProfileId;
             _profile = profile;
+            _pendingLogLines.Clear();
 
             if (profile is null)
             {
@@ -555,12 +580,14 @@ public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
 
             _assignedProfileId = profileId;
             _profile = profile;
+            _pendingLogLines.Clear();
 
             if (profile is null)
             {
                 LogLines.Clear();
                 DisplayLogLines.Clear();
                 _logDisplayCompactor.Reset();
+                UpdateCachedLogText();
                 _runtimeStatus = null;
                 _liveOperations = null;
                 LatestRuntimeState = "Unknown";
@@ -577,6 +604,7 @@ public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
         {
             _assignedProfileId = null;
             _profile = null;
+            _pendingLogLines.Clear();
             Reset();
         }
 
@@ -613,6 +641,8 @@ public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
                 LogLines.Clear();
                 DisplayLogLines.Clear();
                 _logDisplayCompactor.Reset();
+                _pendingLogLines.Clear();
+                UpdateCachedLogText();
                 _runtimeStatus = null;
                 _liveOperations = null;
                 LatestRuntimeState = "Unknown";
@@ -765,32 +795,51 @@ public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
                 return Task.CompletedTask;
             }
 
-            Dispatcher.UIThread.Post(() =>
+            if (LogDisplayCompactor.IsDiscardedNoise(line))
+            {
+                return Task.CompletedTask;
+            }
+
+            _pendingLogLines.Enqueue(line);
+            return Task.CompletedTask;
+        }
+
+        public void FlushPendingLogLines(int maximumLineCount)
+        {
+            var lines = _pendingLogLines.Drain(maximumLineCount);
+            if (lines.Count == 0 || _profile is null)
+            {
+                return;
+            }
+
+            foreach (var line in lines)
             {
                 LogLines.Add(line);
-                while (LogLines.Count > ConsoleBufferLimit)
-                {
-                    LogLines.RemoveAt(0);
-                }
-
                 AppendDisplayLogLine(line);
+            }
 
-                _runtimeStatus = (_runtimeStatus ?? new ServerRuntimeStatus(profileId, ServerRuntimeState.Stopped, null, null, null, null, null))
-                    with
-                    {
-                        LatestLogLine = line,
-                    };
+            while (LogLines.Count > ConsoleBufferLimit)
+            {
+                LogLines.RemoveAt(0);
+            }
 
-                if (_profile is not null)
+            while (DisplayLogLines.Count > ConsoleBufferLimit)
+            {
+                DisplayLogLines.RemoveAt(0);
+            }
+
+            var latestLine = lines[^1];
+            _runtimeStatus = (_runtimeStatus ?? new ServerRuntimeStatus(_profile.ProfileId, ServerRuntimeState.Stopped, null, null, null, null, null))
+                with
                 {
-                    _profile.LatestLogLine = line;
-                }
+                    LatestLogLine = latestLine,
+                };
 
-                LoadStatus = $"Live log update received for {ProfileDisplayName}.";
-                NotifyComputedState();
-            });
+            _profile.LatestLogLine = latestLine;
 
-            return Task.CompletedTask;
+            LoadStatus = $"Live logs updated for {ProfileDisplayName}.";
+            UpdateCachedLogText();
+            NotifyComputedState();
         }
 
         private Task OnStatusChangedAsync(ServerRuntimeStatus status)
@@ -847,6 +896,11 @@ public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
             _logDisplayCompactor.Reset();
             foreach (var line in lines)
             {
+                if (LogDisplayCompactor.IsDiscardedNoise(line))
+                {
+                    continue;
+                }
+
                 LogLines.Add(line);
                 AppendDisplayLogLine(line);
             }
@@ -855,11 +909,18 @@ public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
             {
                 LogLines.RemoveAt(0);
             }
+
+            UpdateCachedLogText();
         }
 
         private void AppendDisplayLogLine(string line)
         {
             var compacted = _logDisplayCompactor.Append(line);
+            if (compacted.Suppress)
+            {
+                return;
+            }
+
             if (compacted.ReplacePrevious && DisplayLogLines.Count > 0)
             {
                 DisplayLogLines[^1] = compacted.DisplayLine;
@@ -869,23 +930,30 @@ public partial class ConsolesWorkspaceViewModel : WorkspacePageViewModelBase
                 DisplayLogLines.Add(compacted.DisplayLine);
             }
 
-            while (DisplayLogLines.Count > ConsoleBufferLimit)
-            {
-                DisplayLogLines.RemoveAt(0);
-            }
         }
 
         private void Reset()
         {
             LogLines.Clear();
             DisplayLogLines.Clear();
+            _pendingLogLines.Clear();
             _logDisplayCompactor.Reset();
             _runtimeStatus = null;
             _liveOperations = null;
             LatestRuntimeState = "Unknown";
             RawConsoleCommand = string.Empty;
             LoadStatus = "Choose a server to load this console slot.";
+            UpdateCachedLogText();
             NotifyComputedState();
+        }
+
+        private void UpdateCachedLogText()
+        {
+            _cachedLogText = HasPinnedProfile
+                ? DisplayLogLines.Count == 0
+                    ? "No buffered logs yet. Start or reload the server to populate this console."
+                    : string.Join(Environment.NewLine, DisplayLogLines)
+                : "Pin a server from the roster to open a live console in this slot.";
         }
 
         private void NotifyComputedState()

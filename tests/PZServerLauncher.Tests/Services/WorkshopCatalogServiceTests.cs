@@ -78,7 +78,7 @@ public sealed class WorkshopCatalogServiceTests : IDisposable
             {
                 Content = new StringContent(
                     """
-                    {"response":{"publishedfiledetails":[{"publishedfileid":"3699503439","title":"Quick Restart","description":"Mod ID: QuickRestart\nMap Folder: RavenCreek","preview_url":"https://cdn.test/restart.png"}]}}
+                    {"response":{"publishedfiledetails":[{"publishedfileid":"3699503439","title":"Quick Restart","description":"Map Folder: RavenCreek","preview_url":"https://cdn.test/restart.png"}]}}
                     """),
             };
             return Task.FromResult(response);

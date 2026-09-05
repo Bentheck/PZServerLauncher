@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PZServerLauncher.Contracts.Profiles;
@@ -14,6 +15,9 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
 {
     private const int RawLogBufferLimit = 500;
     private const int FriendlyLogBufferLimit = 300;
+    private const int PendingLogCapacity = 2_000;
+    private const int LogBatchSize = 200;
+    private static readonly TimeSpan LogFlushInterval = TimeSpan.FromMilliseconds(500);
     private static readonly ProjectZomboidLogPostureSummary EmptySummary = new(
         "No buffered lines are available yet. Select a profile to inspect runtime output.",
         "Latest signal: no runtime output captured yet.",
@@ -38,6 +42,12 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
     private ServerRuntimeStatus? _runtimeStatus;
     private ProfileLiveOperationsSnapshot? _liveOperations;
     private readonly LogDisplayCompactor _logDisplayCompactor = new();
+    private readonly BoundedLogLineQueue _pendingLogLines = new(PendingLogCapacity);
+    private readonly DispatcherTimer _logFlushTimer;
+    private ProjectZomboidLogPostureSummary _currentSummary = EmptySummary;
+    private ProjectZomboidLiveOpsConsoleSummary _currentConsoleSummary = ProjectZomboidLiveOpsConsoleSummaryBuilder.Empty();
+    private string _rawLogText = string.Empty;
+    private string _friendlyLogText = string.Empty;
 
     public LogsWorkspaceViewModel(
         MainWindowViewModel legacy,
@@ -63,6 +73,8 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
         _runtime.LogLineReceived += OnLogLineReceivedAsync;
         _runtime.StatusChanged += OnStatusChangedAsync;
         _runtime.LiveOperationsChanged += OnLiveOperationsChangedAsync;
+        _logFlushTimer = new DispatcherTimer { Interval = LogFlushInterval };
+        _logFlushTimer.Tick += OnLogFlushTimerTick;
     }
 
     public override string PageSummary => SelectedProfile is null
@@ -84,6 +96,10 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
     public ObservableCollection<string> LogLines { get; } = [];
 
     public ObservableCollection<string> FriendlyLogLines { get; } = [];
+
+    public string RawLogText => _rawLogText;
+
+    public string FriendlyLogText => _friendlyLogText;
 
     public ObservableCollection<ConnectedPlayerRowViewModel> ConnectedPlayers { get; } = [];
 
@@ -288,13 +304,31 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
 
     protected override void OnSelectedProfileChangedCore(ProfileCardViewModel? profile)
     {
+        _pendingLogLines.Clear();
         NotifyComputedState();
         _ = LoadAsync(profile);
     }
 
     public override async Task RefreshPageAsync()
     {
+        ResumeLiveLogs();
         await LoadAsync(SelectedProfile);
+    }
+
+    public void ResumeLiveLogs()
+    {
+        if (!_logFlushTimer.IsEnabled)
+        {
+            _logFlushTimer.Start();
+        }
+    }
+
+    public void SuspendLiveLogs()
+    {
+        if (_logFlushTimer.IsEnabled)
+        {
+            _logFlushTimer.Stop();
+        }
     }
 
     public override Task SaveDraftAsync() => Task.CompletedTask;
@@ -416,19 +450,42 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
             return Task.CompletedTask;
         }
 
-        LogLines.Add(line);
-        TrimToLimit(LogLines, RawLogBufferLimit);
-        AppendFriendlyLogLine(line);
+        if (LogDisplayCompactor.IsDiscardedNoise(line))
+        {
+            return Task.CompletedTask;
+        }
 
-        _runtimeStatus = (_runtimeStatus ?? new ServerRuntimeStatus(profileId, ServerRuntimeState.Stopped, null, null, null, null, null))
+        _pendingLogLines.Enqueue(line);
+        return Task.CompletedTask;
+    }
+
+    private void OnLogFlushTimerTick(object? sender, EventArgs e)
+    {
+        var lines = _pendingLogLines.Drain(LogBatchSize);
+        if (lines.Count == 0 || SelectedProfile is null)
+        {
+            return;
+        }
+
+        foreach (var line in lines)
+        {
+            LogLines.Add(line);
+            AppendFriendlyLogLine(line);
+        }
+
+        TrimToLimit(LogLines, RawLogBufferLimit);
+        TrimToLimit(FriendlyLogLines, FriendlyLogBufferLimit);
+        RefreshLogTextCache();
+
+        var latestLine = lines[^1];
+        _runtimeStatus = (_runtimeStatus ?? new ServerRuntimeStatus(SelectedProfile.ProfileId, ServerRuntimeState.Stopped, null, null, null, null, null))
             with
             {
-                LatestLogLine = line,
+                LatestLogLine = latestLine,
             };
 
-        LoadStatus = $"Live log update received for {SelectedProfile.DisplayName}.";
+        LoadStatus = $"Live logs updated for {SelectedProfile.DisplayName}.";
         NotifyComputedState();
-        return Task.CompletedTask;
     }
 
     private Task OnStatusChangedAsync(ServerRuntimeStatus status)
@@ -490,17 +547,28 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
 
         foreach (var line in lines)
         {
+            if (LogDisplayCompactor.IsDiscardedNoise(line))
+            {
+                continue;
+            }
+
             LogLines.Add(line);
             AppendFriendlyLogLine(line);
         }
 
         TrimToLimit(LogLines, RawLogBufferLimit);
         TrimToLimit(FriendlyLogLines, FriendlyLogBufferLimit);
+        RefreshLogTextCache();
     }
 
     private void AppendFriendlyLogLine(string line)
     {
         var compacted = _logDisplayCompactor.Append(line);
+        if (compacted.Suppress)
+        {
+            return;
+        }
+
         if (compacted.ReplacePrevious && FriendlyLogLines.Count > 0)
         {
             FriendlyLogLines[^1] = compacted.DisplayLine;
@@ -510,7 +578,6 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
             FriendlyLogLines.Add(compacted.DisplayLine);
         }
 
-        TrimToLimit(FriendlyLogLines, FriendlyLogBufferLimit);
     }
 
     private void ResetFriendlyCompaction()
@@ -530,6 +597,7 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
     {
         LogLines.Clear();
         FriendlyLogLines.Clear();
+        _pendingLogLines.Clear();
         ResetFriendlyCompaction();
         ConnectedPlayers.Clear();
         RecentPlayerSignals.Clear();
@@ -540,17 +608,27 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
         LoadStatus = "Select a profile to load recent logs.";
         BroadcastMessage = string.Empty;
         RawConsoleCommand = string.Empty;
+        RefreshLogTextCache();
         NotifyComputedState();
+    }
+
+    private void RefreshLogTextCache()
+    {
+        _rawLogText = string.Join(Environment.NewLine, LogLines);
+        _friendlyLogText = string.Join(Environment.NewLine, FriendlyLogLines);
     }
 
     private void NotifyComputedState()
     {
+        RefreshSummaryCache();
         OnPropertyChanged(nameof(PageSummary));
         OnPropertyChanged(nameof(ProfileDisplayName));
         OnPropertyChanged(nameof(Branch));
         OnPropertyChanged(nameof(HasLogs));
         OnPropertyChanged(nameof(HasNoLogs));
         OnPropertyChanged(nameof(HasFriendlyLogs));
+        OnPropertyChanged(nameof(RawLogText));
+        OnPropertyChanged(nameof(FriendlyLogText));
         OnPropertyChanged(nameof(HasConnectedPlayers));
         OnPropertyChanged(nameof(HasNoConnectedPlayers));
         OnPropertyChanged(nameof(HasPlayerSignals));
@@ -595,20 +673,24 @@ public partial class LogsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
     private static string QuoteConsoleArgument(string value) =>
         $"\"{value.Replace("\"", "'", StringComparison.Ordinal).Trim()}\"";
 
-    private ProjectZomboidLogPostureSummary CurrentSummary =>
-        SelectedProfile is null
+    private ProjectZomboidLogPostureSummary CurrentSummary => _currentSummary;
+
+    private ProjectZomboidLiveOpsConsoleSummary CurrentConsoleSummary => _currentConsoleSummary;
+
+    private void RefreshSummaryCache()
+    {
+        _currentSummary = SelectedProfile is null
             ? EmptySummary
             : ProjectZomboidLogPostureSummaryBuilder.Build(_runtimeStatus, LogLines.ToList());
-
-    private ProjectZomboidLiveOpsConsoleSummary CurrentConsoleSummary =>
-        SelectedProfile is null
+        _currentConsoleSummary = SelectedProfile is null
             ? ProjectZomboidLiveOpsConsoleSummaryBuilder.Empty()
             : ProjectZomboidLiveOpsConsoleSummaryBuilder.Build(
-                CurrentSummary,
+                _currentSummary,
                 LatestRuntimeState,
                 CanSendCommands,
                 ConnectedPlayers.Count,
                 RecentOperatorActions.Count);
+    }
 
     public sealed record ConnectedPlayerRowViewModel(
         string UserName,

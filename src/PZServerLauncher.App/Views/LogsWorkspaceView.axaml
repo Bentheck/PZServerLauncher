@@ -148,23 +148,14 @@
                         </Grid>
 
                         <Border Grid.Row="1" Classes="terminal-panel" Padding="12">
-                            <ScrollViewer HorizontalScrollBarVisibility="Disabled"
-                                          VerticalScrollBarVisibility="Auto"
-                                          MaxHeight="460">
-                                <ItemsControl ItemsSource="{Binding FriendlyLogLines}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <TextBlock Classes="body"
-                                                       FontFamily="Cascadia Code,Consolas,monospace"
-                                                       Foreground="#E9DED2"
-                                                       TextAlignment="Left"
-                                                       Text="{Binding .}"
-                                                       TextWrapping="Wrap"
-                                                       Margin="0,0,0,6" />
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </ScrollViewer>
+                            <TextBox Classes="console-stream"
+                                     IsReadOnly="True"
+                                     AcceptsReturn="True"
+                                     TextWrapping="Wrap"
+                                     Text="{Binding FriendlyLogText, Mode=OneWay}"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                     ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                     MaxHeight="460" />
                         </Border>
                     </Grid>
                 </Border>
@@ -238,22 +229,14 @@
                                    TextWrapping="Wrap" />
 
                         <Border Classes="terminal-panel" Padding="12">
-                            <ScrollViewer HorizontalScrollBarVisibility="Disabled"
-                                          VerticalScrollBarVisibility="Auto"
-                                          MaxHeight="280">
-                                <ItemsControl ItemsSource="{Binding LogLines}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <TextBlock Classes="caption"
-                                                       FontFamily="Cascadia Code,Consolas,monospace"
-                                                       Foreground="#E9DED2"
-                                                       Text="{Binding .}"
-                                                       TextWrapping="Wrap"
-                                                       Margin="0,0,0,6" />
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </ScrollViewer>
+                            <TextBox Classes="console-stream"
+                                     IsReadOnly="True"
+                                     AcceptsReturn="True"
+                                     TextWrapping="Wrap"
+                                     Text="{Binding RawLogText, Mode=OneWay}"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                     ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                     MaxHeight="280" />
                         </Border>
                     </StackPanel>
                 </Border>

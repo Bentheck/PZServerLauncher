@@ -272,14 +272,28 @@ public sealed class ServerProcessSupervisor(
             return;
         }
 
+        var previousWorkshopProgress = runtimeStateStore.GetOrDefault(profileId).WorkshopDownloadProgress;
         var liveOperations = runtimeStateStore.AppendLog(profileId, line);
+        var status = runtimeStateStore.GetOrDefault(profileId);
         await runtimeEventPublisher.PublishLogLineAsync(profileId, line);
-        await runtimeEventPublisher.PublishStatusChangedAsync(runtimeStateStore.GetOrDefault(profileId));
+        if (liveOperations is not null || HasWorkshopProgressChanged(previousWorkshopProgress, status.WorkshopDownloadProgress))
+        {
+            await runtimeEventPublisher.PublishStatusChangedAsync(status);
+        }
+
         if (liveOperations is not null)
         {
             await runtimeEventPublisher.PublishLiveOperationsChangedAsync(liveOperations);
         }
     }
+
+    private static bool HasWorkshopProgressChanged(
+        WorkshopDownloadProgress? previous,
+        WorkshopDownloadProgress? current) =>
+        previous?.CurrentItemIndex != current?.CurrentItemIndex ||
+        previous?.TotalItemCount != current?.TotalItemCount ||
+        !string.Equals(previous?.CurrentWorkshopId, current?.CurrentWorkshopId, StringComparison.OrdinalIgnoreCase) ||
+        previous?.IsComplete != current?.IsComplete;
 
     private async Task OnExitedAsync(string profileId, bool autoRestartOnCrash)
     {

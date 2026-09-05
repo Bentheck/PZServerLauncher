@@ -464,6 +464,11 @@ public sealed partial class WorkshopCatalogService(
     private static WorkshopCatalogItemDto BuildDetailItem(ServerProfile profile, WorkshopPreset currentPreset, SteamWorkshopItem item)
     {
         var modIds = ExtractFromDescription(item.Description, "Mod ID");
+        if (modIds.Length == 0 && string.Equals(item.WorkshopId, "3699503439", StringComparison.OrdinalIgnoreCase))
+        {
+            modIds = ["QuickRestart"];
+        }
+
         var mapFolders = ExtractFromDescription(item.Description, "Map Folder")
             .Concat(ExtractFromDescription(item.Description, "Map"))
             .Distinct(StringComparer.OrdinalIgnoreCase)

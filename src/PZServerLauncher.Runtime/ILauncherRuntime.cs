@@ -19,7 +19,10 @@ public interface ILauncherRuntime : IAsyncDisposable
 
     Task<WorkspaceBootstrapDto> GetWorkspaceBootstrapAsync(CancellationToken cancellationToken = default);
 
-    Task<SettingsCatalogDto?> GetSettingsCatalogAsync(string profileId, CancellationToken cancellationToken = default);
+    Task<SettingsCatalogDto?> GetSettingsCatalogAsync(
+        string profileId,
+        bool includeModSettings = true,
+        CancellationToken cancellationToken = default);
 
     Task<SettingsValueSetDto?> GetSettingsPageAsync(string profileId, string pageId, CancellationToken cancellationToken = default);
 

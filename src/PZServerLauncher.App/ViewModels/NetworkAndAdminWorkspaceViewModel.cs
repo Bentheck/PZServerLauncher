@@ -274,7 +274,7 @@ public partial class NetworkAndAdminWorkspaceViewModel : ProfileWorkspacePageVie
 
         try
         {
-            _catalog = await _runtime.GetSettingsCatalogAsync(profile.ProfileId);
+            _catalog = await _runtime.GetSettingsCatalogAsync(profile.ProfileId, includeModSettings: false);
             var page = _catalog?.Pages.FirstOrDefault(candidate => string.Equals(candidate.PageId, ProfileWorkspacePageIds.NetworkAndAdmin, StringComparison.Ordinal));
             var valueSet = await _runtime.GetSettingsPageAsync(profile.ProfileId, ProfileWorkspacePageIds.NetworkAndAdmin);
 

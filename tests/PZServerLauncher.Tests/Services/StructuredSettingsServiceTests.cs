@@ -1041,6 +1041,14 @@ public sealed class StructuredSettingsServiceTests : IDisposable
             DateTimeOffset.UtcNow));
         var service = CreateService(profileStore, planner, modsMapsDraftStore);
 
+        var baseCatalog = service.GetCatalog(profile, includeModSettings: false);
+        var baseSandboxPage = baseCatalog.Pages.Single(page => page.PageId == ProfileWorkspacePageIds.Sandbox);
+        Assert.DoesNotContain(baseSandboxPage.Sections, section => section.CategoryId?.StartsWith("mod.", StringComparison.Ordinal) == true);
+
+        var catalogWithMods = service.GetCatalog(profile);
+        var modSandboxPage = catalogWithMods.Pages.Single(page => page.PageId == ProfileWorkspacePageIds.Sandbox);
+        Assert.Contains(modSandboxPage.Sections, section => string.Equals(section.CategoryId, "mod.testmod", StringComparison.Ordinal));
+
         var valueSet = service.GetPage(profile, ProfileWorkspacePageIds.Sandbox);
         Assert.Equal("5", valueSet.Values["mod.testmod.testmod-amount"]);
 

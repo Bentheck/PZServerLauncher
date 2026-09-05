@@ -50,7 +50,7 @@
                                     IsEnabled="{Binding IsEnabled}"
                                     AutomationProperties.Name="{Binding Title}"
                                     ToolTip.Tip="{Binding Summary}">
-                                <Grid ColumnDefinitions="4,30,*,Auto" ColumnSpacing="9">
+                                <Grid ColumnDefinitions="4,30,*" ColumnSpacing="9">
                                     <Border Background="{DynamicResource AccentBrush}"
                                             CornerRadius="2"
                                             IsVisible="{Binding IsSelected}" />
@@ -70,12 +70,6 @@
                                     <TextBlock Grid.Column="2"
                                                Classes="nav-label"
                                                Text="{Binding Title}" />
-                                    <Border Grid.Column="3"
-                                            Classes="status-chip"
-                                            Padding="8,3"
-                                            VerticalAlignment="Center">
-                                        <TextBlock Classes="chip-text" Text="{Binding ShortStatus}" />
-                                    </Border>
                                 </Grid>
                             </Button>
                         </DataTemplate>
@@ -99,17 +93,29 @@
                                        Text="{Binding RuntimePostureSummary}"
                                        TextWrapping="Wrap" />
                         </StackPanel>
-                        <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                        <StackPanel Spacing="8">
                             <Button Classes="action-secondary"
                                     Command="{Binding OpenSupportCommand}"
-                                    AutomationProperties.Name="Open support page"
-                                    Content="Support" />
-                            <Button Grid.Column="1"
-                                    Classes="action-danger"
+                                    AutomationProperties.Name="Like what i do, Buy me a coffee"
+                                    HorizontalContentAlignment="Stretch"
+                                    ToolTip.Tip="Like what i do, Buy me a coffee">
+                                <Grid ColumnDefinitions="24,*" ColumnSpacing="8">
+                                    <TextBlock FontSize="17"
+                                               Text="&#x2615;"
+                                               VerticalAlignment="Center" />
+                                    <TextBlock Grid.Column="1"
+                                               FontSize="11"
+                                               Text="Like what i do,&#x0a;Buy me a coffee"
+                                               TextWrapping="Wrap"
+                                               VerticalAlignment="Center" />
+                                </Grid>
+                            </Button>
+                            <Button Classes="action-danger"
                                     Command="{Binding ExitDesktopCommand}"
+                                    HorizontalAlignment="Left"
                                     AutomationProperties.Name="Close desktop app"
                                     Content="Close" />
-                        </Grid>
+                        </StackPanel>
                     </StackPanel>
                 </Border>
             </Grid>
@@ -132,64 +138,6 @@
                     <StackPanel Grid.Column="1"
                                 Spacing="8"
                                 HorizontalAlignment="Right">
-                        <WrapPanel Orientation="Horizontal"
-                                   HorizontalAlignment="Right"
-                                   ItemHeight="34">
-                            <ItemsControl ItemsSource="{Binding CurrentPrimaryCommands}"
-                                          IsVisible="{Binding HasCurrentPrimaryCommands}">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <WrapPanel Orientation="Horizontal" />
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="vm:WorkspaceCommandViewModel">
-                                        <Button Classes="action-primary"
-                                                Command="{Binding Command}"
-                                                Content="{Binding Label}"
-                                                Margin="0,0,8,0"
-                                                AutomationProperties.Name="{Binding Label}"
-                                                ToolTip.Tip="{Binding Tooltip}" />
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-
-                            <ItemsControl ItemsSource="{Binding CurrentSecondaryCommands}"
-                                          IsVisible="{Binding HasCurrentSecondaryCommands}">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <WrapPanel Orientation="Horizontal" />
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate x:DataType="vm:WorkspaceCommandViewModel">
-                                        <Button Classes="action-secondary"
-                                                Command="{Binding Command}"
-                                                Content="{Binding Label}"
-                                                Margin="0,0,8,0"
-                                                AutomationProperties.Name="{Binding Label}"
-                                                ToolTip.Tip="{Binding Tooltip}" />
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-
-                            <Button Classes="action-primary"
-                                    Command="{Binding SaveCurrentDraftCommand}"
-                                    Content="Save"
-                                    Margin="0,0,8,0"
-                                    AutomationProperties.Name="Save current page changes"
-                                    IsVisible="{Binding CurrentPageHasUnsavedChanges}" />
-                            <Button Classes="action-secondary"
-                                    Command="{Binding DiscardCurrentDraftCommand}"
-                                    Content="Discard"
-                                    Margin="0,0,8,0"
-                                    AutomationProperties.Name="Discard current page changes"
-                                    IsVisible="{Binding CurrentPageHasUnsavedChanges}" />
-                            <Button Classes="action-secondary"
-                                    Command="{Binding RefreshLegacyCommand}"
-                                    AutomationProperties.Name="Refresh workspace"
-                                    Content="Refresh" />
-                        </WrapPanel>
                         <TextBlock Classes="caption"
                                    HorizontalAlignment="Right"
                                    MaxLines="1"

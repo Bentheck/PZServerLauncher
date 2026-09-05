@@ -197,7 +197,7 @@
                                                     IsEnabled="{Binding IsEnabled}"
                                                     AutomationProperties.Name="{Binding Title}"
                                                     ToolTip.Tip="{Binding Summary}">
-                                                <Grid ColumnDefinitions="4,26,*,Auto" ColumnSpacing="8">
+                                                <Grid ColumnDefinitions="4,26,*" ColumnSpacing="8">
                                                     <Border Background="{DynamicResource AccentBrush}"
                                                             CornerRadius="2"
                                                             IsVisible="{Binding IsSelected}" />
@@ -210,10 +210,6 @@
                                                                Classes="nav-label"
                                                                FontSize="13"
                                                                Text="{Binding Title}" />
-                                                    <TextBlock Grid.Column="3"
-                                                               Classes="caption"
-                                                               MaxLines="1"
-                                                               Text="{Binding ShortStatus}" />
                                                 </Grid>
                                             </Button>
                                         </DataTemplate>
