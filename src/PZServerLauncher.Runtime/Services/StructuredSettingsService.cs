@@ -253,14 +253,15 @@ public sealed class StructuredSettingsService(
                         }
                     }
 
-                    var sandboxValues = definition.Sections
-                        .SelectMany(section => section.Fields)
-                        .ToDictionary(
-                            field => field.Target.KeyPath,
-                            field => SandboxValueNormalizer.ToPersistedValue(
+                    var sandboxValues = new Dictionary<string, string?>(StringComparer.Ordinal);
+                    foreach (var field in definition.Sections.SelectMany(section => section.Fields))
+                    {
+                        sandboxValues.TryAdd(
+                            field.Target.KeyPath,
+                            SandboxValueNormalizer.ToPersistedValue(
                                 field,
-                                values.TryGetValue(field.FieldId, out var value) ? value : field.DefaultValue),
-                            StringComparer.Ordinal);
+                                values.TryGetValue(field.FieldId, out var value) ? value : field.DefaultValue));
+                    }
 
                     var updatedContent = sandboxVarsDocumentService.ApplyValues(raw.Content, sandboxValues);
                     configFileService.WriteRawFile(profile, ConfigFileKind.SandboxVars, raw.Sha256, updatedContent);
@@ -831,12 +832,33 @@ public sealed class StructuredSettingsService(
             return catalog;
         }
 
+        var mergedSections = MergeSandboxSections(sandboxPage.Sections, discovered.Sections);
         var pages = catalog.Pages
             .Select(page => ReferenceEquals(page, sandboxPage)
-                ? page with { Sections = page.Sections.Concat(discovered.Sections).ToArray() }
+                ? page with { Sections = mergedSections }
                 : page)
             .ToArray();
         return catalog with { Pages = pages };
+    }
+
+    private static IReadOnlyList<StructuredSectionDefinition> MergeSandboxSections(
+        IReadOnlyList<StructuredSectionDefinition> builtInSections,
+        IReadOnlyList<StructuredSectionDefinition> discoveredSections)
+    {
+        var seenTargets = new HashSet<string>(StringComparer.Ordinal);
+        var merged = new List<StructuredSectionDefinition>();
+        foreach (var section in builtInSections.Concat(discoveredSections))
+        {
+            var uniqueFields = section.Fields
+                .Where(field => seenTargets.Add(field.Target.KeyPath))
+                .ToArray();
+            if (uniqueFields.Length > 0)
+            {
+                merged.Add(section with { Fields = uniqueFields });
+            }
+        }
+
+        return merged;
     }
 
     private static IReadOnlyDictionary<string, string?> BuildDefaultPageValues(StructuredPageDefinition definition)

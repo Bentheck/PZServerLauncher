@@ -287,40 +287,70 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             return;
         }
 
-        var payload = new SettingsValueSetDto(
-            _catalog.CatalogId,
-            _catalog.CatalogVersion,
-            ProfileWorkspacePageIds.Sandbox,
-            new Dictionary<string, string?>(_values, StringComparer.Ordinal),
-            _sourceSha256,
-            false,
-            null);
-
-        var result = await _runtime.SaveSettingsPageAsync(SelectedProfile.ProfileId, ProfileWorkspacePageIds.Sandbox, payload);
-        if (result is null)
-        {
-            LoadStatus = "Sandbox settings could not be saved.";
-            return;
-        }
-
-        ApplyValidation(result.Validation);
-        if (!result.Validation.IsValid || result.Validation.RequiresAdvancedFilesFallback)
-        {
-            LoadStatus = result.Validation.FallbackReason ?? "Sandbox settings need attention before they can be saved.";
-            return;
-        }
-
+        var profile = SelectedProfile;
+        var values = new Dictionary<string, string?>(_values, StringComparer.Ordinal);
         try
         {
-            await _runtime.DeleteSettingsDraftAsync(SelectedProfile.ProfileId, ProfileWorkspacePageIds.Sandbox);
-        }
-        catch
-        {
-        }
+            IsBusy = true;
+            LoadStatus = $"Applying Sandbox settings for {profile.DisplayName}...";
 
-        ApplyValueSet(result.ValueSet, $"Saved Sandbox settings for {SelectedProfile.DisplayName}.");
-        await Legacy.RefreshCommand.ExecuteAsync(null);
-        NotifyComputedState();
+            var recoveryDraft = new SettingsDraftDto(
+                profile.ProfileId,
+                PZServerLauncher.Core.Profiles.ProjectZomboidBranch.Unstable42,
+                _catalog.CatalogId,
+                _catalog.CatalogVersion,
+                ProfileWorkspacePageIds.Sandbox,
+                values,
+                _sourceSha256,
+                true,
+                DateTimeOffset.UtcNow);
+            await _runtime.SaveSettingsDraftAsync(profile.ProfileId, ProfileWorkspacePageIds.Sandbox, recoveryDraft);
+
+            var payload = new SettingsValueSetDto(
+                _catalog.CatalogId,
+                _catalog.CatalogVersion,
+                ProfileWorkspacePageIds.Sandbox,
+                values,
+                _sourceSha256,
+                false,
+                null);
+
+            var result = await _runtime.SaveSettingsPageAsync(profile.ProfileId, ProfileWorkspacePageIds.Sandbox, payload);
+            if (result is null)
+            {
+                LoadStatus = "Sandbox settings could not be applied. A recovery draft was saved.";
+                return;
+            }
+
+            ApplyValidation(result.Validation);
+            if (!result.Validation.IsValid || result.Validation.RequiresAdvancedFilesFallback)
+            {
+                LoadStatus = result.Validation.FallbackReason ?? "Sandbox settings need attention before they can be applied. A recovery draft was saved.";
+                return;
+            }
+
+            try
+            {
+                await _runtime.DeleteSettingsDraftAsync(profile.ProfileId, ProfileWorkspacePageIds.Sandbox);
+            }
+            catch
+            {
+            }
+
+            ApplyValueSet(result.ValueSet, $"Saved Sandbox settings for {profile.DisplayName}.");
+            await Legacy.RefreshCommand.ExecuteAsync(null);
+        }
+        catch (Exception ex)
+        {
+            MarkDirty("Sandbox edits are still available after an apply failure.");
+            LoadStatus = $"Could not apply Sandbox settings: {ex.Message} Your edits are still available; use Save Draft before closing the launcher.";
+        }
+        finally
+        {
+            IsBusy = false;
+            NotifyComputedState();
+            RefreshCommandStates();
+        }
     }
 
     private async Task ReloadAsync()

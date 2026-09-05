@@ -1070,6 +1070,82 @@ public sealed class StructuredSettingsServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Sandbox_OverlappingModOptionTargetsAreDeduplicatedAndSaveWithoutThrowing()
+    {
+        Directory.CreateDirectory(_tempRoot);
+        var installDirectory = Path.Combine(_tempRoot, "install-overlapping-mod-options");
+        var profile = ServerProfileFactory.CreateStarterProfile() with
+        {
+            ProfileId = "profile-overlapping-mod-options",
+            DisplayName = "Overlapping Mod Options Profile",
+            ServerName = "overlapping-mod-options-server",
+            InstallDirectory = installDirectory,
+            CacheDirectory = Path.Combine(_tempRoot, "cache-overlapping-mod-options"),
+        };
+
+        foreach (var (workshopId, modId, defaultValue) in new[]
+                 {
+                     ("1111111111", "FirstMod", "5"),
+                     ("2222222222", "SecondMod", "7"),
+                 })
+        {
+            var modMediaDirectory = Path.Combine(
+                installDirectory,
+                "steamapps",
+                "workshop",
+                "content",
+                "108600",
+                workshopId,
+                "mods",
+                modId,
+                "42.19",
+                "media");
+            Directory.CreateDirectory(modMediaDirectory);
+            File.WriteAllText(Path.Combine(Directory.GetParent(modMediaDirectory)!.FullName, "mod.info"), $"id={modId}\nname={modId}");
+            File.WriteAllText(Path.Combine(modMediaDirectory, "sandbox-options.txt"), $$"""
+                option Shared.Amount {
+                    type = integer,
+                    min = 1,
+                    max = 25,
+                    default = {{defaultValue}},
+                    page = {{modId}},
+                }
+                """);
+        }
+
+        var planner = new ProjectZomboidServerPlanner();
+        await using var dbContext = TestDatabaseFactory.Create(Path.Combine(_tempRoot, "sandbox-overlapping-mod-options.db"));
+        var profileStore = new ProfileStore(dbContext);
+        await profileStore.UpsertAsync(profile);
+        var modsMapsDraftStore = new ModsMapsDraftStore(dbContext);
+        await modsMapsDraftStore.UpsertAsync(new ModsMapsDraftDto(
+            profile.ProfileId,
+            profile.Branch,
+            ["1111111111", "2222222222"],
+            [
+                new ModsMapsModRowDto(0, "First Mod", "FirstMod", "1111111111", true, 0, [], []),
+                new ModsMapsModRowDto(1, "Second Mod", "SecondMod", "2222222222", true, 1, [], []),
+            ],
+            [],
+            ModsMapsEditorMode.Live,
+            true,
+            DateTimeOffset.UtcNow));
+        var service = CreateService(profileStore, planner, modsMapsDraftStore);
+
+        var catalog = service.GetCatalog(profile);
+        var sandboxPage = catalog.Pages.Single(page => page.PageId == ProfileWorkspacePageIds.Sandbox);
+        Assert.Single(sandboxPage.Sections.SelectMany(section => section.Fields), field => field.KeyPath == "Shared.Amount");
+
+        var values = new Dictionary<string, string?>(service.GetPage(profile, ProfileWorkspacePageIds.Sandbox).Values, StringComparer.Ordinal);
+        var result = await service.SaveAsync(profile, ProfileWorkspacePageIds.Sandbox, values);
+        var sandboxText = File.ReadAllText(planner.ResolvePaths(profile).SandboxVarsFilePath);
+
+        Assert.True(result.Validation.IsValid);
+        Assert.Contains("Shared = {", sandboxText);
+        Assert.Contains("Amount = 5,", sandboxText);
+    }
+
+    [Fact]
     public async Task Sandbox_PageReadsAndWritesExpandedTopLevelFields()
     {
         Directory.CreateDirectory(_tempRoot);
