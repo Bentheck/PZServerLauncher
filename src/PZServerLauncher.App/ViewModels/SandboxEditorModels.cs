@@ -35,8 +35,8 @@ public sealed partial class SandboxCategoryViewModel : ObservableObject
     {
         CategoryId = categoryId;
         Title = title;
-        StatusText = statusText;
-        MatchesPreset = matchesPreset;
+        this.statusText = statusText;
+        this.matchesPreset = matchesPreset;
         SourceFilePath = sourceFilePath ?? string.Empty;
         this.isExpanded = isExpanded;
         Sections = new ObservableCollection<SandboxSectionViewModel>(sections);
@@ -46,9 +46,11 @@ public sealed partial class SandboxCategoryViewModel : ObservableObject
 
     public string Title { get; }
 
-    public string StatusText { get; }
+    [ObservableProperty]
+    private string statusText;
 
-    public bool MatchesPreset { get; }
+    [ObservableProperty]
+    private bool matchesPreset;
 
     public string SourceFilePath { get; }
 
@@ -139,7 +141,7 @@ public sealed partial class SandboxFieldEditorViewModel : ObservableObject
         RequiresRestart = field.Field.RequiresRestart;
         CanEdit = canEdit && !field.Field.IsReadOnly;
         HasPresetValue = field.HasPresetValue;
-        MatchesPreset = field.MatchesPreset;
+        matchesPreset = field.MatchesPreset;
         PresetValue = field.PresetValue ?? string.Empty;
         Errors = new ObservableCollection<string>(errors ?? Array.Empty<string>());
         Options = new ObservableCollection<SandboxFieldOptionViewModel>(
@@ -166,7 +168,8 @@ public sealed partial class SandboxFieldEditorViewModel : ObservableObject
 
     public bool HasPresetValue { get; }
 
-    public bool MatchesPreset { get; }
+    [ObservableProperty]
+    private bool matchesPreset;
 
     public string PresetValue { get; }
 
@@ -179,6 +182,17 @@ public sealed partial class SandboxFieldEditorViewModel : ObservableObject
     public ObservableCollection<string> Errors { get; }
 
     public bool HasErrors => Errors.Count > 0;
+
+    public void ClearErrors()
+    {
+        if (Errors.Count == 0)
+        {
+            return;
+        }
+
+        Errors.Clear();
+        OnPropertyChanged(nameof(HasErrors));
+    }
 
     public bool IsCheckbox => Control == SettingsFieldControlKind.Checkbox;
 
@@ -250,5 +264,10 @@ public sealed partial class SandboxFieldEditorViewModel : ObservableObject
         }
 
         CurrentValue = value.Value;
+    }
+
+    partial void OnMatchesPresetChanged(bool value)
+    {
+        OnPropertyChanged(nameof(PresetStatusText));
     }
 }

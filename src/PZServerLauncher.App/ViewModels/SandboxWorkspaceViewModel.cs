@@ -556,12 +556,54 @@ public partial class SandboxWorkspaceViewModel : ProfileWorkspacePageViewModelBa
     {
         _values[field.FieldId] = value;
         FieldErrors.Clear();
+        foreach (var visibleField in Categories.SelectMany(category => category.Sections).SelectMany(section => section.Fields))
+        {
+            visibleField.ClearErrors();
+        }
+
         OnPropertyChanged(nameof(HasFieldErrors));
         MarkDirty("Sandbox edits are local until you apply them.");
+        RefreshPresetComparisonState();
         LoadStatus = HasPresets
             ? $"Edited sandbox values. {PresetSummary}"
             : "Edited sandbox values. Validate, draft, or apply when ready.";
-        RefreshPresentation();
+    }
+
+    private void RefreshPresetComparisonState()
+    {
+        if (_page is null)
+        {
+            return;
+        }
+
+        var presentations = SandboxPagePresentationBuilder.Build(_page, _values, TryResolveSelectedPreset(), null);
+        _pageMatchesPreset = !presentations.Any(category => category.HasPresetComparison && !category.MatchesPreset);
+
+        var presentationsByCategory = presentations.ToDictionary(category => category.CategoryId, StringComparer.Ordinal);
+        foreach (var category in Categories)
+        {
+            if (!presentationsByCategory.TryGetValue(category.CategoryId, out var presentation))
+            {
+                continue;
+            }
+
+            category.StatusText = BuildCategoryStatus(presentation);
+            category.MatchesPreset = presentation.MatchesPreset;
+
+            var presentationsByField = presentation.Sections
+                .SelectMany(section => section.Fields)
+                .ToDictionary(fieldPresentation => fieldPresentation.Field.FieldId, StringComparer.Ordinal);
+            foreach (var editorField in category.Sections.SelectMany(section => section.Fields))
+            {
+                if (presentationsByField.TryGetValue(editorField.FieldId, out var fieldPresentation))
+                {
+                    editorField.MatchesPreset = fieldPresentation.MatchesPreset;
+                }
+            }
+        }
+
+        NotifyComputedState();
+        RefreshCommandStates();
     }
 
     private void SelectCategory(SandboxCategoryViewModel? category)
