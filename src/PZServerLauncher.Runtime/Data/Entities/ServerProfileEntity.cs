@@ -58,6 +58,10 @@ public sealed class ServerProfileEntity
 
     public bool PreUpdateBackupEnabled { get; set; }
 
+    public bool BackupOnShutdownEnabled { get; set; }
+
+    public int ShutdownBackupRetentionCount { get; set; } = BackupPolicy.DefaultShutdownBackupRetentionCount;
+
     public DateTimeOffset CreatedAtUtc { get; set; }
 
     public DateTimeOffset UpdatedAtUtc { get; set; }

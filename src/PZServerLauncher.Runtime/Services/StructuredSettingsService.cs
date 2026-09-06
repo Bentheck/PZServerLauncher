@@ -130,7 +130,8 @@ public sealed class StructuredSettingsService(
         ServerProfile profile,
         string pageId,
         IReadOnlyDictionary<string, string?> values,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        string? expectedSourceSha256 = null)
     {
         var validation = Validate(profile, pageId, values);
         var catalog = ResolveCatalog(profile, includeModSettings: string.Equals(pageId, ProfileWorkspacePageIds.Sandbox, StringComparison.Ordinal));
@@ -147,6 +148,34 @@ public sealed class StructuredSettingsService(
                     validation.FallbackReason),
                 validation,
                 false);
+        }
+
+        if (!string.IsNullOrWhiteSpace(expectedSourceSha256))
+        {
+            var currentPage = GetPage(profile, pageId);
+            if (!string.Equals(expectedSourceSha256, currentPage.SourceSha256, StringComparison.OrdinalIgnoreCase))
+            {
+                const string staleSourceMessage = "Settings changed on disk since this page was loaded. Reload the page, reapply your edits, and save again.";
+                var staleSourceValidation = new SettingsValidationResultDto(
+                    pageId,
+                    false,
+                    new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal),
+                    [staleSourceMessage],
+                    false,
+                    null);
+
+                return new SettingsSaveResultDto(
+                    new SettingsValueSetDto(
+                        catalog.CatalogId,
+                        catalog.CatalogVersion,
+                        pageId,
+                        new Dictionary<string, string?>(values, StringComparer.Ordinal),
+                        expectedSourceSha256,
+                        false,
+                        null),
+                    staleSourceValidation,
+                    false);
+            }
         }
 
         switch (pageId)
@@ -342,7 +371,6 @@ public sealed class StructuredSettingsService(
                         ["MaxAccountsPerUser"] = ParseInt(values, $"{branchPrefix}.network.max-accounts-per-user").ToString(),
                         ["AllowNonAsciiUsername"] = ParseBool(values, $"{branchPrefix}.network.allow-non-ascii-username").ToString().ToLowerInvariant(),
                         ["Tag"] = NormalizeOptional(values, $"{branchPrefix}.network.server-tag"),
-                        ["ResetID"] = ParseInt(values, $"{branchPrefix}.network.reset-id").ToString(),
                         ["VoiceEnable"] = ParseBool(values, $"{branchPrefix}.network.voice-enabled").ToString().ToLowerInvariant(),
                         ["Voice3D"] = ParseBool(values, $"{branchPrefix}.network.voice-3d").ToString().ToLowerInvariant(),
                         ["VoiceMinDistance"] = ParseInt(values, $"{branchPrefix}.network.voice-min-distance").ToString(),
@@ -696,7 +724,6 @@ public sealed class StructuredSettingsService(
         ValidateMinimumInteger(values, $"{branchPrefix}.network.max-accounts-per-user", 0, "Max accounts per user must be zero or greater.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.network.allow-non-ascii-username", "Allow non-ASCII usernames must be true or false.", fieldErrors);
         ValidateMaximumLength(values, $"{branchPrefix}.network.server-tag", 32, "Server tag must stay under 32 characters.", fieldErrors);
-        ValidateMinimumInteger(values, $"{branchPrefix}.network.reset-id", 0, "Reset ID must be zero or greater.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.network.voice-enabled", "Voice chat enabled must be true or false.", fieldErrors);
         ValidateBoolean(values, $"{branchPrefix}.network.voice-3d", "3D voice must be true or false.", fieldErrors);
         ValidateMinimumInteger(values, $"{branchPrefix}.network.voice-min-distance", 0, "Voice minimum distance must be zero or greater.", fieldErrors);

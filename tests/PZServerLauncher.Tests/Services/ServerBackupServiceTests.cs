@@ -63,6 +63,49 @@ public sealed class ServerBackupServiceTests : IDisposable
         Assert.Equal(Path.GetFileName(zipPath), Assert.Single(backupService.ListBackups(profile.ProfileId)));
     }
 
+    [Fact]
+    public async Task CreateBackupAsync_ShutdownTriggerAppliesItsRetentionPolicy()
+    {
+        Directory.CreateDirectory(_tempRoot);
+        var appPaths = new AppPaths(_tempRoot);
+        var databasePath = Path.Combine(_tempRoot, "shutdown-backup-tests.db");
+        await using var dbContext = TestDatabaseFactory.Create(databasePath);
+        var profileStore = new ProfileStore(dbContext);
+        var backupService = new ServerBackupService(
+            appPaths,
+            profileStore,
+            new ProjectZomboidServerPlanner(),
+            new AuditStore(dbContext));
+        var profile = ServerProfileFactory.CreateStarterProfile() with
+        {
+            ProfileId = "shutdown-server",
+            DisplayName = "Shutdown Server",
+            ServerName = "shutdown-server",
+            CacheDirectory = Path.Combine(_tempRoot, "cache"),
+            InstallDirectory = Path.Combine(_tempRoot, "install"),
+            BackupPolicy = BackupPolicy.Default with
+            {
+                BackupOnShutdownEnabled = true,
+                ShutdownBackupRetentionCount = 2,
+            },
+        };
+        await profileStore.UpsertAsync(profile);
+
+        var backupDirectory = Path.Combine(appPaths.BackupsDirectory, profile.ProfileId);
+        Directory.CreateDirectory(backupDirectory);
+        await File.WriteAllTextAsync(Path.Combine(backupDirectory, "shutdown-server-shutdown-20260101-000000.zip"), "oldest");
+        await File.WriteAllTextAsync(Path.Combine(backupDirectory, "shutdown-server-shutdown-20260102-000000.zip"), "older");
+
+        var createdPath = await backupService.CreateBackupAsync(profile.ProfileId, BackupTrigger.Shutdown, CancellationToken.None);
+
+        var shutdownBackups = Directory.GetFiles(backupDirectory, "shutdown-server-shutdown-*.zip");
+        Assert.Equal(2, shutdownBackups.Length);
+        Assert.Contains(createdPath, shutdownBackups);
+        Assert.DoesNotContain(
+            Path.Combine(backupDirectory, "shutdown-server-shutdown-20260101-000000.zip"),
+            shutdownBackups);
+    }
+
     public void Dispose()
     {
         SqliteConnection.ClearAllPools();

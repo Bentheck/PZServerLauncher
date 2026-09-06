@@ -12,6 +12,8 @@ public sealed record ProjectZomboidBackupPostureSummary(
     int ManualBackupCount,
     int PreUpdateBackupCount,
     int ScheduledBackupCount,
+    int ShutdownBackupCount,
     bool HasManualBackups,
     bool HasPreUpdateBackups,
-    bool HasScheduledBackups);
+    bool HasScheduledBackups,
+    bool HasShutdownBackups);

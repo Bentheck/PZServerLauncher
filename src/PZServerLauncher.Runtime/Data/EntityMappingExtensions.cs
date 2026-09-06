@@ -45,6 +45,8 @@ public static class EntityMappingExtensions
                 PreUpdateBackupRetentionCount = entity.PreUpdateBackupRetentionCount,
                 KeepManualBackupsForever = entity.KeepManualBackupsForever,
                 PreUpdateBackupEnabled = entity.PreUpdateBackupEnabled,
+                BackupOnShutdownEnabled = entity.BackupOnShutdownEnabled,
+                ShutdownBackupRetentionCount = entity.ShutdownBackupRetentionCount,
             },
             CreatedAtUtc = entity.CreatedAtUtc,
             UpdatedAtUtc = entity.UpdatedAtUtc,
@@ -80,6 +82,8 @@ public static class EntityMappingExtensions
             PreUpdateBackupRetentionCount = model.BackupPolicy.PreUpdateBackupRetentionCount,
             KeepManualBackupsForever = model.BackupPolicy.KeepManualBackupsForever,
             PreUpdateBackupEnabled = model.BackupPolicy.PreUpdateBackupEnabled,
+            BackupOnShutdownEnabled = model.BackupPolicy.BackupOnShutdownEnabled,
+            ShutdownBackupRetentionCount = model.BackupPolicy.ShutdownBackupRetentionCount,
             CreatedAtUtc = model.CreatedAtUtc,
             UpdatedAtUtc = model.UpdatedAtUtc,
         };
@@ -112,6 +116,8 @@ public static class EntityMappingExtensions
         entity.PreUpdateBackupRetentionCount = model.BackupPolicy.PreUpdateBackupRetentionCount;
         entity.KeepManualBackupsForever = model.BackupPolicy.KeepManualBackupsForever;
         entity.PreUpdateBackupEnabled = model.BackupPolicy.PreUpdateBackupEnabled;
+        entity.BackupOnShutdownEnabled = model.BackupPolicy.BackupOnShutdownEnabled;
+        entity.ShutdownBackupRetentionCount = model.BackupPolicy.ShutdownBackupRetentionCount;
         entity.UpdatedAtUtc = model.UpdatedAtUtc;
     }
 

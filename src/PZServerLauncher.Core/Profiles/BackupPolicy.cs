@@ -4,6 +4,7 @@ public sealed record BackupPolicy
 {
     public const int DefaultScheduledBackupRetentionCount = 10;
     public const int DefaultPreUpdateBackupRetentionCount = 5;
+    public const int DefaultShutdownBackupRetentionCount = 5;
     public const int DefaultScheduledBackupIntervalHours = 6;
     public const string DefaultScheduledBackupStartLocalTime = "03:00";
 
@@ -22,4 +23,8 @@ public sealed record BackupPolicy
     public bool KeepManualBackupsForever { get; init; } = true;
 
     public bool PreUpdateBackupEnabled { get; init; } = true;
+
+    public bool BackupOnShutdownEnabled { get; init; }
+
+    public int ShutdownBackupRetentionCount { get; init; } = DefaultShutdownBackupRetentionCount;
 }

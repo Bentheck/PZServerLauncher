@@ -16,7 +16,7 @@ namespace PZServerLauncher.App.ViewModels;
 public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBase
 {
     private static readonly Regex BackupPattern = new(
-        "-(manual|preupdate|scheduled)-(\\d{8}-\\d{6})\\.zip$",
+        "-(manual|preupdate|scheduled|shutdown)-(\\d{8}-\\d{6})\\.zip$",
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
     private static readonly ProjectZomboidBackupPostureSummary EmptySummary = new(
@@ -31,6 +31,8 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         0,
         0,
         0,
+        0,
+        false,
         false,
         false,
         false);
@@ -85,7 +87,7 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
     public string BackupCountSummary => SelectedProfile is null
         ? "No archive count available."
         : HasBackups
-            ? $"{CurrentSummary.TotalBackupCount} total | {CurrentSummary.ManualBackupCount} manual | {CurrentSummary.PreUpdateBackupCount} pre-update | {CurrentSummary.ScheduledBackupCount} scheduled"
+            ? $"{CurrentSummary.TotalBackupCount} total | {CurrentSummary.ManualBackupCount} manual | {CurrentSummary.PreUpdateBackupCount} pre-update | {CurrentSummary.ScheduledBackupCount} scheduled | {CurrentSummary.ShutdownBackupCount} shutdown"
             : "No archives yet";
 
     public string BackupPosture => SelectedProfile is null
@@ -151,7 +153,7 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
         : CurrentSummary.RetentionSummary;
 
     public string PolicyEditorSummary => SelectedProfile is null
-        ? "Select a profile to manage scheduled retention and pre-update safety."
+        ? "Select a profile to manage scheduled, shutdown, and pre-update backups."
         : IsPolicyDirty
             ? "Recovery policy has unsaved changes. Save when the schedule and retention counts look right."
             : "Recovery policy is in sync with the selected profile.";
@@ -218,6 +220,12 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
     [ObservableProperty]
     private string preUpdateBackupRetentionCount = "5";
+
+    [ObservableProperty]
+    private bool backupOnShutdownEnabled;
+
+    [ObservableProperty]
+    private string shutdownBackupRetentionCount = BackupPolicy.DefaultShutdownBackupRetentionCount.ToString(CultureInfo.InvariantCulture);
 
     [ObservableProperty]
     private bool keepManualBackupsForever = true;
@@ -387,6 +395,10 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
 
     partial void OnPreUpdateBackupRetentionCountChanged(string value) => NotifyPolicyEdited();
 
+    partial void OnBackupOnShutdownEnabledChanged(bool value) => NotifyPolicyEdited();
+
+    partial void OnShutdownBackupRetentionCountChanged(string value) => NotifyPolicyEdited();
+
     partial void OnKeepManualBackupsForeverChanged(bool value) => NotifyPolicyEdited();
 
     private void NotifyComputedState()
@@ -465,6 +477,8 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             ScheduledBackupStartLocalTime = policy.ScheduledBackupStartLocalTime;
             PreUpdateBackupEnabled = policy.PreUpdateBackupEnabled;
             PreUpdateBackupRetentionCount = policy.PreUpdateBackupRetentionCount.ToString(CultureInfo.InvariantCulture);
+            BackupOnShutdownEnabled = policy.BackupOnShutdownEnabled;
+            ShutdownBackupRetentionCount = policy.ShutdownBackupRetentionCount.ToString(CultureInfo.InvariantCulture);
             KeepManualBackupsForever = policy.KeepManualBackupsForever;
             IsPolicyDirty = false;
             PolicyValidationMessage = string.Empty;
@@ -514,6 +528,14 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             return false;
         }
 
+        if (!int.TryParse(ShutdownBackupRetentionCount, NumberStyles.Integer, CultureInfo.InvariantCulture, out var shutdownRetention) ||
+            shutdownRetention < 1)
+        {
+            policy = BackupPolicy.Default;
+            PolicyValidationMessage = "Shutdown backup retention must be a whole number greater than or equal to 1.";
+            return false;
+        }
+
         policy = new BackupPolicy
         {
             ScheduledBackupsEnabled = ScheduledBackupsEnabled,
@@ -522,6 +544,8 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
             ScheduledBackupStartLocalTime = normalizedStartTime,
             PreUpdateBackupEnabled = PreUpdateBackupEnabled,
             PreUpdateBackupRetentionCount = preUpdateRetention,
+            BackupOnShutdownEnabled = BackupOnShutdownEnabled,
+            ShutdownBackupRetentionCount = shutdownRetention,
             KeepManualBackupsForever = KeepManualBackupsForever,
         };
 
@@ -558,6 +582,7 @@ public partial class BackupsWorkspaceViewModel : ProfileWorkspacePageViewModelBa
                 "manual" => ("Manual Snapshot", "Manual"),
                 "preupdate" => ("Pre-Update Safety Net", "Pre-Update"),
                 "scheduled" => ("Scheduled Archive", "Scheduled"),
+                "shutdown" => ("Shutdown Archive", "Shutdown"),
                 _ => ("Recovery Archive", "Archive"),
             }
             : ("Recovery Archive", "Archive");

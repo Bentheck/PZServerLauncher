@@ -31,7 +31,7 @@ public static class ProjectZomboidRecoveryConsoleSummaryBuilder
                 ? "Layered coverage"
                 : posture.HasManualBackups
                     ? "Manual-first coverage"
-                    : posture.HasScheduledBackups || posture.HasPreUpdateBackups
+                    : posture.HasScheduledBackups || posture.HasPreUpdateBackups || posture.HasShutdownBackups
                         ? "Automated-only coverage"
                         : "Recovery coverage available";
 
@@ -55,10 +55,14 @@ public static class ProjectZomboidRecoveryConsoleSummaryBuilder
                         ? "Idle restore can proceed and request a restart afterward."
                         : "Idle restore can proceed and leave the world offline for inspection.";
 
-        var retentionHeadline = posture.HasManualBackups && posture.HasPreUpdateBackups && posture.HasScheduledBackups
-            ? "Manual, pre-update, and scheduled history are all represented."
+        var retentionHeadline = posture.HasManualBackups && posture.HasPreUpdateBackups && posture.HasScheduledBackups && posture.HasShutdownBackups
+            ? "Manual, pre-update, scheduled, and shutdown history are all represented."
+            : posture.HasManualBackups && posture.HasPreUpdateBackups && posture.HasScheduledBackups
+                ? "Manual, pre-update, and scheduled history are all represented."
             : posture.HasManualBackups && posture.HasPreUpdateBackups
                 ? "Manual and pre-update safety nets are present."
+                : posture.HasManualBackups && posture.HasShutdownBackups
+                    ? "Manual and shutdown recovery points are present."
                 : posture.HasManualBackups
                     ? "Manual archives are carrying recovery posture."
                     : posture.TotalBackupCount > 0
@@ -113,6 +117,8 @@ public static class ProjectZomboidRecoveryConsoleSummaryBuilder
                 0,
                 0,
                 0,
+                0,
+                false,
                 false,
                 false,
                 false),

@@ -70,6 +70,12 @@
                                     <TextBlock Classes="body" Text="Pre-update retention count" />
                                     <TextBox Text="{Binding PreUpdateBackupRetentionCount}" />
                                 </StackPanel>
+                                <CheckBox Content="Back up after server shutdown"
+                                          IsChecked="{Binding BackupOnShutdownEnabled}" />
+                                <StackPanel Spacing="4">
+                                    <TextBlock Classes="body" Text="Shutdown retention count" />
+                                    <TextBox Text="{Binding ShutdownBackupRetentionCount}" />
+                                </StackPanel>
                             </StackPanel>
                         </Grid>
 
@@ -105,7 +111,7 @@
                                    TextWrapping="Wrap" />
                         <TextBlock Classes="caption"
                                    Foreground="{DynamicResource TextSubtleBrush}"
-                                   Text="Manual, pre-update, and scheduled archives appear newest-first."
+                                   Text="Manual, pre-update, scheduled, and shutdown archives appear newest-first."
                                    TextWrapping="Wrap" />
 
                         <ListBox ItemsSource="{Binding BackupEntries}"

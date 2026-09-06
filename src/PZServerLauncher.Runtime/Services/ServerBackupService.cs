@@ -17,7 +17,7 @@ public sealed class ServerBackupService(
     AuditStore auditStore)
 {
     private static readonly Regex BackupFilePattern = new(
-        "-(manual|preupdate|scheduled)-(\\d{8}-\\d{6})\\.zip$",
+        "-(manual|preupdate|scheduled|shutdown)-(\\d{8}-\\d{6})\\.zip$",
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
     private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web)
@@ -169,7 +169,10 @@ public sealed class ServerBackupService(
 
     private void ApplyRetentionPolicy(ServerProfile profile, BackupTrigger trigger)
     {
-        if (trigger == BackupTrigger.Manual || trigger == BackupTrigger.Scheduled && !profile.BackupPolicy.ScheduledBackupsEnabled)
+        if (trigger == BackupTrigger.Manual ||
+            trigger == BackupTrigger.Scheduled && !profile.BackupPolicy.ScheduledBackupsEnabled ||
+            trigger == BackupTrigger.PreUpdate && !profile.BackupPolicy.PreUpdateBackupEnabled ||
+            trigger == BackupTrigger.Shutdown && !profile.BackupPolicy.BackupOnShutdownEnabled)
         {
             return;
         }
@@ -184,6 +187,7 @@ public sealed class ServerBackupService(
         {
             BackupTrigger.PreUpdate => $"{profile.ProfileId}-preupdate-*.zip",
             BackupTrigger.Scheduled => $"{profile.ProfileId}-scheduled-*.zip",
+            BackupTrigger.Shutdown => $"{profile.ProfileId}-shutdown-*.zip",
             _ => null,
         };
 
@@ -196,6 +200,7 @@ public sealed class ServerBackupService(
         {
             BackupTrigger.PreUpdate => profile.BackupPolicy.PreUpdateBackupRetentionCount,
             BackupTrigger.Scheduled => profile.BackupPolicy.ScheduledBackupRetentionCount,
+            BackupTrigger.Shutdown => profile.BackupPolicy.ShutdownBackupRetentionCount,
             _ => int.MaxValue,
         };
 

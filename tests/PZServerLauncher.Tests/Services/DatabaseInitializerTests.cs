@@ -60,6 +60,8 @@ public sealed class DatabaseInitializerTests : IDisposable
                 PreUpdateBackupRetentionCount = 5,
                 KeepManualBackupsForever = true,
                 PreUpdateBackupEnabled = true,
+                BackupOnShutdownEnabled = true,
+                ShutdownBackupRetentionCount = 7,
                 CreatedAtUtc = DateTimeOffset.UtcNow,
                 UpdatedAtUtc = DateTimeOffset.UtcNow,
             });
@@ -82,6 +84,8 @@ public sealed class DatabaseInitializerTests : IDisposable
             Assert.Equal("Main Server", profile.DisplayName);
             Assert.True(profile.StartWithHost);
             Assert.Equal("[\"123\"]", profile.WorkshopItemIdsJson);
+            Assert.True(profile.BackupOnShutdownEnabled);
+            Assert.Equal(7, profile.ShutdownBackupRetentionCount);
         }
     }
 

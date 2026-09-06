@@ -195,7 +195,6 @@ public sealed class ProjectZomboidSettingsCatalogResolver : ISettingsCatalogReso
                         Field($"{branchPrefix}.network.allow-non-ascii-username", "Allow Non-ASCII Usernames", StructuredValueKind.Boolean, ConfigFileKind.Ini, "AllowNonAsciiUsername", defaultValue: "false", helpText: "Permit usernames that contain non-ASCII characters."),
                         Field($"{branchPrefix}.network.player-save-on-damage", "Save Player On Damage", StructuredValueKind.Boolean, ConfigFileKind.Ini, "PlayerSaveOnDamage", defaultValue: "true", helpText: "Persist character state when damage is taken to reduce rollback after crashes."),
                         Field($"{branchPrefix}.network.server-tag", "Server Tag", StructuredValueKind.Text, ConfigFileKind.Ini, "Tag", helpText: "Optional short tag shown with the server identity."),
-                        Field($"{branchPrefix}.network.reset-id", "Reset ID", StructuredValueKind.Integer, ConfigFileKind.Ini, "ResetID", defaultValue: "0", helpText: "Project Zomboid reset marker used when resetting world/player state."),
                     }),
                 new StructuredSectionDefinition(
                     $"{branchPrefix}.network.player-presence",

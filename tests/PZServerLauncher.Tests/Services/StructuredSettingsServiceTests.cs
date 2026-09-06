@@ -298,7 +298,7 @@ public sealed class StructuredSettingsServiceTests : IDisposable
         Assert.Equal("2", networkValues.Values[$"{branchPrefix}.network.max-accounts-per-user"]);
         Assert.Equal("true", networkValues.Values[$"{branchPrefix}.network.allow-non-ascii-username"]);
         Assert.Equal("ROLEPLAY", networkValues.Values[$"{branchPrefix}.network.server-tag"]);
-        Assert.Equal("4", networkValues.Values[$"{branchPrefix}.network.reset-id"]);
+        Assert.DoesNotContain($"{branchPrefix}.network.reset-id", networkValues.Values.Keys);
         Assert.Equal("true", networkValues.Values[$"{branchPrefix}.network.voice-enabled"]);
         Assert.Equal("true", networkValues.Values[$"{branchPrefix}.network.voice-3d"]);
         Assert.Equal("10", networkValues.Values[$"{branchPrefix}.network.voice-min-distance"]);
@@ -633,7 +633,8 @@ public sealed class StructuredSettingsServiceTests : IDisposable
         Assert.Contains("MaxAccountsPerUser=3", iniText);
         Assert.Contains("AllowNonAsciiUsername=true", iniText);
         Assert.Contains("Tag=COOP42", iniText);
-        Assert.Contains("ResetID=7", iniText);
+        Assert.Contains("ResetID=0", iniText);
+        Assert.DoesNotContain("ResetID=7", iniText);
         Assert.Contains("VoiceEnable=true", iniText);
         Assert.Contains("Voice3D=false", iniText);
         Assert.Contains("VoiceMinDistance=12", iniText);
@@ -984,8 +985,53 @@ public sealed class StructuredSettingsServiceTests : IDisposable
         Assert.Contains("Remote map player visibility must be zero or greater.", validation.FieldErrors["b42.network.map-remote-player-visibility"]);
         Assert.Contains("Use TCP for map traffic must be true or false.", validation.FieldErrors["b42.network.use-tcp-for-map-traffic"]);
         Assert.Contains("Server tag must stay under 32 characters.", validation.FieldErrors["b42.network.server-tag"]);
-        Assert.Contains("Reset ID must be zero or greater.", validation.FieldErrors["b42.network.reset-id"]);
+        Assert.DoesNotContain("b42.network.reset-id", validation.FieldErrors.Keys);
         Assert.Contains("Minutes per page must be zero or greater.", validation.FieldErrors["b42.network.minutes-per-page"]);
+    }
+
+    [Fact]
+    public async Task SaveAsync_RejectsStaleNetworkPageBeforeOverwritingNewerIniValues()
+    {
+        Directory.CreateDirectory(_tempRoot);
+        var profile = ServerProfileFactory.CreateStarterProfile() with
+        {
+            ProfileId = "profile-stale-network",
+            DisplayName = "Profile Stale Network",
+            ServerName = "profile-stale-network",
+            InstallDirectory = Path.Combine(_tempRoot, "install-stale-network"),
+            CacheDirectory = Path.Combine(_tempRoot, "cache-stale-network"),
+        };
+
+        var planner = new ProjectZomboidServerPlanner();
+        var paths = planner.ResolvePaths(profile);
+        Directory.CreateDirectory(Path.GetDirectoryName(paths.IniFilePath)!);
+        File.WriteAllText(paths.IniFilePath, "SaveWorldEveryMinutes=5\nPingLimit=250\nResetID=42\n");
+
+        await using var dbContext = TestDatabaseFactory.Create(Path.Combine(_tempRoot, "stale-network.db"));
+        var profileStore = new ProfileStore(dbContext);
+        await profileStore.UpsertAsync(profile);
+
+        var service = CreateService(profileStore, planner);
+        var loadedPage = service.GetPage(profile, ProfileWorkspacePageIds.NetworkAndAdmin);
+        var submittedValues = new Dictionary<string, string?>(loadedPage.Values, StringComparer.Ordinal)
+        {
+            ["b42.network.save-world-every-minutes"] = "20",
+        };
+
+        File.WriteAllText(paths.IniFilePath, "SaveWorldEveryMinutes=10\nPingLimit=250\nResetID=42\n");
+
+        var result = await service.SaveAsync(
+            profile,
+            ProfileWorkspacePageIds.NetworkAndAdmin,
+            submittedValues,
+            expectedSourceSha256: loadedPage.SourceSha256);
+        var iniText = File.ReadAllText(paths.IniFilePath);
+
+        Assert.False(result.Validation.IsValid);
+        Assert.Contains(result.Validation.PageErrors, error => error.Contains("changed on disk", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains("SaveWorldEveryMinutes=10", iniText);
+        Assert.DoesNotContain("SaveWorldEveryMinutes=20", iniText);
+        Assert.Contains("ResetID=42", iniText);
     }
 
     [Fact]

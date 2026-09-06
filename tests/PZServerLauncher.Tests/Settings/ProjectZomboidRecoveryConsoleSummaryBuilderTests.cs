@@ -20,9 +20,11 @@ public sealed class ProjectZomboidRecoveryConsoleSummaryBuilderTests
             1,
             1,
             1,
+            0,
             true,
             true,
-            true);
+            true,
+            false);
 
         var summary = ProjectZomboidRecoveryConsoleSummaryBuilder.Build(
             posture,
@@ -55,6 +57,8 @@ public sealed class ProjectZomboidRecoveryConsoleSummaryBuilderTests
             0,
             0,
             0,
+            0,
+            false,
             false,
             false,
             false);

@@ -135,7 +135,12 @@ public sealed partial class LauncherRuntime
                 }
 
                 var structuredSettingsService = services.GetRequiredService<StructuredSettingsService>();
-                var result = await structuredSettingsService.SaveAsync(profile, pageId, payload.Values, cancellationToken);
+                var result = await structuredSettingsService.SaveAsync(
+                    profile,
+                    pageId,
+                    payload.Values,
+                    cancellationToken,
+                    expectedSourceSha256: payload.SourceSha256);
                 if (result.Validation.IsValid && !result.Validation.RequiresAdvancedFilesFallback)
                 {
                     await services.GetRequiredService<AuditStore>().WriteAsync(

@@ -19,6 +19,8 @@ public sealed class ProjectZomboidBackupPostureSummaryBuilderTests
                 ScheduledBackupIntervalHours = 6,
                 ScheduledBackupStartLocalTime = "03:00",
                 PreUpdateBackupRetentionCount = 4,
+                BackupOnShutdownEnabled = true,
+                ShutdownBackupRetentionCount = 3,
             },
         };
 
@@ -27,6 +29,7 @@ public sealed class ProjectZomboidBackupPostureSummaryBuilderTests
             "servertest-manual-20260408-150000.zip",
             "servertest-preupdate-20260408-140000.zip",
             "servertest-scheduled-20260408-130000.zip",
+            "servertest-shutdown-20260408-120000.zip",
         };
 
         var summary = ProjectZomboidBackupPostureSummaryBuilder.Build(
@@ -35,19 +38,21 @@ public sealed class ProjectZomboidBackupPostureSummaryBuilderTests
             backups[1],
             runtimeState: "Running");
 
-        Assert.Equal(3, summary.TotalBackupCount);
+        Assert.Equal(4, summary.TotalBackupCount);
         Assert.Equal(1, summary.ManualBackupCount);
         Assert.Equal(1, summary.PreUpdateBackupCount);
         Assert.Equal(1, summary.ScheduledBackupCount);
-        Assert.Contains("3 recovery archive(s) available", summary.CoverageSummary);
+        Assert.Equal(1, summary.ShutdownBackupCount);
+        Assert.Contains("4 recovery archive(s) available", summary.CoverageSummary);
         Assert.Contains("manual snapshot", summary.LatestArchiveSummary);
         Assert.Contains("pre-update safety net", summary.SelectedArchiveSummary);
         Assert.Contains("keep the last 4", summary.RetentionSummary);
         Assert.Contains("keep the last 8", summary.RetentionSummary);
+        Assert.Contains("shutdown backups keep the last 3", summary.RetentionSummary);
         Assert.Contains("start at 03:00 local and repeat every 6 hours", summary.RetentionSummary);
         Assert.Contains("require a stop", summary.RestoreSafetySummary);
         Assert.Contains("looks healthy", summary.ContinuitySummary);
-        Assert.Contains("1 manual | 1 pre-update | 1 scheduled", summary.ArchiveMixSummary);
+        Assert.Contains("1 manual | 1 pre-update | 1 scheduled | 1 shutdown", summary.ArchiveMixSummary);
     }
 
     [Fact]
@@ -59,6 +64,7 @@ public sealed class ProjectZomboidBackupPostureSummaryBuilderTests
             BackupPolicy = BackupPolicy.Default with
             {
                 ScheduledBackupsEnabled = true,
+                BackupOnShutdownEnabled = true,
             },
         };
 
@@ -75,5 +81,6 @@ public sealed class ProjectZomboidBackupPostureSummaryBuilderTests
         Assert.Contains("manual recovery point missing", summary.ContinuitySummary);
         Assert.Contains("no pre-update safety archive captured yet", summary.ContinuitySummary);
         Assert.Contains("scheduled snapshots enabled but history is still empty", summary.ContinuitySummary);
+        Assert.Contains("shutdown backups enabled but history is still empty", summary.ContinuitySummary);
     }
 }

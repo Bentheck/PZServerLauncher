@@ -5,4 +5,5 @@ public enum BackupTrigger
     Manual,
     PreUpdate,
     Scheduled,
+    Shutdown,
 }

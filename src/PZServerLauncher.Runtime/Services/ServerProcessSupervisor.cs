@@ -245,6 +245,7 @@ public sealed class ServerProcessSupervisor(
         });
         await runtimeEventPublisher.PublishStatusChangedAsync(runtimeStateStore.GetOrDefault(profileId), cancellationToken);
         await runtimeEventPublisher.PublishLiveOperationsChangedAsync(liveOperations, cancellationToken);
+        await CreateShutdownBackupIfEnabledAsync(profileId, cancellationToken);
     }
 
     public bool IsRunning(string profileId) =>
@@ -284,6 +285,39 @@ public sealed class ServerProcessSupervisor(
         if (liveOperations is not null)
         {
             await runtimeEventPublisher.PublishLiveOperationsChangedAsync(liveOperations);
+        }
+    }
+
+    private async Task CreateShutdownBackupIfEnabledAsync(string profileId, CancellationToken cancellationToken)
+    {
+        await using var scope = scopeFactory.CreateAsyncScope();
+        var profile = await scope.ServiceProvider.GetRequiredService<ProfileStore>().GetAsync(profileId, cancellationToken);
+        if (profile is null || !profile.BackupPolicy.BackupOnShutdownEnabled)
+        {
+            return;
+        }
+
+        try
+        {
+            var backupPath = await scope.ServiceProvider
+                .GetRequiredService<ServerBackupService>()
+                .CreateBackupAsync(profileId, BackupTrigger.Shutdown, cancellationToken);
+            var message = $"Created shutdown backup {Path.GetFileName(backupPath)}.";
+            runtimeStateStore.AppendLog(profileId, message);
+            await runtimeEventPublisher.PublishLogLineAsync(profileId, message, cancellationToken);
+            await runtimeEventPublisher.PublishStatusChangedAsync(runtimeStateStore.GetOrDefault(profileId), cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Shutdown backup failed for profile {ProfileId}.", profileId);
+            var message = $"Shutdown backup failed: {ex.Message}";
+            runtimeStateStore.AppendLog(profileId, message);
+            await runtimeEventPublisher.PublishLogLineAsync(profileId, message, cancellationToken);
+            await runtimeEventPublisher.PublishStatusChangedAsync(runtimeStateStore.GetOrDefault(profileId), cancellationToken);
         }
     }
 

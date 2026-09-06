@@ -9,7 +9,7 @@ namespace PZServerLauncher.Infrastructure.Planning;
 public static class ProjectZomboidBackupPostureSummaryBuilder
 {
     private static readonly Regex BackupPattern = new(
-        "-(manual|preupdate|scheduled)-(\\d{8}-\\d{6})\\.zip$",
+        "-(manual|preupdate|scheduled|shutdown)-(\\d{8}-\\d{6})\\.zip$",
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
     public static ProjectZomboidBackupPostureSummary Build(
@@ -25,6 +25,7 @@ public static class ProjectZomboidBackupPostureSummaryBuilder
         var manualCount = parsedBackups.Count(x => x.Trigger == BackupTrigger.Manual);
         var preUpdateCount = parsedBackups.Count(x => x.Trigger == BackupTrigger.PreUpdate);
         var scheduledCount = parsedBackups.Count(x => x.Trigger == BackupTrigger.Scheduled);
+        var shutdownCount = parsedBackups.Count(x => x.Trigger == BackupTrigger.Shutdown);
         var totalCount = parsedBackups.Count;
 
         var latest = parsedBackups.FirstOrDefault() ?? ParsedBackup.Empty;
@@ -32,7 +33,7 @@ public static class ProjectZomboidBackupPostureSummaryBuilder
 
         var coverageSummary = totalCount == 0
             ? "No recovery archives are available yet. Capture a manual snapshot before major config or update work."
-            : $"{totalCount} recovery archive(s) available: {manualCount} manual, {preUpdateCount} pre-update, {scheduledCount} scheduled.";
+            : $"{totalCount} recovery archive(s) available: {manualCount} manual, {preUpdateCount} pre-update, {scheduledCount} scheduled, {shutdownCount} shutdown.";
 
         var latestArchiveSummary = latest.FileName is null
             ? "Latest archive: none captured yet."
@@ -44,10 +45,10 @@ public static class ProjectZomboidBackupPostureSummaryBuilder
 
         var retentionSummary = BuildRetentionSummary(profile.BackupPolicy);
         var restoreSafetySummary = BuildRestoreSafetySummary(totalCount > 0, runtimeState);
-        var continuitySummary = BuildContinuitySummary(profile.BackupPolicy, manualCount, preUpdateCount, scheduledCount);
+        var continuitySummary = BuildContinuitySummary(profile.BackupPolicy, manualCount, preUpdateCount, scheduledCount, shutdownCount);
         var archiveMixSummary = totalCount == 0
-            ? "Archive mix: no manual, pre-update, or scheduled history exists yet."
-            : $"Archive mix: {manualCount} manual | {preUpdateCount} pre-update | {scheduledCount} scheduled.";
+            ? "Archive mix: no manual, pre-update, scheduled, or shutdown history exists yet."
+            : $"Archive mix: {manualCount} manual | {preUpdateCount} pre-update | {scheduledCount} scheduled | {shutdownCount} shutdown.";
 
         return new ProjectZomboidBackupPostureSummary(
             coverageSummary,
@@ -61,9 +62,11 @@ public static class ProjectZomboidBackupPostureSummaryBuilder
             manualCount,
             preUpdateCount,
             scheduledCount,
+            shutdownCount,
             manualCount > 0,
             preUpdateCount > 0,
-            scheduledCount > 0);
+            scheduledCount > 0,
+            shutdownCount > 0);
     }
 
     private static ParsedBackup ParseBackup(string? fileName)
@@ -84,6 +87,7 @@ public static class ProjectZomboidBackupPostureSummaryBuilder
             "manual" => BackupTrigger.Manual,
             "preupdate" => BackupTrigger.PreUpdate,
             "scheduled" => BackupTrigger.Scheduled,
+            "shutdown" => BackupTrigger.Shutdown,
             _ => (BackupTrigger?)null,
         };
 
@@ -114,6 +118,7 @@ public static class ProjectZomboidBackupPostureSummaryBuilder
                 BackupTrigger.Manual => "manual snapshot",
                 BackupTrigger.PreUpdate => "pre-update safety net",
                 BackupTrigger.Scheduled => "scheduled archive",
+                BackupTrigger.Shutdown => "shutdown archive",
                 _ => "archive",
             });
         }
@@ -137,7 +142,10 @@ public static class ProjectZomboidBackupPostureSummaryBuilder
         var scheduledSummary = policy.ScheduledBackupsEnabled
             ? $"{ScheduledBackupPlanner.DescribeCadence(policy)} and keep the last {policy.ScheduledBackupRetentionCount}"
             : "scheduled snapshots are disabled";
-        return $"Retention posture: {manualSummary}, {preUpdateSummary}, and {scheduledSummary}.";
+        var shutdownSummary = policy.BackupOnShutdownEnabled
+            ? $"shutdown backups keep the last {policy.ShutdownBackupRetentionCount}"
+            : "shutdown backups are disabled";
+        return $"Retention posture: {manualSummary}, {preUpdateSummary}, {scheduledSummary}, and {shutdownSummary}.";
     }
 
     private static string BuildRestoreSafetySummary(bool hasBackups, string runtimeState)
@@ -152,7 +160,12 @@ public static class ProjectZomboidBackupPostureSummaryBuilder
             : "The server is idle, so restore can proceed immediately and optionally request a restart afterward.";
     }
 
-    private static string BuildContinuitySummary(BackupPolicy policy, int manualCount, int preUpdateCount, int scheduledCount)
+    private static string BuildContinuitySummary(
+        BackupPolicy policy,
+        int manualCount,
+        int preUpdateCount,
+        int scheduledCount,
+        int shutdownCount)
     {
         var gaps = new List<string>();
 
@@ -171,8 +184,13 @@ public static class ProjectZomboidBackupPostureSummaryBuilder
             gaps.Add("scheduled snapshots enabled but history is still empty");
         }
 
+        if (policy.BackupOnShutdownEnabled && shutdownCount == 0)
+        {
+            gaps.Add("shutdown backups enabled but history is still empty");
+        }
+
         return gaps.Count == 0
-            ? "Recovery continuity looks healthy across manual, pre-update, and scheduled coverage."
+            ? "Recovery continuity looks healthy across the enabled backup layers."
             : $"Recovery continuity gap: {string.Join("; ", gaps)}.";
     }
 

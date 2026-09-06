@@ -92,6 +92,29 @@ public sealed class ProfileStoreTests : IDisposable
         Assert.Equal("legacy41", loaded?.SteamBranch);
     }
 
+    [Fact]
+    public async Task UpsertAsync_PersistsShutdownBackupPolicy()
+    {
+        Directory.CreateDirectory(_tempRoot);
+        var databasePath = Path.Combine(_tempRoot, "profile-store-shutdown-backup.db");
+        await using var dbContext = TestDatabaseFactory.Create(databasePath);
+        var store = new ProfileStore(dbContext);
+        var profile = CreateProfile("shutdown-server", "Shutdown Server", 16290) with
+        {
+            BackupPolicy = BackupPolicy.Default with
+            {
+                BackupOnShutdownEnabled = true,
+                ShutdownBackupRetentionCount = 7,
+            },
+        };
+
+        await store.UpsertAsync(profile);
+
+        var loaded = await store.GetAsync(profile.ProfileId);
+        Assert.True(loaded?.BackupPolicy.BackupOnShutdownEnabled);
+        Assert.Equal(7, loaded?.BackupPolicy.ShutdownBackupRetentionCount);
+    }
+
     public void Dispose()
     {
         SqliteConnection.ClearAllPools();
