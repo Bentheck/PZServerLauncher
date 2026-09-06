@@ -15,6 +15,7 @@ public sealed class ServerProcessSupervisor(
     IServiceScopeFactory scopeFactory,
     ILogger<ServerProcessSupervisor> logger) : IDisposable
 {
+    private static readonly TimeSpan GracefulShutdownTimeout = TimeSpan.FromSeconds(90);
     private readonly ConcurrentDictionary<string, Process> _processes = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, SemaphoreSlim> _commandGates = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, bool> _stopRequested = new(StringComparer.OrdinalIgnoreCase);
@@ -223,10 +224,30 @@ public sealed class ServerProcessSupervisor(
         });
         await runtimeEventPublisher.PublishStatusChangedAsync(runtimeStateStore.GetOrDefault(profileId), cancellationToken);
 
+        var gracefulStopResult = GracefulProcessStopResult.AlreadyExited;
         if (!process.HasExited)
         {
-            process.Kill(entireProcessTree: true);
-            await process.WaitForExitAsync(cancellationToken);
+            var shutdownMessage = "Saving the world and requesting graceful server shutdown.";
+            runtimeStateStore.AppendLog(profileId, shutdownMessage);
+            await runtimeEventPublisher.PublishLogLineAsync(profileId, shutdownMessage, cancellationToken);
+
+            var gracefulCommandGate = _commandGates.GetOrAdd(profileId, _ => new SemaphoreSlim(1, 1));
+            gracefulStopResult = await GracefulServerProcessStopper.TryStopAsync(
+                process,
+                gracefulCommandGate,
+                GracefulShutdownTimeout,
+                cancellationToken);
+
+            if (gracefulStopResult is GracefulProcessStopResult.CommandFailed or GracefulProcessStopResult.TimedOut)
+            {
+                var fallbackMessage = gracefulStopResult == GracefulProcessStopResult.TimedOut
+                    ? $"Graceful shutdown did not finish within {GracefulShutdownTimeout.TotalSeconds:0} seconds. Forcing process termination."
+                    : "The server console did not accept the graceful shutdown commands. Forcing process termination.";
+                logger.LogWarning("{FallbackMessage} Profile: {ProfileId}", fallbackMessage, profileId);
+                runtimeStateStore.AppendLog(profileId, fallbackMessage);
+                await runtimeEventPublisher.PublishLogLineAsync(profileId, fallbackMessage, cancellationToken);
+                await ForceStopAsync(process);
+            }
         }
 
         _processes.TryRemove(profileId, out _);
@@ -241,7 +262,9 @@ public sealed class ServerProcessSupervisor(
             State = ServerRuntimeState.Stopped,
             ProcessId = null,
             StoppedAtUtc = DateTimeOffset.UtcNow,
-            LastExitReason = "Stopped by launcher.",
+            LastExitReason = gracefulStopResult == GracefulProcessStopResult.ExitedGracefully
+                ? "Saved and stopped gracefully by launcher."
+                : "Stopped by launcher.",
         });
         await runtimeEventPublisher.PublishStatusChangedAsync(runtimeStateStore.GetOrDefault(profileId), cancellationToken);
         await runtimeEventPublisher.PublishLiveOperationsChangedAsync(liveOperations, cancellationToken);
@@ -318,6 +341,26 @@ public sealed class ServerProcessSupervisor(
             runtimeStateStore.AppendLog(profileId, message);
             await runtimeEventPublisher.PublishLogLineAsync(profileId, message, cancellationToken);
             await runtimeEventPublisher.PublishStatusChangedAsync(runtimeStateStore.GetOrDefault(profileId), cancellationToken);
+        }
+    }
+
+    private static async Task ForceStopAsync(Process process)
+    {
+        if (!process.HasExited)
+        {
+            try
+            {
+                process.Kill(entireProcessTree: true);
+            }
+            catch (InvalidOperationException) when (process.HasExited)
+            {
+                // The process exited between the state check and the kill request.
+            }
+        }
+
+        if (!process.HasExited)
+        {
+            await process.WaitForExitAsync(CancellationToken.None);
         }
     }
 
